@@ -68,7 +68,7 @@ interface CalendarEvent {
   isMilestone?: boolean;
 }
 
-// Default data for when no data is available
+// Default data for when no user data exists
 const defaultWheelData = [
   { area: 'Career', score: 7, color: '#8B5CF6', lightColor: '#EDE9FE', darkColor: '#7C3AED' },
   { area: 'Finances', score: 6, color: '#10B981', lightColor: '#D1FAE5', darkColor: '#059669' },
@@ -119,6 +119,39 @@ const defaultCalendarEvents = [
   }
 ];
 
+const defaultMilestones = [
+  {
+    id: 'milestone-1',
+    title: 'Complete Wheel of Life Assessment',
+    dueDate: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString().split('T')[0],
+    category: 'business',
+    completed: false,
+    daysFromStart: 7,
+    urgency: 'soon',
+    icon: Trophy
+  },
+  {
+    id: 'milestone-2',
+    title: 'Identify Core Values',
+    dueDate: new Date(new Date().setDate(new Date().getDate() + 14)).toISOString().split('T')[0],
+    category: 'balance',
+    completed: false,
+    daysFromStart: 14,
+    urgency: 'normal',
+    icon: Star
+  },
+  {
+    id: 'milestone-3',
+    title: 'Create Vision Board',
+    dueDate: new Date(new Date().setDate(new Date().getDate() + 21)).toISOString().split('T')[0],
+    category: 'body',
+    completed: false,
+    daysFromStart: 21,
+    urgency: 'normal',
+    icon: Mountain
+  }
+];
+
 const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const { data: wheelData, getCompletionStats: getWheelStats } = useWheelData();
   const { data: valuesData, getCompletionStats: getValuesStats } = useValuesData();
@@ -148,7 +181,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   // Get today's actions from calendar
   const getTodaysActions = () => {
     const today = new Date().toISOString().split('T')[0];
-    return calendarEvents
+    const events = calendarEvents.length > 0 ? calendarEvents : defaultCalendarEvents;
+    return events
       .filter(event => event.date === today)
       .sort((a, b) => a.time.localeCompare(b.time))
       .slice(0, 6); // Limit to 6 actions for display
@@ -180,112 +214,100 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
   // Get all milestones with timeline positioning
   const getMilestonesTimeline = () => {
-    const milestones: Array<{
-      id: string;
-      title: string;
-      dueDate: string;
-      category: string;
-      completed: boolean;
-      completedDate?: string;
-      daysFromStart: number;
-      urgency: 'overdue' | 'urgent' | 'soon' | 'normal';
-      icon: any;
-    }> = [];
+    // If we have real goal data with milestones, use that
+    if (Object.keys(goalData.categoryGoals).length > 0) {
+      const milestones: Array<{
+        id: string;
+        title: string;
+        dueDate: string;
+        category: string;
+        completed: boolean;
+        completedDate?: string;
+        daysFromStart: number;
+        urgency: 'overdue' | 'urgent' | 'soon' | 'normal';
+        icon: any;
+      }> = [];
 
-    const startDate = new Date('2025-01-01');
-    const today = new Date();
+      const startDate = new Date('2025-01-01');
+      const today = new Date();
 
-    // If no goal data is available, return some default milestones
-    if (!goalData.categoryGoals || Object.keys(goalData.categoryGoals).length === 0) {
-      const defaultMilestones = [
-        {
-          id: '1',
-          title: 'Complete Wheel of Life',
-          dueDate: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          category: 'business',
-          completed: false,
-          daysFromStart: 7,
-          urgency: 'soon' as 'overdue' | 'urgent' | 'soon' | 'normal',
-          icon: Trophy
-        },
-        {
-          id: '2',
-          title: 'Identify Core Values',
-          dueDate: new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          category: 'balance',
-          completed: false,
-          daysFromStart: 14,
-          urgency: 'normal' as 'overdue' | 'urgent' | 'soon' | 'normal',
-          icon: Star
-        },
-        {
-          id: '3',
-          title: 'Create Vision Board',
-          dueDate: new Date(today.getTime() + 21 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          category: 'body',
-          completed: false,
-          daysFromStart: 21,
-          urgency: 'normal' as 'overdue' | 'urgent' | 'soon' | 'normal',
-          icon: Crown
-        }
-      ];
-      return defaultMilestones;
-    }
+      Object.entries(goalData.categoryGoals).forEach(([category, goal]) => {
+        goal.milestones?.forEach((milestone) => {
+          const dueDate = new Date(milestone.dueDate);
+          const daysFromStart = Math.floor((dueDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+          const daysUntilDue = Math.floor((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          
+          let urgency: 'overdue' | 'urgent' | 'soon' | 'normal' = 'normal';
+          if (daysUntilDue < 0) urgency = 'overdue';
+          else if (daysUntilDue <= 3) urgency = 'urgent';
+          else if (daysUntilDue <= 7) urgency = 'soon';
 
-    Object.entries(goalData.categoryGoals).forEach(([category, goal]) => {
-      goal.milestones?.forEach((milestone) => {
-        const dueDate = new Date(milestone.dueDate);
-        const daysFromStart = Math.floor((dueDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-        const daysUntilDue = Math.floor((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-        
-        let urgency: 'overdue' | 'urgent' | 'soon' | 'normal' = 'normal';
-        if (daysUntilDue < 0) urgency = 'overdue';
-        else if (daysUntilDue <= 3) urgency = 'urgent';
-        else if (daysUntilDue <= 7) urgency = 'soon';
-
-        // Assign different icons for variety
-        const icons = [Trophy, Star, Crown, Diamond, Rocket, Mountain, Flame, Zap];
-        const icon = icons[Math.floor(Math.random() * icons.length)];
-        
-        milestones.push({
-          id: milestone.id,
-          title: milestone.title,
-          dueDate: milestone.dueDate,
-          category,
-          completed: milestone.completed,
-          completedDate: milestone.completedDate,
-          daysFromStart,
-          urgency,
-          icon
+          // Assign different icons for variety
+          const icons = [Trophy, Star, Crown, Diamond, Rocket, Mountain, Flame, Zap];
+          const icon = icons[Math.floor(Math.random() * icons.length)];
+          
+          milestones.push({
+            id: milestone.id,
+            title: milestone.title,
+            dueDate: milestone.dueDate,
+            category,
+            completed: milestone.completed,
+            completedDate: milestone.completedDate,
+            daysFromStart,
+            urgency,
+            icon
+          });
         });
       });
-    });
 
-    return milestones.sort((a, b) => a.daysFromStart - b.daysFromStart);
+      return milestones.sort((a, b) => a.daysFromStart - b.daysFromStart);
+    } else {
+      // Return default milestones if no real data exists
+      return defaultMilestones;
+    }
   };
 
   // Get comprehensive journey progress
   const getJourneyProgress = () => {
-    const wheelStats = getWheelStats();
-    const valuesStats = getValuesStats();
-    const visionStats = getVisionStats();
+    // Use real data if available, otherwise use defaults
+    const wheelStats = wheelData && wheelData.length > 0 ? getWheelStats() : {
+      wheelCompleted: false,
+      averageScore: 7.0,
+      completedReflections: 0,
+      totalAreas: 8
+    };
+    
+    const valuesStats = valuesData && valuesData.selectedValues.length > 0 ? getValuesStats() : {
+      isComplete: false,
+      currentStep: 1,
+      coreValuesCount: 0,
+      definedValuesCount: 0
+    };
+    
+    const visionStats = visionItems && visionItems.length > 0 ? getVisionStats() : {
+      totalItems: 0,
+      itemsWithCustomContent: 0,
+      completionPercentage: 0
+    };
     
     // Calculate goal completion
-    const totalGoals = Object.keys(goalData.categoryGoals).length || 3; // Default to 3 if no goals
+    const totalGoals = Object.keys(goalData.categoryGoals).length;
     const completedGoals = Object.values(goalData.categoryGoals).filter(goal => 
-      goal && goal.goal && goal.actions && goal.actions.length > 0
+      goal.goal && goal.actions && goal.actions.length > 0
     ).length;
     
     const totalMilestones = Object.values(goalData.categoryGoals).reduce((sum, goal) => 
-      sum + (goal?.milestones?.length || 0), 0) || 3; // Default to 3 if no milestones
-    
+      sum + (goal.milestones?.length || 0), 0
+    );
     const completedMilestones = Object.values(goalData.categoryGoals).reduce((sum, goal) => 
-      sum + (goal?.milestones?.filter(m => m.completed)?.length || 0), 0);
+      sum + (goal.milestones?.filter(m => m.completed).length || 0), 0
+    );
 
     // Calculate scheduled actions
     const goalActions = calendarEvents.filter(event => event.isGoalAction).length;
     const totalPossibleActions = Object.values(goalData.categoryGoals).reduce((sum, goal) => 
-      sum + (goal?.actions?.length || 0), 0) || 5; // Default to 5 if no actions
+      sum + (goal.actions?.length || 0), 0
+    );
 
     return {
       wheel: {
@@ -319,17 +341,18 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
   // Get life areas summary
   const getLifeAreasSummary = () => {
-    const effectiveWheelData = wheelData && wheelData.length > 0 ? wheelData : defaultWheelData;
+    // Use real wheel data if available, otherwise use defaults
+    const data = wheelData && wheelData.length > 0 ? wheelData : defaultWheelData;
 
-    const averageScore = effectiveWheelData.reduce((sum, area) => sum + area.score, 0) / effectiveWheelData.length;
-    const strongAreas = effectiveWheelData.filter(area => area.score >= 8);
-    const growthAreas = effectiveWheelData.filter(area => area.score <= 5);
+    const averageScore = data.reduce((sum, area) => sum + area.score, 0) / data.length;
+    const strongAreas = data.filter(area => area.score >= 8);
+    const growthAreas = data.filter(area => area.score <= 5);
     
     return {
       averageScore: averageScore.toFixed(1),
       strongAreas: strongAreas.slice(0, 3),
       growthAreas: growthAreas.slice(0, 3),
-      totalAreas: effectiveWheelData.length
+      totalAreas: data.length
     };
   };
 
@@ -594,30 +617,29 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     <Heart className="w-5 h-5 text-red-600" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-slate-900">Core Values</h3>
-                    <p className="text-slate-600 text-sm">Your guiding principles</p>
+                    <h3 className="text-xl font-bold text-slate-900">Discover Your Core Values</h3>
+                    <p className="text-slate-600 text-sm">Define what matters most to you</p>
                   </div>
                 </div>
                 <button 
                   onClick={() => onNavigate('values')}
                   className="flex items-center space-x-2 px-4 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors"
                 >
-                  <Edit3 className="w-4 h-4" />
-                  <span>Define Values</span>
+                  <Plus className="w-4 h-4" />
+                  <span>Start Now</span>
                 </button>
               </div>
 
-              <div className="text-center py-8 bg-red-50 rounded-xl border border-red-200">
-                <Heart className="w-12 h-12 mx-auto mb-3 text-red-300" />
-                <h4 className="text-lg font-semibold text-red-800 mb-2">Discover Your Core Values</h4>
-                <p className="text-red-600 max-w-md mx-auto mb-4">
-                  Identify what truly matters to you and use these principles to guide your decisions and actions.
-                </p>
-                <button
+              <div className="bg-gradient-to-r from-red-50 to-pink-50 rounded-xl p-6 border border-red-200 text-center">
+                <Heart className="w-12 h-12 text-red-400 mx-auto mb-4" />
+                <h4 className="text-lg font-semibold text-red-900 mb-2">Values Clarification</h4>
+                <p className="text-red-700 mb-4">Discover and prioritize your core values to guide all your decisions and goals</p>
+                <button 
                   onClick={() => onNavigate('values')}
-                  className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors inline-flex items-center space-x-2"
                 >
-                  Start Values Exercise
+                  <span>Start Values Journey</span>
+                  <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
 
@@ -701,30 +723,29 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     <Sunrise className="w-5 h-5 text-indigo-600" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-slate-900">Annual Vision</h3>
-                    <p className="text-slate-600 text-sm">Your life 12 months from now</p>
+                    <h3 className="text-xl font-bold text-slate-900">Create Your Annual Vision</h3>
+                    <p className="text-slate-600 text-sm">Envision your ideal life 12 months from now</p>
                   </div>
                 </div>
                 <button 
                   onClick={() => onNavigate('goals')}
                   className="flex items-center space-x-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition-colors"
                 >
-                  <Edit3 className="w-4 h-4" />
-                  <span>Create Vision</span>
+                  <Plus className="w-4 h-4" />
+                  <span>Start Now</span>
                 </button>
               </div>
 
-              <div className="text-center py-8 bg-indigo-50 rounded-xl border border-indigo-200">
-                <Sunrise className="w-12 h-12 mx-auto mb-3 text-indigo-300" />
-                <h4 className="text-lg font-semibold text-indigo-800 mb-2">Create Your Annual Vision</h4>
-                <p className="text-indigo-600 max-w-md mx-auto mb-4">
-                  Imagine your ideal life one year from now. What does it look like? How do you feel? What have you accomplished?
-                </p>
-                <button
+              <div className="bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 rounded-xl p-6 border border-indigo-200 text-center">
+                <Sunrise className="w-12 h-12 text-indigo-400 mx-auto mb-4" />
+                <h4 className="text-lg font-semibold text-indigo-900 mb-2">Annual Vision</h4>
+                <p className="text-indigo-700 mb-4">Create a clear picture of what you want your life to look like 12 months from now</p>
+                <button 
                   onClick={() => onNavigate('goals')}
-                  className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                  className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors inline-flex items-center space-x-2"
                 >
-                  Start Vision Exercise
+                  <span>Create Your Vision</span>
+                  <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
 
@@ -818,30 +839,29 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     <Eye className="w-5 h-5 text-teal-600" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-slate-900">Life Vision</h3>
-                    <p className="text-slate-600 text-sm">What you're creating</p>
+                    <h3 className="text-xl font-bold text-slate-900">Create Your Vision Board</h3>
+                    <p className="text-slate-600 text-sm">Visualize your goals and dreams</p>
                   </div>
                 </div>
                 <button 
                   onClick={() => onNavigate('vision')}
                   className="flex items-center space-x-2 px-4 py-2 bg-teal-50 text-teal-700 rounded-lg hover:bg-teal-100 transition-colors"
                 >
-                  <Edit3 className="w-4 h-4" />
-                  <span>Create Vision</span>
+                  <Plus className="w-4 h-4" />
+                  <span>Start Now</span>
                 </button>
               </div>
 
-              <div className="text-center py-8 bg-teal-50 rounded-xl border border-teal-200">
-                <Eye className="w-12 h-12 mx-auto mb-3 text-teal-300" />
-                <h4 className="text-lg font-semibold text-teal-800 mb-2">Create Your Vision Board</h4>
-                <p className="text-teal-600 max-w-md mx-auto mb-4">
-                  Visualize your goals and dreams across different life areas. Create a visual representation of what you want to achieve.
-                </p>
-                <button
+              <div className="bg-gradient-to-r from-teal-50 to-emerald-50 rounded-xl p-6 border border-teal-200 text-center">
+                <ImageIcon className="w-12 h-12 text-teal-400 mx-auto mb-4" />
+                <h4 className="text-lg font-semibold text-teal-900 mb-2">Vision Board</h4>
+                <p className="text-teal-700 mb-4">Create a visual representation of your goals across business, health, balance, and emotions</p>
+                <button 
                   onClick={() => onNavigate('vision')}
-                  className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+                  className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors inline-flex items-center space-x-2"
                 >
-                  Start Vision Board
+                  <span>Create Vision Board</span>
+                  <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
 
@@ -953,30 +973,29 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     <Target className="w-5 h-5 text-orange-600" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-slate-900">12-Week Goals</h3>
-                    <p className="text-slate-600 text-sm">Your current focus</p>
+                    <h3 className="text-xl font-bold text-slate-900">Set Your 12-Week Goals</h3>
+                    <p className="text-slate-600 text-sm">Break down your vision into actionable goals</p>
                   </div>
                 </div>
                 <button 
                   onClick={() => onNavigate('goals')}
                   className="flex items-center space-x-2 px-4 py-2 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 transition-colors"
                 >
-                  <Edit3 className="w-4 h-4" />
-                  <span>Set Goals</span>
+                  <Plus className="w-4 h-4" />
+                  <span>Start Now</span>
                 </button>
               </div>
 
-              <div className="text-center py-8 bg-orange-50 rounded-xl border border-orange-200">
-                <Target className="w-12 h-12 mx-auto mb-3 text-orange-300" />
-                <h4 className="text-lg font-semibold text-orange-800 mb-2">Set Your 12-Week Goals</h4>
-                <p className="text-orange-600 max-w-md mx-auto mb-4">
-                  Break down your vision into actionable 12-week goals across business, health, and life balance areas.
-                </p>
-                <button
+              <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-6 border border-orange-200 text-center">
+                <Target className="w-12 h-12 text-orange-400 mx-auto mb-4" />
+                <h4 className="text-lg font-semibold text-orange-900 mb-2">12-Week Goals</h4>
+                <p className="text-orange-700 mb-4">Set specific, measurable goals for the next 12 weeks across business, health, and balance</p>
+                <button 
                   onClick={() => onNavigate('goals')}
-                  className="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                  className="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors inline-flex items-center space-x-2"
                 >
-                  Start Goal Setting
+                  <span>Set Your Goals</span>
+                  <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
 
@@ -1263,30 +1282,53 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-bold text-slate-900">Life Balance Overview</h2>
-              <p className="text-slate-600">Assess your satisfaction across key life areas</p>
+              <h2 className="text-2xl font-bold text-slate-900">Complete Your Wheel of Life</h2>
+              <p className="text-slate-600">Assess your satisfaction across 8 key life areas</p>
             </div>
             <button 
               onClick={() => onNavigate('wheel')}
               className="flex items-center space-x-2 px-4 py-2 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors"
             >
-              <BarChart3 className="w-4 h-4" />
-              <span>Start Assessment</span>
+              <Plus className="w-4 h-4" />
+              <span>Start Now</span>
             </button>
           </div>
 
-          <div className="text-center py-8 bg-purple-50 rounded-xl border border-purple-200">
-            <BarChart3 className="w-12 h-12 mx-auto mb-3 text-purple-300" />
-            <h4 className="text-lg font-semibold text-purple-800 mb-2">Complete Your Wheel of Life</h4>
-            <p className="text-purple-600 max-w-md mx-auto mb-4">
-              Assess your satisfaction across 8 key life areas to identify where to focus your energy and attention.
-            </p>
-            <button
+          <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-6 border border-purple-200 text-center">
+            <BarChart3 className="w-12 h-12 text-purple-400 mx-auto mb-4" />
+            <h4 className="text-lg font-semibold text-purple-900 mb-2">Wheel of Life Assessment</h4>
+            <p className="text-purple-700 mb-4">Rate your satisfaction in 8 key life areas to identify where to focus your energy</p>
+            <button 
               onClick={() => onNavigate('wheel')}
-              className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors inline-flex items-center space-x-2"
             >
-              Start Assessment
+              <span>Start Assessment</span>
+              <ArrowRight className="w-4 h-4" />
             </button>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+            {defaultWheelData.map((area) => (
+              <div key={area.area} className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-4 border border-slate-200">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div 
+                    className="w-4 h-4 rounded-full"
+                    style={{ backgroundColor: area.color }}
+                  />
+                  <h3 className="font-semibold text-slate-900 text-sm">{area.area}</h3>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="text-2xl font-bold text-slate-900">?/10</div>
+                  <div className="px-2 py-1 bg-slate-100 text-slate-500 rounded-full text-xs font-medium">
+                    Not Rated
+                  </div>
+                </div>
+
+                {/* Empty progress bar */}
+                <div className="mt-3 w-full bg-slate-200 rounded-full h-2"></div>
+              </div>
+            ))}
           </div>
         </div>
       )}
