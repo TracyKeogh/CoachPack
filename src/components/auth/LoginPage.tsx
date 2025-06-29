@@ -36,12 +36,19 @@ const LoginPage: React.FC = () => {
       });
 
       if (error) {
-        setError(error.message);
+        // Provide more helpful error messages
+        if (error.message.includes('Invalid login credentials')) {
+          setError('Invalid email or password. Please check your credentials and try again.');
+        } else if (error.message.includes('Email not confirmed')) {
+          setError('Please check your email and click the confirmation link before signing in.');
+        } else {
+          setError(error.message);
+        }
       } else {
         navigate('/dashboard');
       }
     } catch (err) {
-      setError('An unexpected error occurred');
+      setError('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -116,8 +123,16 @@ const LoginPage: React.FC = () => {
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <p className="text-red-600 text-sm">{error}</p>
+                {error.includes('Invalid email or password') && (
+                  <p className="text-red-500 text-xs mt-2">
+                    Don't have an account?{' '}
+                    <Link to="/signup" className="text-red-600 hover:text-red-700 font-medium underline">
+                      Sign up here
+                    </Link>
+                  </p>
+                )}
               </div>
             )}
 
