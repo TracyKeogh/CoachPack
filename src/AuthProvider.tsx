@@ -31,7 +31,6 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   clearError: () => void;
-  hasAccess: () => boolean;
 }
 
 export const AuthContext = createContext<AuthContextType | null>(null);
@@ -44,19 +43,11 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [hasSubscription, setHasSubscription] = useState(false);
 
   // Clear error
   const clearError = useCallback(() => {
     setError(null);
   }, []);
-
-  // Check if user has access to premium features
-  const hasAccess = useCallback(() => {
-    // For demo purposes, we'll consider all authenticated users to have access
-    // In a real app, you would check subscription status
-    return !!user;
-  }, [user]);
 
   // Sign in with email and password
   const signIn = useCallback(async (email: string, password: string) => {
@@ -136,7 +127,6 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       setUser(null);
-      setHasSubscription(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign out failed');
     } finally {
@@ -175,9 +165,6 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             name: session.user.user_metadata.full_name,
             avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.email}`
           });
-          
-          // In a real app, you would check subscription status here
-          setHasSubscription(true);
         }
       } catch (error) {
         console.error('Error checking session:', error);
@@ -197,12 +184,8 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           name: session.user.user_metadata.full_name,
           avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.email}`
         });
-        
-        // In a real app, you would check subscription status here
-        setHasSubscription(true);
       } else {
         setUser(null);
-        setHasSubscription(false);
       }
     });
 
@@ -217,8 +200,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signUp,
     signOut,
     resetPassword,
-    clearError,
-    hasAccess
+    clearError
   };
 
   return (

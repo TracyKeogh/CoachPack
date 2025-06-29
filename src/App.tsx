@@ -21,12 +21,6 @@ import Calendar from './components/Calendar';
 import LandingPage from './components/LandingPage';
 import FreeWheelAssessment from './components/FreeWheelAssessment';
 
-// Payment Components
-import PricingPage from './components/PricingPage';
-import CheckoutPage from './components/CheckoutPage';
-import SuccessPage from './components/SuccessPage';
-import CancelPage from './components/CancelPage';
-
 export type ViewType = 'landing' | 'free-wheel' | 'dashboard' | 'wheel' | 'values' | 'vision' | 'goals' | 'calendar';
 
 function AppContent() {
@@ -84,10 +78,6 @@ function App() {
           <Route path="/" element={<LandingPage onNavigate={(view) => window.location.href = `/${view}`} />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
-          <Route path="/pricing" element={<PricingPage />} />
-          <Route path="/checkout" element={<CheckoutPage />} />
-          <Route path="/success" element={<SuccessPage />} />
-          <Route path="/cancel" element={<CancelPage />} />
           
           {/* Free Assessment Route */}
           <Route 
@@ -115,7 +105,7 @@ function App() {
           <Route 
             path="/wheel" 
             element={
-              <ProtectedRoute requiresAccess={true}>
+              <ProtectedRoute>
                 <AppContent />
               </ProtectedRoute>
             } 
@@ -124,7 +114,7 @@ function App() {
           <Route 
             path="/values" 
             element={
-              <ProtectedRoute requiresAccess={true}>
+              <ProtectedRoute>
                 <AppContent />
               </ProtectedRoute>
             } 
@@ -133,7 +123,7 @@ function App() {
           <Route 
             path="/vision" 
             element={
-              <ProtectedRoute requiresAccess={true}>
+              <ProtectedRoute>
                 <AppContent />
               </ProtectedRoute>
             } 
@@ -142,7 +132,7 @@ function App() {
           <Route 
             path="/goals" 
             element={
-              <ProtectedRoute requiresAccess={true}>
+              <ProtectedRoute>
                 <AppContent />
               </ProtectedRoute>
             } 
@@ -151,7 +141,7 @@ function App() {
           <Route 
             path="/calendar" 
             element={
-              <ProtectedRoute requiresAccess={true}>
+              <ProtectedRoute>
                 <AppContent />
               </ProtectedRoute>
             } 

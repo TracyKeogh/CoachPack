@@ -41,10 +41,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
     }
   };
 
-  const handleGetStarted = () => {
-    navigate('/checkout?productId=complete-toolkit');
-  };
-
   const features = [
     {
       icon: BarChart3,
@@ -147,12 +143,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
               >
                 Demo
               </button>
-              <Link 
-                to="/pricing"
-                className="text-slate-600 hover:text-slate-900 transition-colors"
-              >
-                Pricing
-              </Link>
               <button 
                 onClick={() => setShowWheelSignup(true)}
                 className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
@@ -189,18 +179,19 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button 
-                onClick={handleGetStarted}
+                onClick={() => setShowWheelSignup(true)}
                 className="flex items-center justify-center space-x-2 px-8 py-4 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl"
               >
-                <span>Get Started</span>
+                <span>Start Free Assessment</span>
                 <ArrowRight className="w-5 h-5" />
               </button>
-              <Link 
-                to="/pricing"
+              <button 
+                onClick={() => setShowVideoDemo(true)}
                 className="flex items-center justify-center space-x-2 px-8 py-4 bg-white text-slate-700 rounded-xl hover:bg-slate-50 transition-colors font-semibold text-lg border border-slate-200"
               >
-                <span>View Pricing</span>
-              </Link>
+                <Play className="w-5 h-5" />
+                <span>Watch Demo</span>
+              </button>
             </div>
 
             {/* Social Proof */}
@@ -234,7 +225,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
               </div>
               <div className="text-left">
                 <h2 className="text-3xl font-bold text-white">Try Our Wheel of Life Assessment</h2>
-                <p className="text-purple-100 text-lg">Free • No credit card required • Instant results</p>
+                <p className="text-purple-100 text-lg">Free • No sign up required • Instant results</p>
               </div>
             </div>
             
@@ -245,7 +236,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <button 
                 onClick={() => setShowWheelSignup(true)}
-                className="flex items-center space-x-2 px-8 py-4 bg-white text-purple-600 rounded-lg hover:bg-slate-50 transition-colors font-semibold"
+                className="flex items-center space-x-2 px-8 py-4 bg-white text-purple-600 rounded-xl hover:bg-slate-50 transition-colors font-semibold text-lg shadow-lg"
               >
                 <Mail className="w-5 h-5" />
                 <span>Get My Free Assessment</span>
@@ -295,7 +286,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 >
                   Try Free Assessment
                 </button>
-                <p className="text-slate-500 text-sm mt-2">No credit card required • Instant access</p>
+                <p className="text-slate-500 text-sm mt-2">No sign up required • Instant access</p>
               </div>
             </div>
           </div>
@@ -361,105 +352,39 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
               );
             })}
           </div>
-        </div>
-      </section>
 
-      {/* Pricing Section */}
-      <section className="py-16 bg-slate-50">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-slate-900 mb-4">Simple, Transparent Pricing</h2>
-            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
-              Choose the plan that fits your needs and start your transformation journey today
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {/* Free Plan */}
-            <div className="bg-white rounded-2xl p-8 border border-slate-200 hover:shadow-xl transition-all duration-300">
-              <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-slate-900 mb-2">Free</h3>
-                <p className="text-slate-600 mb-4">Try before you commit</p>
-                <div className="flex items-baseline justify-center space-x-1">
-                  <span className="text-4xl font-bold text-slate-900">$0</span>
-                </div>
+          {/* Process Flow Summary */}
+          <div className="mt-16 bg-gradient-to-r from-slate-50 to-purple-50 rounded-2xl p-8 border border-slate-200">
+            <div className="text-center">
+              <h3 className="text-2xl font-bold text-slate-900 mb-4">
+                From Self-Discovery to Daily Action
+              </h3>
+              <p className="text-lg text-slate-600 mb-6 max-w-3xl mx-auto">
+                Coach Pack guides you through a proven methodology that thousands have used to create meaningful change. 
+                Each step builds on the previous one, ensuring your actions are aligned with your authentic self.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <button 
+                  onClick={() => setShowWheelSignup(true)}
+                  className="px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold"
+                >
+                  Start Your Journey
+                </button>
+                <button 
+                  onClick={() => setShowVideoDemo(true)}
+                  className="px-8 py-3 bg-white text-slate-700 rounded-lg hover:bg-slate-50 transition-colors font-semibold border border-slate-200"
+                >
+                  See It In Action
+                </button>
               </div>
-
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-center space-x-3">
-                  <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
-                  <span className="text-slate-700">Wheel of Life Assessment</span>
-                </li>
-                <li className="flex items-center space-x-3">
-                  <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
-                  <span className="text-slate-700">Basic Insights</span>
-                </li>
-              </ul>
-
-              <button
-                onClick={() => navigate('/free-wheel')}
-                className="block w-full py-3 text-center rounded-lg font-semibold transition-colors bg-slate-100 text-slate-700 hover:bg-slate-200"
-              >
-                Start Free Assessment
-              </button>
             </div>
-
-            {/* One-time Payment Plan */}
-            <div className="bg-white rounded-2xl p-8 border-2 border-purple-500 ring-2 ring-purple-200 relative hover:shadow-xl transition-all duration-300">
-              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <div className="bg-purple-600 text-white px-4 py-2 rounded-full text-sm font-medium flex items-center space-x-1">
-                  <Crown className="w-4 h-4" />
-                  <span>Complete Access</span>
-                </div>
-              </div>
-
-              <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-slate-900 mb-2">Complete Toolkit</h3>
-                <p className="text-slate-600 mb-4">Full access to all tools</p>
-                <div className="flex items-baseline justify-center space-x-1">
-                  <span className="text-4xl font-bold text-slate-900">$49</span>
-                  <span className="text-slate-600">one-time</span>
-                </div>
-                <p className="text-sm text-slate-500 mt-2">14 weeks of full access</p>
-              </div>
-
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-center space-x-3">
-                  <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
-                  <span className="text-slate-700">All Features Included</span>
-                </li>
-                <li className="flex items-center space-x-3">
-                  <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
-                  <span className="text-slate-700">Complete 12-Week Program</span>
-                </li>
-                <li className="flex items-center space-x-3">
-                  <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
-                  <span className="text-slate-700">Data Export & Backup</span>
-                </li>
-              </ul>
-
-              <button
-                onClick={handleGetStarted}
-                className="block w-full py-3 text-center rounded-lg font-semibold transition-colors bg-purple-600 text-white hover:bg-purple-700"
-              >
-                Get Started
-              </button>
-            </div>
-          </div>
-
-          <div className="text-center mt-8">
-            <Link
-              to="/pricing"
-              className="text-purple-600 hover:text-purple-700 font-medium"
-            >
-              View full pricing details →
-            </Link>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 bg-white">
+      <section id="features" className="py-20 bg-slate-50">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-slate-900 mb-4">
@@ -502,21 +427,21 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button 
-              onClick={handleGetStarted}
+              onClick={() => setShowWheelSignup(true)}
               className="px-8 py-4 bg-white text-purple-600 rounded-xl hover:bg-slate-50 transition-colors font-semibold text-lg shadow-lg"
             >
-              Get Started Now
+              Start Free Assessment
             </button>
-            <Link 
-              to="/pricing"
+            <button 
+              onClick={() => setShowVideoDemo(true)}
               className="px-8 py-4 bg-purple-700 text-white rounded-xl hover:bg-purple-800 transition-colors font-semibold text-lg border border-purple-500"
             >
-              View Pricing
-            </Link>
+              Watch Demo First
+            </button>
           </div>
 
           <div className="mt-6 text-purple-200 text-sm">
-            Free assessment • No credit card required
+            Free assessment • No sign up required
           </div>
         </div>
       </section>

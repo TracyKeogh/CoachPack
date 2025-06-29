@@ -56,14 +56,6 @@ const Header: React.FC = () => {
                       <User className="w-4 h-4 mr-2" />
                       Dashboard
                     </Link>
-                    <Link 
-                      to="/pricing" 
-                      className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-100"
-                      onClick={() => setShowDropdown(false)}
-                    >
-                      <Settings className="w-4 h-4 mr-2" />
-                      Subscription
-                    </Link>
                     <button 
                       onClick={handleSignOut}
                       className="flex items-center w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
@@ -77,12 +69,6 @@ const Header: React.FC = () => {
             </div>
           ) : (
             <div className="flex items-center space-x-4">
-              <Link 
-                to="/pricing"
-                className="px-4 py-2 text-slate-600 hover:text-slate-900 transition-colors"
-              >
-                Pricing
-              </Link>
               <Link 
                 to="/login"
                 className="px-4 py-2 text-slate-600 hover:text-slate-900 transition-colors"
