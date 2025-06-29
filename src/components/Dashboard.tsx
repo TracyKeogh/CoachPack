@@ -68,6 +68,57 @@ interface CalendarEvent {
   isMilestone?: boolean;
 }
 
+// Default data for when no data is available
+const defaultWheelData = [
+  { area: 'Career', score: 7, color: '#8B5CF6', lightColor: '#EDE9FE', darkColor: '#7C3AED' },
+  { area: 'Finances', score: 6, color: '#10B981', lightColor: '#D1FAE5', darkColor: '#059669' },
+  { area: 'Health', score: 8, color: '#F59E0B', lightColor: '#FEF3C7', darkColor: '#D97706' },
+  { area: 'Family', score: 9, color: '#EF4444', lightColor: '#FEE2E2', darkColor: '#DC2626' },
+  { area: 'Romance', score: 5, color: '#EC4899', lightColor: '#FCE7F3', darkColor: '#DB2777' },
+  { area: 'Personal Growth', score: 8, color: '#06B6D4', lightColor: '#CFFAFE', darkColor: '#0891B2' },
+  { area: 'Fun & Recreation', score: 6, color: '#84CC16', lightColor: '#ECFCCB', darkColor: '#65A30D' },
+  { area: 'Environment', score: 7, color: '#F97316', lightColor: '#FED7AA', darkColor: '#EA580C' }
+];
+
+const defaultCalendarEvents = [
+  {
+    id: '1',
+    title: 'Morning Workout',
+    description: 'Gym session focusing on strength training',
+    date: new Date().toISOString().split('T')[0],
+    time: '07:00',
+    category: 'body',
+    duration: 60,
+    frequency: 'daily',
+    isGoalAction: true,
+    goalCategory: 'body'
+  },
+  {
+    id: '2',
+    title: 'Deep Work Session',
+    description: 'Focus time for important projects',
+    date: new Date().toISOString().split('T')[0],
+    time: '09:00',
+    category: 'business',
+    duration: 90,
+    frequency: 'daily',
+    isGoalAction: true,
+    goalCategory: 'business'
+  },
+  {
+    id: '3',
+    title: 'Family Time',
+    description: 'Quality time with loved ones',
+    date: new Date().toISOString().split('T')[0],
+    time: '18:00',
+    category: 'balance',
+    duration: 60,
+    frequency: 'daily',
+    isGoalAction: true,
+    goalCategory: 'balance'
+  }
+];
+
 const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const { data: wheelData, getCompletionStats: getWheelStats } = useWheelData();
   const { data: valuesData, getCompletionStats: getValuesStats } = useValuesData();
@@ -86,48 +137,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         setCalendarEvents(events);
       } else {
         // Default events if none exist
-        setCalendarEvents([
-          {
-            id: '1',
-            title: 'Morning Workout',
-            description: 'Gym session focusing on strength training',
-            date: new Date().toISOString().split('T')[0],
-            time: '07:00',
-            category: 'body',
-            duration: 60,
-            frequency: 'daily',
-            isGoalAction: true,
-            goalCategory: 'body'
-          },
-          {
-            id: '2',
-            title: 'Deep Work Session',
-            description: 'Focus time for important projects',
-            date: new Date().toISOString().split('T')[0],
-            time: '09:00',
-            category: 'business',
-            duration: 90,
-            frequency: 'daily',
-            isGoalAction: true,
-            goalCategory: 'business'
-          },
-          {
-            id: '3',
-            title: 'Family Time',
-            description: 'Quality time with loved ones',
-            date: new Date().toISOString().split('T')[0],
-            time: '18:00',
-            category: 'balance',
-            duration: 60,
-            frequency: 'daily',
-            isGoalAction: true,
-            goalCategory: 'balance'
-          }
-        ]);
+        setCalendarEvents(defaultCalendarEvents);
       }
     } catch (error) {
       console.error('Failed to load calendar events:', error);
-      setCalendarEvents([]);
+      setCalendarEvents(defaultCalendarEvents);
     }
   }, []);
 
@@ -181,6 +195,43 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     const startDate = new Date('2025-01-01');
     const today = new Date();
 
+    // If no goal data is available, return some default milestones
+    if (!goalData.categoryGoals || Object.keys(goalData.categoryGoals).length === 0) {
+      const defaultMilestones = [
+        {
+          id: '1',
+          title: 'Complete Wheel of Life',
+          dueDate: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          category: 'business',
+          completed: false,
+          daysFromStart: 7,
+          urgency: 'soon' as 'overdue' | 'urgent' | 'soon' | 'normal',
+          icon: Trophy
+        },
+        {
+          id: '2',
+          title: 'Identify Core Values',
+          dueDate: new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          category: 'balance',
+          completed: false,
+          daysFromStart: 14,
+          urgency: 'normal' as 'overdue' | 'urgent' | 'soon' | 'normal',
+          icon: Star
+        },
+        {
+          id: '3',
+          title: 'Create Vision Board',
+          dueDate: new Date(today.getTime() + 21 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          category: 'body',
+          completed: false,
+          daysFromStart: 21,
+          urgency: 'normal' as 'overdue' | 'urgent' | 'soon' | 'normal',
+          icon: Crown
+        }
+      ];
+      return defaultMilestones;
+    }
+
     Object.entries(goalData.categoryGoals).forEach(([category, goal]) => {
       goal.milestones?.forEach((milestone) => {
         const dueDate = new Date(milestone.dueDate);
@@ -220,23 +271,21 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     const visionStats = getVisionStats();
     
     // Calculate goal completion
-    const totalGoals = Object.keys(goalData.categoryGoals).length;
+    const totalGoals = Object.keys(goalData.categoryGoals).length || 3; // Default to 3 if no goals
     const completedGoals = Object.values(goalData.categoryGoals).filter(goal => 
-      goal.goal && goal.actions && goal.actions.length > 0
+      goal && goal.goal && goal.actions && goal.actions.length > 0
     ).length;
     
     const totalMilestones = Object.values(goalData.categoryGoals).reduce((sum, goal) => 
-      sum + (goal.milestones?.length || 0), 0
-    );
+      sum + (goal?.milestones?.length || 0), 0) || 3; // Default to 3 if no milestones
+    
     const completedMilestones = Object.values(goalData.categoryGoals).reduce((sum, goal) => 
-      sum + (goal.milestones?.filter(m => m.completed).length || 0), 0
-    );
+      sum + (goal?.milestones?.filter(m => m.completed)?.length || 0), 0);
 
     // Calculate scheduled actions
     const goalActions = calendarEvents.filter(event => event.isGoalAction).length;
     const totalPossibleActions = Object.values(goalData.categoryGoals).reduce((sum, goal) => 
-      sum + (goal.actions?.length || 0), 0
-    );
+      sum + (goal?.actions?.length || 0), 0) || 5; // Default to 5 if no actions
 
     return {
       wheel: {
@@ -270,17 +319,17 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
   // Get life areas summary
   const getLifeAreasSummary = () => {
-    if (!wheelData || wheelData.length === 0) return null;
+    const effectiveWheelData = wheelData && wheelData.length > 0 ? wheelData : defaultWheelData;
 
-    const averageScore = wheelData.reduce((sum, area) => sum + area.score, 0) / wheelData.length;
-    const strongAreas = wheelData.filter(area => area.score >= 8);
-    const growthAreas = wheelData.filter(area => area.score <= 5);
+    const averageScore = effectiveWheelData.reduce((sum, area) => sum + area.score, 0) / effectiveWheelData.length;
+    const strongAreas = effectiveWheelData.filter(area => area.score >= 8);
+    const growthAreas = effectiveWheelData.filter(area => area.score <= 5);
     
     return {
       averageScore: averageScore.toFixed(1),
       strongAreas: strongAreas.slice(0, 3),
       growthAreas: growthAreas.slice(0, 3),
-      totalAreas: wheelData.length
+      totalAreas: effectiveWheelData.length
     };
   };
 
@@ -485,7 +534,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
         <div className="space-y-12">
           {/* Core Values Foundation */}
-          {valuesData.rankedCoreValues && valuesData.rankedCoreValues.length > 0 && (
+          {valuesData.rankedCoreValues && valuesData.rankedCoreValues.length > 0 ? (
             <div className="relative">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center space-x-3">
@@ -537,10 +586,54 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 </div>
               </div>
             </div>
+          ) : (
+            <div className="relative">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                    <Heart className="w-5 h-5 text-red-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900">Core Values</h3>
+                    <p className="text-slate-600 text-sm">Your guiding principles</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => onNavigate('values')}
+                  className="flex items-center space-x-2 px-4 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors"
+                >
+                  <Edit3 className="w-4 h-4" />
+                  <span>Define Values</span>
+                </button>
+              </div>
+
+              <div className="text-center py-8 bg-red-50 rounded-xl border border-red-200">
+                <Heart className="w-12 h-12 mx-auto mb-3 text-red-300" />
+                <h4 className="text-lg font-semibold text-red-800 mb-2">Discover Your Core Values</h4>
+                <p className="text-red-600 max-w-md mx-auto mb-4">
+                  Identify what truly matters to you and use these principles to guide your decisions and actions.
+                </p>
+                <button
+                  onClick={() => onNavigate('values')}
+                  className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  Start Values Exercise
+                </button>
+              </div>
+
+              {/* Flow Arrow */}
+              <div className="flex justify-center my-6">
+                <div className="flex items-center space-x-2 text-slate-400">
+                  <ArrowDown className="w-5 h-5" />
+                  <span className="text-sm font-medium">Guides Your</span>
+                  <ArrowDown className="w-5 h-5" />
+                </div>
+              </div>
+            </div>
           )}
 
           {/* Annual Snapshot */}
-          {goalData.annualSnapshot?.snapshot && (
+          {goalData.annualSnapshot?.snapshot ? (
             <div className="relative">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center space-x-3">
@@ -600,10 +693,54 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 </div>
               </div>
             </div>
+          ) : (
+            <div className="relative">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                    <Sunrise className="w-5 h-5 text-indigo-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900">Annual Vision</h3>
+                    <p className="text-slate-600 text-sm">Your life 12 months from now</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => onNavigate('goals')}
+                  className="flex items-center space-x-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition-colors"
+                >
+                  <Edit3 className="w-4 h-4" />
+                  <span>Create Vision</span>
+                </button>
+              </div>
+
+              <div className="text-center py-8 bg-indigo-50 rounded-xl border border-indigo-200">
+                <Sunrise className="w-12 h-12 mx-auto mb-3 text-indigo-300" />
+                <h4 className="text-lg font-semibold text-indigo-800 mb-2">Create Your Annual Vision</h4>
+                <p className="text-indigo-600 max-w-md mx-auto mb-4">
+                  Imagine your ideal life one year from now. What does it look like? How do you feel? What have you accomplished?
+                </p>
+                <button
+                  onClick={() => onNavigate('goals')}
+                  className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                >
+                  Start Vision Exercise
+                </button>
+              </div>
+
+              {/* Flow Arrow */}
+              <div className="flex justify-center my-6">
+                <div className="flex items-center space-x-2 text-slate-400">
+                  <ArrowDown className="w-5 h-5" />
+                  <span className="text-sm font-medium">Inspires Your</span>
+                  <ArrowDown className="w-5 h-5" />
+                </div>
+              </div>
+            </div>
           )}
 
           {/* Vision Board */}
-          {visionItems && visionItems.length > 0 && (
+          {visionItems && visionItems.length > 0 ? (
             <div className="relative">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center space-x-3">
@@ -673,10 +810,54 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 </div>
               </div>
             </div>
+          ) : (
+            <div className="relative">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center">
+                    <Eye className="w-5 h-5 text-teal-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900">Life Vision</h3>
+                    <p className="text-slate-600 text-sm">What you're creating</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => onNavigate('vision')}
+                  className="flex items-center space-x-2 px-4 py-2 bg-teal-50 text-teal-700 rounded-lg hover:bg-teal-100 transition-colors"
+                >
+                  <Edit3 className="w-4 h-4" />
+                  <span>Create Vision</span>
+                </button>
+              </div>
+
+              <div className="text-center py-8 bg-teal-50 rounded-xl border border-teal-200">
+                <Eye className="w-12 h-12 mx-auto mb-3 text-teal-300" />
+                <h4 className="text-lg font-semibold text-teal-800 mb-2">Create Your Vision Board</h4>
+                <p className="text-teal-600 max-w-md mx-auto mb-4">
+                  Visualize your goals and dreams across different life areas. Create a visual representation of what you want to achieve.
+                </p>
+                <button
+                  onClick={() => onNavigate('vision')}
+                  className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+                >
+                  Start Vision Board
+                </button>
+              </div>
+
+              {/* Flow Arrow */}
+              <div className="flex justify-center my-6">
+                <div className="flex items-center space-x-2 text-slate-400">
+                  <ArrowDown className="w-5 h-5" />
+                  <span className="text-sm font-medium">Breaks Down Into</span>
+                  <ArrowDown className="w-5 h-5" />
+                </div>
+              </div>
+            </div>
           )}
 
           {/* Goals & Actions */}
-          {Object.keys(goalData.categoryGoals).length > 0 && (
+          {Object.keys(goalData.categoryGoals).length > 0 ? (
             <div className="relative">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center space-x-3">
@@ -753,6 +934,50 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* Flow Arrow */}
+              <div className="flex justify-center my-6">
+                <div className="flex items-center space-x-2 text-slate-400">
+                  <ArrowDown className="w-5 h-5" />
+                  <span className="text-sm font-medium">Scheduled As</span>
+                  <ArrowDown className="w-5 h-5" />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="relative">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                    <Target className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900">12-Week Goals</h3>
+                    <p className="text-slate-600 text-sm">Your current focus</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => onNavigate('goals')}
+                  className="flex items-center space-x-2 px-4 py-2 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 transition-colors"
+                >
+                  <Edit3 className="w-4 h-4" />
+                  <span>Set Goals</span>
+                </button>
+              </div>
+
+              <div className="text-center py-8 bg-orange-50 rounded-xl border border-orange-200">
+                <Target className="w-12 h-12 mx-auto mb-3 text-orange-300" />
+                <h4 className="text-lg font-semibold text-orange-800 mb-2">Set Your 12-Week Goals</h4>
+                <p className="text-orange-600 max-w-md mx-auto mb-4">
+                  Break down your vision into actionable 12-week goals across business, health, and life balance areas.
+                </p>
+                <button
+                  onClick={() => onNavigate('goals')}
+                  className="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                >
+                  Start Goal Setting
+                </button>
               </div>
 
               {/* Flow Arrow */}
@@ -982,7 +1207,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       </div>
 
       {/* Life Balance Overview */}
-      {wheelData && wheelData.length > 0 && (
+      {wheelData && wheelData.length > 0 ? (
         <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -1032,6 +1257,36 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900">Life Balance Overview</h2>
+              <p className="text-slate-600">Assess your satisfaction across key life areas</p>
+            </div>
+            <button 
+              onClick={() => onNavigate('wheel')}
+              className="flex items-center space-x-2 px-4 py-2 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors"
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span>Start Assessment</span>
+            </button>
+          </div>
+
+          <div className="text-center py-8 bg-purple-50 rounded-xl border border-purple-200">
+            <BarChart3 className="w-12 h-12 mx-auto mb-3 text-purple-300" />
+            <h4 className="text-lg font-semibold text-purple-800 mb-2">Complete Your Wheel of Life</h4>
+            <p className="text-purple-600 max-w-md mx-auto mb-4">
+              Assess your satisfaction across 8 key life areas to identify where to focus your energy and attention.
+            </p>
+            <button
+              onClick={() => onNavigate('wheel')}
+              className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              Start Assessment
+            </button>
           </div>
         </div>
       )}
