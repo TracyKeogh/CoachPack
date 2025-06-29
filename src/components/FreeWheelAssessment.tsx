@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, Save, TrendingUp, Info, Mail, CheckCircle2, Star, RotateCcw, ThumbsUp, ThumbsDown, Meh } from 'lucide-react';
 import { useWheelSignup } from '../hooks/useWheelSignup';
+import { Link } from 'react-router-dom';
 
 interface LifeArea {
   area: string;
@@ -615,12 +616,12 @@ const FreeWheelAssessment: React.FC<FreeWheelAssessmentProps> = ({ onComplete, o
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button 
-                onClick={handleComplete}
+              <Link 
+                to="/pricing"
                 className="px-8 py-3 bg-white text-purple-600 rounded-lg hover:bg-slate-50 transition-colors font-semibold"
               >
-                Upgrade to Pro - $19/month
-              </button>
+                View Pricing Options
+              </Link>
               <button 
                 onClick={onBackToLanding}
                 className="px-8 py-3 bg-purple-700 text-white rounded-lg hover:bg-purple-800 transition-colors border border-purple-500"

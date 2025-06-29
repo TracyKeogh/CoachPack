@@ -20,6 +20,7 @@ import Goals from './components/Goals';
 import Calendar from './components/Calendar';
 import LandingPage from './components/LandingPage';
 import FreeWheelAssessment from './components/FreeWheelAssessment';
+import PricingPage from './components/PricingPage';
 
 export type ViewType = 'landing' | 'free-wheel' | 'dashboard' | 'wheel' | 'values' | 'vision' | 'goals' | 'calendar';
 
@@ -78,6 +79,7 @@ function App() {
           <Route path="/" element={<LandingPage onNavigate={(view) => window.location.href = `/${view}`} />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/pricing" element={<PricingPage />} />
           
           {/* Free Assessment Route */}
           <Route 

@@ -143,6 +143,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
               >
                 Demo
               </button>
+              <Link 
+                to="/pricing" 
+                className="text-slate-600 hover:text-slate-900 transition-colors"
+              >
+                Pricing
+              </Link>
               <button 
                 onClick={() => setShowWheelSignup(true)}
                 className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
@@ -185,13 +191,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 <span>Start Free Assessment</span>
                 <ArrowRight className="w-5 h-5" />
               </button>
-              <button 
-                onClick={() => setShowVideoDemo(true)}
+              <Link 
+                to="/pricing"
                 className="flex items-center justify-center space-x-2 px-8 py-4 bg-white text-slate-700 rounded-xl hover:bg-slate-50 transition-colors font-semibold text-lg border border-slate-200"
               >
-                <Play className="w-5 h-5" />
-                <span>Watch Demo</span>
-              </button>
+                <span>View Pricing</span>
+              </Link>
             </div>
 
             {/* Social Proof */}
@@ -371,12 +376,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 >
                   Start Your Journey
                 </button>
-                <button 
-                  onClick={() => setShowVideoDemo(true)}
+                <Link
+                  to="/pricing"
                   className="px-8 py-3 bg-white text-slate-700 rounded-lg hover:bg-slate-50 transition-colors font-semibold border border-slate-200"
                 >
-                  See It In Action
-                </button>
+                  View Pricing
+                </Link>
               </div>
             </div>
           </div>
@@ -432,12 +437,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
             >
               Start Free Assessment
             </button>
-            <button 
-              onClick={() => setShowVideoDemo(true)}
+            <Link
+              to="/pricing"
               className="px-8 py-4 bg-purple-700 text-white rounded-xl hover:bg-purple-800 transition-colors font-semibold text-lg border border-purple-500"
             >
-              Watch Demo First
-            </button>
+              View Pricing
+            </Link>
           </div>
 
           <div className="mt-6 text-purple-200 text-sm">

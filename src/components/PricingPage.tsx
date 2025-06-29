@@ -1,14 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, Crown, Target, Sparkles, ArrowRight } from 'lucide-react';
-import { STRIPE_PRODUCTS } from '../stripe-config';
 
 const PricingPage: React.FC = () => {
   const navigate = useNavigate();
-
-  const handleGetStarted = () => {
-    navigate('/checkout?productId=complete-toolkit');
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50 py-12 px-6">
@@ -78,7 +73,7 @@ const PricingPage: React.FC = () => {
             </button>
           </div>
 
-          {/* One-Time Payment Plan */}
+          {/* Premium Plan */}
           <div className="bg-white rounded-2xl p-8 border-2 border-purple-500 ring-2 ring-purple-200 relative hover:shadow-xl transition-all duration-300">
             <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
               <div className="bg-purple-600 text-white px-4 py-2 rounded-full text-sm font-medium flex items-center space-x-1">
@@ -133,12 +128,16 @@ const PricingPage: React.FC = () => {
             </ul>
 
             <button
-              onClick={handleGetStarted}
+              onClick={() => navigate('/signup')}
               className="w-full py-3 rounded-lg font-semibold transition-colors bg-purple-600 text-white hover:bg-purple-700 flex items-center justify-center space-x-2"
             >
               <span>Get Full Access</span>
               <ArrowRight className="w-5 h-5" />
             </button>
+
+            <p className="text-center text-slate-500 text-sm mt-3">
+              Coming soon - Payment processing not yet implemented
+            </p>
           </div>
         </div>
 
@@ -244,7 +243,7 @@ const PricingPage: React.FC = () => {
               Try Free Assessment
             </button>
             <button
-              onClick={handleGetStarted}
+              onClick={() => navigate('/signup')}
               className="px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold"
             >
               Get Started Now
