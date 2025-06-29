@@ -56,8 +56,9 @@ export const useWheelSignup = () => {
     }
   };
 
+  // Always return true to allow access without sign-in
   const hasWheelAccess = (): boolean => {
-    return signup?.hasAccess || false;
+    return true;
   };
 
   return {

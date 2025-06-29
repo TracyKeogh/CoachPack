@@ -94,60 +94,13 @@ function App() {
             } 
           />
 
-          {/* Protected Routes - Require Authentication */}
-          <Route 
-            path="/dashboard" 
-            element={
-              <ProtectedRoute>
-                <AppContent />
-              </ProtectedRoute>
-            } 
-          />
-          
-          <Route 
-            path="/wheel" 
-            element={
-              <ProtectedRoute>
-                <AppContent />
-              </ProtectedRoute>
-            } 
-          />
-          
-          <Route 
-            path="/values" 
-            element={
-              <ProtectedRoute>
-                <AppContent />
-              </ProtectedRoute>
-            } 
-          />
-          
-          <Route 
-            path="/vision" 
-            element={
-              <ProtectedRoute>
-                <AppContent />
-              </ProtectedRoute>
-            } 
-          />
-          
-          <Route 
-            path="/goals" 
-            element={
-              <ProtectedRoute>
-                <AppContent />
-              </ProtectedRoute>
-            } 
-          />
-          
-          <Route 
-            path="/calendar" 
-            element={
-              <ProtectedRoute>
-                <AppContent />
-              </ProtectedRoute>
-            } 
-          />
+          {/* Dashboard and feature routes - no longer protected */}
+          <Route path="/dashboard" element={<AppContent />} />
+          <Route path="/wheel" element={<AppContent />} />
+          <Route path="/values" element={<AppContent />} />
+          <Route path="/vision" element={<AppContent />} />
+          <Route path="/goals" element={<AppContent />} />
+          <Route path="/calendar" element={<AppContent />} />
 
           {/* Redirect any unknown routes to landing */}
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -39,13 +39,6 @@ const WheelOfLife: React.FC = () => {
   const segmentCount = data?.length || 0;
   const anglePerSegment = segmentCount > 0 ? (2 * Math.PI) / segmentCount : 0;
 
-  // Check access on component mount
-  useEffect(() => {
-    if (!hasWheelAccess() && isLoaded) {
-      setShowSignupModal(true);
-    }
-  }, [hasWheelAccess, isLoaded]);
-
   // Update wheel data in database when data changes
   useEffect(() => {
     if (hasWheelAccess() && data && data.length > 0) {
@@ -61,36 +54,6 @@ const WheelOfLife: React.FC = () => {
     setShowSignupModal(false);
     // User now has access to the wheel
   };
-
-  // If user doesn't have access, show signup modal
-  if (!hasWheelAccess()) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50 flex items-center justify-center p-6">
-        <div className="max-w-md w-full">
-          <div className="text-center mb-8">
-            <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Mail className="w-10 h-10 text-purple-600" />
-            </div>
-            <h2 className="text-2xl font-bold text-slate-900 mb-2">Access Required</h2>
-            <p className="text-slate-600">Enter your email to access the Wheel of Life assessment</p>
-          </div>
-          
-          <button
-            onClick={() => setShowSignupModal(true)}
-            className="w-full px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold"
-          >
-            Get Free Access
-          </button>
-        </div>
-
-        <WheelSignupModal
-          isOpen={showSignupModal}
-          onClose={() => setShowSignupModal(false)}
-          onSuccess={handleSignupSuccess}
-        />
-      </div>
-    );
-  }
 
   const getSegmentAndRingFromPoint = (clientX: number, clientY: number) => {
     if (!svgRef.current) return { segmentIndex: -1, ring: -1 };
