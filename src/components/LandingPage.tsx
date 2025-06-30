@@ -45,32 +45,32 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
     {
       icon: BarChart3,
       title: 'Wheel of Life Assessment',
-      description: 'Interactive 8-area life balance evaluation with reflection tools'
+      description: 'Rate your satisfaction across 8 life areas to see where you stand'
     },
     {
       icon: Heart,
       title: 'Values Clarification',
-      description: 'Discover and rank your core values through guided exercises'
+      description: 'Identify what matters most to you through guided exercises'
     },
     {
       icon: ImageIcon,
       title: 'Vision Board Creation',
-      description: 'Visual goal-setting across business, health, balance, and emotions'
+      description: 'Create visual representations of your goals and aspirations'
     },
     {
       icon: Target,
       title: '12-Week Goal Framework',
-      description: 'Break down annual vision into actionable quarterly milestones'
+      description: 'Break down what you want into manageable quarterly steps'
     },
     {
       icon: Calendar,
       title: 'Action Calendar',
-      description: 'Schedule and track daily actions aligned with your goals'
+      description: 'Schedule time for what matters and track your follow-through'
     },
     {
       icon: TrendingUp,
       title: 'Progress Dashboard',
-      description: 'Comprehensive overview of your transformation journey'
+      description: 'See your patterns and progress over time'
     }
   ];
 
@@ -78,7 +78,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
     {
       number: 1,
       title: 'Assess',
-      subtitle: 'Complete your Wheel of Life assessment to understand where you stand across 8 key life areas.',
+      subtitle: 'Rate where you are across different life areas to get a clear picture of your current situation.',
       icon: BarChart3,
       color: 'from-purple-500 to-purple-600',
       bgColor: 'bg-purple-50',
@@ -88,7 +88,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
     {
       number: 2,
       title: 'Clarify',
-      subtitle: 'Discover your core values through our guided 5-step process to ensure authentic decision-making.',
+      subtitle: 'Identify your core values and what you want your life to look like.',
       icon: Heart,
       color: 'from-red-500 to-red-600',
       bgColor: 'bg-red-50',
@@ -98,7 +98,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
     {
       number: 3,
       title: 'Visualize',
-      subtitle: 'Create your vision board with images and goals that represent your ideal life across all areas.',
+      subtitle: 'Create visual reminders of your goals and what you\'re working toward.',
       icon: ImageIcon,
       color: 'from-teal-500 to-teal-600',
       bgColor: 'bg-teal-50',
@@ -107,8 +107,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
     },
     {
       number: 4,
-      title: 'Act',
-      subtitle: 'Break down your vision into 12-week goals with daily actions that move you forward consistently.',
+      title: 'Plan',
+      subtitle: 'Break down your goals into 12-week chunks and schedule time for what matters.',
       icon: Target,
       color: 'from-orange-500 to-orange-600',
       bgColor: 'bg-orange-50',
@@ -167,19 +167,19 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
             <div className="space-y-6">
               <div className="inline-flex items-center space-x-2 bg-purple-100 text-purple-800 px-4 py-2 rounded-full text-sm font-medium">
                 <Sparkles className="w-4 h-4" />
-                <span>Self-Coaching Tools for Intentional Living</span>
+                <span>Proven Self-Coaching Tools</span>
               </div>
               
               <h1 className="text-5xl lg:text-7xl font-bold text-slate-900 leading-tight">
-                Transform Your Life
+                Get Clarity on
                 <span className="block text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">
-                  With Proven Tools
+                  Where You Stand
                 </span>
               </h1>
               
               <p className="text-xl text-slate-600 leading-relaxed max-w-3xl mx-auto">
-                Get the complete self-coaching toolkit used by thousands to clarify values, 
-                set meaningful goals, and create lasting change. No coaches needed - just you and the tools.
+                A collection of proven assessment and planning tools in one place. 
+                See where your energy goes, clarify what matters, and make intentional choices about your time and focus.
               </p>
             </div>
 
@@ -207,7 +207,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                     <div key={i} className="w-8 h-8 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full border-2 border-white" />
                   ))}
                 </div>
-                <span className="text-sm text-slate-600">1,000+ self-coached</span>
+                <span className="text-sm text-slate-600">1,000+ people using these tools</span>
               </div>
               <div className="flex items-center space-x-1">
                 {[1, 2, 3, 4, 5].map((i) => (
@@ -229,13 +229,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 <BarChart3 className="w-8 h-8 text-white" />
               </div>
               <div className="text-left">
-                <h2 className="text-3xl font-bold text-white">Try Our Wheel of Life Assessment</h2>
-                <p className="text-purple-100 text-lg">Free • No sign up required • Instant results</p>
+                <h2 className="text-3xl font-bold text-white">See Where You Stand</h2>
+                <p className="text-purple-100 text-lg">Free assessment • Takes 5 minutes • Instant results</p>
               </div>
             </div>
             
             <p className="text-xl text-white/90 mb-8 leading-relaxed">
-              Discover your life balance across 8 key areas. Get personalized insights and see where to focus your energy for maximum impact.
+              Rate your satisfaction across 8 life areas. Get a clear picture of where you are and where you might want to focus your energy.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -250,7 +250,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
               
               <div className="flex items-center space-x-2 text-purple-200 text-sm">
                 <Shield className="w-4 h-4" />
-                <span>Your email is safe with us</span>
+                <span>No spam, just your results</span>
               </div>
             </div>
           </div>
@@ -271,7 +271,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
             <div className="p-8">
               <div className="text-center mb-6">
                 <h3 className="text-3xl font-bold text-slate-900 mb-2">See Coach Pack in Action</h3>
-                <p className="text-slate-600">Watch how Coach Pack transforms abstract goals into daily actions</p>
+                <p className="text-slate-600">Watch how these tools help you get clarity on your priorities</p>
               </div>
               
               <DemoVideo 
@@ -310,10 +310,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-slate-900 mb-4">
-              How Coach Pack Works
+              How It Works
             </h2>
             <p className="text-xl text-slate-600 max-w-3xl mx-auto">
-              A simple 4-step process to transform your life from reactive to intentional living.
+              Four simple steps to get clarity on where you are and where you want to focus your energy.
             </p>
           </div>
 
@@ -362,11 +362,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
           <div className="mt-16 bg-gradient-to-r from-slate-50 to-purple-50 rounded-2xl p-8 border border-slate-200">
             <div className="text-center">
               <h3 className="text-2xl font-bold text-slate-900 mb-4">
-                From Self-Discovery to Daily Action
+                From Assessment to Action
               </h3>
               <p className="text-lg text-slate-600 mb-6 max-w-3xl mx-auto">
-                Coach Pack guides you through a proven methodology that thousands have used to create meaningful change. 
-                Each step builds on the previous one, ensuring your actions are aligned with your authentic self.
+                These aren't magic solutions - they're proven frameworks that help you see patterns, 
+                clarify priorities, and make more intentional choices about where to spend your time and energy.
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -374,7 +374,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                   onClick={() => setShowWheelSignup(true)}
                   className="px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold"
                 >
-                  Start Your Journey
+                  Start Your Assessment
                 </button>
                 <Link
                   to="/pricing"
@@ -393,10 +393,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-slate-900 mb-4">
-              Complete Self-Coaching Toolkit
+              Proven Tools in One Place
             </h2>
             <p className="text-xl text-slate-600 max-w-3xl mx-auto">
-              Everything you need to go from self-discovery to daily action - no coach required
+              Assessment and planning tools that coaches and consultants have used for decades, 
+              now organized in a simple digital format.
             </p>
           </div>
 
@@ -424,10 +425,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
       <section className="py-20 bg-gradient-to-r from-purple-600 to-indigo-600">
         <div className="max-w-4xl mx-auto px-6 text-center">
           <h2 className="text-4xl font-bold text-white mb-6">
-            Ready to Start Your Transformation?
+            Ready to Get Some Clarity?
           </h2>
           <p className="text-xl text-purple-100 mb-8">
-            Join thousands who have taken control of their lives with proven self-coaching tools
+            Start with a simple assessment to see where you stand across different life areas
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -441,7 +442,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
               to="/pricing"
               className="px-8 py-4 bg-purple-700 text-white rounded-xl hover:bg-purple-800 transition-colors font-semibold text-lg border border-purple-500"
             >
-              View Pricing
+              View All Tools
             </Link>
           </div>
 
