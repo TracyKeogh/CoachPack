@@ -138,9 +138,9 @@ const DroppableGoalSection: React.FC<DroppableGoalSectionProps> = ({
         isOver ? 'border-purple-300 bg-purple-50' : 'border-slate-200'
       }`}
     >
-      {/* Goal Title Section */}
-      <div className="p-6 border-b border-slate-200">
-        <div className="flex items-center space-x-3 mb-4">
+      {/* Goal Title Section - Increased padding */}
+      <div className="p-8 pb-6">
+        <div className="flex items-center space-x-3 mb-6">
           <div className="w-12 h-12 rounded-full flex items-center justify-center text-2xl bg-slate-100">
             {icon}
           </div>
@@ -159,9 +159,14 @@ const DroppableGoalSection: React.FC<DroppableGoalSectionProps> = ({
         />
       </div>
 
-      {/* Connected Life Areas Section - More spacious */}
-      <div ref={drop} className="p-8 min-h-[300px]">
-        <div className="flex items-center justify-between mb-6">
+      {/* Separator with more visual distinction */}
+      <div className="px-8">
+        <div className="border-t border-slate-200"></div>
+      </div>
+
+      {/* Connected Life Areas Section - Much more spacious */}
+      <div ref={drop} className="p-8 pt-8 min-h-[350px]">
+        <div className="flex items-center justify-between mb-8">
           <h3 className="text-sm font-semibold text-slate-700 flex items-center">
             <BarChart3 className="w-4 h-4 mr-2" />
             Connected Life Areas
@@ -171,7 +176,7 @@ const DroppableGoalSection: React.FC<DroppableGoalSectionProps> = ({
           </span>
         </div>
         
-        <div className="space-y-4">
+        <div className="space-y-5">
           {lifeAreas.map((area, index) => (
             <DraggableLifeArea
               key={`${category}-${area.area}-${index}`}
@@ -183,12 +188,12 @@ const DroppableGoalSection: React.FC<DroppableGoalSectionProps> = ({
           
           {/* Drop zone indicator when empty or when dragging over */}
           {(lifeAreas.length === 0 || isOver) && (
-            <div className={`border-2 border-dashed rounded-lg p-6 text-center transition-all ${
+            <div className={`border-2 border-dashed rounded-lg p-8 text-center transition-all ${
               isOver 
                 ? 'border-purple-400 bg-purple-100 text-purple-700' 
                 : 'border-slate-300 text-slate-500'
             }`}>
-              <BarChart3 className="w-8 h-8 mx-auto mb-2 opacity-50" />
+              <BarChart3 className="w-10 h-10 mx-auto mb-3 opacity-50" />
               <p className="text-sm font-medium">
                 {isOver ? 'Drop life area here' : 'Drag life areas here to connect them with this goal'}
               </p>
@@ -293,7 +298,7 @@ const Goals: React.FC = () => {
       </div>
 
       {/* Goal Categories - Now in a horizontal line */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <DroppableGoalSection
           category="business"
           title="Business & Career"
