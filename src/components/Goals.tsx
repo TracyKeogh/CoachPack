@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   Target, ArrowLeft, ArrowRight, Check, Sparkles, Calendar as CalendarIcon, 
   Plus, Minus, Link, TrendingUp, Clock, Repeat, CheckSquare, 
-  Flag, CheckCircle2, Circle, Star, Award, Zap, BarChart3, Info
+  Flag, CheckCircle2, Circle, Star, Award, Zap, BarChart3, Info,
+  ChevronRight, ChevronLeft, Calendar, Trophy, Trash2
 } from 'lucide-react';
 import { useGoalSettingData } from '../hooks/useGoalSettingData';
 import { useWheelData } from '../hooks/useWheelData';
@@ -31,6 +32,7 @@ const Goals: React.FC = () => {
 
   const [hasInitialized, setHasInitialized] = useState(false);
   const [showTips, setShowTips] = useState(false);
+  const [activeMilestoneId, setActiveMilestoneId] = useState<string | null>(null);
 
   // Initialize from wheel data
   useEffect(() => {
@@ -156,6 +158,9 @@ const Goals: React.FC = () => {
       ...currentGoal,
       milestones: [...currentGoal.milestones, newMilestone]
     });
+    
+    // Set the new milestone as active
+    setActiveMilestoneId(newMilestone.id);
   };
 
   const removeMilestone = (milestoneId: string) => {
@@ -165,6 +170,10 @@ const Goals: React.FC = () => {
         ...currentGoal,
         milestones: currentGoal.milestones.filter(m => m.id !== milestoneId)
       });
+      
+      if (activeMilestoneId === milestoneId) {
+        setActiveMilestoneId(null);
+      }
     }
   };
 
@@ -245,6 +254,11 @@ const Goals: React.FC = () => {
     }
   };
 
+  const getMilestoneIcon = (index: number) => {
+    const icons = [Trophy, Star, Flag, Award, Zap];
+    return icons[index % icons.length];
+  };
+
   if (!isLoaded) {
     return (
       <div className="flex items-center justify-center min-h-96">
@@ -287,6 +301,114 @@ const Goals: React.FC = () => {
             )}
           </div>
 
+          {/* Interactive Goal Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {data.categories.map((category, index) => {
+              const categoryInfo = GOAL_CATEGORIES[category];
+              const goal = data.categoryGoals[category];
+              
+              if (!goal || !goal.goal) return null;
+              
+              const completedMilestones = goal.milestones.filter(m => m.completed).length;
+              const totalMilestones = goal.milestones.length;
+              const milestoneProgress = totalMilestones > 0 ? (completedMilestones / totalMilestones) * 100 : 0;
+              
+              return (
+                <div key={category} className="bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-md transition-all duration-300">
+                  {/* Header with category color */}
+                  <div className={`p-4 border-b ${
+                    category === 'business' ? 'bg-purple-50 border-purple-100' :
+                    category === 'body' ? 'bg-green-50 border-green-100' :
+                    'bg-blue-50 border-blue-100'
+                  }`}>
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-xl bg-white shadow-sm">
+                        {categoryInfo.icon}
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-slate-900">{categoryInfo.name}</h3>
+                        <div className="text-sm text-slate-500 flex items-center">
+                          <Clock className="w-3 h-3 mr-1" />
+                          <span>{formatDate(goal.deadline)} • {getWeeksRemaining(goal.deadline)}w</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Goal */}
+                  <div className="p-4">
+                    <h4 className="font-medium text-lg text-slate-800 mb-3">{goal.goal}</h4>
+                    
+                    {/* Milestone Progress */}
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between text-sm mb-1">
+                        <div className="flex items-center text-slate-600">
+                          <Flag className="w-3 h-3 mr-1" />
+                          <span>Milestones</span>
+                        </div>
+                        <div className="font-medium">
+                          {completedMilestones}/{totalMilestones}
+                        </div>
+                      </div>
+                      <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full rounded-full ${
+                            category === 'business' ? 'bg-purple-500' :
+                            category === 'body' ? 'bg-green-500' :
+                            'bg-blue-500'
+                          }`}
+                          style={{ width: `${milestoneProgress}%` }}
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Milestone Preview */}
+                    <div className="space-y-2 mb-4">
+                      {goal.milestones.slice(0, 2).map((milestone, i) => {
+                        const MilestoneIcon = getMilestoneIcon(i);
+                        return (
+                          <div 
+                            key={milestone.id}
+                            className={`flex items-center p-2 rounded-lg ${
+                              milestone.completed 
+                                ? 'bg-green-50 text-green-700' 
+                                : 'bg-slate-50 text-slate-700'
+                            }`}
+                          >
+                            <MilestoneIcon className="w-4 h-4 mr-2 flex-shrink-0" />
+                            <div className="flex-1 text-sm font-medium truncate">
+                              {milestone.title || `Milestone ${i+1}`}
+                            </div>
+                            <div className="text-xs opacity-75">
+                              {formatDate(milestone.dueDate)}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {goal.milestones.length > 2 && (
+                        <div className="text-center text-sm text-slate-500">
+                          +{goal.milestones.length - 2} more milestones
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Action Count */}
+                    <div className="flex items-center justify-between text-sm text-slate-600">
+                      <div className="flex items-center">
+                        <CheckSquare className="w-3 h-3 mr-1" />
+                        <span>{goal.actions.length} weekly actions</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Calendar className="w-3 h-3 mr-1" />
+                        <span>{getWeeksRemaining(goal.deadline)} weeks left</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          
           {/* Timeline Visualization */}
           <div className="bg-white rounded-xl p-8 shadow-sm border border-slate-200">
             <h3 className="text-lg font-semibold text-slate-900 mb-6">Your 12-Week Journey</h3>
@@ -691,7 +813,7 @@ const Goals: React.FC = () => {
 
               <hr className="border-slate-200" />
 
-              {/* Milestones Section */}
+              {/* Interactive Milestones Section */}
               <div>
                 <div className="flex items-center space-x-2 mb-4">
                   <label className="text-sm font-medium text-slate-700 flex items-center">
@@ -701,56 +823,163 @@ const Goals: React.FC = () => {
                   <Info className="w-4 h-4 text-slate-400" title="Break your goal into 2-4 key milestones to track progress" />
                 </div>
                 
-                <div className="space-y-3">
-                  {(data.categoryGoals[currentCategory]?.milestones || []).map((milestone, index) => {
-                    const status = getMilestoneStatus(milestone);
-                    
-                    return (
-                      <div key={milestone.id} className="flex items-center border border-slate-200 rounded-lg p-3">
-                        <button
-                          onClick={() => toggleMilestoneCompletion(milestone.id)}
-                          className="mr-3 flex-shrink-0"
-                        >
-                          {milestone.completed ? (
-                            <CheckCircle2 className="w-5 h-5 text-green-600" />
-                          ) : (
-                            <Circle className="w-5 h-5 text-slate-400" />
-                          )}
-                        </button>
+                {/* Milestone Timeline */}
+                <div className="relative mb-6 pt-6 pb-2">
+                  {/* Timeline line */}
+                  <div className="absolute left-0 right-0 h-1 bg-slate-200 top-10"></div>
+                  
+                  {/* Milestone markers */}
+                  <div className="flex justify-between relative">
+                    {data.categoryGoals[currentCategory]?.milestones.length > 0 ? (
+                      data.categoryGoals[currentCategory].milestones.map((milestone, index) => {
+                        const MilestoneIcon = getMilestoneIcon(index);
+                        const isActive = activeMilestoneId === milestone.id;
+                        const status = getMilestoneStatus(milestone);
                         
-                        <input
-                          type="text"
-                          value={milestone.title}
-                          onChange={(e) => updateMilestone(milestone.id, { title: e.target.value })}
-                          placeholder={`Milestone ${index + 1}`}
-                          className={`flex-1 p-2 border-0 bg-transparent focus:ring-0 ${
-                            milestone.completed ? 'line-through text-slate-500' : ''
-                          }`}
-                        />
-                        
-                        <div className="flex items-center space-x-2 flex-shrink-0">
-                          <div className="text-sm px-2 py-1 rounded bg-slate-100 text-slate-700">
-                            {formatDate(milestone.dueDate)}
-                          </div>
-                          <button
-                            onClick={() => removeMilestone(milestone.id)}
-                            className="text-slate-400 hover:text-red-500"
+                        return (
+                          <div 
+                            key={milestone.id} 
+                            className="flex flex-col items-center cursor-pointer"
+                            onClick={() => setActiveMilestoneId(isActive ? null : milestone.id)}
                           >
-                            <Minus className="w-4 h-4" />
-                          </button>
+                            <div 
+                              className={`w-10 h-10 rounded-full flex items-center justify-center z-10 transition-all ${
+                                isActive ? 'ring-4 ring-purple-200 scale-110' : ''
+                              } ${
+                                milestone.completed 
+                                  ? 'bg-green-100 text-green-600 border-2 border-green-300' 
+                                  : 'bg-white text-slate-600 border-2 border-slate-300'
+                              }`}
+                            >
+                              <MilestoneIcon className="w-5 h-5" />
+                            </div>
+                            <div className="mt-2 text-xs font-medium text-center max-w-[80px] truncate">
+                              {milestone.title || `Milestone ${index + 1}`}
+                            </div>
+                            <div className="text-[10px] text-slate-500">
+                              {formatDate(milestone.dueDate)}
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="w-full flex justify-center">
+                        <div className="text-center text-slate-500 py-4">
+                          <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-2">
+                            <Flag className="w-5 h-5 text-slate-400" />
+                          </div>
+                          <p className="text-sm">No milestones yet</p>
                         </div>
                       </div>
-                    );
-                  })}
-                  
-                  <button
-                    onClick={addMilestone}
-                    className="w-full py-3 border-2 border-dashed border-slate-200 rounded-lg text-slate-500 hover:text-purple-600 hover:border-purple-300 transition-colors flex items-center justify-center"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Milestone
-                  </button>
+                    )}
+                  </div>
                 </div>
+                
+                {/* Active Milestone Edit */}
+                {activeMilestoneId && data.categoryGoals[currentCategory]?.milestones.find(m => m.id === activeMilestoneId) && (
+                  <div className="bg-slate-50 rounded-lg p-4 mb-4 border border-slate-200 animate-fadeIn">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-medium text-slate-900">Edit Milestone</h4>
+                      <button
+                        onClick={() => setActiveMilestoneId(null)}
+                        className="text-slate-400 hover:text-slate-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    
+                    {(() => {
+                      const milestone = data.categoryGoals[currentCategory].milestones.find(m => m.id === activeMilestoneId)!;
+                      return (
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-xs font-medium text-slate-700 mb-1">
+                              Title
+                            </label>
+                            <input
+                              type="text"
+                              value={milestone.title}
+                              onChange={(e) => updateMilestone(milestone.id, { title: e.target.value })}
+                              placeholder="Enter milestone title"
+                              className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-xs font-medium text-slate-700 mb-1">
+                              Description
+                            </label>
+                            <textarea
+                              value={milestone.description}
+                              onChange={(e) => updateMilestone(milestone.id, { description: e.target.value })}
+                              placeholder="Describe this milestone"
+                              className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm resize-none"
+                              rows={2}
+                            />
+                          </div>
+                          
+                          <div className="flex items-center space-x-3">
+                            <div>
+                              <label className="block text-xs font-medium text-slate-700 mb-1">
+                                Due Date
+                              </label>
+                              <input
+                                type="date"
+                                value={milestone.dueDate}
+                                onChange={(e) => updateMilestone(milestone.id, { dueDate: e.target.value })}
+                                className="p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                              />
+                            </div>
+                            
+                            <div className="flex-1">
+                              <label className="block text-xs font-medium text-slate-700 mb-1">
+                                Status
+                              </label>
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  onClick={() => toggleMilestoneCompletion(milestone.id)}
+                                  className={`flex items-center space-x-1 px-3 py-2 rounded-lg text-sm ${
+                                    milestone.completed
+                                      ? 'bg-green-100 text-green-700 border border-green-200'
+                                      : 'bg-slate-100 text-slate-700 border border-slate-200'
+                                  }`}
+                                >
+                                  {milestone.completed ? (
+                                    <>
+                                      <CheckCircle2 className="w-4 h-4 mr-1" />
+                                      <span>Completed</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Circle className="w-4 h-4 mr-1" />
+                                      <span>Mark Complete</span>
+                                    </>
+                                  )}
+                                </button>
+                                
+                                <button
+                                  onClick={() => removeMilestone(milestone.id)}
+                                  className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
+                                  title="Delete milestone"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+                
+                <button
+                  onClick={addMilestone}
+                  className="w-full py-3 border-2 border-dashed border-slate-200 rounded-lg text-slate-500 hover:text-purple-600 hover:border-purple-300 transition-colors flex items-center justify-center"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Milestone
+                </button>
               </div>
 
               <hr className="border-slate-200" />
@@ -767,7 +996,7 @@ const Goals: React.FC = () => {
                 
                 <div className="space-y-4">
                   {(data.categoryGoals[currentCategory]?.actions || []).map((action, index) => (
-                    <div key={index} className="border border-slate-200 rounded-lg p-4">
+                    <div key={index} className="border border-slate-200 rounded-lg p-4 hover:shadow-sm transition-all">
                       <div className="flex items-center space-x-3 mb-3">
                         <div className="flex-shrink-0 w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center text-sm font-bold text-purple-700">
                           {index + 1}
