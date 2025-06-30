@@ -237,6 +237,7 @@ const Goals: React.FC = () => {
         <div className="mt-4">
           <label className="block text-sm font-medium text-purple-800 mb-2">
             Personal Mantra <span className="text-purple-600">(optional)</span>
+            <br />
           </label>
           <input
             type="text"
@@ -248,8 +249,8 @@ const Goals: React.FC = () => {
         </div>
       </div>
 
-      {/* Goal Categories */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* Goal Categories - Now in a horizontal line */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <DroppableGoalSection
           category="business"
           title="Business & Career"
