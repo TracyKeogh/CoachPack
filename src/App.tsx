@@ -40,6 +40,11 @@ function AppContent() {
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50">
+        {/* TEST ELEMENT - This should show if AppContent is rendering */}
+        <div className="bg-green-500 text-white p-4 text-center font-bold">
+          AppContent is rendering! Current path: {window.location.pathname}
+        </div>
+        
         <Header />
         <div className="flex">
           <Navigation 
@@ -54,6 +59,11 @@ function AppContent() {
             }`}
           >
             <div className="max-w-7xl mx-auto">
+              {/* TEST ELEMENT - This should show if main content area is rendering */}
+              <div className="bg-blue-500 text-white p-4 mb-4 text-center font-bold">
+                Main content area is rendering! About to render routes...
+              </div>
+              
               <Routes>
                 <Route path="/dashboard" element={<Dashboard onNavigate={(view) => window.location.href = `/${view}`} />} />
                 <Route path="/wheel" element={<WheelOfLife />} />
@@ -74,6 +84,11 @@ function App() {
   return (
     <Router>
       <AuthProvider>
+        {/* TEST ELEMENT - This should show if App is rendering */}
+        <div className="bg-yellow-500 text-black p-4 text-center font-bold">
+          App component is rendering! Current URL: {window.location.href}
+        </div>
+        
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage onNavigate={(view) => window.location.href = `/${view}`} />} />
