@@ -370,10 +370,7 @@ const Goals: React.FC = () => {
                         />
                         <span className="text-sm font-medium text-slate-700">{area.area}</span>
                       </div>
-                      <div className="flex items-center space-x-1">
-                        <span className="text-sm text-slate-600">{area.score}/10</span>
-                        <span className="text-sm font-medium text-green-600">+2</span>
-                      </div>
+                      <div className="text-sm font-medium text-green-600">+2</div>
                     </div>
                   ))}
                 </div>
