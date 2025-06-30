@@ -109,6 +109,76 @@ const Goals: React.FC = () => {
     }
   };
 
+  // Handle adding/removing milestones
+  const addMilestone = () => {
+    const currentGoal = data.categoryGoals[currentCategory] || { 
+      category: currentCategory as any, 
+      goal: '', 
+      actions: [], 
+      milestones: [],
+      focus: '',
+      wheelAreas: [],
+      targetScore: 8,
+      deadline: getTwelveWeeksFromNow()
+    };
+    
+    // Calculate suggested due date based on existing milestones
+    const today = new Date().toISOString().split('T')[0];
+    const goalDeadline = currentGoal.deadline;
+    const existingMilestones = currentGoal.milestones.length;
+    const suggestedDates = getMilestoneDueDates(today, goalDeadline, existingMilestones + 1);
+    
+    const newMilestone: Milestone = {
+      id: Date.now().toString(),
+      title: '',
+      description: '',
+      dueDate: suggestedDates[existingMilestones] || goalDeadline,
+      completed: false
+    };
+    
+    updateCategoryGoal(currentCategory, {
+      ...currentGoal,
+      milestones: [...currentGoal.milestones, newMilestone]
+    });
+  };
+
+  const removeMilestone = (milestoneId: string) => {
+    const currentGoal = data.categoryGoals[currentCategory];
+    if (currentGoal) {
+      updateCategoryGoal(currentCategory, {
+        ...currentGoal,
+        milestones: currentGoal.milestones.filter(m => m.id !== milestoneId)
+      });
+    }
+  };
+
+  const updateMilestone = (milestoneId: string, updates: Partial<Milestone>) => {
+    const currentGoal = data.categoryGoals[currentCategory];
+    if (currentGoal) {
+      const newMilestones = currentGoal.milestones.map(milestone => 
+        milestone.id === milestoneId ? { ...milestone, ...updates } : milestone
+      );
+      updateCategoryGoal(currentCategory, {
+        ...currentGoal,
+        milestones: newMilestones
+      });
+    }
+  };
+
+  const toggleMilestoneCompletion = (milestoneId: string) => {
+    const currentGoal = data.categoryGoals[currentCategory];
+    if (currentGoal) {
+      const milestone = currentGoal.milestones.find(m => m.id === milestoneId);
+      if (milestone) {
+        const updates: Partial<Milestone> = {
+          completed: !milestone.completed,
+          completedDate: !milestone.completed ? new Date().toISOString().split('T')[0] : undefined
+        };
+        updateMilestone(milestoneId, updates);
+      }
+    }
+  };
+
   const toggleSpecificDay = (actionIndex: number, day: string) => {
     const currentGoal = data.categoryGoals[currentCategory];
     if (currentGoal) {
@@ -138,6 +208,27 @@ const Goals: React.FC = () => {
         return 'Select days';
       default:
         return 'Set frequency';
+    }
+  };
+
+  const getMilestoneStatus = (milestone: Milestone) => {
+    if (milestone.completed) return 'completed';
+    
+    const today = new Date();
+    const dueDate = new Date(milestone.dueDate);
+    const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (daysUntilDue < 0) return 'overdue';
+    if (daysUntilDue <= 7) return 'due-soon';
+    return 'on-track';
+  };
+
+  const getMilestoneStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed': return 'text-green-600 bg-green-50 border-green-200';
+      case 'overdue': return 'text-red-600 bg-red-50 border-red-200';
+      case 'due-soon': return 'text-orange-600 bg-orange-50 border-orange-200';
+      default: return 'text-blue-600 bg-blue-50 border-blue-200';
     }
   };
 
@@ -454,6 +545,81 @@ const Goals: React.FC = () => {
                 </div>
               </div>
 
+              {/* Milestones Section */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-medium text-slate-700 flex items-center">
+                    <Flag className="w-4 h-4 mr-1" />
+                    Milestones (2-4 checkpoints)
+                  </label>
+                  <button
+                    onClick={addMilestone}
+                    className="flex items-center space-x-1 px-2 py-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors text-xs font-medium"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>Add Milestone</span>
+                  </button>
+                </div>
+                
+                <div className="space-y-3">
+                  {(data.categoryGoals[currentCategory]?.milestones || []).map((milestone, index) => {
+                    const status = getMilestoneStatus(milestone);
+                    const statusColor = getMilestoneStatusColor(status);
+                    
+                    return (
+                      <div key={milestone.id} className={`border rounded-lg p-3 ${statusColor}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center">
+                            <button
+                              onClick={() => toggleMilestoneCompletion(milestone.id)}
+                              className="mr-2"
+                            >
+                              {milestone.completed ? (
+                                <CheckCircle2 className="w-5 h-5 text-green-600" />
+                              ) : (
+                                <Circle className="w-5 h-5 text-slate-400 hover:text-slate-600" />
+                              )}
+                            </button>
+                            <span className="text-sm font-medium">Milestone {index + 1}</span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <div className="text-xs px-2 py-1 rounded-full bg-white">
+                              {formatDate(milestone.dueDate)}
+                            </div>
+                            <button
+                              onClick={() => removeMilestone(milestone.id)}
+                              className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                            >
+                              <Minus className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <input
+                          type="text"
+                          value={milestone.title}
+                          onChange={(e) => updateMilestone(milestone.id, { title: e.target.value })}
+                          placeholder={categoryInfo.milestoneExamples[index] || "Enter milestone title"}
+                          className={`w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm ${
+                            milestone.completed ? 'line-through text-slate-500' : ''
+                          }`}
+                        />
+                      </div>
+                    );
+                  })}
+                  
+                  {(data.categoryGoals[currentCategory]?.milestones || []).length === 0 && (
+                    <button
+                      onClick={addMilestone}
+                      className="w-full py-3 border-2 border-dashed border-slate-200 rounded-lg text-slate-500 hover:text-blue-600 hover:border-blue-300 transition-colors text-sm flex items-center justify-center"
+                    >
+                      <Flag className="w-4 h-4 mr-2" />
+                      Add your first milestone
+                    </button>
+                  )}
+                </div>
+              </div>
+
               {/* Actions */}
               <div>
                 <div className="flex items-center justify-between mb-3">
@@ -474,6 +640,9 @@ const Goals: React.FC = () => {
                   {(data.categoryGoals[currentCategory]?.actions || []).map((action, index) => (
                     <div key={index} className="border border-slate-200 rounded-lg p-3 hover:border-slate-300 transition-all">
                       <div className="flex items-center space-x-2">
+                        <div className="flex-shrink-0 w-5 h-5 bg-purple-100 rounded-full flex items-center justify-center text-xs font-bold text-purple-700">
+                          {index + 1}
+                        </div>
                         <input
                           type="text"
                           value={action.text}
