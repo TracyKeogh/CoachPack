@@ -48,6 +48,7 @@ interface DraggableLifeAreaProps {
   area: {
     area: string;
     score: number;
+    targetChange: number;
     color: string;
   };
   sourceCategory: string;
@@ -62,6 +63,17 @@ const DraggableLifeArea: React.FC<DraggableLifeAreaProps> = ({ area, sourceCateg
       isDragging: monitor.isDragging(),
     }),
   });
+
+  const getChangeColor = (change: number) => {
+    if (change > 0) return 'text-green-600';
+    if (change < 0) return 'text-red-600';
+    return 'text-slate-600';
+  };
+
+  const formatChange = (change: number) => {
+    if (change > 0) return `+${change}`;
+    return change.toString();
+  };
 
   return (
     <div
@@ -78,7 +90,9 @@ const DraggableLifeArea: React.FC<DraggableLifeAreaProps> = ({ area, sourceCateg
         <span className="font-medium text-slate-900">{area.area}</span>
       </div>
       <div className="flex items-center space-x-2">
-        <span className="text-sm text-slate-600">{area.score}/10</span>
+        <span className={`text-sm font-semibold ${getChangeColor(area.targetChange)}`}>
+          {formatChange(area.targetChange)}
+        </span>
         <Move className="w-4 h-4 text-slate-400" />
       </div>
     </div>
@@ -160,21 +174,21 @@ const DroppableGoalSection: React.FC<DroppableGoalSectionProps> = ({
 const Goals: React.FC = () => {
   const { data: goalData } = useGoalSettingData();
   
-  // Pre-populate life areas for each category based on wheel data
+  // Pre-populate life areas for each category with target change values
   const [categoryLifeAreas, setCategoryLifeAreas] = useState({
     business: [
-      { area: 'Career', score: 7, color: '#8B5CF6' },
-      { area: 'Finances', score: 6, color: '#10B981' },
-      { area: 'Personal Growth', score: 8, color: '#06B6D4' }
+      { area: 'Career', score: 7, targetChange: 2, color: '#8B5CF6' },
+      { area: 'Finances', score: 6, targetChange: 2, color: '#10B981' },
+      { area: 'Personal Growth', score: 8, targetChange: 2, color: '#06B6D4' }
     ],
     body: [
-      { area: 'Health', score: 8, color: '#F59E0B' },
-      { area: 'Fun & Recreation', score: 6, color: '#84CC16' }
+      { area: 'Health', score: 8, targetChange: 2, color: '#F59E0B' },
+      { area: 'Fun & Recreation', score: 6, targetChange: 2, color: '#84CC16' }
     ],
     balance: [
-      { area: 'Family', score: 9, color: '#EF4444' },
-      { area: 'Romance', score: 5, color: '#EC4899' },
-      { area: 'Environment', score: 7, color: '#F97316' }
+      { area: 'Family', score: 9, targetChange: 1, color: '#EF4444' },
+      { area: 'Romance', score: 5, targetChange: 2, color: '#EC4899' },
+      { area: 'Environment', score: 7, targetChange: 2, color: '#F97316' }
     ]
   });
 
@@ -312,7 +326,7 @@ const Goals: React.FC = () => {
             <ul className="text-sm text-blue-800 space-y-1">
               <li>• Write your 12-week goal for each life category</li>
               <li>• Drag and drop life areas between categories to align them with your goals</li>
-              <li>• Each life area shows your current score from the Wheel of Life</li>
+              <li>• Numbers show the target change (+/-) you're aiming for in each life area</li>
               <li>• Use these connections to ensure your goals address the right life areas</li>
             </ul>
           </div>
