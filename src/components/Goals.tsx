@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Target, ArrowLeft, ArrowRight, Check, Sparkles, Calendar as CalendarIcon, 
   Plus, Minus, Link, TrendingUp, Clock, Repeat, CheckSquare, 
-  Flag, CheckCircle2, Circle, Star, Award, Zap, BarChart3, X, Edit3, Save, Move
+  Flag, CheckCircle2, Circle, Star, Award, Zap, BarChart3, Move, MoreVertical, X
 } from 'lucide-react';
 import { useGoalSettingData } from '../hooks/useGoalSettingData';
 import { useWheelData } from '../hooks/useWheelData';
@@ -10,14 +10,6 @@ import {
   GOAL_CATEGORIES, getTwelveWeeksFromNow, getMilestoneDueDates, 
   DAYS_OF_WEEK, ActionItem, Milestone 
 } from '../types/goals';
-
-interface LifeArea {
-  area: string;
-  score: number;
-  color: string;
-  targetScore?: number;
-  category?: string;
-}
 
 const Goals: React.FC = () => {
   const { data: wheelData } = useWheelData();
@@ -39,52 +31,56 @@ const Goals: React.FC = () => {
 
   const [hasInitialized, setHasInitialized] = useState(false);
   const [showTips, setShowTips] = useState(false);
-  const [showMilestoneModal, setShowMilestoneModal] = useState(false);
-  const [showActionModal, setShowActionModal] = useState(false);
-  const [editingMilestone, setEditingMilestone] = useState<Milestone | null>(null);
-  const [editingAction, setEditingAction] = useState<{ action: ActionItem; index: number } | null>(null);
-  const [currentEditingCategory, setCurrentEditingCategory] = useState<string>('');
-  const [connectedAreas, setConnectedAreas] = useState<Record<string, LifeArea[]>>({});
+  const [connectedAreas, setConnectedAreas] = useState<Record<string, Array<{area: string, currentScore: number, targetScore: number, color: string}>>>({
+    business: [],
+    body: [],
+    balance: []
+  });
 
   // Initialize from wheel data
   useEffect(() => {
     if (wheelData && wheelData.length > 0 && !hasInitialized) {
       initializeFromWheelData(wheelData);
+      
+      // Initialize connected areas from wheel data
+      const initialConnectedAreas = {
+        business: wheelData.filter(area => ['Career', 'Finances', 'Personal Growth'].includes(area.area))
+          .map(area => ({
+            area: area.area,
+            currentScore: area.score,
+            targetScore: Math.min(10, area.score + 2), // Default +2 improvement
+            color: area.color
+          })),
+        body: wheelData.filter(area => ['Health', 'Fun & Recreation'].includes(area.area))
+          .map(area => ({
+            area: area.area,
+            currentScore: area.score,
+            targetScore: Math.min(10, area.score + 2),
+            color: area.color
+          })),
+        balance: wheelData.filter(area => ['Family', 'Romance', 'Environment'].includes(area.area))
+          .map(area => ({
+            area: area.area,
+            currentScore: area.score,
+            targetScore: Math.min(10, area.score + 2),
+            color: area.color
+          }))
+      };
+      
+      setConnectedAreas(initialConnectedAreas);
       setHasInitialized(true);
     }
   }, [wheelData, hasInitialized, initializeFromWheelData]);
-
-  // Initialize connected areas from wheel data and goals
-  useEffect(() => {
-    if (wheelData && wheelData.length > 0 && data.categories) {
-      const initialConnectedAreas: Record<string, LifeArea[]> = {};
-      
-      data.categories.forEach(category => {
-        const categoryInfo = GOAL_CATEGORIES[category as keyof typeof GOAL_CATEGORIES];
-        const goal = data.categoryGoals[category];
-        
-        // Get wheel areas for this category
-        const areas = wheelData
-          .filter(area => categoryInfo.wheelAreas.includes(area.area))
-          .map(area => ({
-            ...area,
-            targetScore: goal?.targetScore || area.score + 2,
-            category
-          }));
-        
-        initialConnectedAreas[category] = areas;
-      });
-      
-      setConnectedAreas(initialConnectedAreas);
-    }
-  }, [wheelData, data.categories, data.categoryGoals]);
 
   const currentCategory = getCurrentCategory();
   const progress = getProgress();
 
   // Get wheel data for current category
   const getCategoryWheelData = (category: string) => {
-    return connectedAreas[category] || [];
+    if (!wheelData || !GOAL_CATEGORIES[category as keyof typeof GOAL_CATEGORIES]) return [];
+    
+    const categoryInfo = GOAL_CATEGORIES[category as keyof typeof GOAL_CATEGORIES];
+    return wheelData.filter(area => categoryInfo.wheelAreas.includes(area.area));
   };
 
   // Format date for display
@@ -105,30 +101,10 @@ const Goals: React.FC = () => {
     return Math.max(0, diffWeeks);
   };
 
-  // Handle adding/removing milestones
-  const addMilestone = (category: string) => {
-    setCurrentEditingCategory(category);
-    setEditingMilestone({
-      id: Date.now().toString(),
-      title: '',
-      description: '',
-      dueDate: getTwelveWeeksFromNow(),
-      completed: false
-    });
-    setShowMilestoneModal(true);
-  };
-
-  const editMilestone = (category: string, milestone: Milestone) => {
-    setCurrentEditingCategory(category);
-    setEditingMilestone(milestone);
-    setShowMilestoneModal(true);
-  };
-
-  const saveMilestone = () => {
-    if (!editingMilestone || !currentEditingCategory) return;
-
-    const currentGoal = data.categoryGoals[currentEditingCategory] || { 
-      category: currentEditingCategory as any, 
+  // Handle adding/removing actions for category goals
+  const addAction = () => {
+    const currentGoal = data.categoryGoals[currentCategory] || { 
+      category: currentCategory as any, 
       goal: '', 
       actions: [], 
       milestones: [],
@@ -137,138 +113,122 @@ const Goals: React.FC = () => {
       targetScore: 8,
       deadline: getTwelveWeeksFromNow()
     };
-
-    const existingIndex = currentGoal.milestones.findIndex(m => m.id === editingMilestone.id);
-    let newMilestones;
-
-    if (existingIndex >= 0) {
-      // Update existing milestone
-      newMilestones = [...currentGoal.milestones];
-      newMilestones[existingIndex] = editingMilestone;
-    } else {
-      // Add new milestone
-      newMilestones = [...currentGoal.milestones, editingMilestone];
-    }
-
-    updateCategoryGoal(currentEditingCategory, {
-      ...currentGoal,
-      milestones: newMilestones
-    });
-
-    setShowMilestoneModal(false);
-    setEditingMilestone(null);
-    setCurrentEditingCategory('');
-  };
-
-  const removeMilestone = (category: string, milestoneId: string) => {
-    const currentGoal = data.categoryGoals[category];
-    if (currentGoal) {
-      updateCategoryGoal(category, {
-        ...currentGoal,
-        milestones: currentGoal.milestones.filter(m => m.id !== milestoneId)
-      });
-    }
-  };
-
-  const toggleMilestoneCompletion = (category: string, milestoneId: string) => {
-    const currentGoal = data.categoryGoals[category];
-    if (currentGoal) {
-      const milestone = currentGoal.milestones.find(m => m.id === milestoneId);
-      if (milestone) {
-        const updatedMilestone = {
-          ...milestone,
-          completed: !milestone.completed,
-          completedDate: !milestone.completed ? new Date().toISOString().split('T')[0] : undefined
-        };
-        
-        const newMilestones = currentGoal.milestones.map(m => 
-          m.id === milestoneId ? updatedMilestone : m
-        );
-
-        updateCategoryGoal(category, {
-          ...currentGoal,
-          milestones: newMilestones
-        });
-      }
-    }
-  };
-
-  // Handle adding/removing actions
-  const addAction = (category: string) => {
-    setCurrentEditingCategory(category);
-    setEditingAction({
-      action: {
-        text: '',
-        frequency: 'weekly',
-        specificDays: []
-      },
-      index: -1
-    });
-    setShowActionModal(true);
-  };
-
-  const editAction = (category: string, action: ActionItem, index: number) => {
-    setCurrentEditingCategory(category);
-    setEditingAction({ action, index });
-    setShowActionModal(true);
-  };
-
-  const saveAction = () => {
-    if (!editingAction || !currentEditingCategory) return;
-
-    const currentGoal = data.categoryGoals[currentEditingCategory] || { 
-      category: currentEditingCategory as any, 
-      goal: '', 
-      actions: [], 
-      milestones: [],
-      focus: '',
-      wheelAreas: [],
-      targetScore: 8,
-      deadline: getTwelveWeeksFromNow()
+    
+    const newAction: ActionItem = {
+      text: '',
+      frequency: 'weekly',
+      specificDays: []
     };
-
-    let newActions;
-    if (editingAction.index >= 0) {
-      // Update existing action
-      newActions = [...currentGoal.actions];
-      newActions[editingAction.index] = editingAction.action;
-    } else {
-      // Add new action
-      newActions = [...currentGoal.actions, editingAction.action];
-    }
-
-    updateCategoryGoal(currentEditingCategory, {
+    
+    updateCategoryGoal(currentCategory, {
       ...currentGoal,
-      actions: newActions
+      actions: [...currentGoal.actions, newAction]
     });
-
-    setShowActionModal(false);
-    setEditingAction(null);
-    setCurrentEditingCategory('');
   };
 
-  const removeAction = (category: string, index: number) => {
-    const currentGoal = data.categoryGoals[category];
+  const removeAction = (index: number) => {
+    const currentGoal = data.categoryGoals[currentCategory];
     if (currentGoal) {
-      updateCategoryGoal(category, {
+      updateCategoryGoal(currentCategory, {
         ...currentGoal,
         actions: currentGoal.actions.filter((_, i) => i !== index)
       });
     }
   };
 
-  const toggleSpecificDay = (day: string) => {
-    if (!editingAction) return;
+  const updateAction = (index: number, updates: Partial<ActionItem>) => {
+    const currentGoal = data.categoryGoals[currentCategory];
+    if (currentGoal) {
+      const newActions = [...currentGoal.actions];
+      newActions[index] = { ...newActions[index], ...updates };
+      updateCategoryGoal(currentCategory, {
+        ...currentGoal,
+        actions: newActions
+      });
+    }
+  };
+
+  // Handle adding/removing milestones
+  const addMilestone = () => {
+    const currentGoal = data.categoryGoals[currentCategory] || { 
+      category: currentCategory as any, 
+      goal: '', 
+      actions: [], 
+      milestones: [],
+      focus: '',
+      wheelAreas: [],
+      targetScore: 8,
+      deadline: getTwelveWeeksFromNow()
+    };
     
-    const currentDays = editingAction.action.specificDays || [];
-    const newDays = currentDays.includes(day)
-      ? currentDays.filter(d => d !== day)
-      : [...currentDays, day];
+    // Calculate suggested due date based on existing milestones
+    const today = new Date().toISOString().split('T')[0];
+    const goalDeadline = currentGoal.deadline;
+    const existingMilestones = currentGoal.milestones.length;
+    const suggestedDates = getMilestoneDueDates(today, goalDeadline, existingMilestones + 1);
     
-    setEditingAction({
-      ...editingAction,
-      action: { ...editingAction.action, specificDays: newDays }
+    const newMilestone: Milestone = {
+      id: Date.now().toString(),
+      title: '',
+      description: '',
+      dueDate: suggestedDates[existingMilestones] || goalDeadline,
+      completed: false
+    };
+    
+    updateCategoryGoal(currentCategory, {
+      ...currentGoal,
+      milestones: [...currentGoal.milestones, newMilestone]
     });
+  };
+
+  const removeMilestone = (milestoneId: string) => {
+    const currentGoal = data.categoryGoals[currentCategory];
+    if (currentGoal) {
+      updateCategoryGoal(currentCategory, {
+        ...currentGoal,
+        milestones: currentGoal.milestones.filter(m => m.id !== milestoneId)
+      });
+    }
+  };
+
+  const updateMilestone = (milestoneId: string, updates: Partial<Milestone>) => {
+    const currentGoal = data.categoryGoals[currentCategory];
+    if (currentGoal) {
+      const newMilestones = currentGoal.milestones.map(milestone => 
+        milestone.id === milestoneId ? { ...milestone, ...updates } : milestone
+      );
+      updateCategoryGoal(currentCategory, {
+        ...currentGoal,
+        milestones: newMilestones
+      });
+    }
+  };
+
+  const toggleMilestoneCompletion = (milestoneId: string) => {
+    const currentGoal = data.categoryGoals[currentCategory];
+    if (currentGoal) {
+      const milestone = currentGoal.milestones.find(m => m.id === milestoneId);
+      if (milestone) {
+        const updates: Partial<Milestone> = {
+          completed: !milestone.completed,
+          completedDate: !milestone.completed ? new Date().toISOString().split('T')[0] : undefined
+        };
+        updateMilestone(milestoneId, updates);
+      }
+    }
+  };
+
+  const toggleSpecificDay = (actionIndex: number, day: string) => {
+    const currentGoal = data.categoryGoals[currentCategory];
+    if (currentGoal) {
+      const action = currentGoal.actions[actionIndex];
+      const currentDays = action.specificDays || [];
+      const newDays = currentDays.includes(day)
+        ? currentDays.filter(d => d !== day)
+        : [...currentDays, day];
+      
+      updateAction(actionIndex, { specificDays: newDays });
+    }
   };
 
   const getFrequencyDescription = (action: ActionItem) => {
@@ -287,55 +247,70 @@ const Goals: React.FC = () => {
     }
   };
 
-  // Handle moving life areas between categories
-  const moveLifeArea = (area: LifeArea, fromCategory: string, toCategory: string) => {
-    // Remove from source category
-    const updatedConnectedAreas = { ...connectedAreas };
-    updatedConnectedAreas[fromCategory] = updatedConnectedAreas[fromCategory].filter(a => a.area !== area.area);
+  const getMilestoneStatus = (milestone: Milestone) => {
+    if (milestone.completed) return 'completed';
     
-    // Add to target category
-    const updatedArea = { ...area, category: toCategory };
-    updatedConnectedAreas[toCategory] = [...updatedConnectedAreas[toCategory], updatedArea];
+    const today = new Date();
+    const dueDate = new Date(milestone.dueDate);
+    const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     
-    setConnectedAreas(updatedConnectedAreas);
-    
-    // Update the goals data
-    data.categories.forEach(cat => {
-      const goal = data.categoryGoals[cat];
-      if (goal) {
-        updateCategoryGoal(cat, {
-          ...goal,
-          wheelAreas: updatedConnectedAreas[cat].map(a => a.area)
-        });
-      }
-    });
+    if (daysUntilDue < 0) return 'overdue';
+    if (daysUntilDue <= 7) return 'due-soon';
+    return 'on-track';
   };
 
-  // Remove life area from a category
-  const removeLifeArea = (area: LifeArea, category: string) => {
-    const updatedConnectedAreas = { ...connectedAreas };
-    updatedConnectedAreas[category] = updatedConnectedAreas[category].filter(a => a.area !== area.area);
-    
-    setConnectedAreas(updatedConnectedAreas);
-    
-    // Update the goal data
-    const goal = data.categoryGoals[category];
-    if (goal) {
-      updateCategoryGoal(category, {
-        ...goal,
-        wheelAreas: updatedConnectedAreas[category].map(a => a.area)
-      });
+  const getMilestoneStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed': return 'text-green-600 bg-green-50 border-green-200';
+      case 'overdue': return 'text-red-600 bg-red-50 border-red-200';
+      case 'due-soon': return 'text-orange-600 bg-orange-50 border-orange-200';
+      default: return 'text-blue-600 bg-blue-50 border-blue-200';
     }
   };
 
-  // Update target score for a life area
-  const updateTargetScore = (area: LifeArea, category: string, newScore: number) => {
-    const updatedConnectedAreas = { ...connectedAreas };
-    updatedConnectedAreas[category] = updatedConnectedAreas[category].map(a => 
-      a.area === area.area ? { ...a, targetScore: newScore } : a
-    );
-    
-    setConnectedAreas(updatedConnectedAreas);
+  // Connected areas management
+  const updateAreaTarget = (category: string, areaName: string, change: number) => {
+    setConnectedAreas(prev => ({
+      ...prev,
+      [category]: prev[category].map(area => 
+        area.area === areaName 
+          ? { ...area, targetScore: Math.max(1, Math.min(10, area.currentScore + change)) }
+          : area
+      )
+    }));
+  };
+
+  const moveAreaToCategory = (fromCategory: string, toCategory: string, areaName: string) => {
+    setConnectedAreas(prev => {
+      const areaToMove = prev[fromCategory].find(area => area.area === areaName);
+      if (!areaToMove) return prev;
+
+      return {
+        ...prev,
+        [fromCategory]: prev[fromCategory].filter(area => area.area !== areaName),
+        [toCategory]: [...prev[toCategory], areaToMove]
+      };
+    });
+  };
+
+  const removeAreaFromCategory = (category: string, areaName: string) => {
+    setConnectedAreas(prev => ({
+      ...prev,
+      [category]: prev[category].filter(area => area.area !== areaName)
+    }));
+  };
+
+  const getChangeValue = (currentScore: number, targetScore: number) => {
+    const change = targetScore - currentScore;
+    if (change === 0) return null;
+    return change > 0 ? `+${change}` : `${change}`;
+  };
+
+  const getChangeColor = (currentScore: number, targetScore: number) => {
+    const change = targetScore - currentScore;
+    if (change > 0) return 'text-green-600 bg-green-50 border-green-200';
+    if (change < 0) return 'text-red-600 bg-red-50 border-red-200';
+    return 'text-slate-600 bg-slate-50 border-slate-200';
   };
 
   if (!isLoaded) {
@@ -561,34 +536,33 @@ const Goals: React.FC = () => {
     );
   }
 
+  const categoryInfo = currentCategory ? GOAL_CATEGORIES[currentCategory as keyof typeof GOAL_CATEGORIES] : null;
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">12-Week Goals</h1>
-          <p className="text-slate-600 mt-2">Transform your annual vision into actionable quarterly goals</p>
-          {lastSaved && (
-            <p className="text-sm text-green-600 mt-1">
-              ✓ Saved at {lastSaved.toLocaleTimeString()}
-            </p>
-          )}
+          <h1 className="text-2xl font-bold text-slate-900">12-Week Goals</h1>
+          <p className="text-slate-600 text-xs mt-1">
+            {lastSaved && `✓ Saved at ${lastSaved.toLocaleTimeString()}`}
+          </p>
         </div>
         
         <button
           onClick={() => setShowTips(!showTips)}
-          className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+          className="flex items-center space-x-1 px-3 py-1 text-xs bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors"
         >
-          <Sparkles className="w-4 h-4" />
+          <Sparkles className="w-3 h-3" />
           <span>{showTips ? "Hide Tips" : "Show Tips"}</span>
         </button>
       </div>
 
       {/* Progress Bar */}
-      <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
-        <div className="flex items-center justify-between mb-2">
-          <div className="text-sm font-medium text-slate-900">Progress</div>
-          <div className="text-sm text-slate-600">{progress.completed}/{progress.total}</div>
+      <div className="bg-white rounded-xl p-3 shadow-sm border border-slate-200">
+        <div className="flex items-center justify-between mb-1">
+          <div className="text-xs font-medium text-slate-900">Progress</div>
+          <div className="text-xs text-slate-600">{progress.completed}/{progress.total}</div>
         </div>
         <div className="w-full bg-slate-100 rounded-full h-2">
           <div 
@@ -600,41 +574,40 @@ const Goals: React.FC = () => {
 
       {/* Tips Section (Collapsible) */}
       {showTips && (
-        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-4 border border-indigo-100 animate-fadeIn">
-          <h3 className="text-sm font-medium text-indigo-900 mb-2 flex items-center">
-            <Sparkles className="w-4 h-4 mr-2" />
+        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-3 border border-indigo-100 animate-fadeIn">
+          <h3 className="text-xs font-medium text-indigo-900 mb-1 flex items-center">
+            <Sparkles className="w-3 h-3 mr-1" />
             Quick Tips
           </h3>
-          <ul className="space-y-1 text-sm text-indigo-800">
+          <ul className="space-y-1 text-xs text-indigo-800">
             <li className="flex items-start">
-              <span className="w-4 h-4 bg-indigo-100 rounded-full flex items-center justify-center text-xs mr-2 mt-0.5">1</span>
+              <span className="w-3 h-3 bg-indigo-100 rounded-full flex items-center justify-center text-[10px] mr-1 mt-0.5">1</span>
               <span>Make goals <strong>specific and measurable</strong></span>
             </li>
             <li className="flex items-start">
-              <span className="w-4 h-4 bg-indigo-100 rounded-full flex items-center justify-center text-xs mr-2 mt-0.5">2</span>
+              <span className="w-3 h-3 bg-indigo-100 rounded-full flex items-center justify-center text-[10px] mr-1 mt-0.5">2</span>
               <span>Break down into <strong>small, actionable steps</strong></span>
             </li>
           </ul>
         </div>
       )}
 
-      {/* Annual Vision Section */}
-      {data.currentStep === 'annual' && (
-        <div className="space-y-6">
-          <div className="bg-white rounded-xl p-8 shadow-sm border border-slate-200">
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Sparkles className="w-8 h-8 text-purple-600" />
+      {/* Current Step */}
+      <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
+        {/* Step Content */}
+        <div className="space-y-5">
+          {/* Annual Snapshot */}
+          {data.currentStep === 'annual' && (
+            <div className="space-y-4">
+              <div className="text-center mb-4">
+                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <Sparkles className="w-6 h-6 text-purple-600" />
+                </div>
+                <h2 className="text-lg font-bold text-slate-900 mb-1">Your Annual Vision</h2>
+                <p className="text-slate-600 text-xs">Imagine it's one year from now...</p>
               </div>
-              <h2 className="text-2xl font-bold text-slate-900 mb-2">Your Annual Vision</h2>
-              <p className="text-slate-600">Imagine it's one year from now and you're living your ideal life...</p>
-            </div>
 
-            <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Vision Statement
-                </label>
                 <textarea
                   value={data.annualSnapshot.snapshot}
                   onChange={(e) => updateAnnualSnapshot({
@@ -642,13 +615,13 @@ const Goals: React.FC = () => {
                     snapshot: e.target.value
                   })}
                   placeholder="I feel energized and healthy. My career is thriving. My relationships are deep and fulfilling..."
-                  className="w-full p-4 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  rows={4}
+                  className="w-full p-3 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  rows={3}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <label className="block text-xs font-medium text-slate-700 mb-1">
                   Personal Mantra <span className="text-slate-500">(optional)</span>
                 </label>
                 <input
@@ -659,127 +632,68 @@ const Goals: React.FC = () => {
                     mantra: e.target.value
                   })}
                   placeholder="Living with purpose and joy"
-                  className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
                 />
               </div>
-            </div>
-          </div>
 
-          {/* Three Category Boxes */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {data.categories.map((category) => {
-              const categoryInfo = GOAL_CATEGORIES[category];
-              const goal = data.categoryGoals[category];
-              const areas = getCategoryWheelData(category);
-              
-              return (
-                <div key={category} className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
-                  <div className="text-center mb-4">
-                    <h3 className="text-lg font-semibold text-slate-900">{categoryInfo.name}</h3>
-                    <p className="text-sm text-slate-600 mt-1">{categoryInfo.description}</p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                      Annual Goal Title
-                    </label>
-                    <input
-                      type="text"
-                      value={goal?.goal || ''}
-                      onChange={(e) => updateCategoryGoal(category, {
-                        category: category as any,
-                        goal: e.target.value,
-                        actions: goal?.actions || [],
-                        milestones: goal?.milestones || [],
-                        focus: goal?.focus || '',
-                        wheelAreas: areas.map(area => area.area),
-                        targetScore: goal?.targetScore || 8,
-                        deadline: goal?.deadline || getTwelveWeeksFromNow()
-                      })}
-                      placeholder={categoryInfo.examples[0]}
-                      className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
-                    />
-                  </div>
-
-                  {/* Connected Wheel Areas */}
-                  {wheelData && (
-                    <div className="mt-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="text-xs text-slate-500">Connected life areas:</div>
-                        <button 
-                          onClick={() => {
-                            // Show all available wheel areas that aren't already assigned
-                            // This would be implemented in a modal
-                            alert("Feature to add more life areas coming soon!");
-                          }}
-                          className="text-xs text-purple-600 hover:text-purple-800"
-                        >
-                          + Add area
-                        </button>
-                      </div>
+              {/* Three Category Boxes */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                {data.categories.map((category) => {
+                  const categoryInfo = GOAL_CATEGORIES[category];
+                  const areas = connectedAreas[category] || [];
+                  
+                  return (
+                    <div key={category} className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                      <h3 className="font-semibold text-slate-900 mb-3">{categoryInfo.name}</h3>
+                      
+                      {/* Connected Life Areas */}
                       <div className="space-y-2">
-                        {areas.map((area, index) => {
-                          const currentScore = area.score;
-                          const targetScore = area.targetScore || currentScore + 2;
-                          const change = targetScore - currentScore;
+                        {areas.map((area) => {
+                          const changeValue = getChangeValue(area.currentScore, area.targetScore);
                           
                           return (
-                            <div 
-                              key={index} 
-                              className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-200 group hover:border-slate-300"
-                            >
-                              <div className="flex items-center">
-                                <div className="w-3 h-3 rounded-full mr-2" style={{backgroundColor: area.color}}></div>
-                                <span className="font-medium text-slate-700 text-sm">{area.area}</span>
-                              </div>
-                              
-                              <div className="flex items-center space-x-3">
-                                <div className="flex items-center">
-                                  <span className="text-slate-600 text-sm">{currentScore}</span>
-                                  <span className="mx-1 text-slate-400">→</span>
-                                  <span className="text-slate-800 font-medium text-sm">{targetScore}</span>
-                                  <span className={`ml-1 text-xs font-medium ${change > 0 ? 'text-green-600' : change < 0 ? 'text-red-600' : 'text-slate-500'}`}>
-                                    {change > 0 ? `+${change}` : change}
-                                  </span>
+                            <div key={area.area} className="group relative">
+                              <div className="flex items-center justify-between p-2 bg-white rounded border border-slate-200 hover:border-slate-300 transition-colors">
+                                <div className="flex items-center space-x-2">
+                                  <div 
+                                    className="w-3 h-3 rounded-full"
+                                    style={{ backgroundColor: area.color }}
+                                  />
+                                  <span className="text-sm font-medium text-slate-900">{area.area}</span>
                                 </div>
                                 
-                                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center space-x-1">
-                                  <button 
-                                    onClick={() => updateTargetScore(area, category, Math.min(10, targetScore + 1))}
-                                    className="w-5 h-5 flex items-center justify-center text-slate-500 hover:text-slate-700 hover:bg-slate-200 rounded"
-                                  >
-                                    +
-                                  </button>
-                                  <button 
-                                    onClick={() => updateTargetScore(area, category, Math.max(1, targetScore - 1))}
-                                    className="w-5 h-5 flex items-center justify-center text-slate-500 hover:text-slate-700 hover:bg-slate-200 rounded"
-                                  >
-                                    -
-                                  </button>
+                                <div className="flex items-center space-x-2">
+                                  {changeValue && (
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getChangeColor(area.currentScore, area.targetScore)}`}>
+                                      {changeValue}
+                                    </span>
+                                  )}
                                   
-                                  <div className="relative group/menu">
-                                    <button className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded">
-                                      <Move className="w-3 h-3" />
-                                    </button>
-                                    
-                                    <div className="absolute right-0 mt-1 bg-white shadow-lg rounded-lg border border-slate-200 p-2 w-36 z-10 hidden group-hover/menu:block">
-                                      {data.categories.filter(c => c !== category).map(targetCategory => (
-                                        <button
-                                          key={targetCategory}
-                                          onClick={() => moveLifeArea(area, category, targetCategory)}
-                                          className="w-full text-left px-2 py-1 text-sm text-slate-700 hover:bg-slate-100 rounded"
-                                        >
-                                          Move to {GOAL_CATEGORIES[targetCategory].name}
-                                        </button>
-                                      ))}
-                                      <div className="border-t border-slate-200 my-1"></div>
-                                      <button
-                                        onClick={() => removeLifeArea(area, category)}
-                                        className="w-full text-left px-2 py-1 text-sm text-red-600 hover:bg-red-50 rounded"
-                                      >
-                                        Remove
-                                      </button>
-                                    </div>
+                                  {/* Dropdown menu */}
+                                  <div className="relative opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <select
+                                      onChange={(e) => {
+                                        const value = e.target.value;
+                                        if (value.startsWith('move-')) {
+                                          const targetCategory = value.replace('move-', '');
+                                          moveAreaToCategory(category, targetCategory, area.area);
+                                        } else if (value === 'remove') {
+                                          removeAreaFromCategory(category, area.area);
+                                        }
+                                        e.target.value = '';
+                                      }}
+                                      className="text-xs border border-slate-200 rounded p-1 bg-white"
+                                    >
+                                      <option value="">⋯</option>
+                                      {data.categories
+                                        .filter(cat => cat !== category)
+                                        .map(cat => (
+                                          <option key={cat} value={`move-${cat}`}>
+                                            Move to {GOAL_CATEGORIES[cat].name}
+                                          </option>
+                                        ))}
+                                      <option value="remove">Remove</option>
+                                    </select>
                                   </div>
                                 </div>
                               </div>
@@ -788,511 +702,320 @@ const Goals: React.FC = () => {
                         })}
                         
                         {areas.length === 0 && (
-                          <div className="text-center py-3 text-slate-500 text-sm border border-dashed border-slate-300 rounded-lg">
-                            No life areas connected yet
+                          <div className="text-center py-4 text-slate-500 text-sm">
+                            No connected life areas
                           </div>
                         )}
                       </div>
                     </div>
-                  )}
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Category Goal */}
+          {data.currentStep === 'quarter' && categoryInfo && (
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3 mb-3">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center text-xl bg-slate-100">
+                  {categoryInfo.icon}
                 </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Category Goal Section */}
-      {data.currentStep === 'quarter' && (
-        <div className="space-y-6">
-          {data.categories.map((category, index) => {
-            const categoryInfo = GOAL_CATEGORIES[category];
-            const goal = data.categoryGoals[category];
-            const isActive = index === data.currentCategoryIndex;
-            
-            if (!isActive) return null;
-
-            return (
-              <div key={category} className="bg-white rounded-xl p-8 shadow-sm border border-slate-200">
-                <div className="flex items-center space-x-4 mb-6">
-                  <div className="w-16 h-16 rounded-full flex items-center justify-center text-3xl bg-slate-100">
-                    {categoryInfo.icon}
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold text-slate-900">{categoryInfo.name}</h2>
-                    <p className="text-slate-600">{categoryInfo.description}</p>
-                  </div>
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">{categoryInfo.name}</h2>
+                  <p className="text-xs text-slate-600">{categoryInfo.description}</p>
                 </div>
+              </div>
 
-                {/* Connected Wheel Areas */}
-                <div className="mb-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-sm font-medium text-slate-700">Connected Life Areas</h3>
-                    <button 
-                      onClick={() => {
-                        // Show all available wheel areas that aren't already assigned
-                        alert("Feature to add more life areas coming soon!");
-                      }}
-                      className="text-xs text-purple-600 hover:text-purple-800 flex items-center"
-                    >
-                      <Plus className="w-3 h-3 mr-1" />
-                      Add area
-                    </button>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {getCategoryWheelData(category).map((area, index) => {
-                      const currentScore = area.score;
-                      const targetScore = area.targetScore || currentScore + 2;
-                      const change = targetScore - currentScore;
+              {/* Connected Wheel Areas */}
+              {connectedAreas[currentCategory] && connectedAreas[currentCategory].length > 0 && (
+                <div className="mb-4">
+                  <h4 className="text-sm font-medium text-slate-700 mb-2">Connected Life Areas</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {connectedAreas[currentCategory].map((area) => {
+                      const changeValue = getChangeValue(area.currentScore, area.targetScore);
                       
                       return (
-                        <div 
-                          key={index} 
-                          className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200 group hover:border-slate-300"
-                        >
-                          <div className="flex items-center">
-                            <div className="w-4 h-4 rounded-full mr-2" style={{backgroundColor: area.color}}></div>
-                            <span className="font-medium text-slate-700">{area.area}</span>
-                          </div>
-                          
-                          <div className="flex items-center space-x-3">
-                            <div className="flex items-center">
-                              <span className="text-slate-600">{currentScore}</span>
-                              <span className="mx-1 text-slate-400">→</span>
-                              <input
-                                type="number"
-                                min="1"
-                                max="10"
-                                value={targetScore}
-                                onChange={(e) => updateTargetScore(area, category, parseInt(e.target.value) || currentScore)}
-                                className="w-10 p-0.5 text-center border border-slate-300 rounded text-slate-800 font-medium"
-                              />
-                              <span className={`ml-1 text-xs font-medium ${change > 0 ? 'text-green-600' : change < 0 ? 'text-red-600' : 'text-slate-500'}`}>
-                                {change > 0 ? `+${change}` : change}
-                              </span>
-                            </div>
-                            
-                            <button 
-                              onClick={() => removeLifeArea(area, category)}
-                              className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
+                        <div key={area.area} className="flex items-center px-3 py-1 bg-slate-100 rounded-full text-sm">
+                          <div className="w-2 h-2 rounded-full mr-2" style={{backgroundColor: area.color}}></div>
+                          <span className="font-medium text-slate-700">{area.area}</span>
+                          {changeValue && (
+                            <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-medium ${getChangeColor(area.currentScore, area.targetScore)}`}>
+                              {changeValue}
+                            </span>
+                          )}
                         </div>
                       );
                     })}
                   </div>
                 </div>
+              )}
 
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                      12-Week Goal
-                    </label>
-                    <input
-                      type="text"
-                      value={goal?.goal || ''}
-                      onChange={(e) => updateCategoryGoal(category, {
-                        category: category as any,
-                        goal: e.target.value,
-                        actions: goal?.actions || [],
-                        milestones: goal?.milestones || [],
-                        focus: goal?.focus || '',
-                        wheelAreas: getCategoryWheelData(category).map(area => area.area),
-                        targetScore: goal?.targetScore || 8,
-                        deadline: goal?.deadline || getTwelveWeeksFromNow()
-                      })}
-                      placeholder={categoryInfo.examples[0]}
-                      className="w-full p-4 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-lg"
-                    />
-                  </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">
+                  12-Week Goal
+                </label>
+                <input
+                  type="text"
+                  value={data.categoryGoals[currentCategory]?.goal || ''}
+                  onChange={(e) => updateCategoryGoal(currentCategory, {
+                    category: currentCategory as any,
+                    goal: e.target.value,
+                    actions: data.categoryGoals[currentCategory]?.actions || [],
+                    milestones: data.categoryGoals[currentCategory]?.milestones || [],
+                    focus: data.categoryGoals[currentCategory]?.focus || '',
+                    wheelAreas: connectedAreas[currentCategory]?.map(area => area.area) || [],
+                    targetScore: data.categoryGoals[currentCategory]?.targetScore || 8,
+                    deadline: data.categoryGoals[currentCategory]?.deadline || getTwelveWeeksFromNow()
+                  })}
+                  placeholder={categoryInfo.examples[0]}
+                  className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                />
+              </div>
 
-                  {/* Deadline */}
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center">
-                      <CalendarIcon className="w-4 h-4 mr-2" />
-                      Target Completion Date
-                    </label>
-                    <div className="flex items-center space-x-3">
-                      <input
-                        type="date"
-                        value={goal?.deadline || getTwelveWeeksFromNow()}
-                        onChange={(e) => updateCategoryGoal(category, {
-                          category: category as any,
-                          goal: goal?.goal || '',
-                          actions: goal?.actions || [],
-                          milestones: goal?.milestones || [],
-                          focus: goal?.focus || '',
-                          wheelAreas: getCategoryWheelData(category).map(area => area.area),
-                          targetScore: goal?.targetScore || 8,
-                          deadline: e.target.value
-                        })}
-                        className="p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      />
-                      <div className="bg-blue-50 text-blue-700 px-3 py-2 rounded-lg flex items-center">
-                        <Clock className="w-4 h-4 mr-1" />
-                        <span>{getWeeksRemaining(goal?.deadline || getTwelveWeeksFromNow())} weeks</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Milestones */}
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <label className="block text-sm font-medium text-slate-700 flex items-center">
-                        <Flag className="w-4 h-4 mr-2" />
-                        Key Milestones (2-4 checkpoints)
-                      </label>
-                      <button
-                        onClick={() => addMilestone(category)}
-                        className="flex items-center space-x-2 px-3 py-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors text-sm font-medium"
-                      >
-                        <Plus className="w-4 h-4" />
-                        <span>Add Milestone</span>
-                      </button>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      {(goal?.milestones || []).map((milestone) => (
-                        <div key={milestone.id} className="flex items-center justify-between p-4 border border-slate-200 rounded-lg hover:border-slate-300 transition-colors">
-                          <div className="flex items-center space-x-3">
-                            <button
-                              onClick={() => toggleMilestoneCompletion(category, milestone.id)}
-                              className="flex-shrink-0"
-                            >
-                              {milestone.completed ? (
-                                <CheckCircle2 className="w-5 h-5 text-green-600" />
-                              ) : (
-                                <Circle className="w-5 h-5 text-slate-400" />
-                              )}
-                            </button>
-                            <div>
-                              <div className={`font-medium ${milestone.completed ? 'line-through text-slate-500' : 'text-slate-900'}`}>
-                                {milestone.title}
-                              </div>
-                              <div className="text-sm text-slate-500">
-                                Due: {formatDate(milestone.dueDate)}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <button
-                              onClick={() => editMilestone(category, milestone)}
-                              className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                            >
-                              <Edit3 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => removeMilestone(category, milestone.id)}
-                              className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                      
-                      {(goal?.milestones || []).length === 0 && (
-                        <button
-                          onClick={() => addMilestone(category)}
-                          className="w-full py-6 border-2 border-dashed border-slate-200 rounded-lg text-slate-500 hover:text-blue-600 hover:border-blue-300 transition-colors flex items-center justify-center"
-                        >
-                          <Plus className="w-5 h-5 mr-2" />
-                          Add your first milestone
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <label className="block text-sm font-medium text-slate-700 flex items-center">
-                        <CheckSquare className="w-4 h-4 mr-2" />
-                        Weekly Actions
-                      </label>
-                      <button
-                        onClick={() => addAction(category)}
-                        className="flex items-center space-x-2 px-3 py-2 text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors text-sm font-medium"
-                      >
-                        <Plus className="w-4 h-4" />
-                        <span>Add Action</span>
-                      </button>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      {(goal?.actions || []).map((action, index) => (
-                        <div key={index} className="flex items-center justify-between p-4 border border-slate-200 rounded-lg hover:border-slate-300 transition-colors">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center text-sm font-bold text-purple-700">
-                              {index + 1}
-                            </div>
-                            <div>
-                              <div className="font-medium text-slate-900">{action.text}</div>
-                              <div className="text-sm text-slate-500 flex items-center">
-                                <Repeat className="w-3 h-3 mr-1" />
-                                {getFrequencyDescription(action)}
-                                {action.frequency === 'multiple' && action.specificDays && (
-                                  <span className="ml-1">
-                                    ({action.specificDays.map(d => d[0].toUpperCase()).join(', ')})
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <button
-                              onClick={() => editAction(category, action, index)}
-                              className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                            >
-                              <Edit3 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => removeAction(category, index)}
-                              className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                      
-                      {(goal?.actions || []).length === 0 && (
-                        <button
-                          onClick={() => addAction(category)}
-                          className="w-full py-6 border-2 border-dashed border-slate-200 rounded-lg text-slate-500 hover:text-purple-600 hover:border-purple-300 transition-colors flex items-center justify-center"
-                        >
-                          <Plus className="w-5 h-5 mr-2" />
-                          Add your first action
-                        </button>
-                      )}
-                    </div>
+              {/* Deadline with visual calendar */}
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1 flex items-center">
+                  <CalendarIcon className="w-3 h-3 mr-1" />
+                  Deadline
+                </label>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="date"
+                    value={data.categoryGoals[currentCategory]?.deadline || getTwelveWeeksFromNow()}
+                    onChange={(e) => updateCategoryGoal(currentCategory, {
+                      category: currentCategory as any,
+                      goal: data.categoryGoals[currentCategory]?.goal || '',
+                      actions: data.categoryGoals[currentCategory]?.actions || [],
+                      milestones: data.categoryGoals[currentCategory]?.milestones || [],
+                      focus: data.categoryGoals[currentCategory]?.focus || '',
+                      wheelAreas: connectedAreas[currentCategory]?.map(area => area.area) || [],
+                      targetScore: data.categoryGoals[currentCategory]?.targetScore || 8,
+                      deadline: e.target.value
+                    })}
+                    className="p-1 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-xs"
+                  />
+                  <div className="bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded-full flex items-center">
+                    <Clock className="w-2.5 h-2.5 mr-0.5" />
+                    <span>{getWeeksRemaining(data.categoryGoals[currentCategory]?.deadline || getTwelveWeeksFromNow())}w</span>
                   </div>
                 </div>
               </div>
-            );
-          })}
+
+              {/* Milestones Section */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-medium text-slate-700 flex items-center">
+                    <Flag className="w-3 h-3 mr-1" />
+                    Milestones
+                  </label>
+                  <button
+                    onClick={addMilestone}
+                    className="flex items-center space-x-1 px-2 py-0.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors text-xs"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>Add</span>
+                  </button>
+                </div>
+                
+                <div className="space-y-2">
+                  {(data.categoryGoals[currentCategory]?.milestones || []).map((milestone, index) => {
+                    const status = getMilestoneStatus(milestone);
+                    
+                    return (
+                      <div key={milestone.id} className="flex items-center border rounded-lg p-2">
+                        <button
+                          onClick={() => toggleMilestoneCompletion(milestone.id)}
+                          className="mr-2 flex-shrink-0"
+                        >
+                          {milestone.completed ? (
+                            <CheckCircle2 className="w-4 h-4 text-green-600" />
+                          ) : (
+                            <Circle className="w-4 h-4 text-slate-400" />
+                          )}
+                        </button>
+                        
+                        <input
+                          type="text"
+                          value={milestone.title}
+                          onChange={(e) => updateMilestone(milestone.id, { title: e.target.value })}
+                          placeholder={`Milestone ${index + 1}`}
+                          className={`flex-1 p-1 border-0 bg-transparent focus:ring-0 text-xs ${
+                            milestone.completed ? 'line-through text-slate-500' : ''
+                          }`}
+                        />
+                        
+                        <div className="flex items-center space-x-2 flex-shrink-0">
+                          <div className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                            {formatDate(milestone.dueDate)}
+                          </div>
+                          <button
+                            onClick={() => removeMilestone(milestone.id)}
+                            className="text-slate-400 hover:text-red-500"
+                          >
+                            <Minus className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  
+                  {(data.categoryGoals[currentCategory]?.milestones || []).length === 0 && (
+                    <button
+                      onClick={addMilestone}
+                      className="w-full py-2 border border-dashed border-slate-200 rounded-lg text-slate-500 hover:text-blue-600 hover:border-blue-300 transition-colors text-xs flex items-center justify-center"
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      Add milestone
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-medium text-slate-700 flex items-center">
+                    <CheckSquare className="w-3 h-3 mr-1" />
+                    Key Actions
+                  </label>
+                  <button
+                    onClick={addAction}
+                    className="flex items-center space-x-1 px-2 py-0.5 text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors text-xs"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>Add</span>
+                  </button>
+                </div>
+                
+                <div className="space-y-2">
+                  {(data.categoryGoals[currentCategory]?.actions || []).map((action, index) => (
+                    <div key={index} className="border border-slate-200 rounded-lg p-2 hover:border-slate-300 transition-all">
+                      <div className="flex items-center space-x-2">
+                        <div className="flex-shrink-0 w-4 h-4 bg-purple-100 rounded-full flex items-center justify-center text-[10px] font-bold text-purple-700">
+                          {index + 1}
+                        </div>
+                        <input
+                          type="text"
+                          value={action.text}
+                          onChange={(e) => updateAction(index, { text: e.target.value })}
+                          placeholder="What action will you take?"
+                          className="flex-1 p-1 border-0 bg-transparent focus:ring-0 text-xs"
+                        />
+                        <button
+                          onClick={() => removeAction(index)}
+                          className="text-slate-400 hover:text-red-500"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </button>
+                      </div>
+
+                      {/* Frequency Selection - Compact */}
+                      <div className="mt-1 flex items-center space-x-1 ml-6">
+                        <div className="flex space-x-1">
+                          {[
+                            { value: 'daily', label: 'Daily', icon: '📅' },
+                            { value: 'weekly', label: 'Weekly', icon: '📆' },
+                            { value: 'multiple', label: 'Custom', icon: '🗓️' }
+                          ].map((freq) => (
+                            <button
+                              key={freq.value}
+                              onClick={() => updateAction(index, { frequency: freq.value as any, specificDays: [] })}
+                              className={`px-1.5 py-0.5 rounded text-[10px] transition-all ${
+                                action.frequency === freq.value
+                                  ? 'bg-purple-100 text-purple-700 font-medium'
+                                  : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                              }`}
+                            >
+                              {freq.icon}
+                            </button>
+                          ))}
+                        </div>
+                        
+                        <span className="text-[10px] text-slate-500">
+                          {getFrequencyDescription(action)}
+                        </span>
+                      </div>
+
+                      {/* Specific Days Selection - Compact Calendar */}
+                      {action.frequency === 'multiple' && (
+                        <div className="mt-1 ml-6 flex justify-start">
+                          {DAYS_OF_WEEK.map((day) => (
+                            <button
+                              key={day.value}
+                              onClick={() => toggleSpecificDay(index, day.value)}
+                              className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] transition-all mr-0.5 ${
+                                action.specificDays?.includes(day.value)
+                                  ? 'bg-purple-600 text-white'
+                                  : 'bg-white text-slate-600 border border-slate-200'
+                              }`}
+                            >
+                              {day.short.charAt(0)}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  
+                  {(data.categoryGoals[currentCategory]?.actions || []).length === 0 && (
+                    <button
+                      onClick={addAction}
+                      className="w-full py-2 border border-dashed border-slate-200 rounded-lg text-slate-500 hover:text-purple-600 hover:border-purple-300 transition-colors text-xs flex items-center justify-center"
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      Add action
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-      )}
 
-      {/* Navigation */}
-      <div className="flex items-center justify-between pt-6 border-t border-slate-200">
-        <button
-          onClick={goToPreviousArea}
-          disabled={data.currentStep === 'annual'}
-          className="flex items-center space-x-2 px-6 py-3 text-slate-600 hover:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back</span>
-        </button>
+        {/* Navigation */}
+        <div className="flex items-center justify-between pt-4 border-t border-slate-200 mt-4">
+          <button
+            onClick={goToPreviousArea}
+            disabled={data.currentStep === 'annual'}
+            className="flex items-center space-x-1 px-3 py-1.5 text-slate-600 hover:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs"
+          >
+            <ArrowLeft className="w-3 h-3" />
+            <span>Back</span>
+          </button>
 
-        <div className="text-sm text-slate-500 bg-slate-100 px-4 py-2 rounded-full">
-          {data.currentStep === 'annual' ? 'Annual Vision' : `${GOAL_CATEGORIES[data.categories[data.currentCategoryIndex]]?.name} (${data.currentCategoryIndex + 1}/${data.categories.length})`}
+          <div className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+            {data.currentStep === 'annual' ? 'Vision' : `${categoryInfo?.name} (${data.currentCategoryIndex + 1}/${data.categories.length})`}
+          </div>
+
+          <button
+            onClick={goToNextArea}
+            disabled={!canProceed()}
+            className="flex items-center space-x-1 px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs"
+          >
+            <span>{data.currentStep === 'quarter' && data.currentCategoryIndex === data.categories.length - 1 ? 'Complete' : 'Next'}</span>
+            <ArrowRight className="w-3 h-3" />
+          </button>
         </div>
-
-        <button
-          onClick={goToNextArea}
-          disabled={!canProceed()}
-          className="flex items-center space-x-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold"
-        >
-          <span>{data.currentStep === 'quarter' && data.currentCategoryIndex === data.categories.length - 1 ? 'Complete' : 'Next'}</span>
-          <ArrowRight className="w-4 h-4" />
-        </button>
       </div>
 
-      {/* Milestone Modal */}
-      {showMilestoneModal && editingMilestone && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-md w-full p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-slate-900">
-                {editingMilestone.title ? 'Edit Milestone' : 'Add Milestone'}
-              </h3>
-              <button
-                onClick={() => setShowMilestoneModal(false)}
-                className="text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Milestone Title
-                </label>
-                <input
-                  type="text"
-                  value={editingMilestone.title}
-                  onChange={(e) => setEditingMilestone({
-                    ...editingMilestone,
-                    title: e.target.value
-                  })}
-                  placeholder="e.g., Complete leadership training"
-                  className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Description (optional)
-                </label>
-                <textarea
-                  value={editingMilestone.description || ''}
-                  onChange={(e) => setEditingMilestone({
-                    ...editingMilestone,
-                    description: e.target.value
-                  })}
-                  placeholder="Additional details about this milestone"
-                  className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  rows={3}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Due Date
-                </label>
-                <input
-                  type="date"
-                  value={editingMilestone.dueDate}
-                  onChange={(e) => setEditingMilestone({
-                    ...editingMilestone,
-                    dueDate: e.target.value
-                  })}
-                  className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end space-x-3 mt-6">
-              <button
-                onClick={() => setShowMilestoneModal(false)}
-                className="px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={saveMilestone}
-                disabled={!editingMilestone.title.trim()}
-                className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <Save className="w-4 h-4" />
-                <span>Save Milestone</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Action Modal */}
-      {showActionModal && editingAction && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-md w-full p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-slate-900">
-                {editingAction.index >= 0 ? 'Edit Action' : 'Add Action'}
-              </h3>
-              <button
-                onClick={() => setShowActionModal(false)}
-                className="text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Action Description
-                </label>
-                <input
-                  type="text"
-                  value={editingAction.action.text}
-                  onChange={(e) => setEditingAction({
-                    ...editingAction,
-                    action: { ...editingAction.action, text: e.target.value }
-                  })}
-                  placeholder="e.g., Review and update resume"
-                  className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Frequency
-                </label>
-                <div className="space-y-3">
-                  {[
-                    { value: 'daily', label: 'Daily', description: 'Every day' },
-                    { value: 'weekly', label: 'Weekly', description: 'Once per week' },
-                    { value: 'multiple', label: 'Custom', description: 'Specific days of the week' }
-                  ].map((freq) => (
-                    <label key={freq.value} className="flex items-center space-x-3 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="frequency"
-                        value={freq.value}
-                        checked={editingAction.action.frequency === freq.value}
-                        onChange={(e) => setEditingAction({
-                          ...editingAction,
-                          action: { 
-                            ...editingAction.action, 
-                            frequency: e.target.value as any,
-                            specificDays: e.target.value === 'multiple' ? [] : undefined
-                          }
-                        })}
-                        className="text-purple-600 focus:ring-purple-500"
-                      />
-                      <div>
-                        <div className="font-medium text-slate-900">{freq.label}</div>
-                        <div className="text-sm text-slate-500">{freq.description}</div>
-                      </div>
-                    </label>
-                  ))}
+      {/* Visual Learning Aid - Compact */}
+      {data.currentStep === 'quarter' && (
+        <div className="bg-white rounded-xl p-3 shadow-sm border border-slate-200">
+          <h3 className="text-xs font-medium text-slate-900 mb-2 flex items-center">
+            <Star className="w-3 h-3 text-yellow-500 mr-1" />
+            Examples for {categoryInfo?.name}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[10px]">
+            {categoryInfo?.examples.slice(0, 2).map((example, i) => (
+              <div key={i} className="bg-slate-50 p-2 rounded-lg">
+                <div className="font-medium text-slate-800 mb-1">{example}</div>
+                <div className="text-slate-600 flex items-center">
+                  <div className="w-1 h-1 bg-slate-400 rounded-full mr-1"></div>
+                  <span className="truncate">Weekly planning (30 min)</span>
                 </div>
               </div>
-
-              {editingAction.action.frequency === 'multiple' && (
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Select Days
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {DAYS_OF_WEEK.map((day) => (
-                      <label key={day.value} className="flex items-center space-x-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={editingAction.action.specificDays?.includes(day.value) || false}
-                          onChange={() => toggleSpecificDay(day.value)}
-                          className="text-purple-600 focus:ring-purple-500"
-                        />
-                        <span className="text-sm text-slate-700">{day.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center justify-end space-x-3 mt-6">
-              <button
-                onClick={() => setShowActionModal(false)}
-                className="px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={saveAction}
-                disabled={!editingAction.action.text.trim()}
-                className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <Save className="w-4 h-4" />
-                <span>Save Action</span>
-              </button>
-            </div>
+            ))}
           </div>
         </div>
       )}
