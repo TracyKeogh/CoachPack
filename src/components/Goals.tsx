@@ -3,10 +3,11 @@ import { useDrag, useDrop } from 'react-dnd';
 import { 
   Target, ArrowLeft, ArrowRight, Check, Sparkles, Calendar as CalendarIcon, 
   Plus, Minus, Link, TrendingUp, Clock, Repeat, CheckSquare, 
-  Flag, CheckCircle2, Circle, Star, Award, Zap, BarChart3, Move, MoreVertical, X
+  Flag, CheckCircle2, Circle, Star, Award, Zap, BarChart3, Move, MoreVertical, X, Heart, Compass, Lightbulb
 } from 'lucide-react';
 import { useGoalSettingData } from '../hooks/useGoalSettingData';
 import { useWheelData } from '../hooks/useWheelData';
+import { useValuesData } from '../hooks/useValuesData';
 import { 
   GOAL_CATEGORIES, getTwelveWeeksFromNow, getMilestoneDueDates, 
   DAYS_OF_WEEK, ActionItem, Milestone 
@@ -92,20 +93,26 @@ interface DroppableCategoryBoxProps {
     targetScore: number;
     color: string;
   }>;
+  goalText: string;
+  onGoalChange: (category: string, goal: string) => void;
   onDrop: (fromCategory: string, toCategory: string, areaName: string) => void;
   onRemove: (category: string, areaName: string) => void;
   getChangeValue: (currentScore: number, targetScore: number) => string | null;
   getChangeColor: (currentScore: number, targetScore: number) => string;
+  alignedValues: string[];
 }
 
 const DroppableCategoryBox: React.FC<DroppableCategoryBoxProps> = ({
   category,
   categoryInfo,
   areas,
+  goalText,
+  onGoalChange,
   onDrop,
   onRemove,
   getChangeValue,
-  getChangeColor
+  getChangeColor,
+  alignedValues
 }) => {
   const [{ isOver }, drop] = useDrop({
     accept: 'life-area',
@@ -122,21 +129,60 @@ const DroppableCategoryBox: React.FC<DroppableCategoryBoxProps> = ({
   return (
     <div
       ref={drop}
-      className={`bg-slate-50 rounded-lg p-4 border-2 border-dashed transition-all duration-200 min-h-32 ${
+      className={`bg-white rounded-xl p-4 border-2 transition-all duration-200 min-h-48 ${
         isOver 
-          ? 'border-purple-400 bg-purple-50' 
-          : 'border-slate-200 hover:border-slate-300'
+          ? 'border-purple-400 bg-purple-50 shadow-lg' 
+          : 'border-slate-200 hover:border-slate-300 shadow-sm'
       }`}
     >
-      <h3 className="font-semibold text-slate-900 mb-3 flex items-center">
-        {categoryInfo.name}
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-semibold text-slate-900 flex items-center">
+          <span className="text-lg mr-2">{categoryInfo.icon}</span>
+          {categoryInfo.name}
+        </h3>
         {isOver && (
-          <span className="ml-2 text-purple-600 text-sm">Drop here</span>
+          <span className="text-purple-600 text-sm font-medium animate-pulse">Drop here</span>
         )}
-      </h3>
+      </div>
+      
+      {/* Goal Input */}
+      <div className="mb-4">
+        <textarea
+          value={goalText}
+          onChange={(e) => onGoalChange(category, e.target.value)}
+          placeholder={`What's your main ${categoryInfo.name.toLowerCase()} goal for the next 12 weeks?`}
+          className="w-full p-3 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+          rows={2}
+        />
+      </div>
+
+      {/* Aligned Values */}
+      {alignedValues.length > 0 && (
+        <div className="mb-4">
+          <div className="flex items-center space-x-1 mb-2">
+            <Heart className="w-3 h-3 text-red-500" />
+            <span className="text-xs font-medium text-slate-600">Aligned Values</span>
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {alignedValues.map((value, index) => (
+              <span 
+                key={index}
+                className="px-2 py-1 bg-red-50 text-red-700 rounded-full text-xs font-medium border border-red-200"
+              >
+                {value}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
       
       {/* Connected Life Areas */}
       <div className="space-y-2">
+        <div className="flex items-center space-x-1 mb-2">
+          <BarChart3 className="w-3 h-3 text-slate-500" />
+          <span className="text-xs font-medium text-slate-600">Connected Life Areas</span>
+        </div>
+        
         {areas.map((area) => (
           <DraggableLifeArea
             key={area.area}
@@ -150,13 +196,13 @@ const DroppableCategoryBox: React.FC<DroppableCategoryBoxProps> = ({
         ))}
         
         {areas.length === 0 && (
-          <div className="text-center py-6 text-slate-500 text-sm">
+          <div className="text-center py-4 text-slate-500 text-sm border-2 border-dashed border-slate-200 rounded-lg">
             {isOver ? (
               <span className="text-purple-600 font-medium">Drop life area here</span>
             ) : (
               <>
-                <div className="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <Plus className="w-4 h-4 text-slate-400" />
+                <div className="w-6 h-6 bg-slate-200 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <Plus className="w-3 h-3 text-slate-400" />
                 </div>
                 <span>Drag life areas here</span>
               </>
@@ -168,8 +214,195 @@ const DroppableCategoryBox: React.FC<DroppableCategoryBoxProps> = ({
   );
 };
 
+// Values Alignment Component
+interface ValuesAlignmentProps {
+  values: Array<{ id: string; name: string; }>;
+  onValuesAlign: (category: string, alignedValues: string[]) => void;
+  currentAlignments: Record<string, string[]>;
+}
+
+const ValuesAlignment: React.FC<ValuesAlignmentProps> = ({ values, onValuesAlign, currentAlignments }) => {
+  const [selectedValue, setSelectedValue] = useState<string | null>(null);
+  const [showAlignment, setShowAlignment] = useState(false);
+
+  const categories = ['business', 'body', 'balance'];
+  const categoryNames = {
+    business: 'Business & Career',
+    body: 'Health & Body', 
+    balance: 'Life Balance'
+  };
+
+  const categoryIcons = {
+    business: '💼',
+    body: '💪',
+    balance: '⚖️'
+  };
+
+  const handleValueClick = (valueName: string) => {
+    setSelectedValue(selectedValue === valueName ? null : valueName);
+  };
+
+  const handleCategoryAlign = (category: string) => {
+    if (!selectedValue) return;
+    
+    const currentValues = currentAlignments[category] || [];
+    const isAligned = currentValues.includes(selectedValue);
+    
+    if (isAligned) {
+      // Remove alignment
+      onValuesAlign(category, currentValues.filter(v => v !== selectedValue));
+    } else {
+      // Add alignment
+      onValuesAlign(category, [...currentValues, selectedValue]);
+    }
+  };
+
+  const isValueAligned = (valueName: string, category: string) => {
+    return (currentAlignments[category] || []).includes(valueName);
+  };
+
+  const getValueAlignmentCount = (valueName: string) => {
+    return categories.reduce((count, cat) => {
+      return count + (isValueAligned(valueName, cat) ? 1 : 0);
+    }, 0);
+  };
+
+  if (values.length === 0) {
+    return (
+      <div className="bg-gradient-to-r from-red-50 to-pink-50 rounded-xl p-6 border border-red-200">
+        <div className="text-center">
+          <Heart className="w-8 h-8 text-red-500 mx-auto mb-3" />
+          <h3 className="text-lg font-semibold text-red-900 mb-2">Values Alignment</h3>
+          <p className="text-red-700 text-sm mb-4">
+            Complete your Values Clarification first to align your goals with your core values.
+          </p>
+          <button 
+            onClick={() => window.location.href = '/values'}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+          >
+            Go to Values Clarification
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-gradient-to-r from-red-50 to-pink-50 rounded-xl p-6 border border-red-200">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center space-x-2">
+          <Heart className="w-5 h-5 text-red-600" />
+          <h3 className="text-lg font-semibold text-red-900">Values Alignment</h3>
+        </div>
+        <button
+          onClick={() => setShowAlignment(!showAlignment)}
+          className="text-red-600 hover:text-red-700 text-sm font-medium"
+        >
+          {showAlignment ? 'Hide' : 'Align Values'}
+        </button>
+      </div>
+
+      <p className="text-red-700 text-sm mb-4">
+        Connect your core values to your goals for authentic motivation and sustainable progress.
+      </p>
+
+      {showAlignment && (
+        <div className="space-y-4 animate-fadeIn">
+          {/* Values Selection */}
+          <div>
+            <h4 className="text-sm font-medium text-red-800 mb-2">Select a value to align:</h4>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              {values.slice(0, 6).map((value) => {
+                const alignmentCount = getValueAlignmentCount(value.name);
+                const isSelected = selectedValue === value.name;
+                
+                return (
+                  <button
+                    key={value.id}
+                    onClick={() => handleValueClick(value.name)}
+                    className={`p-2 rounded-lg text-sm font-medium transition-all relative ${
+                      isSelected
+                        ? 'bg-red-600 text-white shadow-md'
+                        : 'bg-white text-red-700 hover:bg-red-100 border border-red-200'
+                    }`}
+                  >
+                    {value.name}
+                    {alignmentCount > 0 && (
+                      <span className={`absolute -top-1 -right-1 w-4 h-4 rounded-full text-xs flex items-center justify-center ${
+                        isSelected ? 'bg-white text-red-600' : 'bg-red-600 text-white'
+                      }`}>
+                        {alignmentCount}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Category Alignment */}
+          {selectedValue && (
+            <div className="animate-fadeIn">
+              <h4 className="text-sm font-medium text-red-800 mb-2">
+                Align "{selectedValue}" with your goals:
+              </h4>
+              <div className="grid grid-cols-3 gap-2">
+                {categories.map((category) => {
+                  const isAligned = isValueAligned(selectedValue, category);
+                  
+                  return (
+                    <button
+                      key={category}
+                      onClick={() => handleCategoryAlign(category)}
+                      className={`p-3 rounded-lg text-sm font-medium transition-all border-2 ${
+                        isAligned
+                          ? 'bg-green-100 text-green-800 border-green-300'
+                          : 'bg-white text-slate-700 border-slate-200 hover:border-red-300'
+                      }`}
+                    >
+                      <div className="text-lg mb-1">{categoryIcons[category as keyof typeof categoryIcons]}</div>
+                      <div>{categoryNames[category as keyof typeof categoryNames]}</div>
+                      {isAligned && (
+                        <div className="mt-1">
+                          <Check className="w-4 h-4 text-green-600 mx-auto" />
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Current Alignments Summary */}
+          <div className="bg-white rounded-lg p-3 border border-red-200">
+            <h4 className="text-sm font-medium text-red-800 mb-2">Current Alignments:</h4>
+            <div className="space-y-2">
+              {categories.map((category) => {
+                const alignedValues = currentAlignments[category] || [];
+                
+                return (
+                  <div key={category} className="flex items-center justify-between">
+                    <span className="text-sm text-slate-700">
+                      {categoryIcons[category as keyof typeof categoryIcons]} {categoryNames[category as keyof typeof categoryNames]}
+                    </span>
+                    <span className="text-xs text-slate-500">
+                      {alignedValues.length} value{alignedValues.length !== 1 ? 's' : ''} aligned
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const Goals: React.FC = () => {
   const { data: wheelData } = useWheelData();
+  const { data: valuesData } = useValuesData();
   const {
     data,
     isLoaded,
@@ -189,6 +422,16 @@ const Goals: React.FC = () => {
   const [hasInitialized, setHasInitialized] = useState(false);
   const [showTips, setShowTips] = useState(false);
   const [connectedAreas, setConnectedAreas] = useState<Record<string, Array<{area: string, currentScore: number, targetScore: number, color: string}>>>({
+    business: [],
+    body: [],
+    balance: []
+  });
+  const [categoryGoals, setCategoryGoals] = useState<Record<string, string>>({
+    business: '',
+    body: '',
+    balance: ''
+  });
+  const [valuesAlignments, setValuesAlignments] = useState<Record<string, string[]>>({
     business: [],
     body: [],
     balance: []
@@ -468,6 +711,28 @@ const Goals: React.FC = () => {
     if (change > 0) return 'text-green-600 bg-green-50 border-green-200';
     if (change < 0) return 'text-red-600 bg-red-50 border-red-200';
     return 'text-slate-600 bg-slate-50 border-slate-200';
+  };
+
+  // Goal management
+  const handleGoalChange = (category: string, goal: string) => {
+    setCategoryGoals(prev => ({
+      ...prev,
+      [category]: goal
+    }));
+  };
+
+  // Values alignment management
+  const handleValuesAlign = (category: string, alignedValues: string[]) => {
+    setValuesAlignments(prev => ({
+      ...prev,
+      [category]: alignedValues
+    }));
+  };
+
+  // Get user's core values for alignment
+  const getUserValues = () => {
+    if (!valuesData || !valuesData.data) return [];
+    return valuesData.data.rankedCoreValues || [];
   };
 
   if (!isLoaded) {
@@ -802,6 +1067,8 @@ const Goals: React.FC = () => {
                 {data.categories.map((category) => {
                   const categoryInfo = GOAL_CATEGORIES[category];
                   const areas = connectedAreas[category] || [];
+                  const goalText = categoryGoals[category] || '';
+                  const alignedValues = valuesAlignments[category] || [];
                   
                   return (
                     <DroppableCategoryBox
@@ -809,14 +1076,24 @@ const Goals: React.FC = () => {
                       category={category}
                       categoryInfo={categoryInfo}
                       areas={areas}
+                      goalText={goalText}
+                      onGoalChange={handleGoalChange}
                       onDrop={moveAreaToCategory}
                       onRemove={removeAreaFromCategory}
                       getChangeValue={getChangeValue}
                       getChangeColor={getChangeColor}
+                      alignedValues={alignedValues}
                     />
                   );
                 })}
               </div>
+
+              {/* Values Alignment */}
+              <ValuesAlignment
+                values={getUserValues()}
+                onValuesAlign={handleValuesAlign}
+                currentAlignments={valuesAlignments}
+              />
             </div>
           )}
 
