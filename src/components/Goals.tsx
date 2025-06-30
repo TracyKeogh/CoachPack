@@ -1,9 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Target, ArrowLeft, ArrowRight, Check, Sparkles, Calendar as CalendarIcon, 
-  Plus, Minus, Link, TrendingUp, Clock, Repeat, CheckSquare, 
-  Flag, CheckCircle2, Circle, Star, Award, Zap, BarChart3, Heart, Separator
-} from 'lucide-react';
+import { Target, ArrowLeft, ArrowRight, Check, Sparkles, Calendar as CalendarIcon, Plus, Minus, Link, TrendingUp, Clock, Repeat, CheckSquare, Flag, CheckCircle2, Circle, Star, Award, Zap, BarChart3, Heart, SeparatorVertical as Separator } from 'lucide-react';
 import { useGoalSettingData } from '../hooks/useGoalSettingData';
 import { useWheelData } from '../hooks/useWheelData';
 import { useValuesData } from '../hooks/useValuesData';
