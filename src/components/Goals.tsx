@@ -592,9 +592,6 @@ const Goals: React.FC = () => {
               return (
                 <div key={category} className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
                   <div className="text-center mb-4">
-                    <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
-                      {categoryInfo.icon}
-                    </div>
                     <h3 className="text-lg font-semibold text-slate-900">{categoryInfo.name}</h3>
                     <p className="text-sm text-slate-600 mt-1">{categoryInfo.description}</p>
                   </div>
