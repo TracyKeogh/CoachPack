@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Target, ArrowLeft, ArrowRight, Check, Sparkles, Calendar, 
   Plus, Minus, Link, TrendingUp, Clock, Repeat, CheckSquare, 
-  Flag, CheckCircle2, Circle, Star 
+  Flag, CheckCircle2, Circle, Star, Award, Zap, BarChart3
 } from 'lucide-react';
 import { useGoalSettingData } from '../hooks/useGoalSettingData';
 import { useWheelData } from '../hooks/useWheelData';
@@ -250,72 +250,207 @@ const Goals: React.FC = () => {
   if (isComplete()) {
     return (
       <div className="space-y-6">
-        <div className="text-center py-8">
+        <div className="text-center py-6">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Check className="w-8 h-8 text-green-600" />
           </div>
           <h2 className="text-2xl font-bold text-slate-900 mb-2">🎉 Goals Complete!</h2>
           <p className="text-slate-600 mb-6">You've successfully set up your annual vision and 12-week goals.</p>
+        </div>
           
-          <div className="max-w-4xl mx-auto space-y-4">
-            {/* Annual Snapshot Summary */}
-            <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
-              <h3 className="text-base font-semibold text-slate-900 mb-2">Your Annual Vision</h3>
-              <div className="text-slate-700 italic mb-2 text-sm">"{data.annualSnapshot.snapshot}"</div>
-              {data.annualSnapshot.mantra && (
-                <div className="text-purple-600 font-medium text-sm mt-2">Mantra: "{data.annualSnapshot.mantra}"</div>
-              )}
+        <div className="max-w-5xl mx-auto space-y-6">
+          {/* Annual Snapshot Summary */}
+          <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-6 border border-purple-100">
+            <div className="flex items-center space-x-3 mb-3">
+              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-purple-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-purple-900">Annual Vision</h3>
             </div>
+            <div className="text-purple-800 italic mb-2 text-base bg-white bg-opacity-50 p-4 rounded-lg border border-purple-100">
+              "{data.annualSnapshot.snapshot}"
+            </div>
+            {data.annualSnapshot.mantra && (
+              <div className="flex items-center mt-3">
+                <Star className="w-4 h-4 text-yellow-500 mr-2" />
+                <div className="text-purple-700 font-medium">Mantra: "{data.annualSnapshot.mantra}"</div>
+              </div>
+            )}
+          </div>
 
-            {/* Category Goals Summary */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {data.categories.map((category) => {
-                const categoryInfo = GOAL_CATEGORIES[category];
-                const goal = data.categoryGoals[category];
-                
-                return (
-                  <div key={category} className="bg-white rounded-xl p-4 shadow-sm border border-slate-200 hover:shadow-md transition-all">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <span className="text-xl">{categoryInfo.icon}</span>
-                      <h3 className="text-sm font-semibold text-slate-900">{categoryInfo.name}</h3>
-                    </div>
-                    
-                    <div className="space-y-2 text-xs">
-                      <div>
-                        <div className="text-slate-500 uppercase tracking-wide">Goal</div>
-                        <div className="font-medium text-slate-900">{goal?.goal || 'Not set'}</div>
+          {/* Timeline Visualization */}
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">Your 12-Week Journey</h3>
+            
+            <div className="relative">
+              {/* Timeline line */}
+              <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-slate-200 ml-6"></div>
+              
+              <div className="space-y-8">
+                {data.categories.map((category, index) => {
+                  const categoryInfo = GOAL_CATEGORIES[category];
+                  const goal = data.categoryGoals[category];
+                  
+                  if (!goal || !goal.goal) return null;
+                  
+                  return (
+                    <div key={category} className="relative pl-16">
+                      {/* Timeline node */}
+                      <div className="absolute left-0 w-12 h-12 rounded-full bg-white border-2 border-slate-200 flex items-center justify-center text-xl">
+                        {categoryInfo.icon}
                       </div>
-
-                      {goal?.deadline && (
-                        <div className="flex items-center text-slate-600">
-                          <Clock className="w-3 h-3 mr-1 inline" />
-                          {formatDate(goal.deadline)} • {getWeeksRemaining(goal.deadline)}w
-                        </div>
-                      )}
                       
-                      <div>
-                        <div className="text-slate-500 uppercase tracking-wide mt-2">Actions</div>
-                        {goal?.actions?.slice(0, 2).map((action, index) => (
-                          <div key={index} className="text-slate-600 flex items-center mt-1">
-                            <div className="w-1 h-1 bg-slate-400 rounded-full mr-2"></div>
-                            <span className="truncate">{action.text}</span>
+                      <div className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md transition-shadow">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-semibold text-slate-900">{categoryInfo.name}</h4>
+                          <div className="text-sm text-slate-500 flex items-center">
+                            <Clock className="w-3 h-3 mr-1" />
+                            <span>{formatDate(goal.deadline)} • {getWeeksRemaining(goal.deadline)}w</span>
                           </div>
-                        ))}
-                        {goal?.actions?.length > 2 && (
-                          <div className="text-purple-600 mt-1">+{goal.actions.length - 2} more</div>
+                        </div>
+                        
+                        <div className="text-base font-medium text-slate-800 mb-3 pb-3 border-b border-slate-100">
+                          {goal.goal}
+                        </div>
+                        
+                        {/* Milestones */}
+                        {goal.milestones && goal.milestones.length > 0 && (
+                          <div className="mb-4">
+                            <div className="flex items-center mb-2">
+                              <Flag className="w-3 h-3 text-orange-500 mr-1" />
+                              <h5 className="text-sm font-medium text-slate-700">Milestones</h5>
+                            </div>
+                            
+                            <div className="flex flex-wrap gap-2">
+                              {goal.milestones.map((milestone, i) => (
+                                <div 
+                                  key={milestone.id}
+                                  className={`px-3 py-1.5 rounded-lg text-xs flex items-center ${
+                                    milestone.completed 
+                                      ? 'bg-green-50 text-green-700 border border-green-200' 
+                                      : 'bg-blue-50 text-blue-700 border border-blue-200'
+                                  }`}
+                                >
+                                  {milestone.completed ? (
+                                    <CheckCircle2 className="w-3 h-3 mr-1.5" />
+                                  ) : (
+                                    <Flag className="w-3 h-3 mr-1.5" />
+                                  )}
+                                  <span className={milestone.completed ? 'line-through opacity-75' : ''}>
+                                    {milestone.title}
+                                  </span>
+                                  <span className="ml-1.5 text-[10px] opacity-75">
+                                    {formatDate(milestone.dueDate)}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Key actions */}
+                        {goal.actions && goal.actions.length > 0 && (
+                          <div>
+                            <div className="flex items-center mb-2">
+                              <CheckSquare className="w-3 h-3 text-purple-500 mr-1" />
+                              <h5 className="text-sm font-medium text-slate-700">Key Actions</h5>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                              {goal.actions.map((action, i) => (
+                                <div key={i} className="flex items-center bg-slate-50 rounded-lg p-2 text-xs">
+                                  <div className="w-5 h-5 bg-purple-100 rounded-full flex items-center justify-center text-[10px] font-bold text-purple-700 mr-2">
+                                    {i + 1}
+                                  </div>
+                                  <div className="flex-1">
+                                    <div className="font-medium text-slate-800">{action.text}</div>
+                                    <div className="text-[10px] text-slate-500 flex items-center mt-0.5">
+                                      <Repeat className="w-2.5 h-2.5 mr-1" />
+                                      {getFrequencyDescription(action)}
+                                      {action.frequency === 'multiple' && action.specificDays && (
+                                        <span className="ml-1">
+                                          ({action.specificDays.map(d => d[0].toUpperCase()).join(', ')})
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                         )}
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
+          </div>
+          
+          {/* Goal Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+              <div className="flex items-center space-x-3 mb-3">
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Target className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900">Total Goals</h3>
+                  <div className="text-2xl font-bold text-blue-600">{data.categories.length}</div>
+                </div>
+              </div>
+              <div className="text-xs text-slate-600">
+                Across business, health, and balance areas
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+              <div className="flex items-center space-x-3 mb-3">
+                <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                  <Flag className="w-5 h-5 text-orange-600" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900">Milestones</h3>
+                  <div className="text-2xl font-bold text-orange-600">
+                    {Object.values(data.categoryGoals).reduce((sum, goal) => sum + (goal.milestones?.length || 0), 0)}
+                  </div>
+                </div>
+              </div>
+              <div className="text-xs text-slate-600">
+                Checkpoints to track your progress
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+              <div className="flex items-center space-x-3 mb-3">
+                <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                  <CheckSquare className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900">Key Actions</h3>
+                  <div className="text-2xl font-bold text-purple-600">
+                    {Object.values(data.categoryGoals).reduce((sum, goal) => sum + (goal.actions?.length || 0), 0)}
+                  </div>
+                </div>
+              </div>
+              <div className="text-xs text-slate-600">
+                Daily and weekly habits for success
+              </div>
+            </div>
+          </div>
+          
+          {/* Next Steps */}
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-white">
+            <h3 className="text-lg font-semibold mb-3">Next Steps</h3>
+            <p className="text-blue-100 mb-4">
+              Now that you've set your goals, it's time to schedule your actions and track your progress.
+            </p>
             
             <button
               onClick={() => window.location.href = '/calendar'}
-              className="mx-auto mt-4 flex items-center space-x-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              className="flex items-center space-x-2 px-6 py-3 bg-white text-blue-700 rounded-lg hover:bg-blue-50 transition-colors font-medium"
             >
-              <Calendar className="w-4 h-4" />
+              <CalendarIcon className="w-4 h-4" />
               <span>Schedule Your Actions</span>
             </button>
           </div>
