@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Target, ArrowLeft, ArrowRight, Check, Sparkles, Calendar as CalendarIcon, 
   Plus, Minus, Link, TrendingUp, Clock, Repeat, CheckSquare, 
-  Flag, CheckCircle2, Circle, Star, Award, Zap, BarChart3, X, Edit3, Save
+  Flag, CheckCircle2, Circle, Star, Award, Zap, BarChart3, X, Edit3, Save, Move
 } from 'lucide-react';
 import { useGoalSettingData } from '../hooks/useGoalSettingData';
 import { useWheelData } from '../hooks/useWheelData';
@@ -10,6 +10,14 @@ import {
   GOAL_CATEGORIES, getTwelveWeeksFromNow, getMilestoneDueDates, 
   DAYS_OF_WEEK, ActionItem, Milestone 
 } from '../types/goals';
+
+interface LifeArea {
+  area: string;
+  score: number;
+  color: string;
+  targetScore?: number;
+  category?: string;
+}
 
 const Goals: React.FC = () => {
   const { data: wheelData } = useWheelData();
@@ -36,6 +44,7 @@ const Goals: React.FC = () => {
   const [editingMilestone, setEditingMilestone] = useState<Milestone | null>(null);
   const [editingAction, setEditingAction] = useState<{ action: ActionItem; index: number } | null>(null);
   const [currentEditingCategory, setCurrentEditingCategory] = useState<string>('');
+  const [connectedAreas, setConnectedAreas] = useState<Record<string, LifeArea[]>>({});
 
   // Initialize from wheel data
   useEffect(() => {
@@ -45,15 +54,37 @@ const Goals: React.FC = () => {
     }
   }, [wheelData, hasInitialized, initializeFromWheelData]);
 
+  // Initialize connected areas from wheel data and goals
+  useEffect(() => {
+    if (wheelData && wheelData.length > 0 && data.categories) {
+      const initialConnectedAreas: Record<string, LifeArea[]> = {};
+      
+      data.categories.forEach(category => {
+        const categoryInfo = GOAL_CATEGORIES[category as keyof typeof GOAL_CATEGORIES];
+        const goal = data.categoryGoals[category];
+        
+        // Get wheel areas for this category
+        const areas = wheelData
+          .filter(area => categoryInfo.wheelAreas.includes(area.area))
+          .map(area => ({
+            ...area,
+            targetScore: goal?.targetScore || area.score + 2,
+            category
+          }));
+        
+        initialConnectedAreas[category] = areas;
+      });
+      
+      setConnectedAreas(initialConnectedAreas);
+    }
+  }, [wheelData, data.categories, data.categoryGoals]);
+
   const currentCategory = getCurrentCategory();
   const progress = getProgress();
 
   // Get wheel data for current category
   const getCategoryWheelData = (category: string) => {
-    if (!wheelData || !GOAL_CATEGORIES[category as keyof typeof GOAL_CATEGORIES]) return [];
-    
-    const categoryInfo = GOAL_CATEGORIES[category as keyof typeof GOAL_CATEGORIES];
-    return wheelData.filter(area => categoryInfo.wheelAreas.includes(area.area));
+    return connectedAreas[category] || [];
   };
 
   // Format date for display
@@ -254,6 +285,57 @@ const Goals: React.FC = () => {
       default:
         return '';
     }
+  };
+
+  // Handle moving life areas between categories
+  const moveLifeArea = (area: LifeArea, fromCategory: string, toCategory: string) => {
+    // Remove from source category
+    const updatedConnectedAreas = { ...connectedAreas };
+    updatedConnectedAreas[fromCategory] = updatedConnectedAreas[fromCategory].filter(a => a.area !== area.area);
+    
+    // Add to target category
+    const updatedArea = { ...area, category: toCategory };
+    updatedConnectedAreas[toCategory] = [...updatedConnectedAreas[toCategory], updatedArea];
+    
+    setConnectedAreas(updatedConnectedAreas);
+    
+    // Update the goals data
+    data.categories.forEach(cat => {
+      const goal = data.categoryGoals[cat];
+      if (goal) {
+        updateCategoryGoal(cat, {
+          ...goal,
+          wheelAreas: updatedConnectedAreas[cat].map(a => a.area)
+        });
+      }
+    });
+  };
+
+  // Remove life area from a category
+  const removeLifeArea = (area: LifeArea, category: string) => {
+    const updatedConnectedAreas = { ...connectedAreas };
+    updatedConnectedAreas[category] = updatedConnectedAreas[category].filter(a => a.area !== area.area);
+    
+    setConnectedAreas(updatedConnectedAreas);
+    
+    // Update the goal data
+    const goal = data.categoryGoals[category];
+    if (goal) {
+      updateCategoryGoal(category, {
+        ...goal,
+        wheelAreas: updatedConnectedAreas[category].map(a => a.area)
+      });
+    }
+  };
+
+  // Update target score for a life area
+  const updateTargetScore = (area: LifeArea, category: string, newScore: number) => {
+    const updatedConnectedAreas = { ...connectedAreas };
+    updatedConnectedAreas[category] = updatedConnectedAreas[category].map(a => 
+      a.area === area.area ? { ...a, targetScore: newScore } : a
+    );
+    
+    setConnectedAreas(updatedConnectedAreas);
   };
 
   if (!isLoaded) {
@@ -588,6 +670,7 @@ const Goals: React.FC = () => {
             {data.categories.map((category) => {
               const categoryInfo = GOAL_CATEGORIES[category];
               const goal = data.categoryGoals[category];
+              const areas = getCategoryWheelData(category);
               
               return (
                 <div key={category} className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
@@ -609,7 +692,7 @@ const Goals: React.FC = () => {
                         actions: goal?.actions || [],
                         milestones: goal?.milestones || [],
                         focus: goal?.focus || '',
-                        wheelAreas: getCategoryWheelData(category).map(area => area.area),
+                        wheelAreas: areas.map(area => area.area),
                         targetScore: goal?.targetScore || 8,
                         deadline: goal?.deadline || getTwelveWeeksFromNow()
                       })}
@@ -621,15 +704,94 @@ const Goals: React.FC = () => {
                   {/* Connected Wheel Areas */}
                   {wheelData && (
                     <div className="mt-4">
-                      <div className="text-xs text-slate-500 mb-2">Connected life areas:</div>
-                      <div className="flex flex-wrap gap-1">
-                        {getCategoryWheelData(category).map((area, index) => (
-                          <div key={index} className="flex items-center px-2 py-1 bg-slate-100 rounded-full text-xs">
-                            <div className="w-2 h-2 rounded-full mr-1" style={{backgroundColor: area.color}}></div>
-                            <span className="font-medium text-slate-700">{area.area}</span>
-                            <span className="text-slate-500 ml-1">{area.score}/10</span>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-xs text-slate-500">Connected life areas:</div>
+                        <button 
+                          onClick={() => {
+                            // Show all available wheel areas that aren't already assigned
+                            // This would be implemented in a modal
+                            alert("Feature to add more life areas coming soon!");
+                          }}
+                          className="text-xs text-purple-600 hover:text-purple-800"
+                        >
+                          + Add area
+                        </button>
+                      </div>
+                      <div className="space-y-2">
+                        {areas.map((area, index) => {
+                          const currentScore = area.score;
+                          const targetScore = area.targetScore || currentScore + 2;
+                          const change = targetScore - currentScore;
+                          
+                          return (
+                            <div 
+                              key={index} 
+                              className="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-200 group hover:border-slate-300"
+                            >
+                              <div className="flex items-center">
+                                <div className="w-3 h-3 rounded-full mr-2" style={{backgroundColor: area.color}}></div>
+                                <span className="font-medium text-slate-700 text-sm">{area.area}</span>
+                              </div>
+                              
+                              <div className="flex items-center space-x-3">
+                                <div className="flex items-center">
+                                  <span className="text-slate-600 text-sm">{currentScore}</span>
+                                  <span className="mx-1 text-slate-400">→</span>
+                                  <span className="text-slate-800 font-medium text-sm">{targetScore}</span>
+                                  <span className={`ml-1 text-xs font-medium ${change > 0 ? 'text-green-600' : change < 0 ? 'text-red-600' : 'text-slate-500'}`}>
+                                    {change > 0 ? `+${change}` : change}
+                                  </span>
+                                </div>
+                                
+                                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center space-x-1">
+                                  <button 
+                                    onClick={() => updateTargetScore(area, category, Math.min(10, targetScore + 1))}
+                                    className="w-5 h-5 flex items-center justify-center text-slate-500 hover:text-slate-700 hover:bg-slate-200 rounded"
+                                  >
+                                    +
+                                  </button>
+                                  <button 
+                                    onClick={() => updateTargetScore(area, category, Math.max(1, targetScore - 1))}
+                                    className="w-5 h-5 flex items-center justify-center text-slate-500 hover:text-slate-700 hover:bg-slate-200 rounded"
+                                  >
+                                    -
+                                  </button>
+                                  
+                                  <div className="relative group/menu">
+                                    <button className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded">
+                                      <Move className="w-3 h-3" />
+                                    </button>
+                                    
+                                    <div className="absolute right-0 mt-1 bg-white shadow-lg rounded-lg border border-slate-200 p-2 w-36 z-10 hidden group-hover/menu:block">
+                                      {data.categories.filter(c => c !== category).map(targetCategory => (
+                                        <button
+                                          key={targetCategory}
+                                          onClick={() => moveLifeArea(area, category, targetCategory)}
+                                          className="w-full text-left px-2 py-1 text-sm text-slate-700 hover:bg-slate-100 rounded"
+                                        >
+                                          Move to {GOAL_CATEGORIES[targetCategory].name}
+                                        </button>
+                                      ))}
+                                      <div className="border-t border-slate-200 my-1"></div>
+                                      <button
+                                        onClick={() => removeLifeArea(area, category)}
+                                        className="w-full text-left px-2 py-1 text-sm text-red-600 hover:bg-red-50 rounded"
+                                      >
+                                        Remove
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        
+                        {areas.length === 0 && (
+                          <div className="text-center py-3 text-slate-500 text-sm border border-dashed border-slate-300 rounded-lg">
+                            No life areas connected yet
                           </div>
-                        ))}
+                        )}
                       </div>
                     </div>
                   )}
@@ -663,17 +825,66 @@ const Goals: React.FC = () => {
                 </div>
 
                 {/* Connected Wheel Areas */}
-                {wheelData && (
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    {getCategoryWheelData(category).map((area, index) => (
-                      <div key={index} className="flex items-center px-3 py-1 bg-slate-100 rounded-full text-sm">
-                        <div className="w-3 h-3 rounded-full mr-2" style={{backgroundColor: area.color}}></div>
-                        <span className="font-medium text-slate-700">{area.area}</span>
-                        <span className="text-slate-500 ml-1">{area.score}/10</span>
-                      </div>
-                    ))}
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-medium text-slate-700">Connected Life Areas</h3>
+                    <button 
+                      onClick={() => {
+                        // Show all available wheel areas that aren't already assigned
+                        alert("Feature to add more life areas coming soon!");
+                      }}
+                      className="text-xs text-purple-600 hover:text-purple-800 flex items-center"
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      Add area
+                    </button>
                   </div>
-                )}
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {getCategoryWheelData(category).map((area, index) => {
+                      const currentScore = area.score;
+                      const targetScore = area.targetScore || currentScore + 2;
+                      const change = targetScore - currentScore;
+                      
+                      return (
+                        <div 
+                          key={index} 
+                          className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200 group hover:border-slate-300"
+                        >
+                          <div className="flex items-center">
+                            <div className="w-4 h-4 rounded-full mr-2" style={{backgroundColor: area.color}}></div>
+                            <span className="font-medium text-slate-700">{area.area}</span>
+                          </div>
+                          
+                          <div className="flex items-center space-x-3">
+                            <div className="flex items-center">
+                              <span className="text-slate-600">{currentScore}</span>
+                              <span className="mx-1 text-slate-400">→</span>
+                              <input
+                                type="number"
+                                min="1"
+                                max="10"
+                                value={targetScore}
+                                onChange={(e) => updateTargetScore(area, category, parseInt(e.target.value) || currentScore)}
+                                className="w-10 p-0.5 text-center border border-slate-300 rounded text-slate-800 font-medium"
+                              />
+                              <span className={`ml-1 text-xs font-medium ${change > 0 ? 'text-green-600' : change < 0 ? 'text-red-600' : 'text-slate-500'}`}>
+                                {change > 0 ? `+${change}` : change}
+                              </span>
+                            </div>
+                            
+                            <button 
+                              onClick={() => removeLifeArea(area, category)}
+                              className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
 
                 <div className="space-y-6">
                   <div>
