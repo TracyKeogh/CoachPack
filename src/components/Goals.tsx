@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Target, ArrowLeft, ArrowRight, Check, Sparkles, Calendar, Plus, Minus, Link, TrendingUp, Clock, Repeat, CheckSquare, Flag, CheckCircle2, Circle } from 'lucide-react';
+import { Target, ArrowLeft, ArrowRight, Check, Sparkles, Calendar, Plus, Minus, Link, TrendingUp, Clock, Repeat, CheckSquare, Flag, CheckCircle2, Circle, Star } from 'lucide-react';
 import { useGoalSettingData } from '../hooks/useGoalSettingData';
 import { useWheelData } from '../hooks/useWheelData';
 import { GOAL_CATEGORIES, getTwelveWeeksFromNow, getMilestoneDueDates, DAYS_OF_WEEK, ActionItem, Milestone } from '../types/goals';
@@ -226,7 +226,7 @@ const Goals: React.FC = () => {
               onClick={() => window.location.href = '/calendar'}
               className="mx-auto mt-4 flex items-center space-x-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
             >
-              <CalendarIcon className="w-4 h-4" />
+              <Calendar className="w-4 h-4" />
               <span>Schedule Your Actions</span>
             </button>
           </div>
