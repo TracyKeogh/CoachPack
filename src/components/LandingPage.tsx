@@ -19,7 +19,7 @@ import {
   Shield
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import DemoVideo from './DemoVideo';
+import InteractiveDemoVideo from './InteractiveDemoVideo';
 import WheelSignupModal from './WheelSignupModal';
 
 interface LandingPageProps {
@@ -139,9 +139,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
               <a href="#how-it-works" className="text-slate-600 hover:text-slate-900 transition-colors">How It Works</a>
               <button 
                 onClick={() => setShowVideoDemo(true)}
-                className="text-slate-600 hover:text-slate-900 transition-colors"
+                className="flex items-center space-x-2 text-slate-600 hover:text-slate-900 transition-colors"
               >
-                Demo
+                <Play className="w-4 h-4" />
+                <span>Demo</span>
               </button>
               <Link 
                 to="/pricing" 
@@ -191,12 +192,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 <span>Start Free Assessment</span>
                 <ArrowRight className="w-5 h-5" />
               </button>
-              <Link 
-                to="/pricing"
+              <button 
+                onClick={() => setShowVideoDemo(true)}
                 className="flex items-center justify-center space-x-2 px-8 py-4 bg-white text-slate-700 rounded-xl hover:bg-slate-50 transition-colors font-semibold text-lg border border-slate-200"
               >
-                <span>View Pricing</span>
-              </Link>
+                <Play className="w-5 h-5" />
+                <span>Watch Demo</span>
+              </button>
             </div>
 
             {/* Social Proof */}
@@ -216,6 +218,39 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 <span className="text-sm text-slate-600 ml-2">4.9/5 rating</span>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Interactive Demo Section */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold text-slate-900 mb-4">
+              See Coach Pack in Action
+            </h2>
+            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
+              Watch how these tools help you get clarity on your priorities and create actionable plans for change.
+            </p>
+          </div>
+
+          <div className="max-w-5xl mx-auto">
+            <InteractiveDemoVideo 
+              autoPlay={false}
+              onComplete={() => {
+                // Optional: Show CTA after demo completes
+              }}
+            />
+          </div>
+
+          <div className="text-center mt-8">
+            <button 
+              onClick={() => setShowWheelSignup(true)}
+              className="px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold"
+            >
+              Try It Yourself - Free Assessment
+            </button>
+            <p className="text-slate-500 text-sm mt-2">No sign up required • Takes 5 minutes</p>
           </div>
         </div>
       </section>
@@ -274,7 +309,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 <p className="text-slate-600">Watch how these tools help you get clarity on your priorities</p>
               </div>
               
-              <DemoVideo 
+              <InteractiveDemoVideo 
                 autoPlay={true}
                 onComplete={() => {
                   // Optional: Auto-close or show CTA after video completes
