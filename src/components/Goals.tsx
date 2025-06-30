@@ -34,8 +34,6 @@ const Goals: React.FC = () => {
 
   const currentCategory = getCurrentCategory();
   const progress = getProgress();
-  const stepNames = { annual: 'Annual Vision', quarter: '12-Week Goals' };
-  const stepIcons = { annual: Sparkles, quarter: Calendar };
 
   // Get wheel data for current category
   const getCategoryWheelData = (category: string) => {
@@ -47,16 +45,6 @@ const Goals: React.FC = () => {
 
   // Format date for display
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'long',
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
-  };
-
-  const formatShortDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { 
       month: 'short', 
@@ -71,15 +59,6 @@ const Goals: React.FC = () => {
     const diffTime = deadlineDate.getTime() - today.getTime();
     const diffWeeks = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 7));
     return Math.max(0, diffWeeks);
-  };
-
-  // Calculate days remaining
-  const getDaysRemaining = (deadline: string) => {
-    const today = new Date();
-    const deadlineDate = new Date(deadline);
-    const diffTime = deadlineDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return Math.max(0, diffDays);
   };
 
   // Handle adding/removing actions for category goals
@@ -142,7 +121,6 @@ const Goals: React.FC = () => {
       deadline: getTwelveWeeksFromNow()
     };
     
-    // Calculate suggested due date based on existing milestones
     const today = new Date().toISOString().split('T')[0];
     const goalDeadline = currentGoal.deadline;
     const existingMilestones = currentGoal.milestones.length;
@@ -212,15 +190,6 @@ const Goals: React.FC = () => {
     }
   };
 
-  const getFrequencyIcon = (frequency: string) => {
-    switch (frequency) {
-      case 'daily': return '📅';
-      case 'weekly': return '📆';
-      case 'multiple': return '🗓️';
-      default: return '📋';
-    }
-  };
-
   const getFrequencyDescription = (action: ActionItem) => {
     switch (action.frequency) {
       case 'daily':
@@ -237,27 +206,6 @@ const Goals: React.FC = () => {
         return 'Select days';
       default:
         return 'Set frequency';
-    }
-  };
-
-  const getMilestoneStatus = (milestone: Milestone) => {
-    if (milestone.completed) return 'completed';
-    
-    const today = new Date();
-    const dueDate = new Date(milestone.dueDate);
-    const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (daysUntilDue < 0) return 'overdue';
-    if (daysUntilDue <= 7) return 'due-soon';
-    return 'on-track';
-  };
-
-  const getMilestoneStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'text-green-600 bg-green-50 border-green-200';
-      case 'overdue': return 'text-red-600 bg-red-50 border-red-200';
-      case 'due-soon': return 'text-orange-600 bg-orange-50 border-orange-200';
-      default: return 'text-blue-600 bg-blue-50 border-blue-200';
     }
   };
 
@@ -283,7 +231,7 @@ const Goals: React.FC = () => {
             <Check className="w-10 h-10 text-green-600" />
           </div>
           <h2 className="text-3xl font-bold text-slate-900 mb-4">🎉 Goals Complete!</h2>
-          <p className="text-slate-600 mb-8">You've successfully set up your annual vision and 12-week goals across all three life areas.</p>
+          <p className="text-slate-600 mb-8">You've successfully set up your annual vision and 12-week goals.</p>
           
           <div className="max-w-4xl mx-auto space-y-6">
             {/* Annual Snapshot Summary */}
@@ -308,7 +256,7 @@ const Goals: React.FC = () => {
                       <h3 className="text-lg font-semibold text-slate-900">{categoryInfo.name}</h3>
                     </div>
                     
-                    <div className="space-y-4 text-sm">
+                    <div className="space-y-3 text-sm">
                       <div>
                         <div className="text-slate-500 mb-1">12-Week Goal</div>
                         <div className="font-medium text-slate-900">{goal?.goal || 'Not set'}</div>
@@ -317,71 +265,18 @@ const Goals: React.FC = () => {
                       {goal?.deadline && (
                         <div>
                           <div className="text-slate-500 mb-1">Deadline</div>
-                          <div className="flex items-center space-x-2">
-                            <Clock className="w-4 h-4 text-slate-400" />
-                            <span className="text-slate-700">{formatDate(goal.deadline)}</span>
-                            <span className="text-xs text-slate-500">
-                              ({getWeeksRemaining(goal.deadline)} weeks remaining)
-                            </span>
-                          </div>
-                        </div>
-                      )}
-
-                      {goal?.milestones && goal.milestones.length > 0 && (
-                        <div>
-                          <div className="text-slate-500 mb-2">Milestones</div>
-                          <div className="space-y-2">
-                            {goal.milestones.map((milestone) => {
-                              const status = getMilestoneStatus(milestone);
-                              return (
-                                <div key={milestone.id} className="flex items-center space-x-2">
-                                  {milestone.completed ? (
-                                    <CheckCircle2 className="w-3 h-3 text-green-500" />
-                                  ) : (
-                                    <Circle className="w-3 h-3 text-slate-400" />
-                                  )}
-                                  <span className={`text-xs truncate flex-1 ${
-                                    milestone.completed ? 'line-through text-slate-500' : 'text-slate-700'
-                                  }`}>
-                                    {milestone.title}
-                                  </span>
-                                  <span className="text-xs text-slate-500">
-                                    {formatShortDate(milestone.dueDate)}
-                                  </span>
-                                </div>
-                              );
-                            })}
-                          </div>
+                          <div className="text-slate-700">{formatDate(goal.deadline)} ({getWeeksRemaining(goal.deadline)} weeks)</div>
                         </div>
                       )}
                       
                       <div>
-                        <div className="text-slate-500 mb-1">Key Actions</div>
-                        <div className="space-y-2">
-                          {goal?.actions?.map((action, index) => (
-                            <div key={index} className="flex items-center justify-between text-xs">
-                              <span className="text-slate-700 truncate flex-1">{action.text}</span>
-                              <span className="text-slate-500 ml-2 flex items-center space-x-1">
-                                <span>{getFrequencyIcon(action.frequency)}</span>
-                                <span>{getFrequencyDescription(action)}</span>
-                              </span>
-                            </div>
-                          )) || <div className="text-slate-500">No actions set</div>}
-                        </div>
-                      </div>
-
-                      {goal?.wheelAreas && goal.wheelAreas.length > 0 && (
-                        <div>
-                          <div className="text-slate-500 mb-1">Connected Areas</div>
-                          <div className="flex flex-wrap gap-1">
-                            {goal.wheelAreas.map(area => (
-                              <span key={area} className="px-2 py-1 bg-slate-100 text-slate-600 rounded-full text-xs">
-                                {area}
-                              </span>
-                            ))}
+                        <div className="text-slate-500 mb-1">Actions ({goal?.actions?.length || 0})</div>
+                        {goal?.actions?.slice(0, 2).map((action, index) => (
+                          <div key={index} className="text-xs text-slate-600 truncate">
+                            • {action.text}
                           </div>
-                        </div>
-                      )}
+                        )) || <div className="text-slate-500">No actions set</div>}
+                      </div>
                     </div>
                   </div>
                 );
@@ -393,7 +288,6 @@ const Goals: React.FC = () => {
     );
   }
 
-  const StepIcon = stepIcons[data.currentStep];
   const categoryInfo = currentCategory ? GOAL_CATEGORIES[currentCategory as keyof typeof GOAL_CATEGORIES] : null;
 
   return (
@@ -401,9 +295,9 @@ const Goals: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Goal Setting Flow</h1>
+          <h1 className="text-3xl font-bold text-slate-900">12-Week Goal Setting</h1>
           <p className="text-slate-600 mt-2">
-            Set your annual vision, then break it down into 12-week goals with milestones and actions
+            Set your annual vision, then break it down into actionable 12-week goals
           </p>
           {lastSaved && (
             <p className="text-sm text-green-600 mt-1">
@@ -413,10 +307,10 @@ const Goals: React.FC = () => {
         </div>
       </div>
 
-      {/* Progress Bar */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+      {/* Progress */}
+      <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-slate-900">Your Progress</h3>
+          <h3 className="text-lg font-semibold text-slate-900">Progress</h3>
           <span className="text-sm text-slate-600">{progress.completed}/{progress.total} steps</span>
         </div>
         <div className="w-full bg-slate-200 rounded-full h-3">
@@ -425,61 +319,23 @@ const Goals: React.FC = () => {
             style={{ width: `${progress.percentage}%` }}
           />
         </div>
-        <div className="mt-2 text-sm text-slate-600">{progress.percentage}% complete</div>
       </div>
 
       {/* Current Step */}
-      <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
-        {/* Step Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center space-x-4">
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-              categoryInfo ? `bg-${categoryInfo.color}-100` : 'bg-purple-100'
-            }`}>
-              <StepIcon className={`w-6 h-6 ${
-                categoryInfo ? `text-${categoryInfo.color}-600` : 'text-purple-600'
-              }`} />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-slate-900">{stepNames[data.currentStep]}</h2>
-              {categoryInfo && (
-                <div className="flex items-center space-x-2">
-                  <span className="text-2xl">{categoryInfo.icon}</span>
-                  <span className="text-slate-600">{categoryInfo.name}</span>
-                </div>
-              )}
-            </div>
-          </div>
-          <div className="text-right">
-            {data.currentStep !== 'annual' && (
-              <>
-                <div className="text-sm text-slate-500">Category {data.currentCategoryIndex + 1} of {data.categories.length}</div>
-                <div className="text-sm text-slate-500">Step 2 of 2</div>
-              </>
-            )}
-            {data.currentStep === 'annual' && (
-              <div className="text-sm text-slate-500">Step 1 of 2</div>
-            )}
-          </div>
-        </div>
-
+      <div className="bg-white rounded-xl p-8 shadow-sm border border-slate-200">
         {/* Step Content */}
         <div className="space-y-6">
           {/* Annual Snapshot */}
           {data.currentStep === 'annual' && (
             <div className="space-y-6">
-              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-6 border border-purple-200">
-                <h3 className="text-lg font-semibold text-purple-900 mb-2">
-                  Imagine it's 12 months from now...
-                </h3>
-                <p className="text-purple-700">
-                  You've fully achieved your goals across all areas of your life. What does your life look like?
-                </p>
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold text-slate-900 mb-2">Your Annual Vision</h2>
+                <p className="text-slate-600">Imagine it's 12 months from now and you've achieved your goals...</p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-3">
-                  Your Annual Life Snapshot
+                  Describe your ideal life one year from now
                 </label>
                 <textarea
                   value={data.annualSnapshot.snapshot}
@@ -487,15 +343,15 @@ const Goals: React.FC = () => {
                     ...data.annualSnapshot,
                     snapshot: e.target.value
                   })}
-                  placeholder="I feel energized and healthy in my body. My career is thriving and I'm making meaningful impact. My relationships are deep and fulfilling. I have financial security and freedom..."
+                  placeholder="I feel energized and healthy. My career is thriving. My relationships are deep and fulfilling..."
                   className="w-full p-4 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  rows={8}
+                  rows={6}
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-3">
-                  Personal Mantra <span className="text-slate-500">(optional)</span>
+                  Personal Mantra (optional)
                 </label>
                 <input
                   type="text"
@@ -504,7 +360,7 @@ const Goals: React.FC = () => {
                     ...data.annualSnapshot,
                     mantra: e.target.value
                   })}
-                  placeholder="Living with purpose and joy."
+                  placeholder="Living with purpose and joy"
                   className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
               </div>
@@ -514,40 +370,23 @@ const Goals: React.FC = () => {
           {/* Category Goal */}
           {data.currentStep === 'quarter' && categoryInfo && (
             <div className="space-y-6">
-              <div className={`bg-gradient-to-r from-${categoryInfo.color}-50 to-${categoryInfo.color}-100 rounded-xl p-6 border border-${categoryInfo.color}-200`}>
-                <h3 className={`text-lg font-semibold text-${categoryInfo.color}-900 mb-2`}>
-                  {categoryInfo.name} Goal
-                </h3>
-                <p className={`text-${categoryInfo.color}-700 mb-3`}>
-                  {categoryInfo.description}
-                </p>
-                <div className="text-sm text-slate-600">
-                  <strong>Examples:</strong> {categoryInfo.examples.join(', ')}
+              <div className="text-center mb-8">
+                <div className="flex items-center justify-center space-x-3 mb-4">
+                  <span className="text-3xl">{categoryInfo.icon}</span>
+                  <h2 className="text-2xl font-bold text-slate-900">{categoryInfo.name}</h2>
                 </div>
+                <p className="text-slate-600">{categoryInfo.description}</p>
               </div>
 
-              {/* Wheel of Life Connection */}
+              {/* Connected Wheel Areas */}
               {wheelData && (
-                <div className="bg-slate-50 rounded-xl p-6 border border-slate-200">
-                  <div className="flex items-center space-x-2 mb-4">
-                    <Link className="w-5 h-5 text-slate-600" />
-                    <h4 className="font-semibold text-slate-900">Connected Wheel of Life Areas</h4>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-slate-50 rounded-lg p-4 mb-6">
+                  <h4 className="font-medium text-slate-900 mb-3">Connected Life Areas</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {getCategoryWheelData(currentCategory).map((area, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200">
-                        <div className="flex items-center space-x-3">
-                          <div 
-                            className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: area.color }}
-                          />
-                          <span className="font-medium text-slate-900">{area.area}</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-sm text-slate-500">Current:</span>
-                          <span className="font-semibold text-slate-900">{area.score}/10</span>
-                          <TrendingUp className="w-4 h-4 text-green-500" />
-                        </div>
+                      <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg">
+                        <span className="font-medium text-slate-900">{area.area}</span>
+                        <span className="text-sm text-slate-600">Current: {area.score}/10</span>
                       </div>
                     ))}
                   </div>
@@ -579,152 +418,36 @@ const Goals: React.FC = () => {
               {/* Deadline */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-3">
-                  Goal Deadline
+                  Deadline
                 </label>
-                <div className="flex items-center space-x-4">
-                  <input
-                    type="date"
-                    value={data.categoryGoals[currentCategory]?.deadline || getTwelveWeeksFromNow()}
-                    onChange={(e) => updateCategoryGoal(currentCategory, {
-                      category: currentCategory as any,
-                      goal: data.categoryGoals[currentCategory]?.goal || '',
-                      actions: data.categoryGoals[currentCategory]?.actions || [],
-                      milestones: data.categoryGoals[currentCategory]?.milestones || [],
-                      focus: data.categoryGoals[currentCategory]?.focus || '',
-                      wheelAreas: getCategoryWheelData(currentCategory).map(area => area.area),
-                      targetScore: data.categoryGoals[currentCategory]?.targetScore || 8,
-                      deadline: e.target.value
-                    })}
-                    className="p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  />
-                  <div className="flex items-center space-x-2 text-sm text-slate-600">
-                    <Clock className="w-4 h-4" />
-                    <span>
-                      {data.categoryGoals[currentCategory]?.deadline 
-                        ? `${getWeeksRemaining(data.categoryGoals[currentCategory].deadline)} weeks remaining`
-                        : '12 weeks from today'
-                      }
-                    </span>
-                  </div>
-                </div>
+                <input
+                  type="date"
+                  value={data.categoryGoals[currentCategory]?.deadline || getTwelveWeeksFromNow()}
+                  onChange={(e) => updateCategoryGoal(currentCategory, {
+                    category: currentCategory as any,
+                    goal: data.categoryGoals[currentCategory]?.goal || '',
+                    actions: data.categoryGoals[currentCategory]?.actions || [],
+                    milestones: data.categoryGoals[currentCategory]?.milestones || [],
+                    focus: data.categoryGoals[currentCategory]?.focus || '',
+                    wheelAreas: getCategoryWheelData(currentCategory).map(area => area.area),
+                    targetScore: data.categoryGoals[currentCategory]?.targetScore || 8,
+                    deadline: e.target.value
+                  })}
+                  className="p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
                 <p className="text-xs text-slate-500 mt-2">
-                  Default is set to 12 weeks from today. Adjust as needed for your goal timeline.
+                  {data.categoryGoals[currentCategory]?.deadline 
+                    ? `${getWeeksRemaining(data.categoryGoals[currentCategory].deadline)} weeks remaining`
+                    : '12 weeks from today'
+                  }
                 </p>
               </div>
 
-              {/* Milestones Section */}
+              {/* Actions */}
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <label className="block text-sm font-medium text-slate-700">
-                    Milestones (2-4 key checkpoints)
-                  </label>
-                  <button
-                    onClick={addMilestone}
-                    className="flex items-center space-x-1 px-3 py-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors text-sm font-medium"
-                  >
-                    <Flag className="w-4 h-4" />
-                    <span>Add Milestone</span>
-                  </button>
-                </div>
-                
-                <div className="space-y-4">
-                  {(data.categoryGoals[currentCategory]?.milestones || []).map((milestone, index) => {
-                    const status = getMilestoneStatus(milestone);
-                    const statusColor = getMilestoneStatusColor(status);
-                    
-                    return (
-                      <div key={milestone.id} className={`border rounded-lg p-4 space-y-3 ${statusColor}`}>
-                        {/* Milestone Header */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <button
-                              onClick={() => toggleMilestoneCompletion(milestone.id)}
-                              className="flex-shrink-0"
-                            >
-                              {milestone.completed ? (
-                                <CheckCircle2 className="w-5 h-5 text-green-600" />
-                              ) : (
-                                <Circle className="w-5 h-5 text-slate-400 hover:text-slate-600" />
-                              )}
-                            </button>
-                            <span className="text-sm font-medium">Milestone {index + 1}</span>
-                          </div>
-                          <button
-                            onClick={() => removeMilestone(milestone.id)}
-                            className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                          >
-                            <Minus className="w-4 h-4" />
-                          </button>
-                        </div>
-
-                        {/* Milestone Title */}
-                        <input
-                          type="text"
-                          value={milestone.title}
-                          onChange={(e) => updateMilestone(milestone.id, { title: e.target.value })}
-                          placeholder={categoryInfo.milestoneExamples[index] || "Enter milestone title"}
-                          className={`w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                            milestone.completed ? 'line-through text-slate-500' : ''
-                          }`}
-                        />
-
-                        {/* Due Date and Status */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <label className="text-sm text-slate-600">Due Date:</label>
-                            <input
-                              type="date"
-                              value={milestone.dueDate}
-                              onChange={(e) => updateMilestone(milestone.id, { dueDate: e.target.value })}
-                              className="p-2 border border-slate-200 rounded focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
-                            />
-                          </div>
-                          <div className="flex items-center space-x-2 text-sm">
-                            {milestone.completed ? (
-                              <span className="text-green-600 font-medium">
-                                ✓ Completed {milestone.completedDate && formatShortDate(milestone.completedDate)}
-                              </span>
-                            ) : (
-                              <span className={`font-medium ${
-                                status === 'overdue' ? 'text-red-600' :
-                                status === 'due-soon' ? 'text-orange-600' :
-                                'text-blue-600'
-                              }`}>
-                                {status === 'overdue' ? '⚠️ Overdue' :
-                                 status === 'due-soon' ? '⏰ Due Soon' :
-                                 `📅 ${getDaysRemaining(milestone.dueDate)} days left`}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Optional Description */}
-                        <textarea
-                          value={milestone.description || ''}
-                          onChange={(e) => updateMilestone(milestone.id, { description: e.target.value })}
-                          placeholder="Optional: Add details about this milestone..."
-                          className="w-full p-3 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
-                          rows={2}
-                        />
-                      </div>
-                    );
-                  })}
-                  
-                  {(data.categoryGoals[currentCategory]?.milestones || []).length === 0 && (
-                    <div className="text-center py-8 text-slate-500 border-2 border-dashed border-slate-200 rounded-lg">
-                      <Flag className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                      <p className="mb-2">Add milestones to track your progress</p>
-                      <p className="text-xs">Break your 12-week goal into smaller, measurable checkpoints</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Actions Section */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <label className="block text-sm font-medium text-slate-700">
-                    Key Actions with Frequency (2-4 actions)
+                    Key Actions (2-4 recommended)
                   </label>
                   <button
                     onClick={addAction}
@@ -737,14 +460,13 @@ const Goals: React.FC = () => {
                 
                 <div className="space-y-4">
                   {(data.categoryGoals[currentCategory]?.actions || []).map((action, index) => (
-                    <div key={index} className="border border-slate-200 rounded-lg p-4 space-y-4">
-                      {/* Action Text */}
+                    <div key={index} className="border border-slate-200 rounded-lg p-4 space-y-3">
                       <div className="flex items-center space-x-3">
                         <input
                           type="text"
                           value={action.text}
                           onChange={(e) => updateAction(index, { text: e.target.value })}
-                          placeholder="Weekly meal prep sessions"
+                          placeholder="What action will you take?"
                           className="flex-1 p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                         />
                         <button
@@ -756,70 +478,47 @@ const Goals: React.FC = () => {
                       </div>
 
                       {/* Frequency Selection */}
-                      <div className="space-y-3">
-                        <div className="flex items-center space-x-2">
-                          <Repeat className="w-4 h-4 text-slate-500" />
-                          <span className="text-sm font-medium text-slate-700">How often will you do this?</span>
-                        </div>
-                        
-                        <div className="grid grid-cols-3 gap-3">
-                          {[
-                            { value: 'daily', label: 'Daily', icon: '📅', desc: 'Every day' },
-                            { value: 'weekly', label: 'Weekly', icon: '📆', desc: 'Once per week' },
-                            { value: 'multiple', label: 'Multiple Days', icon: '🗓️', desc: 'Specific days' }
-                          ].map((freq) => (
+                      <div className="grid grid-cols-3 gap-3">
+                        {[
+                          { value: 'daily', label: 'Daily' },
+                          { value: 'weekly', label: 'Weekly' },
+                          { value: 'multiple', label: 'Multiple Days' }
+                        ].map((freq) => (
+                          <button
+                            key={freq.value}
+                            onClick={() => updateAction(index, { frequency: freq.value as any, specificDays: [] })}
+                            className={`p-3 rounded-lg border text-center transition-all ${
+                              action.frequency === freq.value
+                                ? 'border-purple-500 bg-purple-50 text-purple-700'
+                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                            }`}
+                          >
+                            <div className="font-medium text-sm">{freq.label}</div>
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Specific Days Selection */}
+                      {action.frequency === 'multiple' && (
+                        <div className="grid grid-cols-7 gap-2">
+                          {DAYS_OF_WEEK.map((day) => (
                             <button
-                              key={freq.value}
-                              onClick={() => updateAction(index, { frequency: freq.value as any, specificDays: [] })}
-                              className={`p-3 rounded-lg border-2 text-left transition-all ${
-                                action.frequency === freq.value
-                                  ? 'border-purple-500 bg-purple-50 text-purple-700'
-                                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                              key={day.value}
+                              onClick={() => toggleSpecificDay(index, day.value)}
+                              className={`p-2 rounded text-xs font-medium transition-all ${
+                                action.specificDays?.includes(day.value)
+                                  ? 'bg-purple-600 text-white'
+                                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                               }`}
                             >
-                              <div className="flex items-center space-x-2 mb-1">
-                                <span className="text-lg">{freq.icon}</span>
-                                <span className="font-medium text-sm">{freq.label}</span>
-                              </div>
-                              <div className="text-xs opacity-75">{freq.desc}</div>
+                              {day.short}
                             </button>
                           ))}
                         </div>
+                      )}
 
-                        {/* Specific Days Selection */}
-                        {action.frequency === 'multiple' && (
-                          <div className="mt-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
-                            <div className="text-sm font-medium text-slate-700 mb-2">Select specific days:</div>
-                            <div className="grid grid-cols-7 gap-2">
-                              {DAYS_OF_WEEK.map((day) => (
-                                <button
-                                  key={day.value}
-                                  onClick={() => toggleSpecificDay(index, day.value)}
-                                  className={`p-2 rounded-lg text-xs font-medium transition-all ${
-                                    action.specificDays?.includes(day.value)
-                                      ? 'bg-purple-600 text-white'
-                                      : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'
-                                  }`}
-                                >
-                                  {day.short}
-                                </button>
-                              ))}
-                            </div>
-                            {action.specificDays && action.specificDays.length > 0 && (
-                              <div className="mt-2 text-xs text-slate-600">
-                                Selected: {action.specificDays.map(day => 
-                                  DAYS_OF_WEEK.find(d => d.value === day)?.label
-                                ).join(', ')}
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Frequency Summary */}
-                        <div className="flex items-center space-x-2 text-sm text-slate-600 bg-slate-50 rounded-lg p-2">
-                          <span>{getFrequencyIcon(action.frequency)}</span>
-                          <span><strong>Frequency:</strong> {getFrequencyDescription(action)}</span>
-                        </div>
+                      <div className="text-sm text-slate-600">
+                        <strong>Frequency:</strong> {getFrequencyDescription(action)}
                       </div>
                     </div>
                   ))}
@@ -827,33 +526,10 @@ const Goals: React.FC = () => {
                   {(data.categoryGoals[currentCategory]?.actions || []).length === 0 && (
                     <div className="text-center py-8 text-slate-500 border-2 border-dashed border-slate-200 rounded-lg">
                       <CheckSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                      <p className="mb-2">Add your first action to get started</p>
-                      <p className="text-xs">Each action will include frequency settings for calendar scheduling</p>
+                      <p>Add your first action to get started</p>
                     </div>
                   )}
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-3">
-                  Focus or Feeling <span className="text-slate-500">(optional)</span>
-                </label>
-                <input
-                  type="text"
-                  value={data.categoryGoals[currentCategory]?.focus || ''}
-                  onChange={(e) => updateCategoryGoal(currentCategory, {
-                    category: currentCategory as any,
-                    goal: data.categoryGoals[currentCategory]?.goal || '',
-                    actions: data.categoryGoals[currentCategory]?.actions || [],
-                    milestones: data.categoryGoals[currentCategory]?.milestones || [],
-                    focus: e.target.value,
-                    wheelAreas: getCategoryWheelData(currentCategory).map(area => area.area),
-                    targetScore: data.categoryGoals[currentCategory]?.targetScore || 8,
-                    deadline: data.categoryGoals[currentCategory]?.deadline || getTwelveWeeksFromNow()
-                  })}
-                  placeholder="Feeling strong and confident"
-                  className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                />
               </div>
             </div>
           )}
@@ -871,7 +547,7 @@ const Goals: React.FC = () => {
           </button>
 
           <div className="text-sm text-slate-500">
-            {data.currentStep === 'annual' ? 'Annual Vision' : `${categoryInfo?.name} • ${stepNames[data.currentStep]}`}
+            {data.currentStep === 'annual' ? 'Annual Vision' : `${categoryInfo?.name} Goal`}
           </div>
 
           <button
