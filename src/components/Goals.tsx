@@ -106,7 +106,8 @@ interface DroppableGoalSectionProps {
   description: string;
   lifeAreas: any[];
   onDrop: (area: any, sourceCategory: string, targetCategory: string) => void;
-  children: React.ReactNode;
+  goalValue: string;
+  onGoalChange: (value: string) => void;
 }
 
 const DroppableGoalSection: React.FC<DroppableGoalSectionProps> = ({ 
@@ -115,8 +116,9 @@ const DroppableGoalSection: React.FC<DroppableGoalSectionProps> = ({
   icon, 
   description, 
   lifeAreas, 
-  onDrop, 
-  children 
+  onDrop,
+  goalValue,
+  onGoalChange
 }) => {
   const [{ isOver }, drop] = useDrop({
     accept: 'life-area',
@@ -132,24 +134,33 @@ const DroppableGoalSection: React.FC<DroppableGoalSectionProps> = ({
 
   return (
     <div
-      ref={drop}
-      className={`bg-white rounded-2xl p-6 shadow-sm border-2 transition-all ${
+      className={`bg-white rounded-2xl shadow-sm border-2 transition-all ${
         isOver ? 'border-purple-300 bg-purple-50' : 'border-slate-200'
       }`}
     >
-      <div className="flex items-center space-x-3 mb-4">
-        <div className="w-12 h-12 rounded-full flex items-center justify-center text-2xl bg-slate-100">
-          {icon}
+      {/* Goal Title Section */}
+      <div className="p-6 border-b border-slate-200">
+        <div className="flex items-center space-x-3 mb-4">
+          <div className="w-12 h-12 rounded-full flex items-center justify-center text-2xl bg-slate-100">
+            {icon}
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-slate-900">{title}</h2>
+            <p className="text-slate-600 text-sm">{description}</p>
+          </div>
         </div>
-        <div>
-          <h2 className="text-xl font-bold text-slate-900">{title}</h2>
-          <p className="text-slate-600 text-sm">{description}</p>
-        </div>
+
+        <textarea
+          value={goalValue}
+          onChange={(e) => onGoalChange(e.target.value)}
+          placeholder={`What's your main ${title.toLowerCase()} goal for the next 12 weeks?`}
+          className="w-full p-4 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          rows={3}
+        />
       </div>
 
-      {children}
-
-      <div className="mt-6">
+      {/* Connected Life Areas Section */}
+      <div ref={drop} className="p-6">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-slate-700 flex items-center">
             <BarChart3 className="w-4 h-4 mr-2" />
@@ -272,15 +283,9 @@ const Goals: React.FC = () => {
           description="Professional growth and financial success"
           lifeAreas={categoryLifeAreas.business}
           onDrop={handleLifeAreaMove}
-        >
-          <textarea
-            value={goals.business}
-            onChange={(e) => handleGoalChange('business', e.target.value)}
-            placeholder="What's your main business & career goal for the next 12 weeks?"
-            className="w-full p-4 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            rows={3}
-          />
-        </DroppableGoalSection>
+          goalValue={goals.business}
+          onGoalChange={(value) => handleGoalChange('business', value)}
+        />
 
         <DroppableGoalSection
           category="body"
@@ -289,15 +294,9 @@ const Goals: React.FC = () => {
           description="Physical wellness and fitness goals"
           lifeAreas={categoryLifeAreas.body}
           onDrop={handleLifeAreaMove}
-        >
-          <textarea
-            value={goals.body}
-            onChange={(e) => handleGoalChange('body', e.target.value)}
-            placeholder="What's your main health & body goal for the next 12 weeks?"
-            className="w-full p-4 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            rows={3}
-          />
-        </DroppableGoalSection>
+          goalValue={goals.body}
+          onGoalChange={(value) => handleGoalChange('body', value)}
+        />
 
         <DroppableGoalSection
           category="balance"
@@ -306,15 +305,9 @@ const Goals: React.FC = () => {
           description="Relationships and lifestyle balance"
           lifeAreas={categoryLifeAreas.balance}
           onDrop={handleLifeAreaMove}
-        >
-          <textarea
-            value={goals.balance}
-            onChange={(e) => handleGoalChange('balance', e.target.value)}
-            placeholder="What's your main life balance goal for the next 12 weeks?"
-            className="w-full p-4 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            rows={3}
-          />
-        </DroppableGoalSection>
+          goalValue={goals.balance}
+          onGoalChange={(value) => handleGoalChange('balance', value)}
+        />
       </div>
 
       {/* Instructions */}
