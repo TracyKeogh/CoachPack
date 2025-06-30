@@ -99,13 +99,126 @@ const DraggableLifeArea: React.FC<DraggableLifeAreaProps> = ({ area, sourceCateg
   );
 };
 
+interface DraggableValueProps {
+  value: {
+    name: string;
+    description: string;
+    category: string;
+  };
+  sourceCategory: string;
+  onMove: (value: any, sourceCategory: string, targetCategory: string) => void;
+}
+
+const DraggableValue: React.FC<DraggableValueProps> = ({ value, sourceCategory, onMove }) => {
+  const [{ isDragging }, drag] = useDrag({
+    type: 'value',
+    item: { value, sourceCategory },
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
+  });
+
+  return (
+    <div
+      ref={drag}
+      className={`p-3 bg-white rounded-lg border border-slate-200 cursor-move transition-all ${
+        isDragging ? 'opacity-50 scale-95' : 'hover:shadow-sm hover:border-slate-300'
+      }`}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex-1">
+          <h4 className="font-medium text-slate-900 text-sm">{value.name}</h4>
+          <p className="text-xs text-slate-600 mt-1">{value.description}</p>
+        </div>
+        <Move className="w-3 h-3 text-slate-400 ml-2 flex-shrink-0" />
+      </div>
+    </div>
+  );
+};
+
+interface DroppableSection {
+  type: 'values' | 'wheel';
+  category: string;
+  items: any[];
+  onDrop: (item: any, sourceCategory: string, targetCategory: string, type: 'values' | 'wheel') => void;
+}
+
+const DroppableSection: React.FC<DroppableSection> = ({ type, category, items, onDrop }) => {
+  const [{ isOver }, drop] = useDrop({
+    accept: type === 'values' ? 'value' : 'life-area',
+    drop: (item: any) => {
+      if (item.sourceCategory !== category) {
+        onDrop(item[type === 'values' ? 'value' : 'area'], item.sourceCategory, category, type);
+      }
+    },
+    collect: (monitor) => ({
+      isOver: monitor.isOver(),
+    }),
+  });
+
+  const icon = type === 'values' ? Heart : BarChart3;
+  const IconComponent = icon;
+
+  return (
+    <div
+      ref={drop}
+      className={`p-4 rounded-lg border-2 border-dashed transition-all ${
+        isOver 
+          ? 'border-purple-400 bg-purple-50' 
+          : 'border-slate-200 bg-slate-50'
+      }`}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-sm font-semibold text-slate-700 flex items-center">
+          <IconComponent className="w-4 h-4 mr-2" />
+          {type === 'values' ? 'Values' : 'Wheel of Life'}
+        </h4>
+        <span className="text-xs text-slate-500 bg-white px-2 py-1 rounded-full">
+          {items.length}
+        </span>
+      </div>
+      
+      <div className="space-y-2 min-h-[80px]">
+        {items.map((item, index) => (
+          type === 'values' ? (
+            <DraggableValue
+              key={`${category}-value-${index}`}
+              value={item}
+              sourceCategory={category}
+              onMove={(value, source, target) => onDrop(value, source, target, 'values')}
+            />
+          ) : (
+            <DraggableLifeArea
+              key={`${category}-wheel-${index}`}
+              area={item}
+              sourceCategory={category}
+              onMove={(area, source, target) => onDrop(area, source, target, 'wheel')}
+            />
+          )
+        ))}
+        
+        {items.length === 0 && (
+          <div className={`text-center py-4 text-xs transition-all ${
+            isOver ? 'text-purple-600' : 'text-slate-400'
+          }`}>
+            <IconComponent className="w-6 h-6 mx-auto mb-1 opacity-50" />
+            <p>{isOver ? `Drop ${type} here` : `Drag ${type} here`}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 interface DroppableGoalSectionProps {
   category: string;
   title: string;
   icon: string;
   description: string;
   lifeAreas: any[];
+  values: any[];
   onDrop: (area: any, sourceCategory: string, targetCategory: string) => void;
+  onValuesDrop: (value: any, sourceCategory: string, targetCategory: string, type: 'values' | 'wheel') => void;
   goalValue: string;
   onGoalChange: (value: string) => void;
 }
@@ -116,7 +229,9 @@ const DroppableGoalSection: React.FC<DroppableGoalSectionProps> = ({
   icon, 
   description, 
   lifeAreas, 
+  values,
   onDrop,
+  onValuesDrop,
   goalValue,
   onGoalChange
 }) => {
@@ -133,68 +248,86 @@ const DroppableGoalSection: React.FC<DroppableGoalSectionProps> = ({
   });
 
   return (
-    <div
-      className={`bg-white rounded-2xl shadow-sm border-2 transition-all ${
-        isOver ? 'border-purple-300 bg-purple-50' : 'border-slate-200'
-      }`}
-    >
-      {/* Goal Title Section */}
-      <div className="p-6 border-b border-slate-200">
-        <div className="flex items-center space-x-3 mb-4">
-          <div className="w-12 h-12 rounded-full flex items-center justify-center text-2xl bg-slate-100">
-            {icon}
+    <div className="space-y-4">
+      <div
+        className={`bg-white rounded-2xl shadow-sm border-2 transition-all ${
+          isOver ? 'border-purple-300 bg-purple-50' : 'border-slate-200'
+        }`}
+      >
+        {/* Goal Title Section */}
+        <div className="p-6 border-b border-slate-200">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="w-12 h-12 rounded-full flex items-center justify-center text-2xl bg-slate-100">
+              {icon}
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-slate-900">{title}</h2>
+              <p className="text-slate-600 text-sm">{description}</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-xl font-bold text-slate-900">{title}</h2>
-            <p className="text-slate-600 text-sm">{description}</p>
-          </div>
+
+          <textarea
+            value={goalValue}
+            onChange={(e) => onGoalChange(e.target.value)}
+            placeholder={`What's your main ${title.toLowerCase()} goal for the next 12 weeks?`}
+            className="w-full p-4 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            rows={3}
+          />
         </div>
 
-        <textarea
-          value={goalValue}
-          onChange={(e) => onGoalChange(e.target.value)}
-          placeholder={`What's your main ${title.toLowerCase()} goal for the next 12 weeks?`}
-          className="w-full p-4 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-          rows={3}
-        />
+        {/* Connected Life Areas Section - More spacious */}
+        <div ref={drop} className="p-8 min-h-[300px]">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-sm font-semibold text-slate-700 flex items-center">
+              <BarChart3 className="w-4 h-4 mr-2" />
+              Connected Life Areas
+            </h3>
+            <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
+              {lifeAreas.length} areas
+            </span>
+          </div>
+          
+          <div className="space-y-4">
+            {lifeAreas.map((area, index) => (
+              <DraggableLifeArea
+                key={`${category}-${area.area}-${index}`}
+                area={area}
+                sourceCategory={category}
+                onMove={onDrop}
+              />
+            ))}
+            
+            {/* Drop zone indicator when empty or when dragging over */}
+            {(lifeAreas.length === 0 || isOver) && (
+              <div className={`border-2 border-dashed rounded-lg p-6 text-center transition-all ${
+                isOver 
+                  ? 'border-purple-400 bg-purple-100 text-purple-700' 
+                  : 'border-slate-300 text-slate-500'
+              }`}>
+                <BarChart3 className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm font-medium">
+                  {isOver ? 'Drop life area here' : 'Drag life areas here to connect them with this goal'}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Connected Life Areas Section - More spacious */}
-      <div ref={drop} className="p-8 min-h-[300px]">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-sm font-semibold text-slate-700 flex items-center">
-            <BarChart3 className="w-4 h-4 mr-2" />
-            Connected Life Areas
-          </h3>
-          <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
-            {lifeAreas.length} areas
-          </span>
-        </div>
-        
-        <div className="space-y-4">
-          {lifeAreas.map((area, index) => (
-            <DraggableLifeArea
-              key={`${category}-${area.area}-${index}`}
-              area={area}
-              sourceCategory={category}
-              onMove={onDrop}
-            />
-          ))}
-          
-          {/* Drop zone indicator when empty or when dragging over */}
-          {(lifeAreas.length === 0 || isOver) && (
-            <div className={`border-2 border-dashed rounded-lg p-6 text-center transition-all ${
-              isOver 
-                ? 'border-purple-400 bg-purple-100 text-purple-700' 
-                : 'border-slate-300 text-slate-500'
-            }`}>
-              <BarChart3 className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm font-medium">
-                {isOver ? 'Drop life area here' : 'Drag life areas here to connect them with this goal'}
-              </p>
-            </div>
-          )}
-        </div>
+      {/* Values and Wheel of Life Sections */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <DroppableSection
+          type="values"
+          category={category}
+          items={values}
+          onDrop={onValuesDrop}
+        />
+        <DroppableSection
+          type="wheel"
+          category={category}
+          items={lifeAreas}
+          onDrop={onValuesDrop}
+        />
       </div>
     </div>
   );
@@ -221,6 +354,25 @@ const Goals: React.FC = () => {
     ]
   });
 
+  // Pre-populate values for each category based on insights
+  const [categoryValues, setCategoryValues] = useState({
+    business: [
+      { name: 'Excellence', description: 'Striving for the highest quality in everything', category: 'Achievement' },
+      { name: 'Leadership', description: 'Guiding and inspiring others toward goals', category: 'Achievement' },
+      { name: 'Growth', description: 'Continuous development and improvement', category: 'Achievement' }
+    ],
+    body: [
+      { name: 'Health', description: 'Physical and mental well-being', category: 'Vitality & Health' },
+      { name: 'Vitality', description: 'Life force and energetic well-being', category: 'Vitality & Health' },
+      { name: 'Balance', description: 'Harmony and equilibrium in all life areas', category: 'Vitality & Health' }
+    ],
+    balance: [
+      { name: 'Love', description: 'Deep affection and care for others', category: 'Connection' },
+      { name: 'Family', description: 'Close relationships and kinship bonds', category: 'Connection' },
+      { name: 'Peace', description: 'Tranquility and harmony within and around', category: 'Spiritual & Emotional' }
+    ]
+  });
+
   const [goals, setGoals] = useState({
     business: '',
     body: '',
@@ -239,6 +391,25 @@ const Goals: React.FC = () => {
     }));
   };
 
+  const handleValueMove = (item: any, sourceCategory: string, targetCategory: string, type: 'values' | 'wheel') => {
+    if (sourceCategory === targetCategory) return;
+
+    if (type === 'values') {
+      setCategoryValues(prev => ({
+        ...prev,
+        [sourceCategory]: prev[sourceCategory as keyof typeof prev].filter(v => v.name !== item.name),
+        [targetCategory]: [...prev[targetCategory as keyof typeof prev], item]
+      }));
+    } else {
+      // Handle wheel items (life areas)
+      setCategoryLifeAreas(prev => ({
+        ...prev,
+        [sourceCategory]: prev[sourceCategory as keyof typeof prev].filter(a => a.area !== item.area),
+        [targetCategory]: [...prev[targetCategory as keyof typeof prev], item]
+      }));
+    }
+  };
+
   const handleGoalChange = (category: string, value: string) => {
     setGoals(prev => ({
       ...prev,
@@ -253,7 +424,7 @@ const Goals: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold text-slate-900">12-Week Goals</h1>
           <p className="text-slate-600 mt-2">
-            Set your quarterly goals and align them with your life areas
+            Set your quarterly goals and align them with your life areas and values
           </p>
         </div>
       </div>
@@ -293,14 +464,16 @@ const Goals: React.FC = () => {
       </div>
 
       {/* Goal Categories - Now in a horizontal line */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <DroppableGoalSection
           category="business"
           title="Business & Career"
           icon="💼"
           description="Professional growth and financial success"
           lifeAreas={categoryLifeAreas.business}
+          values={categoryValues.business}
           onDrop={handleLifeAreaMove}
+          onValuesDrop={handleValueMove}
           goalValue={goals.business}
           onGoalChange={(value) => handleGoalChange('business', value)}
         />
@@ -311,7 +484,9 @@ const Goals: React.FC = () => {
           icon="💪"
           description="Physical wellness and fitness goals"
           lifeAreas={categoryLifeAreas.body}
+          values={categoryValues.body}
           onDrop={handleLifeAreaMove}
+          onValuesDrop={handleValueMove}
           goalValue={goals.body}
           onGoalChange={(value) => handleGoalChange('body', value)}
         />
@@ -322,7 +497,9 @@ const Goals: React.FC = () => {
           icon="⚖️"
           description="Relationships and lifestyle balance"
           lifeAreas={categoryLifeAreas.balance}
+          values={categoryValues.balance}
           onDrop={handleLifeAreaMove}
+          onValuesDrop={handleValueMove}
           goalValue={goals.balance}
           onGoalChange={(value) => handleGoalChange('balance', value)}
         />
@@ -337,8 +514,9 @@ const Goals: React.FC = () => {
             <ul className="text-sm text-blue-800 space-y-1">
               <li>• Write your 12-week goal for each life category</li>
               <li>• Drag and drop life areas between categories to align them with your goals</li>
+              <li>• Drag and drop values between categories to connect them with relevant goals</li>
               <li>• Numbers show the target change (+/-) you're aiming for in each life area</li>
-              <li>• Use these connections to ensure your goals address the right life areas</li>
+              <li>• Use these connections to ensure your goals are aligned with your values and life priorities</li>
             </ul>
           </div>
         </div>
