@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Target, ArrowLeft, ArrowRight, Check, Sparkles, Calendar as CalendarIcon, 
   Plus, Minus, Link, TrendingUp, Clock, Repeat, CheckSquare, 
-  Flag, CheckCircle2, Circle, Star, Award, Zap, BarChart3, ChevronDown, ChevronRight,
-  Edit3, X, Info, HelpCircle
+  Flag, CheckCircle2, Circle, Star, Award, Zap, BarChart3, X, Edit3, Save
 } from 'lucide-react';
 import { useGoalSettingData } from '../hooks/useGoalSettingData';
 import { useWheelData } from '../hooks/useWheelData';
@@ -32,13 +31,11 @@ const Goals: React.FC = () => {
 
   const [hasInitialized, setHasInitialized] = useState(false);
   const [showTips, setShowTips] = useState(false);
-  const [expandedGoals, setExpandedGoals] = useState<Set<string>>(new Set());
   const [showMilestoneModal, setShowMilestoneModal] = useState(false);
   const [showActionModal, setShowActionModal] = useState(false);
-  const [editingMilestone, setEditingMilestone] = useState<{ categoryId: string; milestoneId?: string } | null>(null);
-  const [editingAction, setEditingAction] = useState<{ categoryId: string; actionIndex?: number } | null>(null);
-  const [milestoneForm, setMilestoneForm] = useState({ title: '', description: '', dueDate: '' });
-  const [actionForm, setActionForm] = useState({ text: '', frequency: 'weekly' as ActionItem['frequency'], specificDays: [] as string[] });
+  const [editingMilestone, setEditingMilestone] = useState<Milestone | null>(null);
+  const [editingAction, setEditingAction] = useState<{ action: ActionItem; index: number } | null>(null);
+  const [currentEditingCategory, setCurrentEditingCategory] = useState<string>('');
 
   // Initialize from wheel data
   useEffect(() => {
@@ -77,209 +74,170 @@ const Goals: React.FC = () => {
     return Math.max(0, diffWeeks);
   };
 
-  const toggleGoalExpansion = (categoryId: string) => {
-    const newExpanded = new Set(expandedGoals);
-    if (newExpanded.has(categoryId)) {
-      newExpanded.delete(categoryId);
-    } else {
-      newExpanded.add(categoryId);
-    }
-    setExpandedGoals(newExpanded);
+  // Handle adding/removing milestones
+  const addMilestone = (category: string) => {
+    setCurrentEditingCategory(category);
+    setEditingMilestone({
+      id: Date.now().toString(),
+      title: '',
+      description: '',
+      dueDate: getTwelveWeeksFromNow(),
+      completed: false
+    });
+    setShowMilestoneModal(true);
   };
 
-  const openMilestoneModal = (categoryId: string, milestone?: Milestone) => {
-    setEditingMilestone({ categoryId, milestoneId: milestone?.id });
-    if (milestone) {
-      setMilestoneForm({
-        title: milestone.title,
-        description: milestone.description || '',
-        dueDate: milestone.dueDate
-      });
-    } else {
-      // Set default due date for new milestone
-      const currentGoal = data.categoryGoals[categoryId];
-      const existingMilestones = currentGoal?.milestones || [];
-      const today = new Date().toISOString().split('T')[0];
-      const goalDeadline = currentGoal?.deadline || getTwelveWeeksFromNow();
-      const suggestedDates = getMilestoneDueDates(today, goalDeadline, existingMilestones.length + 1);
-      
-      setMilestoneForm({
-        title: '',
-        description: '',
-        dueDate: suggestedDates[existingMilestones.length] || goalDeadline
-      });
-    }
+  const editMilestone = (category: string, milestone: Milestone) => {
+    setCurrentEditingCategory(category);
+    setEditingMilestone(milestone);
     setShowMilestoneModal(true);
   };
 
   const saveMilestone = () => {
-    if (!editingMilestone || !milestoneForm.title.trim()) return;
+    if (!editingMilestone || !currentEditingCategory) return;
 
-    const { categoryId, milestoneId } = editingMilestone;
-    const currentGoal = data.categoryGoals[categoryId] || {
-      category: categoryId as any,
-      goal: '',
-      actions: [],
+    const currentGoal = data.categoryGoals[currentEditingCategory] || { 
+      category: currentEditingCategory as any, 
+      goal: '', 
+      actions: [], 
       milestones: [],
       focus: '',
-      wheelAreas: getCategoryWheelData(categoryId).map(area => area.area),
+      wheelAreas: [],
       targetScore: 8,
       deadline: getTwelveWeeksFromNow()
     };
 
-    let updatedMilestones = [...currentGoal.milestones];
+    const existingIndex = currentGoal.milestones.findIndex(m => m.id === editingMilestone.id);
+    let newMilestones;
 
-    if (milestoneId) {
+    if (existingIndex >= 0) {
       // Update existing milestone
-      updatedMilestones = updatedMilestones.map(milestone =>
-        milestone.id === milestoneId
-          ? {
-              ...milestone,
-              title: milestoneForm.title,
-              description: milestoneForm.description,
-              dueDate: milestoneForm.dueDate
-            }
-          : milestone
-      );
+      newMilestones = [...currentGoal.milestones];
+      newMilestones[existingIndex] = editingMilestone;
     } else {
       // Add new milestone
-      const newMilestone: Milestone = {
-        id: Date.now().toString(),
-        title: milestoneForm.title,
-        description: milestoneForm.description,
-        dueDate: milestoneForm.dueDate,
-        completed: false
-      };
-      updatedMilestones.push(newMilestone);
+      newMilestones = [...currentGoal.milestones, editingMilestone];
     }
 
-    updateCategoryGoal(categoryId, {
+    updateCategoryGoal(currentEditingCategory, {
       ...currentGoal,
-      milestones: updatedMilestones
+      milestones: newMilestones
     });
 
-    closeMilestoneModal();
-  };
-
-  const deleteMilestone = (categoryId: string, milestoneId: string) => {
-    const currentGoal = data.categoryGoals[categoryId];
-    if (!currentGoal) return;
-
-    updateCategoryGoal(categoryId, {
-      ...currentGoal,
-      milestones: currentGoal.milestones.filter(m => m.id !== milestoneId)
-    });
-  };
-
-  const toggleMilestoneCompletion = (categoryId: string, milestoneId: string) => {
-    const currentGoal = data.categoryGoals[categoryId];
-    if (!currentGoal) return;
-
-    const updatedMilestones = currentGoal.milestones.map(milestone =>
-      milestone.id === milestoneId
-        ? {
-            ...milestone,
-            completed: !milestone.completed,
-            completedDate: !milestone.completed ? new Date().toISOString().split('T')[0] : undefined
-          }
-        : milestone
-    );
-
-    updateCategoryGoal(categoryId, {
-      ...currentGoal,
-      milestones: updatedMilestones
-    });
-  };
-
-  const closeMilestoneModal = () => {
     setShowMilestoneModal(false);
     setEditingMilestone(null);
-    setMilestoneForm({ title: '', description: '', dueDate: '' });
+    setCurrentEditingCategory('');
   };
 
-  const openActionModal = (categoryId: string, actionIndex?: number) => {
-    setEditingAction({ categoryId, actionIndex });
-    const currentGoal = data.categoryGoals[categoryId];
-    
-    if (actionIndex !== undefined && currentGoal?.actions[actionIndex]) {
-      const action = currentGoal.actions[actionIndex];
-      setActionForm({
-        text: action.text,
-        frequency: action.frequency,
-        specificDays: action.specificDays || []
+  const removeMilestone = (category: string, milestoneId: string) => {
+    const currentGoal = data.categoryGoals[category];
+    if (currentGoal) {
+      updateCategoryGoal(category, {
+        ...currentGoal,
+        milestones: currentGoal.milestones.filter(m => m.id !== milestoneId)
       });
-    } else {
-      setActionForm({
+    }
+  };
+
+  const toggleMilestoneCompletion = (category: string, milestoneId: string) => {
+    const currentGoal = data.categoryGoals[category];
+    if (currentGoal) {
+      const milestone = currentGoal.milestones.find(m => m.id === milestoneId);
+      if (milestone) {
+        const updatedMilestone = {
+          ...milestone,
+          completed: !milestone.completed,
+          completedDate: !milestone.completed ? new Date().toISOString().split('T')[0] : undefined
+        };
+        
+        const newMilestones = currentGoal.milestones.map(m => 
+          m.id === milestoneId ? updatedMilestone : m
+        );
+
+        updateCategoryGoal(category, {
+          ...currentGoal,
+          milestones: newMilestones
+        });
+      }
+    }
+  };
+
+  // Handle adding/removing actions
+  const addAction = (category: string) => {
+    setCurrentEditingCategory(category);
+    setEditingAction({
+      action: {
         text: '',
         frequency: 'weekly',
         specificDays: []
-      });
-    }
+      },
+      index: -1
+    });
+    setShowActionModal(true);
+  };
+
+  const editAction = (category: string, action: ActionItem, index: number) => {
+    setCurrentEditingCategory(category);
+    setEditingAction({ action, index });
     setShowActionModal(true);
   };
 
   const saveAction = () => {
-    if (!editingAction || !actionForm.text.trim()) return;
+    if (!editingAction || !currentEditingCategory) return;
 
-    const { categoryId, actionIndex } = editingAction;
-    const currentGoal = data.categoryGoals[categoryId] || {
-      category: categoryId as any,
-      goal: '',
-      actions: [],
+    const currentGoal = data.categoryGoals[currentEditingCategory] || { 
+      category: currentEditingCategory as any, 
+      goal: '', 
+      actions: [], 
       milestones: [],
       focus: '',
-      wheelAreas: getCategoryWheelData(categoryId).map(area => area.area),
+      wheelAreas: [],
       targetScore: 8,
       deadline: getTwelveWeeksFromNow()
     };
 
-    let updatedActions = [...currentGoal.actions];
-
-    const newAction: ActionItem = {
-      text: actionForm.text,
-      frequency: actionForm.frequency,
-      specificDays: actionForm.specificDays
-    };
-
-    if (actionIndex !== undefined) {
+    let newActions;
+    if (editingAction.index >= 0) {
       // Update existing action
-      updatedActions[actionIndex] = newAction;
+      newActions = [...currentGoal.actions];
+      newActions[editingAction.index] = editingAction.action;
     } else {
       // Add new action
-      updatedActions.push(newAction);
+      newActions = [...currentGoal.actions, editingAction.action];
     }
 
-    updateCategoryGoal(categoryId, {
+    updateCategoryGoal(currentEditingCategory, {
       ...currentGoal,
-      actions: updatedActions
+      actions: newActions
     });
 
-    closeActionModal();
-  };
-
-  const deleteAction = (categoryId: string, actionIndex: number) => {
-    const currentGoal = data.categoryGoals[categoryId];
-    if (!currentGoal) return;
-
-    updateCategoryGoal(categoryId, {
-      ...currentGoal,
-      actions: currentGoal.actions.filter((_, index) => index !== actionIndex)
-    });
-  };
-
-  const closeActionModal = () => {
     setShowActionModal(false);
     setEditingAction(null);
-    setActionForm({ text: '', frequency: 'weekly', specificDays: [] });
+    setCurrentEditingCategory('');
+  };
+
+  const removeAction = (category: string, index: number) => {
+    const currentGoal = data.categoryGoals[category];
+    if (currentGoal) {
+      updateCategoryGoal(category, {
+        ...currentGoal,
+        actions: currentGoal.actions.filter((_, i) => i !== index)
+      });
+    }
   };
 
   const toggleSpecificDay = (day: string) => {
-    setActionForm(prev => ({
-      ...prev,
-      specificDays: prev.specificDays.includes(day)
-        ? prev.specificDays.filter(d => d !== day)
-        : [...prev.specificDays, day]
-    }));
+    if (!editingAction) return;
+    
+    const currentDays = editingAction.action.specificDays || [];
+    const newDays = currentDays.includes(day)
+      ? currentDays.filter(d => d !== day)
+      : [...currentDays, day];
+    
+    setEditingAction({
+      ...editingAction,
+      action: { ...editingAction.action, specificDays: newDays }
+    });
   };
 
   const getFrequencyDescription = (action: ActionItem) => {
@@ -526,385 +484,385 @@ const Goals: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Goal Setting</h1>
-          <p className="text-slate-600 mt-2">
-            Create your annual vision and break it down into actionable 12-week goals
-          </p>
+          <h1 className="text-3xl font-bold text-slate-900">12-Week Goals</h1>
+          <p className="text-slate-600 mt-2">Transform your annual vision into actionable quarterly goals</p>
           {lastSaved && (
             <p className="text-sm text-green-600 mt-1">
-              ✓ Last saved: {lastSaved.toLocaleTimeString()}
+              ✓ Saved at {lastSaved.toLocaleTimeString()}
             </p>
           )}
         </div>
         
-        <button 
+        <button
           onClick={() => setShowTips(!showTips)}
           className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
         >
-          <HelpCircle className="w-4 h-4" />
+          <Sparkles className="w-4 h-4" />
           <span>{showTips ? "Hide Tips" : "Show Tips"}</span>
         </button>
       </div>
 
-      {/* Progress Indicator */}
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-slate-900">Your Progress</h3>
-          <span className="text-sm text-slate-500">{progress.completed}/{progress.total} steps</span>
+      {/* Progress Bar */}
+      <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-sm font-medium text-slate-900">Progress</div>
+          <div className="text-sm text-slate-600">{progress.completed}/{progress.total}</div>
         </div>
-        
-        <div className="flex items-center space-x-4">
-          {/* Step 1: Annual Vision */}
-          <div className="flex items-center space-x-2">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-              data.annualSnapshot.snapshot ? 'bg-green-500 text-white' : 
-              data.currentStep === 'annual' ? 'bg-purple-500 text-white' : 'bg-slate-200 text-slate-500'
-            }`}>
-              {data.annualSnapshot.snapshot ? <Check className="w-4 h-4" /> : '1'}
-            </div>
-            <span className="text-sm font-medium">Annual Vision</span>
-          </div>
-          
-          <div className="flex-1 h-0.5 bg-slate-200">
-            <div 
-              className="h-full bg-purple-500 transition-all duration-300"
-              style={{ width: `${Math.min(100, (progress.completed / progress.total) * 100)}%` }}
-            />
-          </div>
-          
-          {/* Step 2: Category Goals */}
-          <div className="flex items-center space-x-2">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-              data.currentStep === 'quarter' && progress.completed === progress.total ? 'bg-green-500 text-white' :
-              data.currentStep === 'quarter' ? 'bg-purple-500 text-white' : 'bg-slate-200 text-slate-500'
-            }`}>
-              {data.currentStep === 'quarter' && progress.completed === progress.total ? <Check className="w-4 h-4" /> : '2'}
-            </div>
-            <span className="text-sm font-medium">12-Week Goals</span>
-          </div>
+        <div className="w-full bg-slate-100 rounded-full h-2">
+          <div 
+            className="h-2 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 transition-all duration-300"
+            style={{ width: `${progress.percentage}%` }}
+          />
         </div>
       </div>
 
-      {/* Tips Section */}
+      {/* Tips Section (Collapsible) */}
       {showTips && (
-        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-6 border border-indigo-100 animate-fadeIn">
-          <h3 className="text-lg font-semibold text-indigo-900 mb-4 flex items-center">
-            <Sparkles className="w-5 h-5 mr-2" />
-            Goal Setting Tips
+        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-4 border border-indigo-100 animate-fadeIn">
+          <h3 className="text-sm font-medium text-indigo-900 mb-2 flex items-center">
+            <Sparkles className="w-4 h-4 mr-2" />
+            Quick Tips
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-indigo-800">
-            <div className="space-y-2">
-              <div className="flex items-start space-x-2">
-                <Target className="w-4 h-4 mt-0.5 text-indigo-600" />
-                <span>Make goals <strong>specific and measurable</strong></span>
-              </div>
-              <div className="flex items-start space-x-2">
-                <Flag className="w-4 h-4 mt-0.5 text-indigo-600" />
-                <span>Break down into <strong>2-4 key milestones</strong></span>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-start space-x-2">
-                <CheckSquare className="w-4 h-4 mt-0.5 text-indigo-600" />
-                <span>Create <strong>weekly actions</strong> for momentum</span>
-              </div>
-              <div className="flex items-start space-x-2">
-                <Clock className="w-4 h-4 mt-0.5 text-indigo-600" />
-                <span>Set realistic <strong>12-week timeframes</strong></span>
-              </div>
-            </div>
-          </div>
+          <ul className="space-y-1 text-sm text-indigo-800">
+            <li className="flex items-start">
+              <span className="w-4 h-4 bg-indigo-100 rounded-full flex items-center justify-center text-xs mr-2 mt-0.5">1</span>
+              <span>Make goals <strong>specific and measurable</strong></span>
+            </li>
+            <li className="flex items-start">
+              <span className="w-4 h-4 bg-indigo-100 rounded-full flex items-center justify-center text-xs mr-2 mt-0.5">2</span>
+              <span>Break down into <strong>small, actionable steps</strong></span>
+            </li>
+          </ul>
         </div>
       )}
 
       {/* Annual Vision Section */}
       {data.currentStep === 'annual' && (
-        <div className="bg-white rounded-xl p-8 shadow-sm border border-slate-200 animate-fadeIn">
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Sparkles className="w-8 h-8 text-white" />
+        <div className="space-y-6">
+          <div className="bg-white rounded-xl p-8 shadow-sm border border-slate-200">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Sparkles className="w-8 h-8 text-purple-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-slate-900 mb-2">Your Annual Vision</h2>
+              <p className="text-slate-600">Imagine it's one year from now and you're living your ideal life...</p>
             </div>
-            <h2 className="text-2xl font-bold text-slate-900 mb-2">Your Annual Vision</h2>
-            <p className="text-slate-600">Imagine it's one year from now. Describe your ideal life in vivid detail.</p>
+
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Vision Statement
+                </label>
+                <textarea
+                  value={data.annualSnapshot.snapshot}
+                  onChange={(e) => updateAnnualSnapshot({
+                    ...data.annualSnapshot,
+                    snapshot: e.target.value
+                  })}
+                  placeholder="I feel energized and healthy. My career is thriving. My relationships are deep and fulfilling..."
+                  className="w-full p-4 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  rows={4}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Personal Mantra <span className="text-slate-500">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={data.annualSnapshot.mantra || ''}
+                  onChange={(e) => updateAnnualSnapshot({
+                    ...data.annualSnapshot,
+                    mantra: e.target.value
+                  })}
+                  placeholder="Living with purpose and joy"
+                  className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="max-w-2xl mx-auto space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-3">
-                Annual Vision Statement
-              </label>
-              <textarea
-                value={data.annualSnapshot.snapshot}
-                onChange={(e) => updateAnnualSnapshot({
-                  ...data.annualSnapshot,
-                  snapshot: e.target.value
-                })}
-                placeholder="I feel energized and healthy. My career is thriving with meaningful work that challenges me. My relationships are deep and fulfilling. I have financial security and am making a positive impact..."
-                className="w-full p-4 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                rows={6}
-              />
-            </div>
+          {/* Three Category Boxes */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {data.categories.map((category) => {
+              const categoryInfo = GOAL_CATEGORIES[category];
+              const goal = data.categoryGoals[category];
+              
+              return (
+                <div key={category} className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                  <div className="text-center mb-4">
+                    <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
+                      {categoryInfo.icon}
+                    </div>
+                    <h3 className="text-lg font-semibold text-slate-900">{categoryInfo.name}</h3>
+                    <p className="text-sm text-slate-600 mt-1">{categoryInfo.description}</p>
+                  </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-3">
-                Personal Mantra <span className="text-slate-500">(optional)</span>
-              </label>
-              <input
-                type="text"
-                value={data.annualSnapshot.mantra || ''}
-                onChange={(e) => updateAnnualSnapshot({
-                  ...data.annualSnapshot,
-                  mantra: e.target.value
-                })}
-                placeholder="Living with purpose and joy"
-                className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
-            </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Annual Goal Title
+                    </label>
+                    <input
+                      type="text"
+                      value={goal?.goal || ''}
+                      onChange={(e) => updateCategoryGoal(category, {
+                        category: category as any,
+                        goal: e.target.value,
+                        actions: goal?.actions || [],
+                        milestones: goal?.milestones || [],
+                        focus: goal?.focus || '',
+                        wheelAreas: getCategoryWheelData(category).map(area => area.area),
+                        targetScore: goal?.targetScore || 8,
+                        deadline: goal?.deadline || getTwelveWeeksFromNow()
+                      })}
+                      placeholder={categoryInfo.examples[0]}
+                      className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                    />
+                  </div>
+
+                  {/* Connected Wheel Areas */}
+                  {wheelData && (
+                    <div className="mt-4">
+                      <div className="text-xs text-slate-500 mb-2">Connected life areas:</div>
+                      <div className="flex flex-wrap gap-1">
+                        {getCategoryWheelData(category).map((area, index) => (
+                          <div key={index} className="flex items-center px-2 py-1 bg-slate-100 rounded-full text-xs">
+                            <div className="w-2 h-2 rounded-full mr-1" style={{backgroundColor: area.color}}></div>
+                            <span className="font-medium text-slate-700">{area.area}</span>
+                            <span className="text-slate-500 ml-1">{area.score}/10</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
 
-      {/* 12-Week Goals Section */}
+      {/* Category Goal Section */}
       {data.currentStep === 'quarter' && (
         <div className="space-y-6">
           {data.categories.map((category, index) => {
             const categoryInfo = GOAL_CATEGORIES[category];
             const goal = data.categoryGoals[category];
-            const isExpanded = expandedGoals.has(category);
-            const wheelAreas = getCategoryWheelData(category);
+            const isActive = index === data.currentCategoryIndex;
             
+            if (!isActive) return null;
+
             return (
-              <div key={category} className="bg-white rounded-xl shadow-sm border border-slate-200 animate-fadeIn">
-                {/* Goal Header */}
-                <div 
-                  className="p-6 cursor-pointer hover:bg-slate-50 transition-colors"
-                  onClick={() => toggleGoalExpansion(category)}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-2xl">
-                        {categoryInfo.icon}
+              <div key={category} className="bg-white rounded-xl p-8 shadow-sm border border-slate-200">
+                <div className="flex items-center space-x-4 mb-6">
+                  <div className="w-16 h-16 rounded-full flex items-center justify-center text-3xl bg-slate-100">
+                    {categoryInfo.icon}
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-900">{categoryInfo.name}</h2>
+                    <p className="text-slate-600">{categoryInfo.description}</p>
+                  </div>
+                </div>
+
+                {/* Connected Wheel Areas */}
+                {wheelData && (
+                  <div className="flex flex-wrap gap-2 mb-6">
+                    {getCategoryWheelData(category).map((area, index) => (
+                      <div key={index} className="flex items-center px-3 py-1 bg-slate-100 rounded-full text-sm">
+                        <div className="w-3 h-3 rounded-full mr-2" style={{backgroundColor: area.color}}></div>
+                        <span className="font-medium text-slate-700">{area.area}</span>
+                        <span className="text-slate-500 ml-1">{area.score}/10</span>
                       </div>
-                      <div>
-                        <h3 className="text-xl font-semibold text-slate-900">{categoryInfo.name}</h3>
-                        <p className="text-slate-600 text-sm">{categoryInfo.description}</p>
-                        {wheelAreas.length > 0 && (
-                          <div className="flex items-center space-x-2 mt-2">
-                            {wheelAreas.map((area, i) => (
-                              <div key={i} className="flex items-center space-x-1 px-2 py-1 bg-slate-100 rounded-full text-xs">
-                                <div className="w-2 h-2 rounded-full" style={{backgroundColor: area.color}}></div>
-                                <span className="font-medium text-slate-700">{area.area}</span>
-                                <span className="text-slate-500">{area.score}/10</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                    ))}
+                  </div>
+                )}
+
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      12-Week Goal
+                    </label>
+                    <input
+                      type="text"
+                      value={goal?.goal || ''}
+                      onChange={(e) => updateCategoryGoal(category, {
+                        category: category as any,
+                        goal: e.target.value,
+                        actions: goal?.actions || [],
+                        milestones: goal?.milestones || [],
+                        focus: goal?.focus || '',
+                        wheelAreas: getCategoryWheelData(category).map(area => area.area),
+                        targetScore: goal?.targetScore || 8,
+                        deadline: goal?.deadline || getTwelveWeeksFromNow()
+                      })}
+                      placeholder={categoryInfo.examples[0]}
+                      className="w-full p-4 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-lg"
+                    />
+                  </div>
+
+                  {/* Deadline */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center">
+                      <CalendarIcon className="w-4 h-4 mr-2" />
+                      Target Completion Date
+                    </label>
+                    <div className="flex items-center space-x-3">
+                      <input
+                        type="date"
+                        value={goal?.deadline || getTwelveWeeksFromNow()}
+                        onChange={(e) => updateCategoryGoal(category, {
+                          category: category as any,
+                          goal: goal?.goal || '',
+                          actions: goal?.actions || [],
+                          milestones: goal?.milestones || [],
+                          focus: goal?.focus || '',
+                          wheelAreas: getCategoryWheelData(category).map(area => area.area),
+                          targetScore: goal?.targetScore || 8,
+                          deadline: e.target.value
+                        })}
+                        className="p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                      <div className="bg-blue-50 text-blue-700 px-3 py-2 rounded-lg flex items-center">
+                        <Clock className="w-4 h-4 mr-1" />
+                        <span>{getWeeksRemaining(goal?.deadline || getTwelveWeeksFromNow())} weeks</span>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-3">
-                      {goal?.goal && (
-                        <div className="text-right">
-                          <div className="text-sm text-green-600 font-medium">Goal Set</div>
-                          <div className="text-xs text-slate-500">
-                            {goal.milestones?.length || 0} milestones, {goal.actions?.length || 0} actions
+                  </div>
+
+                  {/* Milestones */}
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <label className="block text-sm font-medium text-slate-700 flex items-center">
+                        <Flag className="w-4 h-4 mr-2" />
+                        Key Milestones (2-4 checkpoints)
+                      </label>
+                      <button
+                        onClick={() => addMilestone(category)}
+                        className="flex items-center space-x-2 px-3 py-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors text-sm font-medium"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Add Milestone</span>
+                      </button>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      {(goal?.milestones || []).map((milestone) => (
+                        <div key={milestone.id} className="flex items-center justify-between p-4 border border-slate-200 rounded-lg hover:border-slate-300 transition-colors">
+                          <div className="flex items-center space-x-3">
+                            <button
+                              onClick={() => toggleMilestoneCompletion(category, milestone.id)}
+                              className="flex-shrink-0"
+                            >
+                              {milestone.completed ? (
+                                <CheckCircle2 className="w-5 h-5 text-green-600" />
+                              ) : (
+                                <Circle className="w-5 h-5 text-slate-400" />
+                              )}
+                            </button>
+                            <div>
+                              <div className={`font-medium ${milestone.completed ? 'line-through text-slate-500' : 'text-slate-900'}`}>
+                                {milestone.title}
+                              </div>
+                              <div className="text-sm text-slate-500">
+                                Due: {formatDate(milestone.dueDate)}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => editMilestone(category, milestone)}
+                              className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                            >
+                              <Edit3 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => removeMilestone(category, milestone.id)}
+                              className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
                           </div>
                         </div>
+                      ))}
+                      
+                      {(goal?.milestones || []).length === 0 && (
+                        <button
+                          onClick={() => addMilestone(category)}
+                          className="w-full py-6 border-2 border-dashed border-slate-200 rounded-lg text-slate-500 hover:text-blue-600 hover:border-blue-300 transition-colors flex items-center justify-center"
+                        >
+                          <Plus className="w-5 h-5 mr-2" />
+                          Add your first milestone
+                        </button>
                       )}
-                      {isExpanded ? (
-                        <ChevronDown className="w-5 h-5 text-slate-400" />
-                      ) : (
-                        <ChevronRight className="w-5 h-5 text-slate-400" />
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <label className="block text-sm font-medium text-slate-700 flex items-center">
+                        <CheckSquare className="w-4 h-4 mr-2" />
+                        Weekly Actions
+                      </label>
+                      <button
+                        onClick={() => addAction(category)}
+                        className="flex items-center space-x-2 px-3 py-2 text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors text-sm font-medium"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Add Action</span>
+                      </button>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      {(goal?.actions || []).map((action, index) => (
+                        <div key={index} className="flex items-center justify-between p-4 border border-slate-200 rounded-lg hover:border-slate-300 transition-colors">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center text-sm font-bold text-purple-700">
+                              {index + 1}
+                            </div>
+                            <div>
+                              <div className="font-medium text-slate-900">{action.text}</div>
+                              <div className="text-sm text-slate-500 flex items-center">
+                                <Repeat className="w-3 h-3 mr-1" />
+                                {getFrequencyDescription(action)}
+                                {action.frequency === 'multiple' && action.specificDays && (
+                                  <span className="ml-1">
+                                    ({action.specificDays.map(d => d[0].toUpperCase()).join(', ')})
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => editAction(category, action, index)}
+                              className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                            >
+                              <Edit3 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => removeAction(category, index)}
+                              className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {(goal?.actions || []).length === 0 && (
+                        <button
+                          onClick={() => addAction(category)}
+                          className="w-full py-6 border-2 border-dashed border-slate-200 rounded-lg text-slate-500 hover:text-purple-600 hover:border-purple-300 transition-colors flex items-center justify-center"
+                        >
+                          <Plus className="w-5 h-5 mr-2" />
+                          Add your first action
+                        </button>
                       )}
                     </div>
                   </div>
                 </div>
-
-                {/* Expanded Goal Content */}
-                {isExpanded && (
-                  <div className="px-6 pb-6 border-t border-slate-100">
-                    <div className="space-y-6 pt-6">
-                      {/* Goal Input */}
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">
-                          12-Week Goal
-                        </label>
-                        <input
-                          type="text"
-                          value={goal?.goal || ''}
-                          onChange={(e) => updateCategoryGoal(category, {
-                            category: category as any,
-                            goal: e.target.value,
-                            actions: goal?.actions || [],
-                            milestones: goal?.milestones || [],
-                            focus: goal?.focus || '',
-                            wheelAreas: wheelAreas.map(area => area.area),
-                            targetScore: goal?.targetScore || 8,
-                            deadline: goal?.deadline || getTwelveWeeksFromNow()
-                          })}
-                          placeholder={categoryInfo.examples[0]}
-                          className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        />
-                      </div>
-
-                      {/* Deadline */}
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">
-                          Target Completion Date
-                        </label>
-                        <div className="flex items-center space-x-3">
-                          <input
-                            type="date"
-                            value={goal?.deadline || getTwelveWeeksFromNow()}
-                            onChange={(e) => updateCategoryGoal(category, {
-                              category: category as any,
-                              goal: goal?.goal || '',
-                              actions: goal?.actions || [],
-                              milestones: goal?.milestones || [],
-                              focus: goal?.focus || '',
-                              wheelAreas: wheelAreas.map(area => area.area),
-                              targetScore: goal?.targetScore || 8,
-                              deadline: e.target.value
-                            })}
-                            className="p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                          />
-                          <div className="text-sm text-slate-500">
-                            {getWeeksRemaining(goal?.deadline || getTwelveWeeksFromNow())} weeks remaining
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Milestones */}
-                      <div>
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center space-x-2">
-                            <h4 className="text-lg font-semibold text-slate-900">Key Milestones</h4>
-                            <Info className="w-4 h-4 text-slate-400" title="2-4 checkpoints to track progress" />
-                          </div>
-                          <button
-                            onClick={() => openMilestoneModal(category)}
-                            className="flex items-center space-x-2 px-3 py-2 text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors text-sm font-medium"
-                          >
-                            <Plus className="w-4 h-4" />
-                            <span>Add Milestone</span>
-                          </button>
-                        </div>
-                        
-                        <div className="space-y-3">
-                          {goal?.milestones?.map((milestone) => (
-                            <div key={milestone.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
-                              <div className="flex items-center space-x-3">
-                                <button
-                                  onClick={() => toggleMilestoneCompletion(category, milestone.id)}
-                                  className="flex-shrink-0"
-                                >
-                                  {milestone.completed ? (
-                                    <CheckCircle2 className="w-5 h-5 text-green-600" />
-                                  ) : (
-                                    <Circle className="w-5 h-5 text-slate-400" />
-                                  )}
-                                </button>
-                                <div>
-                                  <div className={`font-medium ${milestone.completed ? 'line-through text-slate-500' : 'text-slate-900'}`}>
-                                    {milestone.title}
-                                  </div>
-                                  {milestone.description && (
-                                    <div className="text-sm text-slate-600">{milestone.description}</div>
-                                  )}
-                                  <div className="text-xs text-slate-500 mt-1">
-                                    Due: {formatDate(milestone.dueDate)}
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <button
-                                  onClick={() => openMilestoneModal(category, milestone)}
-                                  className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                                >
-                                  <Edit3 className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => deleteMilestone(category, milestone.id)}
-                                  className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                                >
-                                  <X className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                          
-                          {(!goal?.milestones || goal.milestones.length === 0) && (
-                            <div className="text-center py-8 text-slate-500">
-                              <Flag className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                              <p>No milestones yet. Add your first milestone to track progress.</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Weekly Actions */}
-                      <div>
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center space-x-2">
-                            <h4 className="text-lg font-semibold text-slate-900">Weekly Actions</h4>
-                            <Info className="w-4 h-4 text-slate-400" title="Regular actions to build momentum" />
-                          </div>
-                          <button
-                            onClick={() => openActionModal(category)}
-                            className="flex items-center space-x-2 px-3 py-2 text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors text-sm font-medium"
-                          >
-                            <Plus className="w-4 h-4" />
-                            <span>Add Action</span>
-                          </button>
-                        </div>
-                        
-                        <div className="space-y-3">
-                          {goal?.actions?.map((action, actionIndex) => (
-                            <div key={actionIndex} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
-                              <div className="flex items-center space-x-3">
-                                <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center text-xs font-bold text-purple-700">
-                                  {actionIndex + 1}
-                                </div>
-                                <div>
-                                  <div className="font-medium text-slate-900">{action.text}</div>
-                                  <div className="text-sm text-slate-600 flex items-center mt-1">
-                                    <Repeat className="w-3 h-3 mr-1" />
-                                    {getFrequencyDescription(action)}
-                                    {action.frequency === 'multiple' && action.specificDays && (
-                                      <span className="ml-1">
-                                        ({action.specificDays.map(d => d[0].toUpperCase()).join(', ')})
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <button
-                                  onClick={() => openActionModal(category, actionIndex)}
-                                  className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                                >
-                                  <Edit3 className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => deleteAction(category, actionIndex)}
-                                  className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                                >
-                                  <X className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                          
-                          {(!goal?.actions || goal.actions.length === 0) && (
-                            <div className="text-center py-8 text-slate-500">
-                              <CheckSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                              <p>No actions yet. Add weekly actions to build momentum.</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             );
           })}
@@ -916,20 +874,20 @@ const Goals: React.FC = () => {
         <button
           onClick={goToPreviousArea}
           disabled={data.currentStep === 'annual'}
-          className="flex items-center space-x-2 px-6 py-2 text-slate-600 hover:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="flex items-center space-x-2 px-6 py-3 text-slate-600 hover:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Previous</span>
+          <span>Back</span>
         </button>
 
-        <div className="text-sm text-slate-500">
-          {data.currentStep === 'annual' ? 'Annual Vision' : `${data.currentCategoryIndex + 1}/${data.categories.length} Categories`}
+        <div className="text-sm text-slate-500 bg-slate-100 px-4 py-2 rounded-full">
+          {data.currentStep === 'annual' ? 'Annual Vision' : `${GOAL_CATEGORIES[data.categories[data.currentCategoryIndex]]?.name} (${data.currentCategoryIndex + 1}/${data.categories.length})`}
         </div>
 
         <button
           onClick={goToNextArea}
           disabled={!canProceed()}
-          className="flex items-center space-x-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="flex items-center space-x-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold"
         >
           <span>{data.currentStep === 'quarter' && data.currentCategoryIndex === data.categories.length - 1 ? 'Complete' : 'Next'}</span>
           <ArrowRight className="w-4 h-4" />
@@ -937,15 +895,15 @@ const Goals: React.FC = () => {
       </div>
 
       {/* Milestone Modal */}
-      {showMilestoneModal && (
+      {showMilestoneModal && editingMilestone && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl max-w-md w-full p-6">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-slate-900">
-                {editingMilestone?.milestoneId ? 'Edit Milestone' : 'Add Milestone'}
+                {editingMilestone.title ? 'Edit Milestone' : 'Add Milestone'}
               </h3>
               <button
-                onClick={closeMilestoneModal}
+                onClick={() => setShowMilestoneModal(false)}
                 className="text-slate-400 hover:text-slate-600"
               >
                 <X className="w-5 h-5" />
@@ -959,8 +917,11 @@ const Goals: React.FC = () => {
                 </label>
                 <input
                   type="text"
-                  value={milestoneForm.title}
-                  onChange={(e) => setMilestoneForm(prev => ({ ...prev, title: e.target.value }))}
+                  value={editingMilestone.title}
+                  onChange={(e) => setEditingMilestone({
+                    ...editingMilestone,
+                    title: e.target.value
+                  })}
                   placeholder="e.g., Complete leadership training"
                   className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
@@ -971,10 +932,13 @@ const Goals: React.FC = () => {
                   Description (optional)
                 </label>
                 <textarea
-                  value={milestoneForm.description}
-                  onChange={(e) => setMilestoneForm(prev => ({ ...prev, description: e.target.value }))}
+                  value={editingMilestone.description || ''}
+                  onChange={(e) => setEditingMilestone({
+                    ...editingMilestone,
+                    description: e.target.value
+                  })}
                   placeholder="Additional details about this milestone"
-                  className="w-full p-3 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   rows={3}
                 />
               </div>
@@ -985,26 +949,30 @@ const Goals: React.FC = () => {
                 </label>
                 <input
                   type="date"
-                  value={milestoneForm.dueDate}
-                  onChange={(e) => setMilestoneForm(prev => ({ ...prev, dueDate: e.target.value }))}
+                  value={editingMilestone.dueDate}
+                  onChange={(e) => setEditingMilestone({
+                    ...editingMilestone,
+                    dueDate: e.target.value
+                  })}
                   className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
               </div>
             </div>
 
-            <div className="flex items-center justify-end space-x-3 mt-6 pt-4 border-t border-slate-200">
+            <div className="flex items-center justify-end space-x-3 mt-6">
               <button
-                onClick={closeMilestoneModal}
+                onClick={() => setShowMilestoneModal(false)}
                 className="px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={saveMilestone}
-                disabled={!milestoneForm.title.trim()}
-                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                disabled={!editingMilestone.title.trim()}
+                className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {editingMilestone?.milestoneId ? 'Update' : 'Add'} Milestone
+                <Save className="w-4 h-4" />
+                <span>Save Milestone</span>
               </button>
             </div>
           </div>
@@ -1012,15 +980,15 @@ const Goals: React.FC = () => {
       )}
 
       {/* Action Modal */}
-      {showActionModal && (
+      {showActionModal && editingAction && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl max-w-md w-full p-6">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-slate-900">
-                {editingAction?.actionIndex !== undefined ? 'Edit Action' : 'Add Action'}
+                {editingAction.index >= 0 ? 'Edit Action' : 'Add Action'}
               </h3>
               <button
-                onClick={closeActionModal}
+                onClick={() => setShowActionModal(false)}
                 className="text-slate-400 hover:text-slate-600"
               >
                 <X className="w-5 h-5" />
@@ -1034,9 +1002,12 @@ const Goals: React.FC = () => {
                 </label>
                 <input
                   type="text"
-                  value={actionForm.text}
-                  onChange={(e) => setActionForm(prev => ({ ...prev, text: e.target.value }))}
-                  placeholder="e.g., Review industry trends for 30 minutes"
+                  value={editingAction.action.text}
+                  onChange={(e) => setEditingAction({
+                    ...editingAction,
+                    action: { ...editingAction.action, text: e.target.value }
+                  })}
+                  placeholder="e.g., Review and update resume"
                   className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
               </div>
@@ -1045,69 +1016,73 @@ const Goals: React.FC = () => {
                 <label className="block text-sm font-medium text-slate-700 mb-2">
                   Frequency
                 </label>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {[
-                    { value: 'daily', label: 'Daily' },
-                    { value: 'weekly', label: 'Weekly' },
-                    { value: 'multiple', label: 'Multiple days per week' }
+                    { value: 'daily', label: 'Daily', description: 'Every day' },
+                    { value: 'weekly', label: 'Weekly', description: 'Once per week' },
+                    { value: 'multiple', label: 'Custom', description: 'Specific days of the week' }
                   ].map((freq) => (
-                    <label key={freq.value} className="flex items-center space-x-2">
+                    <label key={freq.value} className="flex items-center space-x-3 cursor-pointer">
                       <input
                         type="radio"
                         name="frequency"
                         value={freq.value}
-                        checked={actionForm.frequency === freq.value}
-                        onChange={(e) => setActionForm(prev => ({ 
-                          ...prev, 
-                          frequency: e.target.value as ActionItem['frequency'],
-                          specificDays: e.target.value === 'multiple' ? prev.specificDays : []
-                        }))}
+                        checked={editingAction.action.frequency === freq.value}
+                        onChange={(e) => setEditingAction({
+                          ...editingAction,
+                          action: { 
+                            ...editingAction.action, 
+                            frequency: e.target.value as any,
+                            specificDays: e.target.value === 'multiple' ? [] : undefined
+                          }
+                        })}
                         className="text-purple-600 focus:ring-purple-500"
                       />
-                      <span className="text-sm text-slate-700">{freq.label}</span>
+                      <div>
+                        <div className="font-medium text-slate-900">{freq.label}</div>
+                        <div className="text-sm text-slate-500">{freq.description}</div>
+                      </div>
                     </label>
                   ))}
                 </div>
               </div>
 
-              {actionForm.frequency === 'multiple' && (
+              {editingAction.action.frequency === 'multiple' && (
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
                     Select Days
                   </label>
-                  <div className="grid grid-cols-7 gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     {DAYS_OF_WEEK.map((day) => (
-                      <button
-                        key={day.value}
-                        type="button"
-                        onClick={() => toggleSpecificDay(day.value)}
-                        className={`p-2 text-xs rounded-lg border transition-colors ${
-                          actionForm.specificDays.includes(day.value)
-                            ? 'bg-purple-600 text-white border-purple-600'
-                            : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
-                        }`}
-                      >
-                        {day.short}
-                      </button>
+                      <label key={day.value} className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={editingAction.action.specificDays?.includes(day.value) || false}
+                          onChange={() => toggleSpecificDay(day.value)}
+                          className="text-purple-600 focus:ring-purple-500"
+                        />
+                        <span className="text-sm text-slate-700">{day.label}</span>
+                      </label>
                     ))}
                   </div>
                 </div>
               )}
             </div>
 
-            <div className="flex items-center justify-end space-x-3 mt-6 pt-4 border-t border-slate-200">
+            <div className="flex items-center justify-end space-x-3 mt-6">
               <button
-                onClick={closeActionModal}
+                onClick={() => setShowActionModal(false)}
                 className="px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={saveAction}
-                disabled={!actionForm.text.trim()}
-                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                disabled={!editingAction.action.text.trim()}
+                className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {editingAction?.actionIndex !== undefined ? 'Update' : 'Add'} Action
+                <Save className="w-4 h-4" />
+                <span>Save Action</span>
               </button>
             </div>
           </div>
