@@ -470,6 +470,19 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
               © 2025 Coach Pack. All rights reserved.
             </div>
           </div>
+          
+          {/* Built with Bolt badge */}
+          <div className="mt-8 flex justify-center">
+            <a 
+              href="https://stackblitz.com/bolt" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center space-x-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors text-sm"
+            >
+              <Zap className="w-4 h-4 text-yellow-400" />
+              <span className="text-white font-medium">Built with Bolt</span>
+            </a>
+          </div>
         </div>
       </footer>
     </div>
