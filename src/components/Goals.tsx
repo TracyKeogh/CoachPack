@@ -78,13 +78,13 @@ const DraggableLifeArea: React.FC<DraggableLifeAreaProps> = ({ area, sourceCateg
   return (
     <div
       ref={drag}
-      className={`flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200 cursor-move transition-all ${
+      className={`flex items-center justify-between p-4 bg-white rounded-lg border border-slate-200 cursor-move transition-all ${
         isDragging ? 'opacity-50 scale-95' : 'hover:shadow-sm hover:border-slate-300'
       }`}
     >
       <div className="flex items-center space-x-3">
         <div 
-          className="w-3 h-3 rounded-full"
+          className="w-4 h-4 rounded-full"
           style={{ backgroundColor: area.color }}
         />
         <span className="font-medium text-slate-900">{area.area}</span>
@@ -159,15 +159,19 @@ const DroppableGoalSection: React.FC<DroppableGoalSectionProps> = ({
         />
       </div>
 
-      {/* Connected Life Areas Section */}
-      <div ref={drop} className="p-6">
-        <div className="flex items-center justify-between mb-3">
+      {/* Connected Life Areas Section - More spacious */}
+      <div ref={drop} className="p-8 min-h-[300px]">
+        <div className="flex items-center justify-between mb-6">
           <h3 className="text-sm font-semibold text-slate-700 flex items-center">
             <BarChart3 className="w-4 h-4 mr-2" />
             Connected Life Areas
           </h3>
+          <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
+            {lifeAreas.length} areas
+          </span>
         </div>
-        <div className="space-y-2">
+        
+        <div className="space-y-4">
           {lifeAreas.map((area, index) => (
             <DraggableLifeArea
               key={`${category}-${area.area}-${index}`}
@@ -176,6 +180,20 @@ const DroppableGoalSection: React.FC<DroppableGoalSectionProps> = ({
               onMove={onDrop}
             />
           ))}
+          
+          {/* Drop zone indicator when empty or when dragging over */}
+          {(lifeAreas.length === 0 || isOver) && (
+            <div className={`border-2 border-dashed rounded-lg p-6 text-center transition-all ${
+              isOver 
+                ? 'border-purple-400 bg-purple-100 text-purple-700' 
+                : 'border-slate-300 text-slate-500'
+            }`}>
+              <BarChart3 className="w-8 h-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm font-medium">
+                {isOver ? 'Drop life area here' : 'Drag life areas here to connect them with this goal'}
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
