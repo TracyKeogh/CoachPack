@@ -64,13 +64,31 @@ function AppContent() {
                 Main content area is rendering! About to render routes...
               </div>
               
+              {/* DEBUG: Show current path */}
+              <div className="bg-orange-500 text-white p-2 mb-4 text-center text-sm">
+                Current pathname: {window.location.pathname}
+              </div>
+              
               <Routes>
-                <Route path="/dashboard" element={<Dashboard onNavigate={(view) => window.location.href = `/${view}`} />} />
+                <Route path="/dashboard" element={
+                  <div>
+                    <div className="bg-purple-500 text-white p-2 mb-4 text-center">
+                      Dashboard route matched!
+                    </div>
+                    <Dashboard onNavigate={(view) => window.location.href = `/${view}`} />
+                  </div>
+                } />
                 <Route path="/wheel" element={<WheelOfLife />} />
                 <Route path="/values" element={<ValuesClarity />} />
                 <Route path="/vision" element={<VisionBoard />} />
                 <Route path="/goals" element={<Goals />} />
                 <Route path="/calendar" element={<Calendar />} />
+                {/* Catch all route for debugging */}
+                <Route path="*" element={
+                  <div className="bg-red-500 text-white p-4 text-center">
+                    No route matched! Current path: {window.location.pathname}
+                  </div>
+                } />
               </Routes>
             </div>
           </main>
