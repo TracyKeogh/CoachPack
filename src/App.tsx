@@ -40,11 +40,6 @@ function AppContent() {
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50">
-        {/* TEST ELEMENT - This should show if AppContent is rendering */}
-        <div className="bg-green-500 text-white p-4 text-center font-bold">
-          AppContent is rendering! Current path: {window.location.pathname}
-        </div>
-        
         <Header />
         <div className="flex">
           <Navigation 
@@ -59,36 +54,13 @@ function AppContent() {
             }`}
           >
             <div className="max-w-7xl mx-auto">
-              {/* TEST ELEMENT - This should show if main content area is rendering */}
-              <div className="bg-blue-500 text-white p-4 mb-4 text-center font-bold">
-                Main content area is rendering! About to render routes...
-              </div>
-              
-              {/* DEBUG: Show current path */}
-              <div className="bg-orange-500 text-white p-2 mb-4 text-center text-sm">
-                Current pathname: {window.location.pathname}
-              </div>
-              
               <Routes>
-                <Route path="/dashboard" element={
-                  <div>
-                    <div className="bg-purple-500 text-white p-2 mb-4 text-center">
-                      Dashboard route matched!
-                    </div>
-                    <Dashboard onNavigate={(view) => window.location.href = `/${view}`} />
-                  </div>
-                } />
+                <Route path="/dashboard" element={<Dashboard onNavigate={(view) => window.location.href = `/${view}`} />} />
                 <Route path="/wheel" element={<WheelOfLife />} />
                 <Route path="/values" element={<ValuesClarity />} />
                 <Route path="/vision" element={<VisionBoard />} />
                 <Route path="/goals" element={<Goals />} />
                 <Route path="/calendar" element={<Calendar />} />
-                {/* Catch all route for debugging */}
-                <Route path="*" element={
-                  <div className="bg-red-500 text-white p-4 text-center">
-                    No route matched! Current path: {window.location.pathname}
-                  </div>
-                } />
               </Routes>
             </div>
           </main>
@@ -102,11 +74,6 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        {/* TEST ELEMENT - This should show if App is rendering */}
-        <div className="bg-yellow-500 text-black p-4 text-center font-bold">
-          App component is rendering! Current URL: {window.location.href}
-        </div>
-        
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage onNavigate={(view) => window.location.href = `/${view}`} />} />
@@ -127,7 +94,7 @@ function App() {
             } 
           />
 
-          {/* Dashboard and feature routes - using a wildcard to catch all app routes */}
+          {/* Dashboard and feature routes */}
           <Route path="/*" element={<AppContent />} />
         </Routes>
       </AuthProvider>
