@@ -604,7 +604,7 @@ const Goals: React.FC = () => {
                         </div>
 
                         {/* Visual Separator */}
-                        <div className="flex items-center my-6">
+                        <div className="flex items-center my-4">
                           <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent"></div>
                           <div className="px-3 py-1 bg-slate-50 rounded-full border border-slate-200">
                             <div className="flex items-center space-x-1 text-slate-600">
