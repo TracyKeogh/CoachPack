@@ -159,10 +159,10 @@ const DroppableGoalSection: React.FC<DroppableGoalSectionProps> = ({
         />
       </div>
 
-      {/* Separator with more visual distinction */}
-      <div className="border-t border-slate-200 my-6"></div>
+      {/* Separator with more visual distinction and increased gap */}
+      <div className="h-16 border-t border-b border-slate-200"></div>
 
-      {/* Connected Life Areas Section - Much more spacious */}
+      {/* Connected Life Areas Section */}
       <div ref={drop} className="p-8 min-h-[350px]">
         <div className="flex items-center justify-between mb-8">
           <h3 className="text-sm font-semibold text-slate-700 flex items-center">
