@@ -19,7 +19,7 @@ import {
   Shield
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import InteractiveDemoVideo from './InteractiveDemoVideo';
+import SnappyDemoVideo from './SnappyDemoVideo';
 import WheelSignupModal from './WheelSignupModal';
 
 interface LandingPageProps {
@@ -77,7 +77,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
   const howItWorksSteps = [
     {
       number: 1,
-      title: 'Assess',
+      title: 'Think',
       subtitle: 'Rate where you are across different life areas to get a clear picture of your current situation.',
       icon: BarChart3,
       color: 'from-purple-500 to-purple-600',
@@ -87,7 +87,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
     },
     {
       number: 2,
-      title: 'Clarify',
+      title: 'Plan',
       subtitle: 'Identify your core values and what you want your life to look like.',
       icon: Heart,
       color: 'from-red-500 to-red-600',
@@ -97,18 +97,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
     },
     {
       number: 3,
-      title: 'Visualize',
-      subtitle: 'Create visual reminders of your goals and what you\'re working toward.',
-      icon: ImageIcon,
-      color: 'from-teal-500 to-teal-600',
-      bgColor: 'bg-teal-50',
-      borderColor: 'border-teal-200',
-      iconColor: 'text-teal-600'
-    },
-    {
-      number: 4,
-      title: 'Plan',
-      subtitle: 'Break down your goals into 12-week chunks and schedule time for what matters.',
+      title: 'Do',
+      subtitle: 'Create visual reminders of your goals and schedule time for what matters most.',
       icon: Target,
       color: 'from-orange-500 to-orange-600',
       bgColor: 'bg-orange-50',
@@ -235,7 +225,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
           </div>
 
           <div className="max-w-5xl mx-auto">
-            <InteractiveDemoVideo 
+            <SnappyDemoVideo 
               autoPlay={false}
               onComplete={() => {
                 // Optional: Show CTA after demo completes
@@ -309,7 +299,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 <p className="text-slate-600">Watch how these tools help you get clarity on your priorities</p>
               </div>
               
-              <InteractiveDemoVideo 
+              <SnappyDemoVideo 
                 autoPlay={true}
                 onComplete={() => {
                   // Optional: Auto-close or show CTA after video completes
@@ -345,15 +335,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-slate-900 mb-4">
-              How It Works
+              Think → Plan → Do
             </h2>
             <p className="text-xl text-slate-600 max-w-3xl mx-auto">
-              Four simple steps to get clarity on where you are and where you want to focus your energy.
+              Three simple steps to get clarity on where you are and where you want to focus your energy.
             </p>
           </div>
 
           {/* Steps in clean horizontal layout */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {howItWorksSteps.map((step, index) => {
               const Icon = step.icon;
               return (
@@ -362,7 +352,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                   className="relative group"
                 >
                   {/* Step Card */}
-                  <div className={`${step.bgColor} ${step.borderColor} border rounded-2xl p-6 h-full transition-all duration-300 group-hover:shadow-lg group-hover:-translate-y-1`}>
+                  <div className={`${step.bgColor} ${step.borderColor} border rounded-2xl p-8 h-full transition-all duration-300 group-hover:shadow-lg group-hover:-translate-y-1`}>
                     {/* Step Number */}
                     <div className={`w-12 h-12 mx-auto mb-4 rounded-full bg-gradient-to-r ${step.color} flex items-center justify-center shadow-lg`}>
                       <span className="text-xl font-bold text-white">{step.number}</span>
@@ -375,16 +365,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                     
                     {/* Content */}
                     <div className="text-center">
-                      <h3 className="text-xl font-bold text-slate-900 mb-3">{step.title}</h3>
-                      <p className="text-slate-600 leading-relaxed text-sm">{step.subtitle}</p>
+                      <h3 className="text-2xl font-bold text-slate-900 mb-3">{step.title}</h3>
+                      <p className="text-slate-600 leading-relaxed">{step.subtitle}</p>
                     </div>
                   </div>
 
                   {/* Connector Arrow (except for last item) */}
                   {index < howItWorksSteps.length - 1 && (
-                    <div className="hidden lg:block absolute top-1/2 -right-3 transform -translate-y-1/2 z-10">
-                      <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-md border border-slate-200">
-                        <ArrowRight className="w-3 h-3 text-slate-400" />
+                    <div className="hidden md:block absolute top-1/2 -right-4 transform -translate-y-1/2 z-10">
+                      <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md border border-slate-200">
+                        <ArrowRight className="w-4 h-4 text-slate-400" />
                       </div>
                     </div>
                   )}
