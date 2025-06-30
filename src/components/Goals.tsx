@@ -138,8 +138,8 @@ const DroppableGoalSection: React.FC<DroppableGoalSectionProps> = ({
         isOver ? 'border-purple-300 bg-purple-50' : 'border-slate-200'
       }`}
     >
-      {/* Goal Title Section - Increased padding */}
-      <div className="p-8 pb-6">
+      {/* Goal Title Section */}
+      <div className="p-8">
         <div className="flex items-center space-x-3 mb-6">
           <div className="w-12 h-12 rounded-full flex items-center justify-center text-2xl bg-slate-100">
             {icon}
@@ -160,12 +160,10 @@ const DroppableGoalSection: React.FC<DroppableGoalSectionProps> = ({
       </div>
 
       {/* Separator with more visual distinction */}
-      <div className="px-8">
-        <div className="border-t border-slate-200"></div>
-      </div>
+      <div className="border-t border-slate-200 my-6"></div>
 
       {/* Connected Life Areas Section - Much more spacious */}
-      <div ref={drop} className="p-8 pt-8 min-h-[350px]">
+      <div ref={drop} className="p-8 min-h-[350px]">
         <div className="flex items-center justify-between mb-8">
           <h3 className="text-sm font-semibold text-slate-700 flex items-center">
             <BarChart3 className="w-4 h-4 mr-2" />
