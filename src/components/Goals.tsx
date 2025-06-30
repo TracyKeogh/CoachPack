@@ -521,13 +521,13 @@ const Goals: React.FC = () => {
         <div className="space-y-5">
           {/* Annual Snapshot */}
           {data.currentStep === 'annual' && (
-            <div className="space-y-4">
-              <div className="text-center mb-4">
-                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <Sparkles className="w-6 h-6 text-purple-600" />
+            <div className="space-y-6">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Sparkles className="w-8 h-8 text-purple-600" />
                 </div>
-                <h2 className="text-lg font-bold text-slate-900 mb-1">Your Annual Vision</h2>
-                <p className="text-slate-600 text-xs">Imagine it's one year from now...</p>
+                <h2 className="text-2xl font-bold text-slate-900 mb-2">Your Annual Vision</h2>
+                <p className="text-slate-600">Imagine it's one year from now...</p>
               </div>
 
               <div>
@@ -538,13 +538,13 @@ const Goals: React.FC = () => {
                     snapshot: e.target.value
                   })}
                   placeholder="I feel energized and healthy. My career is thriving. My relationships are deep and fulfilling..."
-                  className="w-full p-3 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  rows={3}
+                  className="w-full p-4 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  rows={4}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
                   Personal Mantra <span className="text-slate-500">(optional)</span>
                 </label>
                 <input
@@ -555,8 +555,91 @@ const Goals: React.FC = () => {
                     mantra: e.target.value
                   })}
                   placeholder="Living with purpose and joy"
-                  className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                  className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
+              </div>
+
+              {/* Three Goal Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {data.categories.map((category) => {
+                  const categoryInfo = GOAL_CATEGORIES[category];
+                  const goal = data.categoryGoals[category] || { 
+                    category: category as any, 
+                    goal: '', 
+                    actions: [], 
+                    milestones: [],
+                    focus: '',
+                    wheelAreas: [],
+                    targetScore: 8,
+                    deadline: getTwelveWeeksFromNow()
+                  };
+
+                  return (
+                    <div key={category} className="bg-white border border-slate-200 rounded-xl p-6 hover:shadow-md transition-shadow">
+                      <div className="flex items-center space-x-3 mb-4">
+                        <div className="w-12 h-12 rounded-full flex items-center justify-center text-2xl bg-slate-100">
+                          {categoryInfo.icon}
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-slate-900">{categoryInfo.name}</h3>
+                          <p className="text-sm text-slate-600">{categoryInfo.description}</p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-2">
+                            What's your main {category} goal for the next 12 weeks?
+                          </label>
+                          <textarea
+                            value={goal.goal}
+                            onChange={(e) => updateCategoryGoal(category, {
+                              ...goal,
+                              goal: e.target.value
+                            })}
+                            placeholder={categoryInfo.examples[0]}
+                            className="w-full p-3 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            rows={3}
+                          />
+                        </div>
+
+                        {/* Visual Separator */}
+                        <div className="flex items-center my-4">
+                          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent"></div>
+                          <div className="px-3 py-1 bg-slate-50 rounded-full border border-slate-200">
+                            <div className="flex items-center space-x-1 text-slate-600">
+                              <Link className="w-3 h-3" />
+                              <span className="text-xs font-medium">Connected Life Areas</span>
+                            </div>
+                          </div>
+                          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent"></div>
+                        </div>
+
+                        {/* Connected Wheel Areas */}
+                        {wheelData && (
+                          <div className="space-y-2">
+                            {getCategoryWheelData(category).map((area, index) => (
+                              <div key={index} className="flex items-center justify-between p-2 bg-slate-50 rounded-lg">
+                                <div className="flex items-center space-x-2">
+                                  <div 
+                                    className="w-3 h-3 rounded-full"
+                                    style={{ backgroundColor: area.color }}
+                                  />
+                                  <span className="text-sm font-medium text-slate-700">{area.area}</span>
+                                </div>
+                                <div className="flex items-center space-x-1">
+                                  <span className="text-sm text-slate-600">{area.score}</span>
+                                  <span className="text-xs text-slate-500">→</span>
+                                  <span className="text-sm font-medium text-green-600">+2</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
