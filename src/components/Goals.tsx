@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Target, ArrowLeft, ArrowRight, Check, Sparkles, Calendar, Plus, Minus, Link, TrendingUp, Clock, Repeat, CheckSquare, Flag, CheckCircle2, Circle, Star } from 'lucide-react';
+import { Target, ArrowLeft, ArrowRight, Check, Sparkles, Calendar, Plus, Minus, Link, TrendingUp, Clock, Repeat, CheckSquare, Flag, CheckCircle2, Circle, Star as StarIcon } from 'lucide-react';
 import { useGoalSettingData } from '../hooks/useGoalSettingData';
 import { useWheelData } from '../hooks/useWheelData';
 import { GOAL_CATEGORIES, getTwelveWeeksFromNow, getMilestoneDueDates, DAYS_OF_WEEK, ActionItem, Milestone } from '../types/goals';
@@ -756,7 +756,7 @@ const Goals: React.FC = () => {
       {data.currentStep === 'annual' && (
         <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
           <h3 className="text-sm font-medium text-slate-900 mb-3 flex items-center">
-            <Star className="w-4 h-4 text-yellow-500 mr-2" />
+            <StarIcon className="w-4 h-4 text-yellow-500 mr-2" />
             Vision Examples
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
