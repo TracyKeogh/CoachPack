@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Target, ArrowLeft, ArrowRight, Check, Sparkles, Calendar as CalendarIcon, 
-  Plus, Minus, Link, TrendingUp, Clock, Repeat, CheckSquare, 
-  Flag, CheckCircle2, Circle, Star, Award, Zap, BarChart3
-} from 'lucide-react';
+import { Target, ArrowLeft, ArrowRight, Check, Sparkles, Calendar as CalendarIcon, Plus, Minus, Link, TrendingUp, Clock, Repeat, CheckSquare, Flag, CheckCircle2, Circle, Star, Award, Zap, BarChart3, Heart, SeparatorVertical as Separator } from 'lucide-react';
 import { useGoalSettingData } from '../hooks/useGoalSettingData';
 import { useWheelData } from '../hooks/useWheelData';
+import { useValuesData } from '../hooks/useValuesData';
 import { 
   GOAL_CATEGORIES, getTwelveWeeksFromNow, getMilestoneDueDates, 
   DAYS_OF_WEEK, ActionItem, Milestone 
@@ -13,6 +10,7 @@ import {
 
 const Goals: React.FC = () => {
   const { data: wheelData } = useWheelData();
+  const { data: valuesData } = useValuesData();
   const {
     data,
     isLoaded,
@@ -31,6 +29,7 @@ const Goals: React.FC = () => {
 
   const [hasInitialized, setHasInitialized] = useState(false);
   const [showTips, setShowTips] = useState(false);
+  const [draggedSegment, setDraggedSegment] = useState<{area: string, score: number, color: string} | null>(null);
 
   // Initialize from wheel data
   useEffect(() => {
@@ -49,6 +48,18 @@ const Goals: React.FC = () => {
     
     const categoryInfo = GOAL_CATEGORIES[category as keyof typeof GOAL_CATEGORIES];
     return wheelData.filter(area => categoryInfo.wheelAreas.includes(area.area));
+  };
+
+  // Get unassigned wheel segments
+  const getUnassignedSegments = () => {
+    if (!wheelData) return [];
+    
+    const assignedAreas = new Set();
+    Object.values(data.categoryGoals).forEach(goal => {
+      goal.wheelAreas?.forEach(area => assignedAreas.add(area));
+    });
+    
+    return wheelData.filter(area => !assignedAreas.has(area.area));
   };
 
   // Format date for display
@@ -79,7 +90,8 @@ const Goals: React.FC = () => {
       focus: '',
       wheelAreas: [],
       targetScore: 8,
-      deadline: getTwelveWeeksFromNow()
+      deadline: getTwelveWeeksFromNow(),
+      alignedValues: []
     };
     
     const newAction: ActionItem = {
@@ -126,7 +138,8 @@ const Goals: React.FC = () => {
       focus: '',
       wheelAreas: [],
       targetScore: 8,
-      deadline: getTwelveWeeksFromNow()
+      deadline: getTwelveWeeksFromNow(),
+      alignedValues: []
     };
     
     // Calculate suggested due date based on existing milestones
@@ -234,6 +247,77 @@ const Goals: React.FC = () => {
       case 'due-soon': return 'text-orange-600 bg-orange-50 border-orange-200';
       default: return 'text-blue-600 bg-blue-50 border-blue-200';
     }
+  };
+
+  // Handle drag and drop for wheel segments
+  const handleDragStart = (segment: {area: string, score: number, color: string}) => {
+    setDraggedSegment(segment);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent, targetCategory: string) => {
+    e.preventDefault();
+    if (!draggedSegment) return;
+
+    const currentGoal = data.categoryGoals[targetCategory] || {
+      category: targetCategory as any,
+      goal: '',
+      actions: [],
+      milestones: [],
+      focus: '',
+      wheelAreas: [],
+      targetScore: 8,
+      deadline: getTwelveWeeksFromNow(),
+      alignedValues: []
+    };
+
+    // Add the segment to the target category if not already there
+    if (!currentGoal.wheelAreas.includes(draggedSegment.area)) {
+      updateCategoryGoal(targetCategory, {
+        ...currentGoal,
+        wheelAreas: [...currentGoal.wheelAreas, draggedSegment.area]
+      });
+    }
+
+    setDraggedSegment(null);
+  };
+
+  const removeSegmentFromCategory = (category: string, areaToRemove: string) => {
+    const currentGoal = data.categoryGoals[category];
+    if (currentGoal) {
+      updateCategoryGoal(category, {
+        ...currentGoal,
+        wheelAreas: currentGoal.wheelAreas.filter(area => area !== areaToRemove)
+      });
+    }
+  };
+
+  // Values alignment functions
+  const toggleValueAlignment = (category: string, valueId: string) => {
+    const currentGoal = data.categoryGoals[category] || {
+      category: category as any,
+      goal: '',
+      actions: [],
+      milestones: [],
+      focus: '',
+      wheelAreas: [],
+      targetScore: 8,
+      deadline: getTwelveWeeksFromNow(),
+      alignedValues: []
+    };
+
+    const alignedValues = currentGoal.alignedValues || [];
+    const isAligned = alignedValues.includes(valueId);
+
+    updateCategoryGoal(category, {
+      ...currentGoal,
+      alignedValues: isAligned 
+        ? alignedValues.filter(id => id !== valueId)
+        : [...alignedValues, valueId]
+    });
   };
 
   if (!isLoaded) {
@@ -521,13 +605,13 @@ const Goals: React.FC = () => {
         <div className="space-y-5">
           {/* Annual Snapshot */}
           {data.currentStep === 'annual' && (
-            <div className="space-y-6">
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Sparkles className="w-8 h-8 text-purple-600" />
+            <div className="space-y-4">
+              <div className="text-center mb-4">
+                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <Sparkles className="w-6 h-6 text-purple-600" />
                 </div>
-                <h2 className="text-2xl font-bold text-slate-900 mb-2">Your Annual Vision</h2>
-                <p className="text-slate-600">Imagine it's one year from now...</p>
+                <h2 className="text-lg font-bold text-slate-900 mb-1">Your Annual Vision</h2>
+                <p className="text-slate-600 text-xs">Imagine it's one year from now...</p>
               </div>
 
               <div>
@@ -538,13 +622,13 @@ const Goals: React.FC = () => {
                     snapshot: e.target.value
                   })}
                   placeholder="I feel energized and healthy. My career is thriving. My relationships are deep and fulfilling..."
-                  className="w-full p-4 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  rows={4}
+                  className="w-full p-3 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  rows={3}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <label className="block text-xs font-medium text-slate-700 mb-1">
                   Personal Mantra <span className="text-slate-500">(optional)</span>
                 </label>
                 <input
@@ -555,98 +639,15 @@ const Goals: React.FC = () => {
                     mantra: e.target.value
                   })}
                   placeholder="Living with purpose and joy"
-                  className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
                 />
-              </div>
-
-              {/* Three Goal Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {data.categories.map((category) => {
-                  const categoryInfo = GOAL_CATEGORIES[category];
-                  const goal = data.categoryGoals[category] || { 
-                    category: category as any, 
-                    goal: '', 
-                    actions: [], 
-                    milestones: [],
-                    focus: '',
-                    wheelAreas: [],
-                    targetScore: 8,
-                    deadline: getTwelveWeeksFromNow()
-                  };
-
-                  return (
-                    <div key={category} className="bg-white border border-slate-200 rounded-xl p-6 hover:shadow-md transition-shadow">
-                      <div className="flex items-center space-x-3 mb-4">
-                        <div className="w-12 h-12 rounded-full flex items-center justify-center text-2xl bg-slate-100">
-                          {categoryInfo.icon}
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-semibold text-slate-900">{categoryInfo.name}</h3>
-                          <p className="text-sm text-slate-600">{categoryInfo.description}</p>
-                        </div>
-                      </div>
-
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-2">
-                            What's your main {category} goal for the next 12 weeks?
-                          </label>
-                          <textarea
-                            value={goal.goal}
-                            onChange={(e) => updateCategoryGoal(category, {
-                              ...goal,
-                              goal: e.target.value
-                            })}
-                            placeholder={categoryInfo.examples[0]}
-                            className="w-full p-3 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                            rows={3}
-                          />
-                        </div>
-
-                        {/* Visual Separator */}
-                        <div className="flex items-center my-4">
-                          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent"></div>
-                          <div className="px-3 py-1 bg-slate-50 rounded-full border border-slate-200">
-                            <div className="flex items-center space-x-1 text-slate-600">
-                              <Link className="w-3 h-3" />
-                              <span className="text-xs font-medium">Connected Life Areas</span>
-                            </div>
-                          </div>
-                          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent"></div>
-                        </div>
-
-                        {/* Connected Wheel Areas */}
-                        {wheelData && (
-                          <div className="space-y-2">
-                            {getCategoryWheelData(category).map((area, index) => (
-                              <div key={index} className="flex items-center justify-between p-2 bg-slate-50 rounded-lg">
-                                <div className="flex items-center space-x-2">
-                                  <div 
-                                    className="w-3 h-3 rounded-full"
-                                    style={{ backgroundColor: area.color }}
-                                  />
-                                  <span className="text-sm font-medium text-slate-700">{area.area}</span>
-                                </div>
-                                <div className="flex items-center space-x-1">
-                                  <span className="text-sm text-slate-600">{area.score}</span>
-                                  <span className="text-xs text-slate-500">→</span>
-                                  <span className="text-sm font-medium text-green-600">+2</span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
               </div>
             </div>
           )}
 
           {/* Category Goal */}
           {data.currentStep === 'quarter' && categoryInfo && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div className="flex items-center space-x-3 mb-3">
                 <div className="w-10 h-10 rounded-full flex items-center justify-center text-xl bg-slate-100">
                   {categoryInfo.icon}
@@ -657,53 +658,58 @@ const Goals: React.FC = () => {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  12-Week Goal
-                </label>
-                <input
-                  type="text"
-                  value={data.categoryGoals[currentCategory]?.goal || ''}
-                  onChange={(e) => updateCategoryGoal(currentCategory, {
-                    category: currentCategory as any,
-                    goal: e.target.value,
-                    actions: data.categoryGoals[currentCategory]?.actions || [],
-                    milestones: data.categoryGoals[currentCategory]?.milestones || [],
-                    focus: data.categoryGoals[currentCategory]?.focus || '',
-                    wheelAreas: getCategoryWheelData(currentCategory).map(area => area.area),
-                    targetScore: data.categoryGoals[currentCategory]?.targetScore || 8,
-                    deadline: data.categoryGoals[currentCategory]?.deadline || getTwelveWeeksFromNow()
-                  })}
-                  placeholder={categoryInfo.examples[0]}
-                  className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
-                />
-              </div>
-
-              {/* Deadline with visual calendar */}
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1 flex items-center">
-                  <CalendarIcon className="w-3 h-3 mr-1" />
-                  Deadline
-                </label>
-                <div className="flex items-center space-x-2">
+              {/* Goal Input Section */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">
+                    12-Week Goal
+                  </label>
                   <input
-                    type="date"
-                    value={data.categoryGoals[currentCategory]?.deadline || getTwelveWeeksFromNow()}
+                    type="text"
+                    value={data.categoryGoals[currentCategory]?.goal || ''}
                     onChange={(e) => updateCategoryGoal(currentCategory, {
                       category: currentCategory as any,
-                      goal: data.categoryGoals[currentCategory]?.goal || '',
+                      goal: e.target.value,
                       actions: data.categoryGoals[currentCategory]?.actions || [],
                       milestones: data.categoryGoals[currentCategory]?.milestones || [],
                       focus: data.categoryGoals[currentCategory]?.focus || '',
-                      wheelAreas: getCategoryWheelData(currentCategory).map(area => area.area),
+                      wheelAreas: data.categoryGoals[currentCategory]?.wheelAreas || [],
                       targetScore: data.categoryGoals[currentCategory]?.targetScore || 8,
-                      deadline: e.target.value
+                      deadline: data.categoryGoals[currentCategory]?.deadline || getTwelveWeeksFromNow(),
+                      alignedValues: data.categoryGoals[currentCategory]?.alignedValues || []
                     })}
-                    className="p-1 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-xs"
+                    placeholder={categoryInfo.examples[0]}
+                    className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
                   />
-                  <div className="bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded-full flex items-center">
-                    <Clock className="w-2.5 h-2.5 mr-0.5" />
-                    <span>{getWeeksRemaining(data.categoryGoals[currentCategory]?.deadline || getTwelveWeeksFromNow())}w</span>
+                </div>
+
+                {/* Deadline with visual calendar */}
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1 flex items-center">
+                    <CalendarIcon className="w-3 h-3 mr-1" />
+                    Deadline
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="date"
+                      value={data.categoryGoals[currentCategory]?.deadline || getTwelveWeeksFromNow()}
+                      onChange={(e) => updateCategoryGoal(currentCategory, {
+                        category: currentCategory as any,
+                        goal: data.categoryGoals[currentCategory]?.goal || '',
+                        actions: data.categoryGoals[currentCategory]?.actions || [],
+                        milestones: data.categoryGoals[currentCategory]?.milestones || [],
+                        focus: data.categoryGoals[currentCategory]?.focus || '',
+                        wheelAreas: data.categoryGoals[currentCategory]?.wheelAreas || [],
+                        targetScore: data.categoryGoals[currentCategory]?.targetScore || 8,
+                        deadline: e.target.value,
+                        alignedValues: data.categoryGoals[currentCategory]?.alignedValues || []
+                      })}
+                      className="p-1 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-xs"
+                    />
+                    <div className="bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded-full flex items-center">
+                      <Clock className="w-2.5 h-2.5 mr-0.5" />
+                      <span>{getWeeksRemaining(data.categoryGoals[currentCategory]?.deadline || getTwelveWeeksFromNow())}w</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -721,17 +727,139 @@ const Goals: React.FC = () => {
               </div>
 
               {/* Connected Wheel Areas */}
-              {wheelData && (
-                <div className="flex flex-wrap gap-1 mb-3">
-                  {getCategoryWheelData(currentCategory).map((area, index) => (
-                    <div key={index} className="flex items-center px-2 py-0.5 bg-slate-100 rounded-full text-[10px]">
-                      <div className="w-1.5 h-1.5 rounded-full mr-1" style={{backgroundColor: area.color}}></div>
-                      <span className="font-medium text-slate-700">{area.area}</span>
-                      <span className="text-slate-500 ml-1">{area.score}/10</span>
-                    </div>
-                  ))}
+              <div className="space-y-4">
+                <div className="text-center">
+                  <h3 className="text-sm font-medium text-slate-700 mb-2">
+                    Drag life areas from your Wheel of Life to connect them with this goal
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Connected areas will show the improvement you're targeting
+                  </p>
                 </div>
-              )}
+
+                {/* Three Goal Boxes */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {data.categories.map((category) => {
+                    const catInfo = GOAL_CATEGORIES[category];
+                    const catGoal = data.categoryGoals[category];
+                    const connectedAreas = catGoal?.wheelAreas || [];
+                    
+                    return (
+                      <div
+                        key={category}
+                        className={`border-2 border-dashed rounded-lg p-4 min-h-32 transition-all ${
+                          currentCategory === category 
+                            ? 'border-purple-300 bg-purple-50' 
+                            : 'border-slate-200 bg-slate-50'
+                        }`}
+                        onDragOver={handleDragOver}
+                        onDrop={(e) => handleDrop(e, category)}
+                      >
+                        <div className="text-center mb-3">
+                          <div className="text-lg mb-1">{catInfo.icon}</div>
+                          <h4 className="font-medium text-slate-900 text-sm">{catInfo.name}</h4>
+                          {catGoal?.goal && (
+                            <p className="text-xs text-slate-600 mt-1 line-clamp-2">{catGoal.goal}</p>
+                          )}
+                        </div>
+                        
+                        <div className="space-y-2">
+                          {connectedAreas.map((areaName) => {
+                            const wheelArea = wheelData?.find(w => w.area === areaName);
+                            if (!wheelArea) return null;
+                            
+                            return (
+                              <div
+                                key={areaName}
+                                className="flex items-center justify-between p-2 bg-white rounded border"
+                              >
+                                <div className="flex items-center space-x-2">
+                                  <div 
+                                    className="w-3 h-3 rounded-full"
+                                    style={{ backgroundColor: wheelArea.color }}
+                                  />
+                                  <span className="text-xs font-medium text-slate-700">{areaName}</span>
+                                </div>
+                                <div className="flex items-center space-x-1">
+                                  <TrendingUp className="w-3 h-3 text-green-600" />
+                                  <button
+                                    onClick={() => removeSegmentFromCategory(category, areaName)}
+                                    className="text-slate-400 hover:text-red-500 transition-colors"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                          
+                          {connectedAreas.length === 0 && (
+                            <div className="text-center py-4 text-slate-400">
+                              <div className="text-xs">Drop life areas here</div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Values Alignment Cards */}
+                        {valuesData?.rankedCoreValues && valuesData.rankedCoreValues.length > 0 && (
+                          <div className="mt-4 pt-3 border-t border-slate-200">
+                            <h5 className="text-xs font-medium text-slate-600 mb-2 flex items-center">
+                              <Heart className="w-3 h-3 mr-1" />
+                              Aligned Values
+                            </h5>
+                            <div className="grid grid-cols-1 gap-1">
+                              {valuesData.rankedCoreValues.slice(0, 6).map((value) => {
+                                const isAligned = catGoal?.alignedValues?.includes(value.id) || false;
+                                
+                                return (
+                                  <button
+                                    key={value.id}
+                                    onClick={() => toggleValueAlignment(category, value.id)}
+                                    className={`text-left p-2 rounded text-xs transition-all ${
+                                      isAligned
+                                        ? 'bg-purple-100 text-purple-800 border border-purple-300'
+                                        : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'
+                                    }`}
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <span className="font-medium">{value.name}</span>
+                                      {isAligned && <Check className="w-3 h-3 text-purple-600" />}
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Unassigned Segments */}
+                {getUnassignedSegments().length > 0 && (
+                  <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                    <h4 className="text-sm font-medium text-slate-700 mb-3">Available Life Areas</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {getUnassignedSegments().map((segment) => (
+                        <div
+                          key={segment.area}
+                          draggable
+                          onDragStart={() => handleDragStart(segment)}
+                          className="flex items-center space-x-2 p-2 bg-white rounded border border-slate-200 cursor-move hover:shadow-sm transition-all"
+                        >
+                          <div 
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: segment.color }}
+                          />
+                          <span className="text-xs font-medium text-slate-700">{segment.area}</span>
+                          <span className="text-xs text-slate-500">({segment.score}/10)</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {/* Milestones Section */}
               <div>
