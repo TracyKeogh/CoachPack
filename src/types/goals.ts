@@ -27,7 +27,6 @@ export interface CategoryGoal {
   wheelAreas: string[]; // Connected wheel of life areas
   targetScore?: number; // Target score for connected areas
   deadline: string; // ISO date string
-  alignedValues: string[]; // IDs of values aligned with this goal
 }
 
 export interface GoalSettingData {
