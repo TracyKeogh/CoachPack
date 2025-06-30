@@ -153,6 +153,9 @@ const defaultMilestones = [
 ];
 
 const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
+  // TEST ELEMENT - Add this at the beginning of the component
+  const [isComponentRendering, setIsComponentRendering] = useState(true);
+
   const { data: wheelData, getCompletionStats: getWheelStats } = useWheelData();
   const { data: valuesData, getCompletionStats: getValuesStats } = useValuesData();
   const { visionItems, textElements, getCompletionStats: getVisionStats } = useVisionBoardData();
@@ -400,6 +403,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
   return (
     <div className="space-y-8">
+      {/* TEST ELEMENT - This should be visible if the component is rendering */}
+      {isComponentRendering && (
+        <div className="bg-red-100 border-2 border-red-500 p-4 rounded-lg text-center">
+          <h2 className="text-xl font-bold text-red-700">Dashboard is rendering!</h2>
+          <p className="text-red-600">This is a test element to confirm the component is being rendered.</p>
+        </div>
+      )}
+
       {/* Life Overview Header */}
       <div className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-2xl p-8 text-white relative overflow-hidden">
         <div className="absolute inset-0 bg-black bg-opacity-20" />
