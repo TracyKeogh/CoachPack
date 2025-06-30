@@ -159,8 +159,8 @@ const DroppableGoalSection: React.FC<DroppableGoalSectionProps> = ({
         />
       </div>
 
-      {/* Separator with more visual distinction and increased gap */}
-      <div className="h-16 border-t border-b border-slate-200"></div>
+      {/* Large gap with border lines */}
+      <div className="h-32 border-t border-slate-200"></div>
 
       {/* Connected Life Areas Section */}
       <div ref={drop} className="p-8 min-h-[350px]">
