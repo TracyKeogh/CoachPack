@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useDrag, useDrop } from 'react-dnd';
 import { 
   Target, ArrowLeft, ArrowRight, Check, Sparkles, Calendar as CalendarIcon, 
   Plus, Minus, Link, TrendingUp, Clock, Repeat, CheckSquare, 
@@ -10,6 +11,162 @@ import {
   GOAL_CATEGORIES, getTwelveWeeksFromNow, getMilestoneDueDates, 
   DAYS_OF_WEEK, ActionItem, Milestone 
 } from '../types/goals';
+
+// Draggable Life Area Component
+interface DraggableLifeAreaProps {
+  area: {
+    area: string;
+    currentScore: number;
+    targetScore: number;
+    color: string;
+  };
+  category: string;
+  onMove: (fromCategory: string, toCategory: string, areaName: string) => void;
+  onRemove: (category: string, areaName: string) => void;
+  getChangeValue: (currentScore: number, targetScore: number) => string | null;
+  getChangeColor: (currentScore: number, targetScore: number) => string;
+}
+
+const DraggableLifeArea: React.FC<DraggableLifeAreaProps> = ({
+  area,
+  category,
+  onMove,
+  onRemove,
+  getChangeValue,
+  getChangeColor
+}) => {
+  const [{ isDragging }, drag] = useDrag({
+    type: 'life-area',
+    item: { areaName: area.area, fromCategory: category },
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
+  });
+
+  const changeValue = getChangeValue(area.currentScore, area.targetScore);
+
+  return (
+    <div
+      ref={drag}
+      className={`group relative cursor-move transition-all duration-200 ${
+        isDragging ? 'opacity-50 scale-95' : 'hover:scale-102'
+      }`}
+    >
+      <div className="flex items-center justify-between p-2 bg-white rounded border border-slate-200 hover:border-slate-300 transition-colors shadow-sm">
+        <div className="flex items-center space-x-2">
+          <Move className="w-3 h-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div 
+            className="w-3 h-3 rounded-full"
+            style={{ backgroundColor: area.color }}
+          />
+          <span className="text-sm font-medium text-slate-900">{area.area}</span>
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          {changeValue && (
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getChangeColor(area.currentScore, area.targetScore)}`}>
+              {changeValue}
+            </span>
+          )}
+          
+          <button
+            onClick={() => onRemove(category, area.area)}
+            className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-red-500 p-1 hover:bg-red-50 rounded"
+            title="Remove from this goal"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Droppable Category Box Component
+interface DroppableCategoryBoxProps {
+  category: string;
+  categoryInfo: any;
+  areas: Array<{
+    area: string;
+    currentScore: number;
+    targetScore: number;
+    color: string;
+  }>;
+  onDrop: (fromCategory: string, toCategory: string, areaName: string) => void;
+  onRemove: (category: string, areaName: string) => void;
+  getChangeValue: (currentScore: number, targetScore: number) => string | null;
+  getChangeColor: (currentScore: number, targetScore: number) => string;
+}
+
+const DroppableCategoryBox: React.FC<DroppableCategoryBoxProps> = ({
+  category,
+  categoryInfo,
+  areas,
+  onDrop,
+  onRemove,
+  getChangeValue,
+  getChangeColor
+}) => {
+  const [{ isOver }, drop] = useDrop({
+    accept: 'life-area',
+    drop: (item: { areaName: string; fromCategory: string }) => {
+      if (item.fromCategory !== category) {
+        onDrop(item.fromCategory, category, item.areaName);
+      }
+    },
+    collect: (monitor) => ({
+      isOver: monitor.isOver(),
+    }),
+  });
+
+  return (
+    <div
+      ref={drop}
+      className={`bg-slate-50 rounded-lg p-4 border-2 border-dashed transition-all duration-200 min-h-32 ${
+        isOver 
+          ? 'border-purple-400 bg-purple-50' 
+          : 'border-slate-200 hover:border-slate-300'
+      }`}
+    >
+      <h3 className="font-semibold text-slate-900 mb-3 flex items-center">
+        {categoryInfo.name}
+        {isOver && (
+          <span className="ml-2 text-purple-600 text-sm">Drop here</span>
+        )}
+      </h3>
+      
+      {/* Connected Life Areas */}
+      <div className="space-y-2">
+        {areas.map((area) => (
+          <DraggableLifeArea
+            key={area.area}
+            area={area}
+            category={category}
+            onMove={onDrop}
+            onRemove={onRemove}
+            getChangeValue={getChangeValue}
+            getChangeColor={getChangeColor}
+          />
+        ))}
+        
+        {areas.length === 0 && (
+          <div className="text-center py-6 text-slate-500 text-sm">
+            {isOver ? (
+              <span className="text-purple-600 font-medium">Drop life area here</span>
+            ) : (
+              <>
+                <div className="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <Plus className="w-4 h-4 text-slate-400" />
+                </div>
+                <span>Drag life areas here</span>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 const Goals: React.FC = () => {
   const { data: wheelData } = useWheelData();
@@ -588,6 +745,10 @@ const Goals: React.FC = () => {
               <span className="w-3 h-3 bg-indigo-100 rounded-full flex items-center justify-center text-[10px] mr-1 mt-0.5">2</span>
               <span>Break down into <strong>small, actionable steps</strong></span>
             </li>
+            <li className="flex items-start">
+              <span className="w-3 h-3 bg-indigo-100 rounded-full flex items-center justify-center text-[10px] mr-1 mt-0.5">3</span>
+              <span><strong>Drag life areas</strong> between goal categories to organize them</span>
+            </li>
           </ul>
         </div>
       )}
@@ -643,71 +804,16 @@ const Goals: React.FC = () => {
                   const areas = connectedAreas[category] || [];
                   
                   return (
-                    <div key={category} className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                      <h3 className="font-semibold text-slate-900 mb-3">{categoryInfo.name}</h3>
-                      
-                      {/* Connected Life Areas */}
-                      <div className="space-y-2">
-                        {areas.map((area) => {
-                          const changeValue = getChangeValue(area.currentScore, area.targetScore);
-                          
-                          return (
-                            <div key={area.area} className="group relative">
-                              <div className="flex items-center justify-between p-2 bg-white rounded border border-slate-200 hover:border-slate-300 transition-colors">
-                                <div className="flex items-center space-x-2">
-                                  <div 
-                                    className="w-3 h-3 rounded-full"
-                                    style={{ backgroundColor: area.color }}
-                                  />
-                                  <span className="text-sm font-medium text-slate-900">{area.area}</span>
-                                </div>
-                                
-                                <div className="flex items-center space-x-2">
-                                  {changeValue && (
-                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getChangeColor(area.currentScore, area.targetScore)}`}>
-                                      {changeValue}
-                                    </span>
-                                  )}
-                                  
-                                  {/* Dropdown menu */}
-                                  <div className="relative opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <select
-                                      onChange={(e) => {
-                                        const value = e.target.value;
-                                        if (value.startsWith('move-')) {
-                                          const targetCategory = value.replace('move-', '');
-                                          moveAreaToCategory(category, targetCategory, area.area);
-                                        } else if (value === 'remove') {
-                                          removeAreaFromCategory(category, area.area);
-                                        }
-                                        e.target.value = '';
-                                      }}
-                                      className="text-xs border border-slate-200 rounded p-1 bg-white"
-                                    >
-                                      <option value="">⋯</option>
-                                      {data.categories
-                                        .filter(cat => cat !== category)
-                                        .map(cat => (
-                                          <option key={cat} value={`move-${cat}`}>
-                                            Move to {GOAL_CATEGORIES[cat].name}
-                                          </option>
-                                        ))}
-                                      <option value="remove">Remove</option>
-                                    </select>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                        
-                        {areas.length === 0 && (
-                          <div className="text-center py-4 text-slate-500 text-sm">
-                            No connected life areas
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                    <DroppableCategoryBox
+                      key={category}
+                      category={category}
+                      categoryInfo={categoryInfo}
+                      areas={areas}
+                      onDrop={moveAreaToCategory}
+                      onRemove={removeAreaFromCategory}
+                      getChangeValue={getChangeValue}
+                      getChangeColor={getChangeColor}
+                    />
                   );
                 })}
               </div>
@@ -727,7 +833,7 @@ const Goals: React.FC = () => {
                 </div>
               </div>
 
-              {/* Connected Wheel Areas */}
+              {/* Connected Life Areas */}
               {connectedAreas[currentCategory] && connectedAreas[currentCategory].length > 0 && (
                 <div className="mb-4">
                   <h4 className="text-sm font-medium text-slate-700 mb-2">Connected Life Areas</h4>
