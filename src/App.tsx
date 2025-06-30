@@ -127,16 +127,8 @@ function App() {
             } 
           />
 
-          {/* Dashboard and feature routes - no longer protected */}
-          <Route path="/dashboard" element={<AppContent />} />
-          <Route path="/wheel" element={<AppContent />} />
-          <Route path="/values" element={<AppContent />} />
-          <Route path="/vision" element={<AppContent />} />
-          <Route path="/goals" element={<AppContent />} />
-          <Route path="/calendar" element={<AppContent />} />
-
-          {/* Redirect any unknown routes to landing */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          {/* Dashboard and feature routes - using a wildcard to catch all app routes */}
+          <Route path="/*" element={<AppContent />} />
         </Routes>
       </AuthProvider>
     </Router>
