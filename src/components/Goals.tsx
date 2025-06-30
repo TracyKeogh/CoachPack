@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Target, ArrowLeft, ArrowRight, Check, Sparkles, Calendar, 
+  Target, ArrowLeft, ArrowRight, Check, Sparkles, Calendar as CalendarIcon, 
   Plus, Minus, Link, TrendingUp, Clock, Repeat, CheckSquare, 
   Flag, CheckCircle2, Circle, Star, Award, Zap, BarChart3
 } from 'lucide-react';
@@ -612,7 +612,7 @@ const Goals: React.FC = () => {
               {/* Deadline with visual calendar */}
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1 flex items-center">
-                  <Calendar className="w-3 h-3 mr-1" />
+                  <CalendarIcon className="w-3 h-3 mr-1" />
                   Deadline
                 </label>
                 <div className="flex items-center space-x-2">
