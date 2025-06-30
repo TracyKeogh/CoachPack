@@ -139,8 +139,8 @@ const DroppableGoalSection: React.FC<DroppableGoalSectionProps> = ({
       }`}
     >
       {/* Goal Title Section */}
-      <div className="p-8">
-        <div className="flex items-center space-x-3 mb-6">
+      <div className="p-6 border-b border-slate-200">
+        <div className="flex items-center space-x-3 mb-4">
           <div className="w-12 h-12 rounded-full flex items-center justify-center text-2xl bg-slate-100">
             {icon}
           </div>
@@ -159,12 +159,9 @@ const DroppableGoalSection: React.FC<DroppableGoalSectionProps> = ({
         />
       </div>
 
-      {/* Visual divider - large gap with only top border */}
-      <div className="h-32 border-t border-slate-200"></div>
-
-      {/* Connected Life Areas Section */}
-      <div ref={drop} className="p-8 min-h-[350px]">
-        <div className="flex items-center justify-between mb-8">
+      {/* Connected Life Areas Section - More spacious */}
+      <div ref={drop} className="p-8 min-h-[300px]">
+        <div className="flex items-center justify-between mb-6">
           <h3 className="text-sm font-semibold text-slate-700 flex items-center">
             <BarChart3 className="w-4 h-4 mr-2" />
             Connected Life Areas
@@ -174,7 +171,7 @@ const DroppableGoalSection: React.FC<DroppableGoalSectionProps> = ({
           </span>
         </div>
         
-        <div className="space-y-5">
+        <div className="space-y-4">
           {lifeAreas.map((area, index) => (
             <DraggableLifeArea
               key={`${category}-${area.area}-${index}`}
@@ -186,12 +183,12 @@ const DroppableGoalSection: React.FC<DroppableGoalSectionProps> = ({
           
           {/* Drop zone indicator when empty or when dragging over */}
           {(lifeAreas.length === 0 || isOver) && (
-            <div className={`border-2 border-dashed rounded-lg p-8 text-center transition-all ${
+            <div className={`border-2 border-dashed rounded-lg p-6 text-center transition-all ${
               isOver 
                 ? 'border-purple-400 bg-purple-100 text-purple-700' 
                 : 'border-slate-300 text-slate-500'
             }`}>
-              <BarChart3 className="w-10 h-10 mx-auto mb-3 opacity-50" />
+              <BarChart3 className="w-8 h-8 mx-auto mb-2 opacity-50" />
               <p className="text-sm font-medium">
                 {isOver ? 'Drop life area here' : 'Drag life areas here to connect them with this goal'}
               </p>
@@ -295,60 +292,19 @@ const Goals: React.FC = () => {
         </div>
       </div>
 
-      {/* Business & Career Section */}
-      <div className="bg-white rounded-2xl shadow-sm border-2 border-slate-200">
-        {/* Business & Career Header */}
-        <div className="p-8">
-          <div className="flex items-center space-x-3 mb-6">
-            <div className="w-12 h-12 rounded-full flex items-center justify-center text-2xl bg-slate-100">
-              💼
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-slate-900">Business & Career</h2>
-            </div>
-          </div>
-
-          <p className="text-slate-600 text-sm mb-6">Professional growth and financial success</p>
-
-          <textarea
-            value={goals.business}
-            onChange={(e) => handleGoalChange('business', e.target.value)}
-            placeholder="What's your main business & career goal for the next 12 weeks?"
-            className="w-full p-4 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            rows={3}
-          />
-        </div>
-
-        {/* Visual divider - large gap with only top border */}
-        <div className="h-32 border-t border-slate-200"></div>
-
-        {/* Connected Life Areas Section */}
-        <div className="p-8 min-h-[350px]">
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="text-sm font-semibold text-slate-700 flex items-center">
-              <BarChart3 className="w-4 h-4 mr-2" />
-              Connected Life Areas
-            </h3>
-            <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
-              {categoryLifeAreas.business.length} areas
-            </span>
-          </div>
-          
-          <div className="space-y-5">
-            {categoryLifeAreas.business.map((area, index) => (
-              <DraggableLifeArea
-                key={`business-${area.area}-${index}`}
-                area={area}
-                sourceCategory="business"
-                onMove={handleLifeAreaMove}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-
       {/* Goal Categories - Now in a horizontal line */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <DroppableGoalSection
+          category="business"
+          title="Business & Career"
+          icon="💼"
+          description="Professional growth and financial success"
+          lifeAreas={categoryLifeAreas.business}
+          onDrop={handleLifeAreaMove}
+          goalValue={goals.business}
+          onGoalChange={(value) => handleGoalChange('business', value)}
+        />
+
         <DroppableGoalSection
           category="body"
           title="Health & Body"
