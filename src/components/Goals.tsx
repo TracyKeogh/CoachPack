@@ -134,67 +134,37 @@ const DroppableGoalSection: React.FC<DroppableGoalSectionProps> = ({
 
   return (
     <div
-      className={`bg-white rounded-2xl shadow-sm border-2 transition-all ${
+      ref={drop}
+      className={`bg-white rounded-2xl shadow-sm border-2 p-6 transition-all ${
         isOver ? 'border-purple-300 bg-purple-50' : 'border-slate-200'
       }`}
     >
-      {/* Goal Title Section */}
-      <div className="p-6 border-b border-slate-200">
-        <div className="flex items-center space-x-3 mb-4">
-          <div className="w-12 h-12 rounded-full flex items-center justify-center text-2xl bg-slate-100">
-            {icon}
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-slate-900">{title}</h2>
-            <p className="text-slate-600 text-sm">{description}</p>
-          </div>
+      <div className="flex items-center space-x-3 mb-4">
+        <div className="w-12 h-12 rounded-full flex items-center justify-center text-2xl bg-slate-100">
+          {icon}
         </div>
-
-        <textarea
-          value={goalValue}
-          onChange={(e) => onGoalChange(e.target.value)}
-          placeholder={`What's your main ${title.toLowerCase()} goal for the next 12 weeks?`}
-          className="w-full p-4 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-          rows={3}
-        />
+        <div>
+          <h2 className="text-xl font-bold text-slate-900">{title}</h2>
+          <p className="text-slate-600 text-sm">{description}</p>
+        </div>
       </div>
 
-      {/* Connected Life Areas Section - More spacious */}
-      <div ref={drop} className="p-8 min-h-[300px]">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-sm font-semibold text-slate-700 flex items-center">
-            <BarChart3 className="w-4 h-4 mr-2" />
-            Connected Life Areas
-          </h3>
-          <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
-            {lifeAreas.length} areas
-          </span>
-        </div>
-        
-        <div className="space-y-4">
-          {lifeAreas.map((area, index) => (
-            <DraggableLifeArea
-              key={`${category}-${area.area}-${index}`}
-              area={area}
-              sourceCategory={category}
-              onMove={onDrop}
-            />
-          ))}
-          
-          {/* Drop zone indicator when empty or when dragging over */}
-          {(lifeAreas.length === 0 || isOver) && (
-            <div className={`border-2 border-dashed rounded-lg p-6 text-center transition-all ${
-              isOver 
-                ? 'border-purple-400 bg-purple-100 text-purple-700' 
-                : 'border-slate-300 text-slate-500'
-            }`}>
-              <BarChart3 className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm font-medium">
-                {isOver ? 'Drop life area here' : 'Drag life areas here to connect them with this goal'}
-              </p>
-            </div>
-          )}
-        </div>
+      <textarea
+        value={goalValue}
+        onChange={(e) => onGoalChange(e.target.value)}
+        placeholder={`What's your main ${title.toLowerCase()} goal for the next 12 weeks?`}
+        className="w-full p-4 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+        rows={3}
+      />
+
+      {/* Connected areas count */}
+      <div className="mt-4 flex items-center justify-between">
+        <span className="text-sm text-slate-600">
+          {lifeAreas.length} connected life area{lifeAreas.length !== 1 ? 's' : ''}
+        </span>
+        {isOver && (
+          <span className="text-sm text-purple-600 font-medium">Drop here to connect</span>
+        )}
       </div>
     </div>
   );
@@ -246,6 +216,17 @@ const Goals: React.FC = () => {
     }));
   };
 
+  // Get all life areas for the connected areas section
+  const getAllLifeAreas = () => {
+    const allAreas: Array<{ area: any; category: string }> = [];
+    Object.entries(categoryLifeAreas).forEach(([category, areas]) => {
+      areas.forEach(area => {
+        allAreas.push({ area, category });
+      });
+    });
+    return allAreas;
+  };
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -280,7 +261,6 @@ const Goals: React.FC = () => {
         <div className="mt-4">
           <label className="block text-sm font-medium text-purple-800 mb-2">
             Personal Mantra <span className="text-purple-600">(optional)</span>
-            <br />
           </label>
           <input
             type="text"
@@ -326,6 +306,106 @@ const Goals: React.FC = () => {
           goalValue={goals.balance}
           onGoalChange={(value) => handleGoalChange('balance', value)}
         />
+      </div>
+
+      {/* Connected Life Areas - Separate Section */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center">
+              <BarChart3 className="w-6 h-6 text-slate-600" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900">Connected Life Areas</h2>
+              <p className="text-slate-600">Drag life areas between goal categories to align them</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-2xl font-bold text-slate-900">{getAllLifeAreas().length}</div>
+            <div className="text-sm text-slate-600">Total Areas</div>
+          </div>
+        </div>
+
+        {/* Life Areas organized by category */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Business Areas */}
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2 mb-4">
+              <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+              <h3 className="font-semibold text-slate-900">Business & Career</h3>
+              <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
+                {categoryLifeAreas.business.length}
+              </span>
+            </div>
+            <div className="space-y-3">
+              {categoryLifeAreas.business.map((area, index) => (
+                <DraggableLifeArea
+                  key={`business-${area.area}-${index}`}
+                  area={area}
+                  sourceCategory="business"
+                  onMove={handleLifeAreaMove}
+                />
+              ))}
+              {categoryLifeAreas.business.length === 0 && (
+                <div className="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center text-slate-500">
+                  <p className="text-sm">No areas connected</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Health Areas */}
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2 mb-4">
+              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+              <h3 className="font-semibold text-slate-900">Health & Body</h3>
+              <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
+                {categoryLifeAreas.body.length}
+              </span>
+            </div>
+            <div className="space-y-3">
+              {categoryLifeAreas.body.map((area, index) => (
+                <DraggableLifeArea
+                  key={`body-${area.area}-${index}`}
+                  area={area}
+                  sourceCategory="body"
+                  onMove={handleLifeAreaMove}
+                />
+              ))}
+              {categoryLifeAreas.body.length === 0 && (
+                <div className="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center text-slate-500">
+                  <p className="text-sm">No areas connected</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Balance Areas */}
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2 mb-4">
+              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+              <h3 className="font-semibold text-slate-900">Life Balance</h3>
+              <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
+                {categoryLifeAreas.balance.length}
+              </span>
+            </div>
+            <div className="space-y-3">
+              {categoryLifeAreas.balance.map((area, index) => (
+                <DraggableLifeArea
+                  key={`balance-${area.area}-${index}`}
+                  area={area}
+                  sourceCategory="balance"
+                  onMove={handleLifeAreaMove}
+                />
+              ))}
+              {categoryLifeAreas.balance.length === 0 && (
+                <div className="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center text-slate-500">
+                  <p className="text-sm">No areas connected</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Instructions */}
