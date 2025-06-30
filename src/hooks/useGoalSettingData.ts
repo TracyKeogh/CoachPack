@@ -92,6 +92,11 @@ export const useGoalSettingData = () => {
             if (!goal.deadline) {
               goal.deadline = getTwelveWeeksFromNow();
             }
+
+            // Ensure alignedValues exists
+            if (!goal.alignedValues) {
+              goal.alignedValues = [];
+            }
           });
         }
         
@@ -194,7 +199,8 @@ export const useGoalSettingData = () => {
         frequency: action.frequency || 'weekly',
         specificDays: action.specificDays || []
       })),
-      milestones: goal.milestones || []
+      milestones: goal.milestones || [],
+      alignedValues: goal.alignedValues || []
     };
     
     setData(prev => ({
