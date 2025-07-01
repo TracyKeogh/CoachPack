@@ -73,11 +73,11 @@ const WheelSignupModal: React.FC<WheelSignupModalProps> = ({ isOpen, onClose, on
               </div>
               <div className="flex items-center space-x-3">
                 <CheckCircle2 className="w-5 h-5 text-green-500" />
-                <span className="text-slate-700">Personalized insights & reflections</span>
+                <span className="text-slate-700">Instant results and insights</span>
               </div>
               <div className="flex items-center space-x-3">
                 <CheckCircle2 className="w-5 h-5 text-green-500" />
-                <span className="text-slate-700">Save & track your progress</span>
+                <span className="text-slate-700">Takes just 5 minutes to complete</span>
               </div>
             </div>
           </div>
