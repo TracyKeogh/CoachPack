@@ -733,17 +733,11 @@ const FreeWheelAssessment: React.FC<FreeWheelAssessmentProps> = ({ onComplete, o
                           strokeWidth = 2;
                         }
                         
-                        if (isCurrent && currentStep === 'satisfaction') {
-                          strokeColor = segment.darkColor;
-                          strokeWidth = 3;
-                        } else if (isCurrent) {
-                          strokeColor = segment.darkColor;
-                          strokeWidth = 2;
-                        }
-                        
                         if (isHovered) {
-                          opacity = Math.max(opacity, 0.9);
-                          strokeColor = segment.darkColor;
+                          opacity = 0.9;
+                          if (!isScored) {
+                            strokeColor = segment.darkColor;
+                          }
                           strokeWidth = 3;
                         }
                         
