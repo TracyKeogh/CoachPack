@@ -83,14 +83,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-amber-600 to-orange-600 rounded-2xl p-8 text-white">
+      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl p-8 text-white">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
           <div>
             <h1 className="text-3xl font-bold mb-2">CoachPack Dashboard</h1>
-            <p className="text-amber-100">Your journey from values to daily action</p>
+            <p className="text-purple-100">Your journey from values to daily action</p>
           </div>
           <div className="mt-4 md:mt-0 text-right">
-            <p className="text-amber-100">Today's Focus</p>
+            <p className="text-purple-100">Today's Focus</p>
             <p className="text-xl font-semibold">{todaysFocus}</p>
           </div>
         </div>
@@ -124,10 +124,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       </div>
 
       {/* Core Values Section */}
-      <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-6 text-white">
+      <div className="bg-gradient-to-r from-red-500 to-pink-500 rounded-2xl p-6 text-white">
         <div className="mb-6 text-center">
           <h2 className="text-3xl font-bold mb-2">Your Core Values</h2>
-          <p className="text-amber-100">The principles that guide your decisions and actions</p>
+          <p className="text-red-100">The principles that guide your decisions and actions</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -141,9 +141,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     <h3 className="text-xl font-bold">{value.name}</h3>
                   </div>
                   {definition?.meaning ? (
-                    <p className="text-amber-50">{definition.meaning}</p>
+                    <p className="text-red-50">{definition.meaning}</p>
                   ) : (
-                    <p className="text-amber-50">{value.description}</p>
+                    <p className="text-red-50">{value.description}</p>
                   )}
                 </div>
               );
@@ -152,10 +152,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             <div className="col-span-3 text-center py-8 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
               <Heart className="w-12 h-12 mx-auto mb-3 text-white/70" />
               <h3 className="text-xl font-bold mb-2">Discover Your Core Values</h3>
-              <p className="text-amber-100 mb-4">Identify what truly matters to guide your decisions</p>
+              <p className="text-red-100 mb-4">Identify what truly matters to guide your decisions</p>
               <button 
                 onClick={() => onNavigate('values')}
-                className="px-6 py-2 bg-white text-orange-600 rounded-lg hover:bg-amber-50 transition-colors font-semibold"
+                className="px-6 py-2 bg-white text-red-600 rounded-lg hover:bg-red-50 transition-colors font-semibold"
               >
                 Start Values Clarification
               </button>
@@ -376,7 +376,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       </div>
 
       {/* Goals Section */}
-      <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl p-6 shadow-sm border border-orange-200">
+      <div className="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-2xl p-6 shadow-sm border border-orange-200">
         <div className="flex items-center space-x-3 mb-6">
           <Target className="w-8 h-8 text-orange-600" />
           <div>
@@ -570,7 +570,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       </div>
 
       {/* Vision Summary */}
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-6 text-white">
+      <div className="bg-gradient-to-r from-teal-600 to-cyan-600 rounded-2xl p-6 text-white">
         <div className="flex items-center space-x-3 mb-6">
           <Sparkles className="w-8 h-8" />
           <h2 className="text-2xl font-bold">Your Vision</h2>
@@ -612,7 +612,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <div className="flex justify-center">
           <button
             onClick={() => onNavigate('vision')}
-            className="flex items-center space-x-2 px-6 py-3 bg-white text-purple-600 rounded-lg hover:bg-purple-50 transition-colors font-semibold"
+            className="flex items-center space-x-2 px-6 py-3 bg-white text-teal-600 rounded-lg hover:bg-teal-50 transition-colors font-semibold"
           >
             <ImageIcon className="w-5 h-5" />
             <span>{visionItems.length > 0 ? 'View Full Vision Board' : 'Create Vision Board'}</span>
@@ -624,7 +624,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           <div>
-            <div className="text-3xl font-bold text-amber-600 mb-1">
+            <div className="text-3xl font-bold text-red-600 mb-1">
               {coreValues.length > 0 ? coreValues.length : 0}
             </div>
             <p className="text-slate-600">Core Values</p>
@@ -656,7 +656,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         
         <div className="mt-6 p-4 bg-white rounded-lg border border-slate-200">
           <div className="flex items-center">
-            <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 mr-4">
+            <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 mr-4">
               <Zap className="w-6 h-6" />
             </div>
             <div>
