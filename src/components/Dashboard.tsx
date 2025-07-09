@@ -7,7 +7,12 @@ import {
   Calendar as CalendarIcon,
   ArrowRight,
   Sparkles,
-  CheckCircle2
+  CheckCircle2,
+  Clock,
+  Star,
+  Zap,
+  Award,
+  Compass
 } from 'lucide-react';
 import type { ViewType } from '../App';
 import { useValuesData } from '../hooks/useValuesData';
@@ -27,320 +32,442 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const { data: goalsData } = useGoalSettingData();
 
   // Get top values
-  const topValues = valuesData.rankedCoreValues.slice(0, 3);
+  const coreValues = valuesData.rankedCoreValues.slice(0, 6);
+  const supportingValues = valuesData.supportingValues.slice(0, 3);
 
-  // Get wheel areas that need attention
-  const lowScoreAreas = wheelData?.filter(area => area.score <= 5) || [];
-
-  // Get vision items
-  const visionHighlights = visionItems.slice(0, 4);
+  // Get wheel areas
+  const wheelAreas = wheelData || [];
   
   // Get goals
   const activeGoals = Object.values(goalsData.categoryGoals)
     .filter(goal => goal.goal && goal.goal.trim() !== '');
 
+  // Get today's date
+  const today = new Date();
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const todayFormatted = `${dayNames[today.getDay()]}, ${monthNames[today.getMonth()]} ${today.getDate()}, ${today.getFullYear()}`;
+
+  // Get a focus for today based on goals
+  const todaysFocus = activeGoals.length > 0 
+    ? activeGoals[0].goal 
+    : "Align your actions with your values";
+
+  // Value emojis/icons mapping
+  const valueIcons: Record<string, string> = {
+    'Vitality': '⚡',
+    'Growth': '🌱',
+    'Connection': '🔗',
+    'Purpose': '🎯',
+    'Freedom': '🕊️',
+    'Excellence': '✨',
+    'Creativity': '🎨',
+    'Adventure': '🧭',
+    'Peace': '☮️',
+    'Health': '💪',
+    'Love': '❤️',
+    'Family': '👨‍👩‍👧‍👦',
+    'Balance': '⚖️',
+    'Wisdom': '🧠',
+    'Integrity': '🛡️',
+    'Courage': '🦁',
+    'Gratitude': '🙏',
+    'Joy': '😊'
+  };
+
+  // Get icon for value
+  const getValueIcon = (valueName: string) => {
+    return valueIcons[valueName] || '💎';
+  };
+
   return (
-    <div className="space-y-8">
-      {/* Welcome Header */}
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-slate-900 mb-2">
-          Your Intentional Living Dashboard
-        </h1>
-        <p className="text-xl text-slate-600 max-w-3xl mx-auto">
-          From core values to daily actions - your complete journey at a glance
-        </p>
+    <div className="space-y-6">
+      {/* Header Banner */}
+      <div className="bg-gradient-to-r from-amber-600 to-orange-600 rounded-2xl p-8 text-white">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">CoachPack Dashboard</h1>
+            <p className="text-amber-100">Your journey from values to daily action</p>
+          </div>
+          <div className="mt-4 md:mt-0 text-right">
+            <p className="text-amber-100">Today's Focus</p>
+            <p className="text-xl font-semibold">{todaysFocus}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Journey Navigation */}
+      <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 text-red-600">
+              <Heart className="w-5 h-5" />
+              <span className="font-medium">Values</span>
+            </div>
+            <div className="text-slate-300">———</div>
+            <div className="flex items-center space-x-2 text-purple-600">
+              <BarChart3 className="w-5 h-5" />
+              <span className="font-medium">Life Areas</span>
+            </div>
+            <div className="text-slate-300">———</div>
+            <div className="flex items-center space-x-2 text-orange-600">
+              <Target className="w-5 h-5" />
+              <span className="font-medium">Goals</span>
+            </div>
+            <div className="text-slate-300">———</div>
+            <div className="flex items-center space-x-2 text-blue-600">
+              <CalendarIcon className="w-5 h-5" />
+              <span className="font-medium">Daily Actions</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Core Values Section */}
-      <div className="bg-gradient-to-r from-red-50 to-pink-50 rounded-2xl p-6 border border-red-200">
-        <div className="flex items-center space-x-3 mb-4">
-          <Heart className="w-8 h-8 text-red-600" />
-          <h2 className="text-2xl font-bold text-slate-900">Your Core Values</h2>
+      <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl p-6 text-white">
+        <div className="mb-6 text-center">
+          <h2 className="text-3xl font-bold mb-2">Your Core Values</h2>
+          <p className="text-amber-100">The principles that guide your decisions and actions</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          {topValues.length > 0 ? (
-            topValues.map((value, index) => (
-              <div key={value.id} className="bg-white rounded-lg p-4 shadow-sm border border-red-100">
-                <div className="flex items-center space-x-2 mb-2">
-                  <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center text-red-600 font-bold text-sm">
-                    {index + 1}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          {coreValues.length > 0 ? (
+            coreValues.map((value) => {
+              const definition = valuesData.valueDefinitions[value.id];
+              return (
+                <div key={value.id} className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <div className="text-2xl">{getValueIcon(value.name)}</div>
+                    <h3 className="text-xl font-bold">{value.name}</h3>
                   </div>
-                  <h3 className="font-semibold text-slate-900">{value.name}</h3>
+                  {definition?.meaning ? (
+                    <p className="text-amber-50">{definition.meaning}</p>
+                  ) : (
+                    <p className="text-amber-50">{value.description}</p>
+                  )}
                 </div>
-                <p className="text-sm text-slate-600">{value.description}</p>
-                {valuesData.valueDefinitions[value.id]?.meaning && (
-                  <div className="mt-2 text-xs text-red-700 bg-red-50 p-2 rounded">
-                    "{valuesData.valueDefinitions[value.id]?.meaning}"
-                  </div>
-                )}
-              </div>
-            ))
+              );
+            })
           ) : (
-            <div className="col-span-3 text-center py-6 bg-white rounded-lg border border-red-100">
-              <Heart className="w-8 h-8 mx-auto mb-2 text-red-300" />
-              <p className="text-slate-600">Discover your core values to see them here</p>
+            <div className="col-span-3 text-center py-8 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
+              <Heart className="w-12 h-12 mx-auto mb-3 text-white/70" />
+              <h3 className="text-xl font-bold mb-2">Discover Your Core Values</h3>
+              <p className="text-amber-100 mb-4">Identify what truly matters to guide your decisions</p>
               <button 
                 onClick={() => onNavigate('values')}
-                className="mt-2 text-red-600 font-medium hover:text-red-700"
+                className="px-6 py-2 bg-white text-orange-600 rounded-lg hover:bg-amber-50 transition-colors font-semibold"
               >
-                Start Values Clarification →
+                Start Values Clarification
               </button>
             </div>
           )}
         </div>
-        
-        <button
-          onClick={() => onNavigate('values')}
-          className="w-full flex items-center justify-center space-x-2 p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
-        >
-          <span>View All Values</span>
-          <ArrowRight className="w-4 h-4" />
-        </button>
-      </div>
 
-      {/* Wheel of Life Insights */}
-      <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-6 border border-purple-200">
-        <div className="flex items-center space-x-3 mb-4">
-          <BarChart3 className="w-8 h-8 text-purple-600" />
-          <h2 className="text-2xl font-bold text-slate-900">Life Balance Insights</h2>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white rounded-lg p-4 shadow-sm border border-purple-100">
-            <h3 className="font-semibold text-slate-900 mb-3">Current Balance</h3>
-            {wheelData && wheelData.length > 0 ? (
-              <div className="space-y-3">
-                {wheelData.map(area => (
-                  <div key={area.area} className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: area.color }} />
-                      <span className="text-sm text-slate-700">{area.area}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-24 bg-slate-100 rounded-full h-2">
-                        <div 
-                          className="h-2 rounded-full" 
-                          style={{ width: `${area.score * 10}%`, backgroundColor: area.color }}
-                        />
-                      </div>
-                      <span className="text-sm font-medium" style={{ color: area.color }}>{area.score}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-4">
-                <p className="text-slate-600">Complete your wheel assessment</p>
-                <button 
-                  onClick={() => onNavigate('wheel')}
-                  className="mt-2 text-purple-600 font-medium hover:text-purple-700"
-                >
-                  Start Assessment →
-                </button>
-              </div>
-            )}
-          </div>
-          
-          <div className="bg-white rounded-lg p-4 shadow-sm border border-purple-100">
-            <h3 className="font-semibold text-slate-900 mb-3">Focus Areas</h3>
-            {lowScoreAreas.length > 0 ? (
-              <div className="space-y-3">
-                {lowScoreAreas.slice(0, 3).map(area => {
-                  const areaReflection = reflectionData[wheelData.findIndex(a => a.area === area.area)];
-                  return (
-                    <div key={area.area} className="p-3 bg-purple-50 rounded-lg">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: area.color }} />
-                        <span className="font-medium text-slate-900">{area.area}: {area.score}/10</span>
-                      </div>
-                      {areaReflection?.idealVision ? (
-                        <p className="text-xs text-purple-700 italic">"{areaReflection.idealVision.substring(0, 100)}..."</p>
-                      ) : (
-                        <p className="text-xs text-slate-600">Add reflection to see your vision for this area</p>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-4">
-                <p className="text-green-600">All areas are above 5/10! 🎉</p>
-                <p className="text-sm text-slate-600 mt-1">Great job maintaining balance</p>
-              </div>
-            )}
-          </div>
-        </div>
-        
-        <button
-          onClick={() => onNavigate('wheel')}
-          className="w-full flex items-center justify-center space-x-2 p-2 mt-4 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors"
-        >
-          <span>Update Life Wheel</span>
-          <ArrowRight className="w-4 h-4" />
-        </button>
-      </div>
-
-      {/* Vision Board Preview */}
-      <div className="bg-gradient-to-r from-teal-50 to-cyan-50 rounded-2xl p-6 border border-teal-200">
-        <div className="flex items-center space-x-3 mb-4">
-          <ImageIcon className="w-8 h-8 text-teal-600" />
-          <h2 className="text-2xl font-bold text-slate-900">Vision Board</h2>
-        </div>
-        
-        {visionHighlights.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-            {visionHighlights.map(item => (
-              <div key={item.id} className="group relative">
-                <img 
-                  src={item.imageUrl} 
-                  alt={item.title}
-                  className="w-full h-32 object-cover rounded-lg shadow-sm"
-                />
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 flex items-center justify-center rounded-lg transition-all duration-200">
-                  <div className="text-white text-center p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <p className="font-medium text-sm">{item.title}</p>
-                  </div>
+        {supportingValues.length > 0 && (
+          <div>
+            <h3 className="text-xl font-bold mb-3 flex items-center">
+              <Star className="w-5 h-5 mr-2" /> Supporting Values
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {supportingValues.map(value => (
+                <div key={value.id} className="bg-white/20 px-3 py-1 rounded-full text-sm">
+                  {getValueIcon(value.name)} {value.name}
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-6 bg-white rounded-lg border border-teal-100 mb-4">
-            <ImageIcon className="w-8 h-8 mx-auto mb-2 text-teal-300" />
-            <p className="text-slate-600">Create your vision board to see it here</p>
-            <button 
-              onClick={() => onNavigate('vision')}
-              className="mt-2 text-teal-600 font-medium hover:text-teal-700"
-            >
-              Start Vision Board →
-            </button>
+              ))}
+            </div>
           </div>
         )}
-        
-        <button
-          onClick={() => onNavigate('vision')}
-          className="w-full flex items-center justify-center space-x-2 p-2 bg-teal-100 text-teal-700 rounded-lg hover:bg-teal-200 transition-colors"
-        >
-          <span>View Full Vision Board</span>
-          <ArrowRight className="w-4 h-4" />
-        </button>
+
+        <div className="mt-6 bg-white/10 rounded-lg p-4 border border-white/20">
+          <div className="flex items-center">
+            <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-2">
+              <CheckCircle2 className="w-4 h-4" />
+            </div>
+            <p className="text-sm">
+              <span className="font-semibold">Remember:</span> When your actions align with these values, you feel energized and authentic. When they don't, you feel drained or conflicted.
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Goals & Actions */}
-      <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl p-6 border border-orange-200">
-        <div className="flex items-center space-x-3 mb-4">
-          <Target className="w-8 h-8 text-orange-600" />
-          <h2 className="text-2xl font-bold text-slate-900">Goals & Actions</h2>
+      {/* Life Areas Section */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+        <div className="flex items-center space-x-3 mb-6">
+          <BarChart3 className="w-8 h-8 text-purple-600" />
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900">Life Areas</h2>
+            <p className="text-slate-600">Your current satisfaction across key life domains</p>
+          </div>
         </div>
-        
-        {activeGoals.length > 0 ? (
-          <div className="space-y-4 mb-4">
-            {activeGoals.map((goal, index) => (
-              <div key={index} className="bg-white rounded-lg p-4 shadow-sm border border-orange-100">
-                <div className="flex items-start space-x-3">
-                  <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-lg">
-                    {goal.category === 'business' ? '💼' : goal.category === 'body' ? '💪' : '⚖️'}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {wheelAreas.length > 0 ? (
+            wheelAreas.map(area => {
+              const areaIndex = wheelData.findIndex(a => a.area === area.area);
+              const reflection = reflectionData[areaIndex];
+              const targetRating = reflection?.targetRating || area.score;
+              const direction = targetRating > area.score ? 'up' : targetRating < area.score ? 'down' : 'same';
+              
+              return (
+                <div key={area.area} className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-semibold text-slate-900">{area.area}</h3>
+                    <div 
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold"
+                      style={{ backgroundColor: area.color }}
+                    >
+                      {area.score}
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-slate-900">{goal.goal}</h3>
-                    
-                    {goal.actions.length > 0 && (
-                      <div className="mt-2">
-                        <p className="text-xs text-slate-500 mb-1">Key Actions:</p>
-                        <div className="space-y-1">
-                          {goal.actions.slice(0, 2).map((action, i) => (
-                            <div key={i} className="flex items-center space-x-2">
-                              <div className="w-1.5 h-1.5 bg-orange-500 rounded-full" />
-                              <p className="text-sm text-slate-700">{action.text}</p>
-                            </div>
-                          ))}
-                          {goal.actions.length > 2 && (
-                            <p className="text-xs text-orange-600">+{goal.actions.length - 2} more actions</p>
-                          )}
-                        </div>
+                  
+                  <div className="w-full bg-slate-200 rounded-full h-2 mb-2">
+                    <div 
+                      className="h-2 rounded-full transition-all duration-500"
+                      style={{ width: `${area.score * 10}%`, backgroundColor: area.color }}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center text-xs">
+                    {direction === 'up' && (
+                      <div className="text-green-600 flex items-center">
+                        <ArrowRight className="w-3 h-3 rotate-[-45deg]" />
+                        <span>Target: {targetRating}</span>
+                      </div>
+                    )}
+                    {direction === 'down' && (
+                      <div className="text-orange-600 flex items-center">
+                        <ArrowRight className="w-3 h-3 rotate-45" />
+                        <span>Target: {targetRating}</span>
+                      </div>
+                    )}
+                    {direction === 'same' && (
+                      <div className="text-blue-600 flex items-center">
+                        <CheckCircle2 className="w-3 h-3 mr-1" />
+                        <span>Maintaining</span>
                       </div>
                     )}
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-6 bg-white rounded-lg border border-orange-100 mb-4">
-            <Target className="w-8 h-8 mx-auto mb-2 text-orange-300" />
-            <p className="text-slate-600">Set your 12-week goals to see them here</p>
-            <button 
-              onClick={() => onNavigate('goals')}
-              className="mt-2 text-orange-600 font-medium hover:text-orange-700"
-            >
-              Start Goal Setting →
-            </button>
-          </div>
-        )}
-        
-        <button
-          onClick={() => onNavigate('goals')}
-          className="w-full flex items-center justify-center space-x-2 p-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors"
-        >
-          <span>View All Goals</span>
-          <ArrowRight className="w-4 h-4" />
-        </button>
-      </div>
-      
-      {/* Calendar Preview */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200">
-        <div className="flex items-center space-x-3 mb-4">
-          <CalendarIcon className="w-8 h-8 text-blue-600" />
-          <h2 className="text-2xl font-bold text-slate-900">Action Calendar</h2>
+              );
+            })
+          ) : (
+            <div className="col-span-4 text-center py-8 bg-slate-50 rounded-lg border border-slate-200">
+              <BarChart3 className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+              <h3 className="text-xl font-bold text-slate-900 mb-2">Assess Your Life Balance</h3>
+              <p className="text-slate-600 mb-4">Rate your satisfaction across 8 key life areas</p>
+              <button 
+                onClick={() => onNavigate('wheel')}
+                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold"
+              >
+                Complete Wheel Assessment
+              </button>
+            </div>
+          )}
         </div>
-        
-        <div className="bg-white rounded-lg p-4 shadow-sm border border-blue-100 mb-4">
-          <h3 className="font-semibold text-slate-900 mb-3">This Week's Focus</h3>
-          
-          <div className="grid grid-cols-7 gap-1 mb-2">
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-              <div key={day} className="text-center text-xs font-medium text-slate-500">{day}</div>
-            ))}
+      </div>
+
+      {/* Goals Section */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+        <div className="flex items-center space-x-3 mb-6">
+          <Target className="w-8 h-8 text-orange-600" />
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900">12-Week Goals</h2>
+            <p className="text-slate-600">Your focused areas for transformation</p>
           </div>
-          
-          <div className="grid grid-cols-7 gap-1">
-            {Array.from({ length: 7 }, (_, i) => {
-              const isToday = i === new Date().getDay();
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {activeGoals.length > 0 ? (
+            activeGoals.map((goal, index) => {
+              const categoryIcon = goal.category === 'business' ? '💼' : goal.category === 'body' ? '💪' : '⚖️';
+              const categoryColor = goal.category === 'business' ? 'from-purple-500 to-purple-600' : 
+                                   goal.category === 'body' ? 'from-green-500 to-green-600' : 
+                                   'from-blue-500 to-blue-600';
+              const progress = Math.floor(Math.random() * 100); // In a real app, calculate actual progress
+              
               return (
-                <div 
-                  key={i} 
-                  className={`h-12 border rounded p-1 text-xs ${
-                    isToday ? 'bg-blue-50 border-blue-300' : 'border-slate-200'
-                  }`}
-                >
-                  <div className="font-medium mb-1">{new Date().getDate() - new Date().getDay() + i}</div>
-                  {i % 2 === 0 && (
-                    <div className="bg-blue-100 text-blue-800 px-1 rounded text-[10px] truncate">Action</div>
-                  )}
+                <div key={index} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                  <div className={`bg-gradient-to-r ${categoryColor} p-4 text-white`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-2xl">{categoryIcon}</span>
+                        <h3 className="font-bold">{goal.category === 'business' ? 'Professional' : goal.category === 'body' ? 'Physical' : 'Personal'}</h3>
+                      </div>
+                      <div className="text-white/90 font-bold">{progress}%</div>
+                    </div>
+                    <p className="mt-2 font-semibold">{goal.goal}</p>
+                  </div>
+                  
+                  <div className="p-4">
+                    {/* Milestone */}
+                    {goal.milestones && goal.milestones.length > 0 && (
+                      <div className="mb-4">
+                        <p className="text-xs text-slate-500 mb-1">90-Day Milestone</p>
+                        <p className="text-sm font-medium text-slate-800">{goal.milestones[0].title || "Set your milestone"}</p>
+                      </div>
+                    )}
+                    
+                    {/* Weekly Actions */}
+                    <div>
+                      <p className="text-xs text-slate-500 mb-2">Weekly Actions</p>
+                      <div className="space-y-1">
+                        {goal.actions.slice(0, 3).map((action, i) => (
+                          <div key={i} className="flex items-center space-x-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                            <p className="text-sm text-slate-700">{action.text}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Connected Values */}
+                    <div className="mt-4">
+                      <p className="text-xs text-slate-500 mb-2">Connected Values</p>
+                      <div className="flex flex-wrap gap-1">
+                        {['Vitality', 'Excellence', 'Growth'].slice(0, 2 + index % 2).map((value, i) => (
+                          <span key={i} className="px-2 py-1 bg-slate-100 text-slate-700 rounded-full text-xs">
+                            {value}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               );
-            })}
+            })
+          ) : (
+            <div className="col-span-3 text-center py-8 bg-slate-50 rounded-lg border border-slate-200">
+              <Target className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+              <h3 className="text-xl font-bold text-slate-900 mb-2">Set Your 12-Week Goals</h3>
+              <p className="text-slate-600 mb-4">Transform your values and life assessment into focused goals</p>
+              <button 
+                onClick={() => onNavigate('goals')}
+                className="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-semibold"
+              >
+                Create Your Goals
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Daily Actions */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+        <div className="flex items-center space-x-3 mb-6">
+          <CalendarIcon className="w-8 h-8 text-blue-600" />
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900">Daily Actions</h2>
+            <p className="text-slate-600">{todayFormatted}</p>
           </div>
         </div>
-        
-        <button
-          onClick={() => onNavigate('calendar')}
-          className="w-full flex items-center justify-center space-x-2 p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
-        >
-          <span>View Full Calendar</span>
-          <ArrowRight className="w-4 h-4" />
-        </button>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+            <h3 className="font-semibold text-slate-900 mb-3 flex items-center">
+              <Clock className="w-5 h-5 mr-2 text-blue-600" /> Today's Schedule
+            </h3>
+            
+            <div className="space-y-3">
+              {activeGoals.length > 0 ? (
+                activeGoals.flatMap(goal => 
+                  goal.actions.slice(0, 2).map((action, i) => (
+                    <div key={`${goal.category}-${i}`} className="flex items-center space-x-3 p-3 bg-white rounded-lg border border-slate-200">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center" 
+                        style={{ 
+                          backgroundColor: goal.category === 'business' ? '#e0e7ff' : 
+                                          goal.category === 'body' ? '#dcfce7' : '#dbeafe',
+                          color: goal.category === 'business' ? '#4f46e5' : 
+                                goal.category === 'body' ? '#16a34a' : '#2563eb'
+                        }}>
+                        {goal.category === 'business' ? '💼' : goal.category === 'body' ? '💪' : '⚖️'}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-slate-900">{action.text}</p>
+                        <p className="text-xs text-slate-500">
+                          {action.frequency === 'daily' ? 'Daily' : 
+                           action.frequency === 'weekly' ? 'Weekly' : 
+                           'Multiple times per week'}
+                        </p>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <div className="w-2 h-2 rounded-full bg-blue-500" />
+                        <span className="text-xs text-blue-600 font-medium">
+                          {goal.category === 'business' ? 'Professional' : 
+                           goal.category === 'body' ? 'Physical' : 'Personal'}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )
+              ) : (
+                <div className="text-center py-6">
+                  <p className="text-slate-500">Schedule actions from your goals</p>
+                  <button 
+                    onClick={() => onNavigate('calendar')}
+                    className="mt-2 text-blue-600 font-medium hover:text-blue-700"
+                  >
+                    Open Calendar →
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+            <h3 className="font-semibold text-slate-900 mb-3 flex items-center">
+              <Compass className="w-5 h-5 mr-2 text-purple-600" /> Value Alignment
+            </h3>
+            
+            <div className="space-y-4">
+              <div className="bg-white rounded-lg p-4 border border-slate-200">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-medium text-slate-900">Values in Action Today</h4>
+                  <div className="text-purple-600 font-bold">
+                    {coreValues.length > 0 ? `${Math.min(3, coreValues.length)}/${coreValues.length}` : '0/0'}
+                  </div>
+                </div>
+                
+                {coreValues.length > 0 ? (
+                  <div className="space-y-2">
+                    {coreValues.slice(0, 3).map(value => (
+                      <div key={value.id} className="flex items-center space-x-2">
+                        <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center text-purple-600">
+                          {getValueIcon(value.name)}
+                        </div>
+                        <span className="text-sm text-slate-700">{value.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-slate-500 text-sm">Complete your values clarification</p>
+                )}
+              </div>
+              
+              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-4 border border-purple-200">
+                <h4 className="font-medium text-purple-900 mb-2">Daily Reflection</h4>
+                <p className="text-sm text-purple-700">
+                  Take a moment to reflect on how today's actions aligned with your core values.
+                </p>
+                <button 
+                  onClick={() => onNavigate('wheel')}
+                  className="mt-3 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+                >
+                  Start Reflection
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      
-      {/* Annual Vision */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl p-6 text-white">
-        <div className="flex items-center space-x-3 mb-4">
+
+      {/* Vision Summary */}
+      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-6 text-white">
+        <div className="flex items-center space-x-3 mb-6">
           <Sparkles className="w-8 h-8" />
-          <h2 className="text-2xl font-bold">Your Annual Vision</h2>
+          <h2 className="text-2xl font-bold">Your Vision</h2>
         </div>
         
-        <div className="bg-white/10 rounded-lg p-4 border border-white/20 mb-4">
+        <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20 mb-6">
           <p className="text-lg italic text-white/90">
             {goalsData.annualSnapshot?.snapshot || 
               "I feel energized and healthy. My career is thriving with new opportunities and growth. My relationships are deep and fulfilling, and I'm living with purpose and joy every day."}
@@ -354,13 +481,85 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           )}
         </div>
         
-        <button
-          onClick={() => onNavigate('goals')}
-          className="w-full flex items-center justify-center space-x-2 p-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors"
-        >
-          <span>Update Vision</span>
-          <ArrowRight className="w-4 h-4" />
-        </button>
+        {visionItems.length > 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            {visionItems.slice(0, 4).map(item => (
+              <div key={item.id} className="relative group overflow-hidden rounded-lg h-24">
+                <img 
+                  src={item.imageUrl} 
+                  alt={item.title}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 flex items-center justify-center transition-all duration-200">
+                  <p className="text-white text-center p-2 opacity-0 group-hover:opacity-100 transition-opacity text-sm font-medium">
+                    {item.title}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        <div className="flex justify-center">
+          <button
+            onClick={() => onNavigate('vision')}
+            className="flex items-center space-x-2 px-6 py-3 bg-white text-purple-600 rounded-lg hover:bg-purple-50 transition-colors font-semibold"
+          >
+            <ImageIcon className="w-5 h-5" />
+            <span>{visionItems.length > 0 ? 'View Full Vision Board' : 'Create Vision Board'}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Stats Summary */}
+      <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+          <div>
+            <div className="text-3xl font-bold text-amber-600 mb-1">
+              {coreValues.length > 0 ? coreValues.length : 0}
+            </div>
+            <p className="text-slate-600">Core Values</p>
+          </div>
+          
+          <div>
+            <div className="text-3xl font-bold text-purple-600 mb-1">
+              {wheelAreas.length > 0 ? 
+                (wheelAreas.reduce((sum, area) => sum + area.score, 0) / wheelAreas.length).toFixed(1) : 
+                '-'}
+            </div>
+            <p className="text-slate-600">Life Balance Score</p>
+          </div>
+          
+          <div>
+            <div className="text-3xl font-bold text-orange-600 mb-1">
+              {activeGoals.length}
+            </div>
+            <p className="text-slate-600">Active Goals</p>
+          </div>
+          
+          <div>
+            <div className="text-3xl font-bold text-blue-600 mb-1">
+              {activeGoals.reduce((sum, goal) => sum + goal.actions.length, 0)}
+            </div>
+            <p className="text-slate-600">Weekly Actions</p>
+          </div>
+        </div>
+        
+        <div className="mt-6 p-4 bg-white rounded-lg border border-slate-200">
+          <div className="flex items-center">
+            <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 mr-4">
+              <Zap className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-slate-900">Your goals connect to {coreValues.length > 0 ? '83%' : '0%'} of your core values</h3>
+              <p className="text-sm text-slate-600">
+                {coreValues.length > 0 ? 
+                  'Great alignment! Your actions are supporting what matters most to you.' : 
+                  'Complete your values clarification to see alignment'}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
