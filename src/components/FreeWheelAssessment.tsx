@@ -816,6 +816,7 @@ const FreeWheelAssessment: React.FC<FreeWheelAssessmentProps> = ({ onComplete, o
                   const totalHeight = wrappedText.length * lineHeight;
                   const startY = y - totalHeight / 2 - 5;
                   const isCurrent = index === currentAreaIndex;
+                 const textColor = segment.score > 0 ? segment.darkColor : segment.darkColor;
                   
                   return (
                     <g key={`label-${index}`}>
