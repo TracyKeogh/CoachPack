@@ -428,8 +428,8 @@ const FreeWheelAssessment: React.FC<FreeWheelAssessmentProps> = ({ onComplete, o
                           textAnchor={textAnchor}
                           dominantBaseline="middle"
                           className={`text-xs font-semibold pointer-events-none ${segment.score === 0 ? 'opacity-70' : ''}`}
-                          fill="white"
-                          stroke="white"
+                          fill="white" 
+                          stroke="white" 
                           strokeWidth="2"
                         >
                           Score: {segment.score}
@@ -440,7 +440,7 @@ const FreeWheelAssessment: React.FC<FreeWheelAssessmentProps> = ({ onComplete, o
                           textAnchor={textAnchor}
                           dominantBaseline="middle"
                           className={`text-xs font-semibold pointer-events-none ${segment.score === 0 ? 'opacity-70' : ''}`}
-                          fill={segment.score > 0 ? segment.color : '#64748b'}
+                          fill={segment.score > 0 ? segment.color : '#94a3b8'}
                         >
                           Score: {segment.score}
                         </text>
@@ -716,7 +716,7 @@ const FreeWheelAssessment: React.FC<FreeWheelAssessmentProps> = ({ onComplete, o
                         const isScored = segment.score >= ring;
                         const isCurrent = segmentIndex === currentAreaIndex;
                         
-                        const path = createSegmentPath(segmentIndex, innerRadius, outerRadius);
+                        const path = createSegmentPath(segmentIndex, innerRadius, outerRadius); 
                         
                         let fillColor = '#f8fafc';
                         let strokeColor = '#e2e8f0';
@@ -726,6 +726,7 @@ const FreeWheelAssessment: React.FC<FreeWheelAssessmentProps> = ({ onComplete, o
                         if (isScored && segment.score > 0) {
                           fillColor = segment.color;
                           opacity = 0.4 + (ring / 10) * 0.5;
+                          strokeColor = '#e2e8f0'; // Keep neutral stroke for filled segments
                         }
                         
                         if (isCurrent && currentStep === 'satisfaction') {
@@ -734,8 +735,8 @@ const FreeWheelAssessment: React.FC<FreeWheelAssessmentProps> = ({ onComplete, o
                         } else if (isCurrent && segment.score > 0) {
                           strokeColor = segment.darkColor;
                           strokeWidth = 2;
-                        } else if (isCurrent) {
-                          strokeColor = '#64748b'; // Default slate color for current segment with no score
+                        } else if (isCurrent) { 
+                          strokeColor = '#94a3b8'; // Lighter slate color for current segment with no score
                           strokeWidth = 2;
                         }
                         
@@ -819,7 +820,7 @@ const FreeWheelAssessment: React.FC<FreeWheelAssessmentProps> = ({ onComplete, o
                   const totalHeight = wrappedText.length * lineHeight;
                   const startY = y - totalHeight / 2 - 5;
                   const isCurrent = index === currentAreaIndex;
-                 const textColor = segment.score > 0 ? segment.darkColor : '#64748b';
+                  const textColor = segment.score > 0 ? segment.darkColor : '#64748b';
                   
                   return (
                     <g key={`label-${index}`}>
@@ -828,22 +829,22 @@ const FreeWheelAssessment: React.FC<FreeWheelAssessmentProps> = ({ onComplete, o
                           <text
                             x={x}
                             y={startY + (lineIndex * lineHeight)}
-                            textAnchor={textAnchor}
-                            dominantBaseline="middle"
-                            className={`text-sm font-bold pointer-events-none ${isCurrent ? 'animate-pulse' : ''}`}
-                            fill="white"
-                            stroke="white"
-                            strokeWidth="3"
+                            textAnchor={textAnchor} 
+                            dominantBaseline="middle" 
+                            className="text-xs font-semibold pointer-events-none" 
+                            fill="white" 
+                            stroke="white" 
+                            strokeWidth="2" 
                           >
                             {line}
                           </text>
                           <text
                             x={x}
                             y={startY + (lineIndex * lineHeight)}
-                            textAnchor={textAnchor}
-                            dominantBaseline="middle"
-                            className={`text-sm font-bold pointer-events-none ${isCurrent ? 'animate-pulse' : ''}`}
-                            fill={isCurrent ? segment.color : textColor}
+                            textAnchor={textAnchor} 
+                            dominantBaseline="middle" 
+                            className="text-xs font-semibold pointer-events-none" 
+                            fill={segment.score > 0 ? segment.color : '#94a3b8'} 
                           >
                             {line}
                           </text>
