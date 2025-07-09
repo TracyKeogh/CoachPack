@@ -83,36 +83,36 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl p-8 text-white shadow-lg">
+      <div className="bg-slate-800 rounded-2xl p-8 text-white shadow-sm">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
           <div>
             <h1 className="text-3xl font-bold mb-2">CoachPack Dashboard</h1>
-            <p className="text-purple-100">Your journey from values to daily action</p>
+            <p className="text-slate-300">Your journey from values to daily action</p>
           </div>
           <div className="mt-4 md:mt-0 text-right">
-            <p className="text-purple-100">Today's Focus</p>
+            <p className="text-slate-300">Today's Focus</p>
             <p className="text-xl font-semibold">{todaysFocus}</p>
           </div>
         </div>
       </div>
 
       {/* Vision Section - Starting with the big picture */}
-      <div className="bg-gradient-to-r from-teal-600 to-cyan-600 rounded-2xl p-6 text-white shadow-lg">
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
         <div className="flex items-center space-x-3 mb-6">
-          <Eye className="w-8 h-8" />
-          <h2 className="text-2xl font-bold">Your Vision</h2>
+          <Eye className="w-8 h-8 text-slate-700" />
+          <h2 className="text-2xl font-bold text-slate-800">Your Vision</h2>
         </div>
         
-        <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20 mb-6">
-          <p className="text-lg italic text-white/90">
+        <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 mb-6">
+          <p className="text-lg italic text-slate-700">
             {goalsData.annualSnapshot?.snapshot || 
               "I feel energized and healthy. My career is thriving with new opportunities and growth. My relationships are deep and fulfilling, and I'm living with purpose and joy every day."}
           </p>
           
           {goalsData.annualSnapshot?.mantra && (
             <div className="mt-3 text-center">
-              <p className="text-sm text-white/70">Personal Mantra</p>
-              <p className="text-white font-medium">{goalsData.annualSnapshot.mantra}</p>
+              <p className="text-sm text-slate-500">Personal Mantra</p>
+              <p className="text-slate-700 font-medium">{goalsData.annualSnapshot.mantra}</p>
             </div>
           )}
         </div>
@@ -139,7 +139,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <div className="flex justify-center">
           <button
             onClick={() => onNavigate('vision')}
-            className="flex items-center space-x-2 px-6 py-3 bg-white text-teal-600 rounded-lg hover:bg-teal-50 transition-colors font-semibold"
+            className="flex items-center space-x-2 px-6 py-3 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors font-semibold"
           >
             <ImageIcon className="w-5 h-5" />
             <span>{visionItems.length > 0 ? 'View Full Vision Board' : 'Create Vision Board'}</span>
@@ -148,10 +148,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         </div>
 
       {/* Core Values Section */}
-      <div className="bg-gradient-to-r from-red-500 to-pink-500 rounded-2xl p-6 text-white">
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
         <div className="mb-6 text-center">
-          <h2 className="text-3xl font-bold mb-2">Your Core Values</h2>
-          <p className="text-red-100">The principles that guide your decisions and actions</p>
+          <h2 className="text-3xl font-bold mb-2 text-slate-800">Your Core Values</h2>
+          <p className="text-slate-600">The principles that guide your decisions and actions</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -159,27 +159,27 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             coreValues.map((value) => {
               const definition = valuesData.valueDefinitions[value.id];
               return (
-                <div key={value.id} className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+                <div key={value.id} className="bg-slate-50 rounded-lg p-4 border border-slate-200">
                   <div className="flex items-center space-x-3 mb-2">
                     <div className="text-2xl">{getValueIcon(value.name)}</div>
-                    <h3 className="text-xl font-bold">{value.name}</h3>
+                    <h3 className="text-xl font-bold text-slate-800">{value.name}</h3>
                   </div>
                   {definition?.meaning ? (
-                    <p className="text-red-50">{definition.meaning}</p>
+                    <p className="text-slate-600">{definition.meaning}</p>
                   ) : (
-                    <p className="text-red-50">{value.description}</p>
+                    <p className="text-slate-600">{value.description}</p>
                   )}
                 </div>
               );
             })
           ) : (
-            <div className="col-span-3 text-center py-8 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
-              <Heart className="w-12 h-12 mx-auto mb-3 text-white/70" />
-              <h3 className="text-xl font-bold mb-2">Discover Your Core Values</h3>
-              <p className="text-red-100 mb-4">Identify what truly matters to guide your decisions</p>
+            <div className="col-span-3 text-center py-8 bg-slate-50 rounded-lg border border-slate-200">
+              <Heart className="w-12 h-12 mx-auto mb-3 text-slate-400" />
+              <h3 className="text-xl font-bold mb-2 text-slate-800">Discover Your Core Values</h3>
+              <p className="text-slate-600 mb-4">Identify what truly matters to guide your decisions</p>
               <button 
                 onClick={() => onNavigate('values')}
-                className="px-6 py-2 bg-white text-red-600 rounded-lg hover:bg-red-50 transition-colors font-semibold"
+                className="px-6 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors font-semibold"
               >
                 Start Values Clarification
               </button>
@@ -189,12 +189,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
         {supportingValues.length > 0 && (
           <div>
-            <h3 className="text-xl font-bold mb-3 flex items-center">
+            <h3 className="text-xl font-bold mb-3 flex items-center text-slate-800">
               <Star className="w-5 h-5 mr-2" /> Supporting Values
             </h3>
             <div className="flex flex-wrap gap-2">
               {supportingValues.map(value => (
-                <div key={value.id} className="bg-white/20 px-3 py-1 rounded-full text-sm">
+                <div key={value.id} className="bg-slate-100 px-3 py-1 rounded-full text-sm text-slate-700 border border-slate-200">
                   {getValueIcon(value.name)} {value.name}
                 </div>
               ))}
@@ -202,22 +202,22 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </div>
         )}
 
-        <div className="mt-6 bg-white/10 rounded-lg p-4 border border-white/20">
+        <div className="mt-6 bg-slate-50 rounded-lg p-4 border border-slate-200">
           <div className="flex items-center">
-            <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-2">
-              <CheckCircle2 className="w-4 h-4" />
+            <div className="w-6 h-6 bg-slate-200 rounded-full flex items-center justify-center mr-2">
+              <CheckCircle2 className="w-4 h-4 text-slate-700" />
             </div>
-            <p className="text-sm">
-              <span className="font-semibold">Remember:</span> When your actions align with these values, you feel energized and authentic. When they don't, you feel drained or conflicted.
+            <p className="text-sm text-slate-600">
+              <span className="font-semibold text-slate-800">Remember:</span> When your actions align with these values, you feel energized and authentic. When they don't, you feel drained or conflicted.
             </p>
           </div>
         </div>
       </div>
 
       {/* Goals Section */}
-      <div className="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-2xl p-6 shadow-sm border border-orange-200">
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
         <div className="flex items-center space-x-3 mb-6">
-          <Target className="w-8 h-8 text-orange-600" />
+          <Target className="w-8 h-8 text-slate-700" />
           <div>
             <h2 className="text-2xl font-bold text-slate-900">12-Week Goals</h2>
             <p className="text-slate-600">Your focused areas for transformation</p>
@@ -231,11 +231,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               const categoryColor = goal.category === 'business' ? 'from-purple-500 to-purple-600' : 
                                    goal.category === 'body' ? 'from-green-500 to-green-600' : 
                                    'from-blue-500 to-blue-600';
+              const categoryBg = goal.category === 'business' ? 'bg-slate-800' : 
+                               goal.category === 'body' ? 'bg-slate-700' : 
+                               'bg-slate-600';
               const progress = Math.floor(Math.random() * 100); // In a real app, calculate actual progress
               
               return (
                 <div key={index} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                  <div className={`bg-gradient-to-r ${categoryColor} p-4 text-white`}>
+                  <div className={`${categoryBg} p-4 text-white`}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         <span className="text-2xl">{categoryIcon}</span>
@@ -273,7 +276,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                       <p className="text-xs text-slate-500 mb-2">Connected Values</p>
                       <div className="flex flex-wrap gap-1">
                         {['Vitality', 'Excellence', 'Growth'].slice(0, 2 + index % 2).map((value, i) => (
-                          <span key={i} className="px-2 py-1 bg-slate-100 text-slate-700 rounded-full text-xs">
+                          <span key={i} className="px-2 py-1 bg-slate-100 text-slate-700 rounded-full text-xs border border-slate-200">
                             {value}
                           </span>
                         ))}
@@ -290,7 +293,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               <p className="text-slate-600 mb-4">Transform your values and life assessment into focused goals</p>
               <button 
                 onClick={() => onNavigate('goals')}
-                className="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-semibold"
+                className="px-6 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors font-semibold"
               >
                 Create Your Goals
               </button>
@@ -300,9 +303,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       </div>
 
       {/* Life Areas Section */}
-      <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-6 shadow-sm border border-purple-200">
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
         <div className="flex items-center space-x-3 mb-6">
-          <BarChart3 className="w-8 h-8 text-purple-600" />
+          <BarChart3 className="w-8 h-8 text-slate-700" />
           <div>
             <h2 className="text-2xl font-bold text-slate-900">Life Areas</h2>
             <p className="text-slate-600">Your current satisfaction across key life domains</p>
@@ -467,7 +470,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               
               <button 
                 onClick={() => onNavigate('wheel')}
-                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold"
+                className="px-6 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors font-semibold"
               >
                 Update Your Wheel
               </button>
@@ -479,7 +482,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               <p className="text-slate-600 mb-4">Rate your satisfaction across 8 key life areas</p>
               <button 
                 onClick={() => onNavigate('wheel')}
-                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold"
+                className="px-6 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors font-semibold"
               >
                 Complete Wheel Assessment
               </button>
@@ -489,9 +492,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       </div>
 
       {/* Daily Actions */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 shadow-sm border border-blue-200">
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
         <div className="flex items-center space-x-3 mb-6">
-          <CalendarIcon className="w-8 h-8 text-blue-600" />
+          <CalendarIcon className="w-8 h-8 text-slate-700" />
           <div>
             <h2 className="text-2xl font-bold text-slate-900">Daily Actions</h2>
             <p className="text-slate-600">{todayFormatted}</p>
@@ -501,7 +504,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
             <h3 className="font-semibold text-slate-900 mb-3 flex items-center">
-              <Clock className="w-5 h-5 mr-2 text-blue-600" /> Today's Schedule
+              <Clock className="w-5 h-5 mr-2 text-slate-700" /> Today's Schedule
             </h3>
             
             <div className="space-y-3">
@@ -527,8 +530,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                         </p>
                       </div>
                       <div className="flex items-center space-x-1">
-                        <div className="w-2 h-2 rounded-full bg-blue-500" />
-                        <span className="text-xs text-blue-600 font-medium">
+                        <div className="w-2 h-2 rounded-full bg-slate-500" />
+                        <span className="text-xs text-slate-600 font-medium">
                           {goal.category === 'business' ? 'Professional' : 
                            goal.category === 'body' ? 'Physical' : 'Personal'}
                         </span>
@@ -541,7 +544,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   <p className="text-slate-500">Schedule actions from your goals</p>
                   <button 
                     onClick={() => onNavigate('calendar')}
-                    className="mt-2 text-blue-600 font-medium hover:text-blue-700"
+                    className="mt-2 text-slate-700 font-medium hover:text-slate-900"
                   >
                     Open Calendar →
                   </button>
@@ -552,14 +555,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           
           <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
             <h3 className="font-semibold text-slate-900 mb-3 flex items-center">
-              <Compass className="w-5 h-5 mr-2 text-purple-600" /> Value Alignment
+              <Compass className="w-5 h-5 mr-2 text-slate-700" /> Value Alignment
             </h3>
             
             <div className="space-y-4">
               <div className="bg-white rounded-lg p-4 border border-slate-200">
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="font-medium text-slate-900">Values in Action Today</h4>
-                  <div className="text-purple-600 font-bold">
+                  <div className="text-slate-700 font-bold">
                     {coreValues.length > 0 ? `${Math.min(3, coreValues.length)}/${coreValues.length}` : '0/0'}
                   </div>
                 </div>
@@ -568,7 +571,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   <div className="space-y-2">
                     {coreValues.slice(0, 3).map(value => (
                       <div key={value.id} className="flex items-center space-x-2">
-                        <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center text-purple-600">
+                        <div className="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center text-slate-700">
                           {getValueIcon(value.name)}
                         </div>
                         <span className="text-sm text-slate-700">{value.name}</span>
@@ -580,14 +583,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 )}
               </div>
               
-              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-4 border border-purple-200">
-                <h4 className="font-medium text-purple-900 mb-2">Daily Reflection</h4>
-                <p className="text-sm text-purple-700">
+              <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                <h4 className="font-medium text-slate-900 mb-2">Daily Reflection</h4>
+                <p className="text-sm text-slate-600">
                   Take a moment to reflect on how today's actions aligned with your core values.
                 </p>
                 <button 
                   onClick={() => onNavigate('wheel')}
-                  className="mt-3 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+                  className="mt-3 px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors text-sm font-medium"
                 >
                   Start Reflection
                 </button>
@@ -598,30 +601,30 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       </div>
 
       {/* Journey Navigation */}
-      <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200">
+      <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 hidden md:block">
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2 text-teal-600">
+            <div className="flex items-center space-x-2 text-slate-700">
               <Eye className="w-5 h-5" />
               <span className="font-medium">Vision</span>
             </div>
             <div className="text-slate-300">→</div>
-            <div className="flex items-center space-x-2 text-red-600">
+            <div className="flex items-center space-x-2 text-slate-700">
               <Heart className="w-5 h-5" />
               <span className="font-medium">Values</span>
             </div>
             <div className="text-slate-300">→</div>
-            <div className="flex items-center space-x-2 text-purple-600">
+            <div className="flex items-center space-x-2 text-slate-700">
               <BarChart3 className="w-5 h-5" />
               <span className="font-medium">Life Areas</span>
             </div>
             <div className="text-slate-300">→</div>
-            <div className="flex items-center space-x-2 text-orange-600">
+            <div className="flex items-center space-x-2 text-slate-700">
               <Target className="w-5 h-5" />
               <span className="font-medium">Goals</span>
             </div>
             <div className="text-slate-300">→</div>
-            <div className="flex items-center space-x-2 text-blue-600">
+            <div className="flex items-center space-x-2 text-slate-700">
               <CalendarIcon className="w-5 h-5" />
               <span className="font-medium">Daily Actions</span>
             </div>
@@ -633,28 +636,28 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           <div>
-            <div className="text-3xl font-bold text-teal-600 mb-1">
+            <div className="text-3xl font-bold text-slate-800 mb-1">
               {visionItems.length}
             </div>
             <p className="text-slate-600">Vision Items</p>
           </div>
           
           <div>
-            <div className="text-3xl font-bold text-red-600 mb-1">
+            <div className="text-3xl font-bold text-slate-800 mb-1">
               {coreValues.length > 0 ? coreValues.length : 0}
             </div>
             <p className="text-slate-600">Core Values</p>
           </div>
           
           <div>
-            <div className="text-3xl font-bold text-orange-600 mb-1">
+            <div className="text-3xl font-bold text-slate-800 mb-1">
               {activeGoals.length}
             </div>
             <p className="text-slate-600">Active Goals</p>
           </div>
           
           <div>
-            <div className="text-3xl font-bold text-purple-600 mb-1">
+            <div className="text-3xl font-bold text-slate-800 mb-1">
               {wheelAreas.length > 0 ? 
                 (wheelAreas.reduce((sum, area) => sum + area.score, 0) / wheelAreas.length).toFixed(1) : 
                 '-'}
@@ -665,7 +668,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         
         <div className="mt-6 p-4 bg-white rounded-lg border border-slate-200">
           <div className="flex items-center">
-            <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 mr-4">
+            <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-700 mr-4">
               <Zap className="w-6 h-6" />
             </div>
             <div>
