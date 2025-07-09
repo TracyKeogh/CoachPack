@@ -1053,8 +1053,8 @@ const FreeWheelAssessment: React.FC<FreeWheelAssessmentProps> = ({ onComplete, o
                     <div className="flex items-center space-x-3">
                       <ThumbsDown className="w-5 h-5 text-orange-600" />
                       <div>
-                        <div className="font-semibold">I'd like this score to be lower</div>
-                        <div className="text-sm opacity-75">I want to reduce time/energy in this area for better balance</div>
+                        <div className="font-semibold">I'd like to reduce focus on this area</div>
+                        <div className="text-sm opacity-75">I want to reduce time/energy here for better overall balance</div>
                       </div>
                     </div>
                   </button>
