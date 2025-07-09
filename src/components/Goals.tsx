@@ -1,522 +1,441 @@
 import React, { useState, useRef } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 import { 
-  ChevronLeft, 
-  ChevronRight, 
+  ChevronDown,
+  ChevronUp,
   Plus, 
-  Filter, 
-  Calendar as CalendarIcon, 
-  Clock,
+  Target,
   Edit3,
   X,
   Check,
   Move,
   Flag,
   Star,
-  Trophy,
-  Sparkles,
-  Crown,
-  Zap,
-  Target,
-  CheckCircle2,
-  Circle,
-  Heart,
-  BarChart3
+  Calendar as CalendarIcon,
+  Pencil,
+  Save,
+  ArrowRight,
+  Clock
 } from 'lucide-react';
 import { useGoalSettingData } from '../hooks/useGoalSettingData';
 import { ActionItem, Milestone } from '../types/goals';
 
-type ViewMode = 'daily' | 'weekly' | 'monthly' | 'yearly';
+type GoalTimeframe = 'annual' | 'quarterly' | 'weekly';
 
-interface CalendarEvent {
+interface GoalCategory {
   id: string;
-  title: string;
-  description: string;
-  date: string;
-  time: string;
-  category: 'business' | 'body' | 'balance' | 'personal';
-  duration: number;
-  frequency?: 'daily' | 'weekly' | 'multiple';
-  specificDays?: string[];
-  isGoalAction?: boolean;
-  goalCategory?: string;
-  isMilestone?: boolean;
-  milestoneData?: Milestone;
-}
-
-interface DraggableLifeAreaProps {
-  area: {
-    area: string;
-    score: number;
-    targetChange: number;
-    color: string;
-  };
-  sourceCategory: string;
-  onMove: (area: any, sourceCategory: string, targetCategory: string) => void;
-}
-
-const DraggableLifeArea: React.FC<DraggableLifeAreaProps> = ({ area, sourceCategory, onMove }) => {
-  const [{ isDragging }, drag] = useDrag({
-    type: 'life-area',
-    item: { area, sourceCategory },
-    collect: (monitor) => ({
-      isDragging: monitor.isDragging(),
-    }),
-  });
-
-  const getChangeColor = (change: number) => {
-    if (change > 0) return 'text-green-600';
-    if (change < 0) return 'text-red-600';
-    return 'text-slate-600';
-  };
-
-  const formatChange = (change: number) => {
-    if (change > 0) return `+${change}`;
-    return change.toString();
-  };
-
-  return (
-    <div
-      ref={drag}
-      className={`flex items-center justify-between p-4 bg-white rounded-lg border border-slate-200 cursor-move transition-all ${
-        isDragging ? 'opacity-50 scale-95' : 'hover:shadow-sm hover:border-slate-300'
-      }`}
-    >
-      <div className="flex items-center space-x-3">
-        <div 
-          className="w-4 h-4 rounded-full"
-          style={{ backgroundColor: area.color }}
-        />
-        <span className="font-medium text-slate-900">{area.area}</span>
-      </div>
-      <div className="flex items-center space-x-2">
-        <span className={`text-sm font-semibold ${getChangeColor(area.targetChange)}`}>
-          {formatChange(area.targetChange)}
-        </span>
-        <Move className="w-4 h-4 text-slate-400" />
-      </div>
-    </div>
-  );
-};
-
-interface DraggableValueProps {
-  value: {
-    name: string;
-    description: string;
-    category: string;
-  };
-  sourceCategory: string;
-  onMove: (value: any, sourceCategory: string, targetCategory: string) => void;
-}
-
-const DraggableValue: React.FC<DraggableValueProps> = ({ value, sourceCategory, onMove }) => {
-  const [{ isDragging }, drag] = useDrag({
-    type: 'value',
-    item: { value, sourceCategory },
-    collect: (monitor) => ({
-      isDragging: monitor.isDragging(),
-    }),
-  });
-
-  return (
-    <div
-      ref={drag}
-      className={`p-3 bg-white rounded-lg border border-slate-200 cursor-move transition-all ${
-        isDragging ? 'opacity-50 scale-95' : 'hover:shadow-sm hover:border-slate-300'
-      }`}
-    >
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <h4 className="font-medium text-slate-900 text-sm">{value.name}</h4>
-          <p className="text-xs text-slate-600 mt-1">{value.description}</p>
-        </div>
-        <Move className="w-3 h-3 text-slate-400 ml-2 flex-shrink-0" />
-      </div>
-    </div>
-  );
-};
-
-interface DroppableSection {
-  type: 'values' | 'wheel';
-  category: string;
-  items: any[];
-  onDrop: (item: any, sourceCategory: string, targetCategory: string, type: 'values' | 'wheel') => void;
-}
-
-const DroppableSection: React.FC<DroppableSection> = ({ type, category, items, onDrop }) => {
-  const [{ isOver }, drop] = useDrop({
-    accept: type === 'values' ? 'value' : 'life-area',
-    drop: (item: any) => {
-      if (item.sourceCategory !== category) {
-        onDrop(item[type === 'values' ? 'value' : 'area'], item.sourceCategory, category, type);
-      }
-    },
-    collect: (monitor) => ({
-      isOver: monitor.isOver(),
-    }),
-  });
-
-  const icon = type === 'values' ? Heart : BarChart3;
-  const IconComponent = icon;
-
-  return (
-    <div
-      ref={drop}
-      className={`p-4 rounded-lg border-2 border-dashed transition-all ${
-        isOver 
-          ? 'border-purple-400 bg-purple-50' 
-          : 'border-slate-200 bg-slate-50'
-      }`}
-    >
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="text-sm font-semibold text-slate-700 flex items-center">
-          <IconComponent className="w-4 h-4 mr-2" />
-          {type === 'values' ? 'Values' : 'Wheel of Life'}
-        </h4>
-        <span className="text-xs text-slate-500 bg-white px-2 py-1 rounded-full">
-          {items.length}
-        </span>
-      </div>
-      
-      <div className="space-y-2 min-h-[80px]">
-        {items.map((item, index) => (
-          type === 'values' ? (
-            <DraggableValue
-              key={`${category}-value-${index}`}
-              value={item}
-              sourceCategory={category}
-              onMove={(value, source, target) => onDrop(value, source, target, 'values')}
-            />
-          ) : (
-            <DraggableLifeArea
-              key={`${category}-wheel-${index}`}
-              area={item}
-              sourceCategory={category}
-              onMove={(area, source, target) => onDrop(area, source, target, 'wheel')}
-            />
-          )
-        ))}
-        
-        {items.length === 0 && (
-          <div className={`text-center py-4 text-xs transition-all ${
-            isOver ? 'text-purple-600' : 'text-slate-400'
-          }`}>
-            <IconComponent className="w-6 h-6 mx-auto mb-1 opacity-50" />
-            <p>{isOver ? `Drop ${type} here` : `Drag ${type} here`}</p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-interface DroppableGoalSectionProps {
-  category: string;
-  title: string;
+  name: string;
   icon: string;
-  description: string;
-  lifeAreas: any[];
-  values: any[];
-  onDrop: (area: any, sourceCategory: string, targetCategory: string) => void;
-  onValuesDrop: (value: any, sourceCategory: string, targetCategory: string, type: 'values' | 'wheel') => void;
-  goalValue: string;
-  onGoalChange: (value: string) => void;
+  color: string;
 }
 
-const DroppableGoalSection: React.FC<DroppableGoalSectionProps> = ({ 
-  category, 
-  title, 
-  icon, 
-  description, 
-  lifeAreas, 
-  values,
-  onDrop,
-  onValuesDrop,
-  goalValue,
-  onGoalChange
-}) => {
-  const [{ isOver }, drop] = useDrop({
-    accept: 'life-area',
-    drop: (item: { area: any; sourceCategory: string }) => {
-      if (item.sourceCategory !== category) {
-        onDrop(item.area, item.sourceCategory, category);
-      }
+interface GoalItem {
+  id: string;
+  category: string;
+  text: string;
+  mantra?: string;
+  actions: string[];
+  isEditing?: boolean;
+}
+
+const CATEGORIES: GoalCategory[] = [
+  { id: 'personal', name: 'Personal', icon: '⚖️', color: '#3b82f6' },
+  { id: 'physical', name: 'Physical', icon: '💪', color: '#10b981' },
+  { id: 'professional', name: 'Professional', icon: '💼', color: '#8b5cf6' }
+];
+
+const DEFAULT_GOALS: Record<GoalTimeframe, GoalItem[]> = {
+  annual: [
+    { 
+      id: 'annual-personal', 
+      category: 'personal', 
+      text: 'Happy home full of love and fun.',
+      mantra: 'The bedrock of life.',
+      actions: []
     },
-    collect: (monitor) => ({
-      isOver: monitor.isOver(),
-    }),
-  });
-
-  return (
-    <div className="space-y-4">
-      <div
-        className={`bg-white rounded-2xl shadow-sm border-2 transition-all ${
-          isOver ? 'border-purple-300 bg-purple-50' : 'border-slate-200'
-        }`}
-      >
-        {/* Goal Title Section */}
-        <div className="p-6 border-b border-slate-200">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="w-12 h-12 rounded-full flex items-center justify-center text-2xl bg-slate-100">
-              {icon}
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-slate-900">{title}</h2>
-              <p className="text-slate-600 text-sm">{description}</p>
-            </div>
-          </div>
-
-          <textarea
-            value={goalValue}
-            onChange={(e) => onGoalChange(e.target.value)}
-            placeholder={`What's your main ${title.toLowerCase()} goal for the next 12 weeks?`}
-            className="w-full p-4 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            rows={3}
-          />
-        </div>
-
-        {/* Connected Life Areas Section - More spacious */}
-        <div ref={drop} className="p-8 min-h-[300px]">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-sm font-semibold text-slate-700 flex items-center">
-              <BarChart3 className="w-4 h-4 mr-2" />
-              Connected Life Areas
-            </h3>
-            <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
-              {lifeAreas.length} areas
-            </span>
-          </div>
-          
-          <div className="space-y-4">
-            {lifeAreas.map((area, index) => (
-              <DraggableLifeArea
-                key={`${category}-${area.area}-${index}`}
-                area={area}
-                sourceCategory={category}
-                onMove={onDrop}
-              />
-            ))}
-            
-            {/* Drop zone indicator when empty or when dragging over */}
-            {(lifeAreas.length === 0 || isOver) && (
-              <div className={`border-2 border-dashed rounded-lg p-6 text-center transition-all ${
-                isOver 
-                  ? 'border-purple-400 bg-purple-100 text-purple-700' 
-                  : 'border-slate-300 text-slate-500'
-              }`}>
-                <BarChart3 className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm font-medium">
-                  {isOver ? 'Drop life area here' : 'Drag life areas here to connect them with this goal'}
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Values and Wheel of Life Sections */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <DroppableSection
-          type="values"
-          category={category}
-          items={values}
-          onDrop={onValuesDrop}
-        />
-        <DroppableSection
-          type="wheel"
-          category={category}
-          items={lifeAreas}
-          onDrop={onValuesDrop}
-        />
-      </div>
-    </div>
-  );
-};
+    { 
+      id: 'annual-physical', 
+      category: 'physical', 
+      text: 'Healthy, active, light body',
+      mantra: 'Energy to live life.',
+      actions: []
+    },
+    { 
+      id: 'annual-professional', 
+      category: 'professional', 
+      text: '100k in the year.',
+      mantra: 'Money is energy is life.',
+      actions: []
+    }
+  ],
+  quarterly: [
+    { 
+      id: 'quarterly-personal', 
+      category: 'personal', 
+      text: 'A happy home full of fun and love',
+      actions: [
+        '2x friends and family each weekly',
+        'Get out and meet people x1 per week',
+        'Organise (cleaner, meals, clothes process, dishwasher)'
+      ]
+    },
+    { 
+      id: 'quarterly-physical', 
+      category: 'physical', 
+      text: '8.8 on the way to happy healthy active and light',
+      actions: [
+        'Prep meal weekly and count the calories',
+        '3x gym, 10k steps, 1 cycle at least',
+        'A focus on the feeling of light, which can happen at any time'
+      ]
+    },
+    { 
+      id: 'quarterly-professional', 
+      category: 'professional', 
+      text: '10k in sales',
+      actions: [
+        'Build',
+        'Sell',
+        'Build'
+      ]
+    }
+  ],
+  weekly: [
+    { 
+      id: 'weekly-personal', 
+      category: 'personal', 
+      text: 'Weekly Actions:',
+      actions: [
+        '2x friends and family - calls in the evening, on walks/while cooking',
+        'Meet new people - join a club or attend an event',
+        'Home organization - 30 minutes daily'
+      ]
+    },
+    { 
+      id: 'weekly-physical', 
+      category: 'physical', 
+      text: 'Weekly Actions:',
+      actions: [
+        'Prep every Sunday - including tracking in MyFitnessPal',
+        'Monday/Wednesday/Friday gym sessions - 45 minutes each',
+        'Daily 10k step minimum - walk during calls'
+      ]
+    },
+    { 
+      id: 'weekly-professional', 
+      category: 'professional', 
+      text: 'Weekly Actions:',
+      actions: [
+        'Launch the app before the end of April',
+        'Contact 10 potential clients',
+        'Complete product documentation'
+      ]
+    }
+  ]
+}
 
 const Goals: React.FC = () => {
-  const { data: goalData } = useGoalSettingData();
-  
-  // Pre-populate life areas for each category with target change values
-  const [categoryLifeAreas, setCategoryLifeAreas] = useState({
-    business: [
-      { area: 'Career', score: 7, targetChange: 2, color: '#8B5CF6' },
-      { area: 'Finances', score: 6, targetChange: 2, color: '#10B981' },
-      { area: 'Personal Growth', score: 8, targetChange: 2, color: '#06B6D4' }
-    ],
-    body: [
-      { area: 'Health', score: 8, targetChange: 2, color: '#F59E0B' },
-      { area: 'Fun & Recreation', score: 6, targetChange: 2, color: '#84CC16' }
-    ],
-    balance: [
-      { area: 'Family', score: 9, targetChange: 1, color: '#EF4444' },
-      { area: 'Romance', score: 5, targetChange: 2, color: '#EC4899' },
-      { area: 'Environment', score: 7, targetChange: 2, color: '#F97316' }
-    ]
+  const [activeTimeframe, setActiveTimeframe] = useState<GoalTimeframe>('annual');
+  const [goals, setGoals] = useState<Record<GoalTimeframe, GoalItem[]>>(DEFAULT_GOALS);
+  const [expandedSections, setExpandedSections] = useState<Record<GoalTimeframe, boolean>>({
+    annual: true,
+    quarterly: true,
+    weekly: true
   });
 
-  // Pre-populate values for each category based on insights
-  const [categoryValues, setCategoryValues] = useState({
-    business: [
-      { name: 'Excellence', description: 'Striving for the highest quality in everything', category: 'Achievement' },
-      { name: 'Leadership', description: 'Guiding and inspiring others toward goals', category: 'Achievement' },
-      { name: 'Growth', description: 'Continuous development and improvement', category: 'Achievement' }
-    ],
-    body: [
-      { name: 'Health', description: 'Physical and mental well-being', category: 'Vitality & Health' },
-      { name: 'Vitality', description: 'Life force and energetic well-being', category: 'Vitality & Health' },
-      { name: 'Balance', description: 'Harmony and equilibrium in all life areas', category: 'Vitality & Health' }
-    ],
-    balance: [
-      { name: 'Love', description: 'Deep affection and care for others', category: 'Connection' },
-      { name: 'Family', description: 'Close relationships and kinship bonds', category: 'Connection' },
-      { name: 'Peace', description: 'Tranquility and harmony within and around', category: 'Spiritual & Emotional' }
-    ]
-  });
-
-  const [goals, setGoals] = useState({
-    business: '',
-    body: '',
-    balance: ''
-  });
-
-  const [mantra, setMantra] = useState('');
-
-  const handleLifeAreaMove = (area: any, sourceCategory: string, targetCategory: string) => {
-    if (sourceCategory === targetCategory) return;
-
-    setCategoryLifeAreas(prev => ({
+  const toggleSection = (timeframe: GoalTimeframe) => {
+    setExpandedSections(prev => ({
       ...prev,
-      [sourceCategory]: prev[sourceCategory as keyof typeof prev].filter(a => a.area !== area.area),
-      [targetCategory]: [...prev[targetCategory as keyof typeof prev], area]
+      [timeframe]: !prev[timeframe]
     }));
   };
 
-  const handleValueMove = (item: any, sourceCategory: string, targetCategory: string, type: 'values' | 'wheel') => {
-    if (sourceCategory === targetCategory) return;
+  const startEditing = (timeframe: GoalTimeframe, goalId: string) => {
+    setGoals(prev => ({
+      ...prev,
+      [timeframe]: prev[timeframe].map(goal => 
+        goal.id === goalId ? { ...goal, isEditing: true } : goal
+      )
+    }));
+  };
 
-    if (type === 'values') {
-      setCategoryValues(prev => ({
-        ...prev,
-        [sourceCategory]: prev[sourceCategory as keyof typeof prev].filter(v => v.name !== item.name),
-        [targetCategory]: [...prev[targetCategory as keyof typeof prev], item]
-      }));
-    } else {
-      // Handle wheel items (life areas)
-      setCategoryLifeAreas(prev => ({
-        ...prev,
-        [sourceCategory]: prev[sourceCategory as keyof typeof prev].filter(a => a.area !== item.area),
-        [targetCategory]: [...prev[targetCategory as keyof typeof prev], item]
-      }));
+  const saveGoal = (timeframe: GoalTimeframe, goalId: string, text: string, mantra?: string) => {
+    setGoals(prev => ({
+      ...prev,
+      [timeframe]: prev[timeframe].map(goal => 
+        goal.id === goalId ? { 
+          ...goal, 
+          text, 
+          mantra: mantra || goal.mantra,
+          isEditing: false 
+        } : goal
+      )
+    }));
+  };
+
+  const addAction = (timeframe: GoalTimeframe, goalId: string) => {
+    setGoals(prev => ({
+      ...prev,
+      [timeframe]: prev[timeframe].map(goal => 
+        goal.id === goalId ? { 
+          ...goal, 
+          actions: [...goal.actions, 'New action item'] 
+        } : goal
+      )
+    }));
+  };
+
+  const updateAction = (timeframe: GoalTimeframe, goalId: string, actionIndex: number, text: string) => {
+    setGoals(prev => ({
+      ...prev,
+      [timeframe]: prev[timeframe].map(goal => {
+        if (goal.id === goalId) {
+          const newActions = [...goal.actions];
+          newActions[actionIndex] = text;
+          return { ...goal, actions: newActions };
+        }
+        return goal;
+      })
+    }));
+  };
+
+  const removeAction = (timeframe: GoalTimeframe, goalId: string, actionIndex: number) => {
+    setGoals(prev => ({
+      ...prev,
+      [timeframe]: prev[timeframe].map(goal => {
+        if (goal.id === goalId) {
+          const newActions = [...goal.actions];
+          newActions.splice(actionIndex, 1);
+          return { ...goal, actions: newActions };
+        }
+        return goal;
+      })
+    }));
+  };
+
+  const getTimeframeTitle = (timeframe: GoalTimeframe): string => {
+    switch (timeframe) {
+      case 'annual': return 'Annual Goals';
+      case 'quarterly': return '90-Day Focus';
+      case 'weekly': return 'Weekly Actions';
+      default: return '';
     }
   };
 
-  const handleGoalChange = (category: string, value: string) => {
-    setGoals(prev => ({
-      ...prev,
-      [category]: value
-    }));
+  const getTimeframeIcon = (timeframe: GoalTimeframe) => {
+    switch (timeframe) {
+      case 'annual': return <Target className="w-6 h-6 text-blue-600" />;
+      case 'quarterly': return <Flag className="w-6 h-6 text-blue-600" />;
+      case 'weekly': return <CalendarIcon className="w-6 h-6 text-blue-600" />;
+      default: return null;
+    }
+  };
+
+  const renderGoalItem = (goal: GoalItem, timeframe: GoalTimeframe) => {
+    const category = CATEGORIES.find(c => c.id === goal.category);
+    
+    if (!category) return null;
+
+  return (
+    <div key={goal.id} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      {goal.isEditing ? (
+        <div className="p-4">
+          <textarea
+            value={goal.text}
+            onChange={(e) => saveGoal(timeframe, goal.id, e.target.value, goal.mantra)}
+            className="w-full p-3 border border-slate-200 rounded-lg mb-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            rows={2}
+          />
+          
+          {timeframe === 'annual' && (
+            <div className="mb-3">
+              <label className="block text-sm text-slate-600 mb-1">Mantra (optional)</label>
+              <input
+                type="text"
+                value={goal.mantra || ''}
+                onChange={(e) => saveGoal(timeframe, goal.id, goal.text, e.target.value)}
+                className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="A short phrase to remember this goal"
+              />
+            </div>
+          )}
+          
+          <div className="flex justify-end">
+            <button
+              onClick={() => saveGoal(timeframe, goal.id, goal.text, goal.mantra)}
+              className="flex items-center space-x-1 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+            >
+              <Save className="w-4 h-4" />
+              <span>Save</span>
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div>
+          <div className="p-4 border-b border-slate-100">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center space-x-2">
+                <div className="w-6 h-6 rounded-full flex items-center justify-center text-white font-medium text-sm"
+                  style={{ backgroundColor: category.color }}>
+                  {category.icon}
+                </div>
+                <h3 className="font-semibold text-slate-800">{category.name}</h3>
+              </div>
+              <button
+                onClick={() => startEditing(timeframe, goal.id)}
+                className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+              >
+                <Pencil className="w-4 h-4" />
+              </button>
+            </div>
+            
+            <p className="text-slate-700 font-medium">{goal.text}</p>
+            
+            {goal.mantra && (
+              <p className="text-sm text-slate-500 italic mt-2">"{goal.mantra}"</p>
+            )}
+          </div>
+          
+          {goal.actions.length > 0 && (
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-medium text-slate-700">Action Items</h4>
+                <button
+                  onClick={() => addAction(timeframe, goal.id)}
+                  className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+              
+              <div className="space-y-2">
+                {goal.actions.map((action, index) => (
+                  <div key={index} className="flex items-start group">
+                    <div className="w-1.5 h-1.5 rounded-full bg-slate-400 mt-2 mr-2 flex-shrink-0" />
+                    <div className="flex-1">
+                      <div
+                        className="text-sm text-slate-700 group-hover:hidden"
+                        onClick={() => {
+                          const newText = prompt('Edit action item:', action);
+                          if (newText) updateAction(timeframe, goal.id, index, newText);
+                        }}
+                      >
+                        {action}
+                      </div>
+                      <div className="hidden group-hover:flex items-center space-x-2">
+                        <input
+                          type="text"
+                          value={action}
+                          onChange={(e) => updateAction(timeframe, goal.id, index, e.target.value)}
+                          className="text-sm flex-1 p-1 border border-slate-200 rounded"
+                        />
+                        <button
+                          onClick={() => removeAction(timeframe, goal.id, index)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
   };
 
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">12-Week Goals</h1>
-          <p className="text-slate-600 mt-2">
-            Set your quarterly goals and align them with your life areas and values
-          </p>
-        </div>
+      <div>
+        <h1 className="text-3xl font-bold text-slate-900">Goal Setting</h1>
+        <p className="text-slate-600 mt-2">
+          Define your goals from annual vision to weekly actions
+        </p>
       </div>
 
-      {/* Annual Vision */}
-      <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-8 border border-purple-200">
-        <div className="flex items-center space-x-3 mb-6">
-          <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-            <Sparkles className="w-6 h-6 text-purple-600" />
+      {/* Annual Goals Section */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <Target className="w-6 h-6 text-blue-600" />
+            <h2 className="text-xl font-bold text-slate-900">Annual Goals</h2>
           </div>
-          <div>
-            <h2 className="text-2xl font-bold text-purple-900">Your Annual Vision</h2>
-            <p className="text-purple-700">Imagine it's one year from now...</p>
+          <button
+            onClick={() => toggleSection('annual')}
+            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+          >
+            {expandedSections.annual ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+          </button>
+        </div>
+        
+        {expandedSections.annual && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+            {goals.annual.map(goal => renderGoalItem(goal, 'annual'))}
           </div>
-        </div>
-
-        <textarea
-          value="I feel energized and healthy. My career is thriving with new opportunities and growth. My relationships are deep and fulfilling, and I'm living with purpose and joy every day."
-          readOnly
-          className="w-full p-4 bg-white/50 border border-purple-200 rounded-lg text-purple-900 font-medium resize-none"
-          rows={3}
-        />
-
-        <div className="mt-4">
-          <label className="block text-sm font-medium text-purple-800 mb-2">
-            Personal Mantra <span className="text-purple-600">(optional)</span>
-            <br />
-          </label>
-          <input
-            type="text"
-            value={mantra}
-            onChange={(e) => setMantra(e.target.value)}
-            placeholder="Living with purpose and joy"
-            className="w-full p-3 bg-white/50 border border-purple-200 rounded-lg text-purple-900 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-          />
-        </div>
+        )}
       </div>
 
-      {/* Goal Categories - Now in a horizontal line */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <DroppableGoalSection
-          category="business"
-          title="Business & Career"
-          icon="💼"
-          description="Professional growth and financial success"
-          lifeAreas={categoryLifeAreas.business}
-          values={categoryValues.business}
-          onDrop={handleLifeAreaMove}
-          onValuesDrop={handleValueMove}
-          goalValue={goals.business}
-          onGoalChange={(value) => handleGoalChange('business', value)}
-        />
+      {/* 90-Day Focus Section */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <Flag className="w-6 h-6 text-blue-600" />
+            <h2 className="text-xl font-bold text-slate-900">90-Day Focus</h2>
+          </div>
+          <button
+            onClick={() => toggleSection('quarterly')}
+            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+          >
+            {expandedSections.quarterly ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+          </button>
+        </div>
+        
+        {expandedSections.quarterly && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+            {goals.quarterly.map(goal => renderGoalItem(goal, 'quarterly'))}
+          </div>
+        )}
+      </div>
 
-        <DroppableGoalSection
-          category="body"
-          title="Health & Body"
-          icon="💪"
-          description="Physical wellness and fitness goals"
-          lifeAreas={categoryLifeAreas.body}
-          values={categoryValues.body}
-          onDrop={handleLifeAreaMove}
-          onValuesDrop={handleValueMove}
-          goalValue={goals.body}
-          onGoalChange={(value) => handleGoalChange('body', value)}
-        />
-
-        <DroppableGoalSection
-          category="balance"
-          title="Life Balance"
-          icon="⚖️"
-          description="Relationships and lifestyle balance"
-          lifeAreas={categoryLifeAreas.balance}
-          values={categoryValues.balance}
-          onDrop={handleLifeAreaMove}
-          onValuesDrop={handleValueMove}
-          goalValue={goals.balance}
-          onGoalChange={(value) => handleGoalChange('balance', value)}
-        />
+      {/* Weekly Actions Section */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <CalendarIcon className="w-6 h-6 text-blue-600" />
+            <h2 className="text-xl font-bold text-slate-900">Weekly Actions</h2>
+          </div>
+          <button
+            onClick={() => toggleSection('weekly')}
+            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+          >
+            {expandedSections.weekly ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+          </button>
+        </div>
+        
+        {expandedSections.weekly && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+            {goals.weekly.map(goal => renderGoalItem(goal, 'weekly'))}
+          </div>
+        )}
       </div>
 
       {/* Instructions */}
-      <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6">
+      <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
         <div className="flex items-start space-x-3">
-          <Move className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+          <Clock className="w-5 h-5 text-slate-700 mt-0.5 flex-shrink-0" />
           <div>
-            <h3 className="text-sm font-semibold text-blue-900 mb-2">How to Use</h3>
-            <ul className="text-sm text-blue-800 space-y-1">
-              <li>• Write your 12-week goal for each life category</li>
-              <li>• Drag and drop life areas between categories to align them with your goals</li>
-              <li>• Drag and drop values between categories to connect them with relevant goals</li>
-              <li>• Numbers show the target change (+/-) you're aiming for in each life area</li>
-              <li>• Use these connections to ensure your goals are aligned with your values and life priorities</li>
+            <h3 className="text-sm font-semibold text-slate-900 mb-2">How to Use This Goal Framework</h3>
+            <ul className="text-sm text-slate-700 space-y-1">
+              <li>• Start with your annual vision for each life area</li>
+              <li>• Break down into 90-day focus areas with specific targets</li>
+              <li>• Create weekly action items that move you toward your goals</li>
+              <li>• Click the edit button to modify any goal or action item</li>
+              <li>• Schedule your weekly actions in the calendar for accountability</li>
             </ul>
           </div>
         </div>
