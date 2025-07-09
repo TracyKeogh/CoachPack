@@ -723,7 +723,7 @@ const FreeWheelAssessment: React.FC<FreeWheelAssessmentProps> = ({ onComplete, o
                         let opacity = 0.3;
                         let strokeWidth = 1;
                         
-                        if (isScored) {
+                        if (segment.score > 0 && isScored) {
                           fillColor = segment.color;
                           opacity = 0.4 + (ring / 10) * 0.5;
                         }
