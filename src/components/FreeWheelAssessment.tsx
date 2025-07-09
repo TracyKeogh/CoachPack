@@ -334,12 +334,16 @@ const FreeWheelAssessment: React.FC<FreeWheelAssessmentProps> = ({ onComplete, o
                           const isScored = segment.score >= ring;
                           const path = createSegmentPath(segmentIndex, innerRadius, outerRadius);
                           
-                          let fillColor = '#f8fafc';
-                          let opacity = 0.3;
-                          
+                          let fillColor = '#f8fafc'; 
+                          let strokeColor = '#e2e8f0';
+                          let opacity = 0.3; 
+                          let strokeWidth = 1;
+
                           if (isScored) {
                             fillColor = segment.color;
                             opacity = 0.4 + (ring / 10) * 0.5;
+                            strokeColor = segment.color;
+                            strokeWidth = 2;
                           }
                           
                           return (
@@ -348,8 +352,8 @@ const FreeWheelAssessment: React.FC<FreeWheelAssessmentProps> = ({ onComplete, o
                               d={path}
                               fill={fillColor}
                               fillOpacity={opacity}
-                              stroke="#e2e8f0"
-                              strokeWidth="1"
+                              stroke={strokeColor}
+                              strokeWidth={strokeWidth}
                             />
                           );
                         })}
@@ -717,14 +721,17 @@ const FreeWheelAssessment: React.FC<FreeWheelAssessmentProps> = ({ onComplete, o
                         const isCurrent = segmentIndex === currentAreaIndex;
                         const path = createSegmentPath(segmentIndex, innerRadius, outerRadius);
                         
-                        let fillColor = '#f8fafc';
                         let strokeColor = '#e2e8f0';
+                        let opacity = 0.3;
+                        let strokeWidth = 1;
                         let opacity = 0.3;
                         let strokeWidth = 1;
                         
                         if (isScored) {
                           fillColor = segment.color;
                           opacity = 0.4 + (ring / 10) * 0.5;
+                          strokeColor = segment.color;
+                          strokeWidth = 2;
                         }
                         
                         if (isCurrent && currentStep === 'satisfaction') {
@@ -738,6 +745,7 @@ const FreeWheelAssessment: React.FC<FreeWheelAssessmentProps> = ({ onComplete, o
                         if (isHovered) {
                           opacity = Math.max(opacity, 0.9);
                           strokeColor = segment.darkColor;
+                          strokeWidth = 3;
                           strokeWidth = 3;
                         }
                         
