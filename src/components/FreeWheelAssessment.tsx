@@ -715,6 +715,7 @@ const FreeWheelAssessment: React.FC<FreeWheelAssessmentProps> = ({ onComplete, o
                         const isHovered = hoveredSegment === segmentIndex && hoveredRing === ring && currentStep === 'rating';
                         const isScored = segment.score >= ring;
                         const isCurrent = segmentIndex === currentAreaIndex;
+                        
                         const path = createSegmentPath(segmentIndex, innerRadius, outerRadius);
                         
                         let fillColor = '#f8fafc';
