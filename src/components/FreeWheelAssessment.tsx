@@ -924,6 +924,42 @@ const FreeWheelAssessment: React.FC<FreeWheelAssessmentProps> = ({ onComplete, o
           </div>
 
           {/* Current Area Focus */}
+          <div className="space-y-6">
+            {currentStep === 'rating' ? (
+              /* Rating Step */
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                <div className="text-center mb-6">
+                  <div 
+                    className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center text-white font-bold text-xl"
+                    style={{ backgroundColor: currentArea.color }}
+                  >
+                    {currentArea.score || '?'}
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-900 mb-2">{currentArea.area}</h2>
+                  <p className="text-slate-600">
+                    Rate this area of your life from 1-10. Click directly on the wheel or use the buttons below.
+                  </p>
+                </div>
+
+                {/* Score Buttons */}
+                <div className="grid grid-cols-5 gap-2 mb-6">
+                  {Array.from({ length: 10 }, (_, i) => {
+                    const score = i + 1;
+                    const isSelected = currentArea.score === score;
+                    return (
+                      <button
+                        key={score}
+                        onClick={() => updateScore(currentAreaIndex, score)}
+                        className={`p-3 rounded-lg font-semibold transition-all ${
+                          isSelected
+                            ? 'text-white shadow-lg transform scale-105'
+                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        }`}
+                        style={isSelected ? { backgroundColor: currentArea.color } : {}}
+                      >
+                        {score}
+                      </button>
+                    );
                   })}
                 </div>
 
