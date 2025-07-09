@@ -723,7 +723,8 @@ const FreeWheelAssessment: React.FC<FreeWheelAssessmentProps> = ({ onComplete, o
                         let opacity = 0.3;
                         let strokeWidth = 1;
                         
-                        if (isScored) {
+                        // Only apply colored fill to rings that are actually scored
+                        if (isScored) { 
                           fillColor = segment.color;
                           opacity = 0.4 + (ring / 10) * 0.5;
                         }
@@ -733,7 +734,7 @@ const FreeWheelAssessment: React.FC<FreeWheelAssessmentProps> = ({ onComplete, o
                           // Unscored segments always have neutral gray borders
                           strokeColor = '#e2e8f0';
                           strokeWidth = 1;
-                        } else {
+                        } else if (isScored) {
                           // Scored segments can have colored borders based on state
                           if (isCurrent && currentStep === 'satisfaction') {
                             strokeColor = segment.darkColor;
