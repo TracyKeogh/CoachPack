@@ -3,7 +3,7 @@ import {
   BarChart3, 
   Heart, 
   ImageIcon, 
-  Target, 
+  Target,
   Calendar as CalendarIcon,
   ArrowRight,
   Sparkles,
@@ -11,7 +11,7 @@ import {
   Clock,
   Star,
   Zap,
-  Award,
+  Eye,
   Compass
 } from 'lucide-react';
 import type { ViewType } from '../App';
@@ -83,7 +83,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl p-8 text-white">
+      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl p-8 text-white shadow-lg">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
           <div>
             <h1 className="text-3xl font-bold mb-2">CoachPack Dashboard</h1>
@@ -96,29 +96,54 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* Journey Navigation */}
-      <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2 text-red-600">
-              <Heart className="w-5 h-5" />
-              <span className="font-medium">Values</span>
+      {/* Vision Section - Starting with the big picture */}
+      <div className="bg-gradient-to-r from-teal-600 to-cyan-600 rounded-2xl p-6 text-white shadow-lg">
+        <div className="flex items-center space-x-3 mb-6">
+          <Eye className="w-8 h-8" />
+          <h2 className="text-2xl font-bold">Your Vision</h2>
+        </div>
+        
+        <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20 mb-6">
+          <p className="text-lg italic text-white/90">
+            {goalsData.annualSnapshot?.snapshot || 
+              "I feel energized and healthy. My career is thriving with new opportunities and growth. My relationships are deep and fulfilling, and I'm living with purpose and joy every day."}
+          </p>
+          
+          {goalsData.annualSnapshot?.mantra && (
+            <div className="mt-3 text-center">
+              <p className="text-sm text-white/70">Personal Mantra</p>
+              <p className="text-white font-medium">{goalsData.annualSnapshot.mantra}</p>
             </div>
-            <div className="text-slate-300">———</div>
-            <div className="flex items-center space-x-2 text-purple-600">
-              <BarChart3 className="w-5 h-5" />
-              <span className="font-medium">Life Areas</span>
-            </div>
-            <div className="text-slate-300">———</div>
-            <div className="flex items-center space-x-2 text-orange-600">
-              <Target className="w-5 h-5" />
-              <span className="font-medium">Goals</span>
-            </div>
-            <div className="text-slate-300">———</div>
-            <div className="flex items-center space-x-2 text-blue-600">
-              <CalendarIcon className="w-5 h-5" />
-              <span className="font-medium">Daily Actions</span>
-            </div>
+          )}
+        </div>
+        
+        {visionItems.length > 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            {visionItems.slice(0, 4).map(item => (
+              <div key={item.id} className="relative group overflow-hidden rounded-lg h-24">
+                <img 
+                  src={item.imageUrl} 
+                  alt={item.title}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 flex items-center justify-center transition-all duration-200">
+                  <p className="text-white text-center p-2 opacity-0 group-hover:opacity-100 transition-opacity text-sm font-medium">
+                    {item.title}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        <div className="flex justify-center">
+          <button
+            onClick={() => onNavigate('vision')}
+            className="flex items-center space-x-2 px-6 py-3 bg-white text-teal-600 rounded-lg hover:bg-teal-50 transition-colors font-semibold"
+          >
+            <ImageIcon className="w-5 h-5" />
+            <span>{visionItems.length > 0 ? 'View Full Vision Board' : 'Create Vision Board'}</span>
+          </button>
           </div>
         </div>
       </div>
@@ -190,6 +215,91 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         </div>
       </div>
 
+      {/* Goals Section */}
+      <div className="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-2xl p-6 shadow-sm border border-orange-200">
+        <div className="flex items-center space-x-3 mb-6">
+          <Target className="w-8 h-8 text-orange-600" />
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900">12-Week Goals</h2>
+            <p className="text-slate-600">Your focused areas for transformation</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {activeGoals.length > 0 ? (
+            activeGoals.map((goal, index) => {
+              const categoryIcon = goal.category === 'business' ? '💼' : goal.category === 'body' ? '💪' : '⚖️';
+              const categoryColor = goal.category === 'business' ? 'from-purple-500 to-purple-600' : 
+                                   goal.category === 'body' ? 'from-green-500 to-green-600' : 
+                                   'from-blue-500 to-blue-600';
+              const progress = Math.floor(Math.random() * 100); // In a real app, calculate actual progress
+              
+              return (
+                <div key={index} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                  <div className={`bg-gradient-to-r ${categoryColor} p-4 text-white`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-2xl">{categoryIcon}</span>
+                        <h3 className="font-bold">{goal.category === 'business' ? 'Professional' : goal.category === 'body' ? 'Physical' : 'Personal'}</h3>
+                      </div>
+                      <div className="text-white/90 font-bold">{progress}%</div>
+                    </div>
+                    <p className="mt-2 font-semibold">{goal.goal}</p>
+                  </div>
+                  
+                  <div className="p-4">
+                    {/* Milestone */}
+                    {goal.milestones && goal.milestones.length > 0 && (
+                      <div className="mb-4">
+                        <p className="text-xs text-slate-500 mb-1">90-Day Milestone</p>
+                        <p className="text-sm font-medium text-slate-800">{goal.milestones[0].title || "Set your milestone"}</p>
+                      </div>
+                    )}
+                    
+                    {/* Weekly Actions */}
+                    <div>
+                      <p className="text-xs text-slate-500 mb-2">Weekly Actions</p>
+                      <div className="space-y-1">
+                        {goal.actions.slice(0, 3).map((action, i) => (
+                          <div key={i} className="flex items-center space-x-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                            <p className="text-sm text-slate-700">{action.text}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Connected Values */}
+                    <div className="mt-4">
+                      <p className="text-xs text-slate-500 mb-2">Connected Values</p>
+                      <div className="flex flex-wrap gap-1">
+                        {['Vitality', 'Excellence', 'Growth'].slice(0, 2 + index % 2).map((value, i) => (
+                          <span key={i} className="px-2 py-1 bg-slate-100 text-slate-700 rounded-full text-xs">
+                            {value}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="col-span-3 text-center py-8 bg-slate-50 rounded-lg border border-slate-200">
+              <Target className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+              <h3 className="text-xl font-bold text-slate-900 mb-2">Set Your 12-Week Goals</h3>
+              <p className="text-slate-600 mb-4">Transform your values and life assessment into focused goals</p>
+              <button 
+                onClick={() => onNavigate('goals')}
+                className="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-semibold"
+              >
+                Create Your Goals
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Life Areas Section */}
       <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-6 shadow-sm border border-purple-200">
         <div className="flex items-center space-x-3 mb-6">
@@ -248,10 +358,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                         
                         let fillColor = '#f8fafc';
                         let opacity = 0.3;
+                        let strokeColor = '#e2e8f0';
+                        let strokeWidth = 1;
                         
                         if (isScored) {
                           fillColor = segment.color;
                           opacity = 0.4 + (ring / 10) * 0.5;
+                          strokeColor = segment.color;
+                          strokeWidth = 2;
                         }
                         
                         return (
@@ -260,8 +374,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                             d={path}
                             fill={fillColor}
                             fillOpacity={opacity}
-                            stroke={isScored ? segment.color : "#e2e8f0"}
-                            strokeWidth={isScored ? 2 : 1}
+                            stroke={strokeColor}
+                            strokeWidth={strokeWidth}
                           />
                         );
                       })}
@@ -369,91 +483,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold"
               >
                 Complete Wheel Assessment
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Goals Section */}
-      <div className="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-2xl p-6 shadow-sm border border-orange-200">
-        <div className="flex items-center space-x-3 mb-6">
-          <Target className="w-8 h-8 text-orange-600" />
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900">12-Week Goals</h2>
-            <p className="text-slate-600">Your focused areas for transformation</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {activeGoals.length > 0 ? (
-            activeGoals.map((goal, index) => {
-              const categoryIcon = goal.category === 'business' ? '💼' : goal.category === 'body' ? '💪' : '⚖️';
-              const categoryColor = goal.category === 'business' ? 'from-purple-500 to-purple-600' : 
-                                   goal.category === 'body' ? 'from-green-500 to-green-600' : 
-                                   'from-blue-500 to-blue-600';
-              const progress = Math.floor(Math.random() * 100); // In a real app, calculate actual progress
-              
-              return (
-                <div key={index} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                  <div className={`bg-gradient-to-r ${categoryColor} p-4 text-white`}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-2xl">{categoryIcon}</span>
-                        <h3 className="font-bold">{goal.category === 'business' ? 'Professional' : goal.category === 'body' ? 'Physical' : 'Personal'}</h3>
-                      </div>
-                      <div className="text-white/90 font-bold">{progress}%</div>
-                    </div>
-                    <p className="mt-2 font-semibold">{goal.goal}</p>
-                  </div>
-                  
-                  <div className="p-4">
-                    {/* Milestone */}
-                    {goal.milestones && goal.milestones.length > 0 && (
-                      <div className="mb-4">
-                        <p className="text-xs text-slate-500 mb-1">90-Day Milestone</p>
-                        <p className="text-sm font-medium text-slate-800">{goal.milestones[0].title || "Set your milestone"}</p>
-                      </div>
-                    )}
-                    
-                    {/* Weekly Actions */}
-                    <div>
-                      <p className="text-xs text-slate-500 mb-2">Weekly Actions</p>
-                      <div className="space-y-1">
-                        {goal.actions.slice(0, 3).map((action, i) => (
-                          <div key={i} className="flex items-center space-x-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
-                            <p className="text-sm text-slate-700">{action.text}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    {/* Connected Values */}
-                    <div className="mt-4">
-                      <p className="text-xs text-slate-500 mb-2">Connected Values</p>
-                      <div className="flex flex-wrap gap-1">
-                        {['Vitality', 'Excellence', 'Growth'].slice(0, 2 + index % 2).map((value, i) => (
-                          <span key={i} className="px-2 py-1 bg-slate-100 text-slate-700 rounded-full text-xs">
-                            {value}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <div className="col-span-3 text-center py-8 bg-slate-50 rounded-lg border border-slate-200">
-              <Target className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-              <h3 className="text-xl font-bold text-slate-900 mb-2">Set Your 12-Week Goals</h3>
-              <p className="text-slate-600 mb-4">Transform your values and life assessment into focused goals</p>
-              <button 
-                onClick={() => onNavigate('goals')}
-                className="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-semibold"
-              >
-                Create Your Goals
               </button>
             </div>
           )}
@@ -569,54 +598,34 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* Vision Summary */}
-      <div className="bg-gradient-to-r from-teal-600 to-cyan-600 rounded-2xl p-6 text-white">
-        <div className="flex items-center space-x-3 mb-6">
-          <Sparkles className="w-8 h-8" />
-          <h2 className="text-2xl font-bold">Your Vision</h2>
-        </div>
-        
-        <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20 mb-6">
-          <p className="text-lg italic text-white/90">
-            {goalsData.annualSnapshot?.snapshot || 
-              "I feel energized and healthy. My career is thriving with new opportunities and growth. My relationships are deep and fulfilling, and I'm living with purpose and joy every day."}
-          </p>
-          
-          {goalsData.annualSnapshot?.mantra && (
-            <div className="mt-3 text-center">
-              <p className="text-sm text-white/70">Personal Mantra</p>
-              <p className="text-white font-medium">{goalsData.annualSnapshot.mantra}</p>
+      {/* Journey Navigation */}
+      <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 text-teal-600">
+              <Eye className="w-5 h-5" />
+              <span className="font-medium">Vision</span>
             </div>
-          )}
-        </div>
-        
-        {visionItems.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-            {visionItems.slice(0, 4).map(item => (
-              <div key={item.id} className="relative group overflow-hidden rounded-lg h-24">
-                <img 
-                  src={item.imageUrl} 
-                  alt={item.title}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 flex items-center justify-center transition-all duration-200">
-                  <p className="text-white text-center p-2 opacity-0 group-hover:opacity-100 transition-opacity text-sm font-medium">
-                    {item.title}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        
-        <div className="flex justify-center">
-          <button
-            onClick={() => onNavigate('vision')}
-            className="flex items-center space-x-2 px-6 py-3 bg-white text-teal-600 rounded-lg hover:bg-teal-50 transition-colors font-semibold"
-          >
-            <ImageIcon className="w-5 h-5" />
-            <span>{visionItems.length > 0 ? 'View Full Vision Board' : 'Create Vision Board'}</span>
-          </button>
+            <div className="text-slate-300">→</div>
+            <div className="flex items-center space-x-2 text-red-600">
+              <Heart className="w-5 h-5" />
+              <span className="font-medium">Values</span>
+            </div>
+            <div className="text-slate-300">→</div>
+            <div className="flex items-center space-x-2 text-purple-600">
+              <BarChart3 className="w-5 h-5" />
+              <span className="font-medium">Life Areas</span>
+            </div>
+            <div className="text-slate-300">→</div>
+            <div className="flex items-center space-x-2 text-orange-600">
+              <Target className="w-5 h-5" />
+              <span className="font-medium">Goals</span>
+            </div>
+            <div className="text-slate-300">→</div>
+            <div className="flex items-center space-x-2 text-blue-600">
+              <CalendarIcon className="w-5 h-5" />
+              <span className="font-medium">Daily Actions</span>
+            </div>
         </div>
       </div>
 
@@ -624,19 +633,17 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           <div>
+            <div className="text-3xl font-bold text-teal-600 mb-1">
+              {visionItems.length}
+            </div>
+            <p className="text-slate-600">Vision Items</p>
+          </div>
+          
+          <div>
             <div className="text-3xl font-bold text-red-600 mb-1">
               {coreValues.length > 0 ? coreValues.length : 0}
             </div>
             <p className="text-slate-600">Core Values</p>
-          </div>
-          
-          <div>
-            <div className="text-3xl font-bold text-purple-600 mb-1">
-              {wheelAreas.length > 0 ? 
-                (wheelAreas.reduce((sum, area) => sum + area.score, 0) / wheelAreas.length).toFixed(1) : 
-                '-'}
-            </div>
-            <p className="text-slate-600">Life Balance Score</p>
           </div>
           
           <div>
@@ -647,10 +654,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </div>
           
           <div>
-            <div className="text-3xl font-bold text-blue-600 mb-1">
-              {activeGoals.reduce((sum, goal) => sum + goal.actions.length, 0)}
+            <div className="text-3xl font-bold text-purple-600 mb-1">
+              {wheelAreas.length > 0 ? 
+                (wheelAreas.reduce((sum, area) => sum + area.score, 0) / wheelAreas.length).toFixed(1) : 
+                '-'}
             </div>
-            <p className="text-slate-600">Weekly Actions</p>
+            <p className="text-slate-600">Life Balance Score</p>
           </div>
         </div>
         
