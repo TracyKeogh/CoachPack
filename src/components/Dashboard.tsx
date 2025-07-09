@@ -191,7 +191,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       </div>
 
       {/* Life Areas Section */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+      <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-6 shadow-sm border border-purple-200">
         <div className="flex items-center space-x-3 mb-6">
           <BarChart3 className="w-8 h-8 text-purple-600" />
           <div>
@@ -200,56 +200,165 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="flex flex-col items-center">
           {wheelAreas.length > 0 ? (
-            wheelAreas.map(area => {
-              const areaIndex = wheelData.findIndex(a => a.area === area.area);
-              const reflection = reflectionData[areaIndex];
-              const targetRating = reflection?.targetRating || area.score;
-              const direction = targetRating > area.score ? 'up' : targetRating < area.score ? 'down' : 'same';
+            <>
+              <svg width="400" height="400" viewBox="0 0 600 600" className="mb-4">
+                {/* Background rings */}
+                {Array.from({ length: 10 }, (_, ringIndex) => {
+                  const ring = ringIndex + 1;
+                  const centerX = 300;
+                  const centerY = 300;
+                  const maxRadius = 180;
+                  const minRadius = 20;
+                  const innerRadius = minRadius + (ringIndex * (maxRadius - minRadius)) / 10;
+                  const outerRadius = minRadius + ((ringIndex + 1) * (maxRadius - minRadius)) / 10;
+                  const segmentCount = wheelAreas.length;
+                  const anglePerSegment = segmentCount > 0 ? (2 * Math.PI) / segmentCount : 0;
+                  
+                  return (
+                    <g key={`ring-${ring}`}>
+                      {wheelAreas.map((segment, segmentIndex) => {
+                        const isScored = segment.score >= ring;
+                        
+                        // Create segment path
+                        const startAngle = segmentIndex * anglePerSegment - Math.PI / 2;
+                        const endAngle = (segmentIndex + 1) * anglePerSegment - Math.PI / 2;
+                        
+                        const x1 = centerX + innerRadius * Math.cos(startAngle);
+                        const y1 = centerY + innerRadius * Math.sin(startAngle);
+                        const x2 = centerX + outerRadius * Math.cos(startAngle);
+                        const y2 = centerY + outerRadius * Math.sin(startAngle);
+                        
+                        const x3 = centerX + outerRadius * Math.cos(endAngle);
+                        const y3 = centerY + outerRadius * Math.sin(endAngle);
+                        const x4 = centerX + innerRadius * Math.cos(endAngle);
+                        const y4 = centerY + innerRadius * Math.sin(endAngle);
+                        
+                        const largeArcFlag = anglePerSegment > Math.PI ? 1 : 0;
+                        
+                        const path = `
+                          M ${x1} ${y1}
+                          L ${x2} ${y2}
+                          A ${outerRadius} ${outerRadius} 0 ${largeArcFlag} 1 ${x3} ${y3}
+                          L ${x4} ${y4}
+                          A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${x1} ${y1}
+                          Z
+                        `;
+                        
+                        let fillColor = '#f8fafc';
+                        let opacity = 0.3;
+                        
+                        if (isScored) {
+                          fillColor = segment.color;
+                          opacity = 0.4 + (ring / 10) * 0.5;
+                        }
+                        
+                        return (
+                          <path
+                            key={`segment-${segmentIndex}-ring-${ring}`}
+                            d={path}
+                            fill={fillColor}
+                            fillOpacity={opacity}
+                            stroke={isScored ? segment.color : "#e2e8f0"}
+                            strokeWidth={isScored ? 2 : 1}
+                          />
+                        );
+                      })}
+                    </g>
+                  );
+                })}
+
+                {/* Center circle */}
+                <circle
+                  cx={300}
+                  cy={300}
+                  r={20}
+                  fill="white"
+                  stroke="#8b5cf6"
+                  strokeWidth="2"
+                />
+                <text
+                  x={300}
+                  y={297}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  className="text-sm font-bold fill-slate-900"
+                >
+                  {wheelAreas.length > 0 ? 
+                    (wheelAreas.reduce((sum, area) => sum + area.score, 0) / wheelAreas.length).toFixed(1) : 
+                    '-'}
+                </text>
+                <text
+                  x={300}
+                  y={308}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  className="text-xs fill-slate-600"
+                >
+                  Avg
+                </text>
+
+                {/* Labels */}
+                {wheelAreas.map((segment, index) => {
+                  const segmentCount = wheelAreas.length;
+                  const anglePerSegment = (2 * Math.PI) / segmentCount;
+                  const angle = (index + 0.5) * anglePerSegment - Math.PI / 2;
+                  const labelRadius = 230;
+                  const x = 300 + labelRadius * Math.cos(angle);
+                  const y = 300 + labelRadius * Math.sin(angle);
+                  
+                  let textAnchor = 'middle';
+                  if (Math.cos(angle) > 0.3) textAnchor = 'start';
+                  else if (Math.cos(angle) < -0.3) textAnchor = 'end';
+                  
+                  return (
+                    <g key={`label-${index}`}>
+                      <text
+                        x={x}
+                        y={y}
+                        textAnchor={textAnchor}
+                        dominantBaseline="middle"
+                        className="text-sm font-bold"
+                        fill="white"
+                        stroke="white"
+                        strokeWidth="3"
+                      >
+                        {segment.area}
+                      </text>
+                      <text
+                        x={x}
+                        y={y}
+                        textAnchor={textAnchor}
+                        dominantBaseline="middle"
+                        className="text-sm font-bold"
+                        fill={segment.darkColor}
+                      >
+                        {segment.area}
+                      </text>
+                      
+                      <text
+                        x={x}
+                        y={y + 16}
+                        textAnchor={textAnchor}
+                        dominantBaseline="middle"
+                        className="text-xs"
+                        fill={segment.color}
+                      >
+                        {segment.score}/10
+                      </text>
+                    </g>
+                  );
+                })}
+              </svg>
               
-              return (
-                <div key={area.area} className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold text-slate-900">{area.area}</h3>
-                    <div 
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold"
-                      style={{ backgroundColor: area.color }}
-                    >
-                      {area.score}
-                    </div>
-                  </div>
-                  
-                  <div className="w-full bg-slate-200 rounded-full h-2 mb-2">
-                    <div 
-                      className="h-2 rounded-full transition-all duration-500"
-                      style={{ width: `${area.score * 10}%`, backgroundColor: area.color }}
-                    />
-                  </div>
-                  
-                  <div className="flex items-center text-xs">
-                    {direction === 'up' && (
-                      <div className="text-green-600 flex items-center">
-                        <ArrowRight className="w-3 h-3 rotate-[-45deg]" />
-                        <span>Target: {targetRating}</span>
-                      </div>
-                    )}
-                    {direction === 'down' && (
-                      <div className="text-orange-600 flex items-center">
-                        <ArrowRight className="w-3 h-3 rotate-45" />
-                        <span>Target: {targetRating}</span>
-                      </div>
-                    )}
-                    {direction === 'same' && (
-                      <div className="text-blue-600 flex items-center">
-                        <CheckCircle2 className="w-3 h-3 mr-1" />
-                        <span>Maintaining</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })
+              <button 
+                onClick={() => onNavigate('wheel')}
+                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold"
+              >
+                Update Your Wheel
+              </button>
+            </>
           ) : (
             <div className="col-span-4 text-center py-8 bg-slate-50 rounded-lg border border-slate-200">
               <BarChart3 className="w-12 h-12 mx-auto mb-3 text-slate-300" />
@@ -267,7 +376,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       </div>
 
       {/* Goals Section */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+      <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl p-6 shadow-sm border border-orange-200">
         <div className="flex items-center space-x-3 mb-6">
           <Target className="w-8 h-8 text-orange-600" />
           <div>
@@ -352,7 +461,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       </div>
 
       {/* Daily Actions */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 shadow-sm border border-blue-200">
         <div className="flex items-center space-x-3 mb-6">
           <CalendarIcon className="w-8 h-8 text-blue-600" />
           <div>
@@ -512,7 +621,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       </div>
 
       {/* Stats Summary */}
-      <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200">
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           <div>
             <div className="text-3xl font-bold text-amber-600 mb-1">
