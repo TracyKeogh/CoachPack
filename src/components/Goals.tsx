@@ -1,5 +1,4 @@
-import React, { useState, useRef } from 'react';
-import { useDrag, useDrop } from 'react-dnd';
+import React, { useState } from 'react';
 import { 
   ChevronDown,
   ChevronUp,
@@ -8,24 +7,17 @@ import {
   Edit3,
   X,
   Check,
-  Move,
   Flag,
-  Star,
   Calendar as CalendarIcon,
-  Pencil,
-  Save,
-  ArrowRight,
-  Clock
+  Pencil
 } from 'lucide-react';
-import { useGoalSettingData } from '../hooks/useGoalSettingData';
-import { ActionItem, Milestone } from '../types/goals';
 
-type GoalTimeframe = 'annual' | 'quarterly' | 'weekly';
+type GoalTimeframe = 'annual' | '90day' | 'weekly';
 
 interface GoalCategory {
   id: string;
   name: string;
-  icon: string;
+  icon: React.ReactNode;
   color: string;
 }
 
@@ -39,9 +31,24 @@ interface GoalItem {
 }
 
 const CATEGORIES: GoalCategory[] = [
-  { id: 'personal', name: 'Personal', icon: '⚖️', color: '#3b82f6' },
-  { id: 'physical', name: 'Physical', icon: '💪', color: '#10b981' },
-  { id: 'professional', name: 'Professional', icon: '💼', color: '#8b5cf6' }
+  { 
+    id: 'personal', 
+    name: 'Personal', 
+    icon: <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">⚖️</div>, 
+    color: 'blue' 
+  },
+  { 
+    id: 'physical', 
+    name: 'Physical', 
+    icon: <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600">💪</div>, 
+    color: 'green' 
+  },
+  { 
+    id: 'professional', 
+    name: 'Professional', 
+    icon: <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">💼</div>, 
+    color: 'purple' 
+  }
 ];
 
 const DEFAULT_GOALS: Record<GoalTimeframe, GoalItem[]> = {
@@ -68,9 +75,9 @@ const DEFAULT_GOALS: Record<GoalTimeframe, GoalItem[]> = {
       actions: []
     }
   ],
-  quarterly: [
+  '90day': [
     { 
-      id: 'quarterly-personal', 
+      id: '90day-personal', 
       category: 'personal', 
       text: 'A happy home full of fun and love',
       actions: [
@@ -80,7 +87,7 @@ const DEFAULT_GOALS: Record<GoalTimeframe, GoalItem[]> = {
       ]
     },
     { 
-      id: 'quarterly-physical', 
+      id: '90day-physical', 
       category: 'physical', 
       text: '8.8 on the way to happy healthy active and light',
       actions: [
@@ -90,7 +97,7 @@ const DEFAULT_GOALS: Record<GoalTimeframe, GoalItem[]> = {
       ]
     },
     { 
-      id: 'quarterly-professional', 
+      id: '90day-professional', 
       category: 'professional', 
       text: '10k in sales',
       actions: [
@@ -132,16 +139,20 @@ const DEFAULT_GOALS: Record<GoalTimeframe, GoalItem[]> = {
       ]
     }
   ]
-}
+};
 
 const Goals: React.FC = () => {
-  const [activeTimeframe, setActiveTimeframe] = useState<GoalTimeframe>('annual');
   const [goals, setGoals] = useState<Record<GoalTimeframe, GoalItem[]>>(DEFAULT_GOALS);
   const [expandedSections, setExpandedSections] = useState<Record<GoalTimeframe, boolean>>({
     annual: true,
-    quarterly: true,
+    '90day': true,
     weekly: true
   });
+  const [editingGoal, setEditingGoal] = useState<{timeframe: GoalTimeframe, id: string} | null>(null);
+  const [editingAction, setEditingAction] = useState<{timeframe: GoalTimeframe, goalId: string, index: number} | null>(null);
+  const [newGoalText, setNewGoalText] = useState('');
+  const [newMantra, setNewMantra] = useState('');
+  const [newActionText, setNewActionText] = useState('');
 
   const toggleSection = (timeframe: GoalTimeframe) => {
     setExpandedSections(prev => ({
@@ -150,27 +161,70 @@ const Goals: React.FC = () => {
     }));
   };
 
-  const startEditing = (timeframe: GoalTimeframe, goalId: string) => {
-    setGoals(prev => ({
-      ...prev,
-      [timeframe]: prev[timeframe].map(goal => 
-        goal.id === goalId ? { ...goal, isEditing: true } : goal
-      )
-    }));
+  const startEditingGoal = (timeframe: GoalTimeframe, id: string) => {
+    const goal = goals[timeframe].find(g => g.id === id);
+    if (goal) {
+      setNewGoalText(goal.text);
+      setNewMantra(goal.mantra || '');
+      setEditingGoal({timeframe, id});
+    }
   };
 
-  const saveGoal = (timeframe: GoalTimeframe, goalId: string, text: string, mantra?: string) => {
+  const saveGoal = () => {
+    if (!editingGoal) return;
+    
     setGoals(prev => ({
       ...prev,
-      [timeframe]: prev[timeframe].map(goal => 
-        goal.id === goalId ? { 
+      [editingGoal.timeframe]: prev[editingGoal.timeframe].map(goal => 
+        goal.id === editingGoal.id ? { 
           ...goal, 
-          text, 
-          mantra: mantra || goal.mantra,
-          isEditing: false 
+          text: newGoalText,
+          mantra: editingGoal.timeframe === 'annual' ? newMantra : goal.mantra
         } : goal
       )
     }));
+    
+    setEditingGoal(null);
+    setNewGoalText('');
+    setNewMantra('');
+  };
+
+  const cancelEditGoal = () => {
+    setEditingGoal(null);
+    setNewGoalText('');
+    setNewMantra('');
+  };
+
+  const startEditingAction = (timeframe: GoalTimeframe, goalId: string, index: number) => {
+    const goal = goals[timeframe].find(g => g.id === goalId);
+    if (goal && goal.actions[index]) {
+      setNewActionText(goal.actions[index]);
+      setEditingAction({timeframe, goalId, index});
+    }
+  };
+
+  const saveAction = () => {
+    if (!editingAction) return;
+    
+    setGoals(prev => ({
+      ...prev,
+      [editingAction.timeframe]: prev[editingAction.timeframe].map(goal => {
+        if (goal.id === editingAction.goalId) {
+          const newActions = [...goal.actions];
+          newActions[editingAction.index] = newActionText;
+          return { ...goal, actions: newActions };
+        }
+        return goal;
+      })
+    }));
+    
+    setEditingAction(null);
+    setNewActionText('');
+  };
+
+  const cancelEditAction = () => {
+    setEditingAction(null);
+    setNewActionText('');
   };
 
   const addAction = (timeframe: GoalTimeframe, goalId: string) => {
@@ -185,167 +239,176 @@ const Goals: React.FC = () => {
     }));
   };
 
-  const updateAction = (timeframe: GoalTimeframe, goalId: string, actionIndex: number, text: string) => {
+  const removeAction = (timeframe: GoalTimeframe, goalId: string, index: number) => {
     setGoals(prev => ({
       ...prev,
       [timeframe]: prev[timeframe].map(goal => {
         if (goal.id === goalId) {
           const newActions = [...goal.actions];
-          newActions[actionIndex] = text;
+          newActions.splice(index, 1);
           return { ...goal, actions: newActions };
         }
         return goal;
       })
     }));
-  };
-
-  const removeAction = (timeframe: GoalTimeframe, goalId: string, actionIndex: number) => {
-    setGoals(prev => ({
-      ...prev,
-      [timeframe]: prev[timeframe].map(goal => {
-        if (goal.id === goalId) {
-          const newActions = [...goal.actions];
-          newActions.splice(actionIndex, 1);
-          return { ...goal, actions: newActions };
-        }
-        return goal;
-      })
-    }));
-  };
-
-  const getTimeframeTitle = (timeframe: GoalTimeframe): string => {
-    switch (timeframe) {
-      case 'annual': return 'Annual Goals';
-      case 'quarterly': return '90-Day Focus';
-      case 'weekly': return 'Weekly Actions';
-      default: return '';
-    }
   };
 
   const getTimeframeIcon = (timeframe: GoalTimeframe) => {
     switch (timeframe) {
       case 'annual': return <Target className="w-6 h-6 text-blue-600" />;
-      case 'quarterly': return <Flag className="w-6 h-6 text-blue-600" />;
+      case '90day': return <Flag className="w-6 h-6 text-blue-600" />;
       case 'weekly': return <CalendarIcon className="w-6 h-6 text-blue-600" />;
-      default: return null;
     }
   };
 
-  const renderGoalItem = (goal: GoalItem, timeframe: GoalTimeframe) => {
-    const category = CATEGORIES.find(c => c.id === goal.category);
-    
-    if (!category) return null;
+  const getTimeframeTitle = (timeframe: GoalTimeframe) => {
+    switch (timeframe) {
+      case 'annual': return 'Annual Goals';
+      case '90day': return '90-Day Focus';
+      case 'weekly': return 'Weekly Actions';
+    }
+  };
 
-  return (
-    <div key={goal.id} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-      {goal.isEditing ? (
-        <div className="p-4">
-          <textarea
-            value={goal.text}
-            onChange={(e) => saveGoal(timeframe, goal.id, e.target.value, goal.mantra)}
-            className="w-full p-3 border border-slate-200 rounded-lg mb-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            rows={2}
-          />
-          
-          {timeframe === 'annual' && (
-            <div className="mb-3">
-              <label className="block text-sm text-slate-600 mb-1">Mantra (optional)</label>
-              <input
-                type="text"
-                value={goal.mantra || ''}
-                onChange={(e) => saveGoal(timeframe, goal.id, goal.text, e.target.value)}
-                className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="A short phrase to remember this goal"
-              />
-            </div>
-          )}
-          
-          <div className="flex justify-end">
-            <button
-              onClick={() => saveGoal(timeframe, goal.id, goal.text, goal.mantra)}
-              className="flex items-center space-x-1 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-            >
-              <Save className="w-4 h-4" />
-              <span>Save</span>
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div>
-          <div className="p-4 border-b border-slate-100">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center space-x-2">
-                <div className="w-6 h-6 rounded-full flex items-center justify-center text-white font-medium text-sm"
-                  style={{ backgroundColor: category.color }}>
-                  {category.icon}
-                </div>
-                <h3 className="font-semibold text-slate-800">{category.name}</h3>
+  const renderGoalsByCategory = (timeframe: GoalTimeframe) => {
+    return CATEGORIES.map(category => {
+      const categoryGoals = goals[timeframe].filter(goal => goal.category === category.id);
+      if (categoryGoals.length === 0) return null;
+      
+      const goal = categoryGoals[0]; // We expect one goal per category per timeframe
+      
+      return (
+        <div key={`${timeframe}-${category.id}`} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                {category.icon}
+                <h3 className="text-xl font-semibold text-slate-800">{category.name}</h3>
               </div>
+              
               <button
-                onClick={() => startEditing(timeframe, goal.id)}
+                onClick={() => startEditingGoal(timeframe, goal.id)}
                 className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
               >
                 <Pencil className="w-4 h-4" />
               </button>
             </div>
             
-            <p className="text-slate-700 font-medium">{goal.text}</p>
-            
-            {goal.mantra && (
-              <p className="text-sm text-slate-500 italic mt-2">"{goal.mantra}"</p>
-            )}
-          </div>
-          
-          {goal.actions.length > 0 && (
-            <div className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-sm font-medium text-slate-700">Action Items</h4>
-                <button
-                  onClick={() => addAction(timeframe, goal.id)}
-                  className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
+            {editingGoal && editingGoal.id === goal.id ? (
+              <div className="space-y-4">
+                <textarea
+                  value={newGoalText}
+                  onChange={(e) => setNewGoalText(e.target.value)}
+                  className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  rows={2}
+                />
+                
+                {timeframe === 'annual' && (
+                  <div>
+                    <label className="block text-sm text-slate-600 mb-1">Mantra (optional)</label>
+                    <input
+                      type="text"
+                      value={newMantra}
+                      onChange={(e) => setNewMantra(e.target.value)}
+                      className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="A short phrase to remember this goal"
+                    />
+                  </div>
+                )}
+                
+                <div className="flex justify-end space-x-2">
+                  <button
+                    onClick={cancelEditGoal}
+                    className="px-3 py-1 text-slate-600 hover:text-slate-800 transition-colors text-sm"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={saveGoal}
+                    className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                  >
+                    Save
+                  </button>
+                </div>
               </div>
-              
-              <div className="space-y-2">
-                {goal.actions.map((action, index) => (
-                  <div key={index} className="flex items-start group">
-                    <div className="w-1.5 h-1.5 rounded-full bg-slate-400 mt-2 mr-2 flex-shrink-0" />
-                    <div className="flex-1">
-                      <div
-                        className="text-sm text-slate-700 group-hover:hidden"
-                        onClick={() => {
-                          const newText = prompt('Edit action item:', action);
-                          if (newText) updateAction(timeframe, goal.id, index, newText);
-                        }}
+            ) : (
+              <>
+                <p className="text-slate-700 text-lg font-medium mb-2">{goal.text}</p>
+                
+                {timeframe === 'annual' && goal.mantra && (
+                  <p className="text-slate-500 italic mb-4">"{goal.mantra}"</p>
+                )}
+                
+                {timeframe !== 'annual' && (
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm font-medium text-slate-700">Action Items</h4>
+                      <button
+                        onClick={() => addAction(timeframe, goal.id)}
+                        className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
                       >
-                        {action}
-                      </div>
-                      <div className="hidden group-hover:flex items-center space-x-2">
-                        <input
-                          type="text"
-                          value={action}
-                          onChange={(e) => updateAction(timeframe, goal.id, index, e.target.value)}
-                          className="text-sm flex-1 p-1 border border-slate-200 rounded"
-                        />
-                        <button
-                          onClick={() => removeAction(timeframe, goal.id, index)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      {goal.actions.map((action, index) => (
+                        <div key={index} className="flex items-start group">
+                          {editingAction && 
+                           editingAction.goalId === goal.id && 
+                           editingAction.index === index ? (
+                            <div className="flex-1 flex items-center space-x-2">
+                              <input
+                                type="text"
+                                value={newActionText}
+                                onChange={(e) => setNewActionText(e.target.value)}
+                                className="flex-1 p-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              />
+                              <button
+                                onClick={saveAction}
+                                className="p-1 text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors"
+                              >
+                                <Check className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={cancelEditAction}
+                                className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="w-1.5 h-1.5 rounded-full bg-slate-400 mt-2 mr-2 flex-shrink-0" />
+                              <div className="flex-1">
+                                <div className="text-sm text-slate-700">{action}</div>
+                              </div>
+                              <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                  onClick={() => startEditingAction(timeframe, goal.id, index)}
+                                  className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                >
+                                  <Edit3 className="w-3 h-3" />
+                                </button>
+                                <button
+                                  onClick={() => removeAction(timeframe, goal.id, index)}
+                                  className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
+                )}
+              </>
+            )}
+          </div>
         </div>
-      )}
-    </div>
-  );
+      );
+    });
   };
 
   return (
@@ -359,11 +422,13 @@ const Goals: React.FC = () => {
       </div>
 
       {/* Annual Goals Section */}
-      <div className="space-y-2">
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <Target className="w-6 h-6 text-blue-600" />
-            <h2 className="text-xl font-bold text-slate-900">Annual Goals</h2>
+            <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+              <Target className="w-6 h-6" />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-900">Annual Goals</h2>
           </div>
           <button
             onClick={() => toggleSection('annual')}
@@ -374,40 +439,44 @@ const Goals: React.FC = () => {
         </div>
         
         {expandedSections.annual && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
-            {goals.annual.map(goal => renderGoalItem(goal, 'annual'))}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {renderGoalsByCategory('annual')}
           </div>
         )}
       </div>
 
       {/* 90-Day Focus Section */}
-      <div className="space-y-2">
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <Flag className="w-6 h-6 text-blue-600" />
-            <h2 className="text-xl font-bold text-slate-900">90-Day Focus</h2>
+            <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+              <Flag className="w-6 h-6" />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-900">90-Day Focus</h2>
           </div>
           <button
-            onClick={() => toggleSection('quarterly')}
+            onClick={() => toggleSection('90day')}
             className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
           >
-            {expandedSections.quarterly ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+            {expandedSections['90day'] ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
           </button>
         </div>
         
-        {expandedSections.quarterly && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
-            {goals.quarterly.map(goal => renderGoalItem(goal, 'quarterly'))}
+        {expandedSections['90day'] && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {renderGoalsByCategory('90day')}
           </div>
         )}
       </div>
 
       {/* Weekly Actions Section */}
-      <div className="space-y-2">
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <CalendarIcon className="w-6 h-6 text-blue-600" />
-            <h2 className="text-xl font-bold text-slate-900">Weekly Actions</h2>
+            <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+              <CalendarIcon className="w-6 h-6" />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-900">Weekly Actions</h2>
           </div>
           <button
             onClick={() => toggleSection('weekly')}
@@ -418,27 +487,10 @@ const Goals: React.FC = () => {
         </div>
         
         {expandedSections.weekly && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
-            {goals.weekly.map(goal => renderGoalItem(goal, 'weekly'))}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {renderGoalsByCategory('weekly')}
           </div>
         )}
-      </div>
-
-      {/* Instructions */}
-      <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
-        <div className="flex items-start space-x-3">
-          <Clock className="w-5 h-5 text-slate-700 mt-0.5 flex-shrink-0" />
-          <div>
-            <h3 className="text-sm font-semibold text-slate-900 mb-2">How to Use This Goal Framework</h3>
-            <ul className="text-sm text-slate-700 space-y-1">
-              <li>• Start with your annual vision for each life area</li>
-              <li>• Break down into 90-day focus areas with specific targets</li>
-              <li>• Create weekly action items that move you toward your goals</li>
-              <li>• Click the edit button to modify any goal or action item</li>
-              <li>• Schedule your weekly actions in the calendar for accountability</li>
-            </ul>
-          </div>
-        </div>
       </div>
     </div>
   );
