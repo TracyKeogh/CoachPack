@@ -427,7 +427,7 @@ const FreeWheelAssessment: React.FC<FreeWheelAssessmentProps> = ({ onComplete, o
                           y={y + totalHeight / 2 + 8}
                           textAnchor={textAnchor}
                           dominantBaseline="middle"
-                          className="text-xs font-semibold pointer-events-none"
+                          className={`text-xs font-semibold pointer-events-none ${segment.score === 0 ? 'opacity-70' : ''}`}
                           fill="white"
                           stroke="white"
                           strokeWidth="2"
@@ -439,7 +439,7 @@ const FreeWheelAssessment: React.FC<FreeWheelAssessmentProps> = ({ onComplete, o
                           y={y + totalHeight / 2 + 8}
                           textAnchor={textAnchor}
                           dominantBaseline="middle"
-                          className="text-xs font-semibold pointer-events-none"
+                          className={`text-xs font-semibold pointer-events-none ${segment.score === 0 ? 'opacity-70' : ''}`}
                           fill={segment.score > 0 ? segment.color : '#64748b'}
                         >
                           Score: {segment.score}
@@ -723,7 +723,7 @@ const FreeWheelAssessment: React.FC<FreeWheelAssessmentProps> = ({ onComplete, o
                         let opacity = 0.3;
                         let strokeWidth = 1;
                         
-                        if (segment.score > 0 && isScored) {
+                        if (isScored && segment.score > 0) {
                           fillColor = segment.color;
                           opacity = 0.4 + (ring / 10) * 0.5;
                         }
@@ -731,12 +731,15 @@ const FreeWheelAssessment: React.FC<FreeWheelAssessmentProps> = ({ onComplete, o
                         if (isCurrent && currentStep === 'satisfaction') {
                           strokeColor = segment.darkColor;
                           strokeWidth = 3;
-                        } else if (isCurrent) {
+                        } else if (isCurrent && segment.score > 0) {
                           strokeColor = segment.darkColor;
+                          strokeWidth = 2;
+                        } else if (isCurrent) {
+                          strokeColor = '#64748b'; // Default slate color for current segment with no score
                           strokeWidth = 2;
                         }
                         
-                        if (isHovered) {
+                        if (isHovered && currentStep === 'rating') {
                           opacity = Math.max(opacity, 0.9);
                           strokeColor = segment.darkColor;
                           strokeWidth = 3;
