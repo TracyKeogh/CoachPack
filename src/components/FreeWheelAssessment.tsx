@@ -1092,45 +1092,6 @@ const FreeWheelAssessment: React.FC<FreeWheelAssessmentProps> = ({ onComplete, o
 
             {/* Progress Overview */}
             <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">Your Progress</h3>
-              <div className="space-y-3">
-                {data.map((area, index) => {
-                  const SatisfactionIcon = getSatisfactionIcon(area.satisfaction);
-                  return (
-                    <div 
-                      key={area.area}
-                      className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
-                        index === currentAreaIndex 
-                          ? 'border-purple-300 bg-purple-50' 
-                          : area.score > 0 && (currentStep === 'rating' || area.satisfaction !== null)
-                          ? 'border-green-200 bg-green-50'
-                          : 'border-slate-200 bg-slate-50'
-                      }`}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div 
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: area.color }}
-                        />
-                        <span className="font-medium text-slate-900">{area.area}</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <div className="font-bold" style={{ color: area.score > 0 ? area.color : '#64748b' }}>
-                          {area.score > 0 ? `${area.score}/10` : 'Not rated'}
-                        </div>
-                        {currentStep === 'satisfaction' && (
-                          <div className={`p-1 rounded-full ${getSatisfactionColor(area.satisfaction)}`}>
-                            <SatisfactionIcon className="w-3 h-3" />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
