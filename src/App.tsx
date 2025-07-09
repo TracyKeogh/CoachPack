@@ -16,7 +16,7 @@ import Dashboard from './components/Dashboard';
 import WheelOfLife from './components/WheelOfLife';
 import ValuesClarity from './components/ValuesClarity';
 import VisionBoard from './components/VisionBoard';
-import Goals from './components/Goals';
+import GoalSetting from './components/GoalSetting';
 import Calendar from './components/Calendar';
 import LandingPage from './components/LandingPage';
 import FreeWheelAssessment from './components/FreeWheelAssessment';
@@ -59,7 +59,7 @@ function AppContent() {
                 <Route path="/wheel" element={<WheelOfLife />} />
                 <Route path="/values" element={<ValuesClarity />} />
                 <Route path="/vision" element={<VisionBoard />} />
-                <Route path="/goals" element={<Goals />} />
+                <Route path="/goals" element={<GoalSetting />} />
                 <Route path="/calendar" element={<Calendar />} />
               </Routes>
             </div>
