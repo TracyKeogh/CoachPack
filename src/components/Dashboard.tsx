@@ -146,7 +146,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </button>
           </div>
         </div>
-      </div>
 
       {/* Core Values Section */}
       <div className="bg-gradient-to-r from-red-500 to-pink-500 rounded-2xl p-6 text-white">
