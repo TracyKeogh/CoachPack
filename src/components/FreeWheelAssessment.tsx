@@ -924,45 +924,6 @@ const FreeWheelAssessment: React.FC<FreeWheelAssessmentProps> = ({ onComplete, o
           </div>
 
           {/* Current Area Focus */}
-          <div className="space-y-6">
-            {currentStep === 'rating' ? (
-              /* Rating Step */
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-                <div className="text-center mb-6">
-                  <div 
-                    className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center text-white font-bold text-xl"
-                    style={{ backgroundColor: currentArea.color }}
-                  >
-                    {currentAreaIndex + 1}
-                  </div>
-                  <h2 className="text-2xl font-bold text-slate-900 mb-2">{currentArea.area}</h2>
-                  <p className="text-slate-600">
-                    How would you rate this area of your life right now?
-                  </p>
-                </div>
-
-                {/* Score Selection Buttons */}
-                <div className="grid grid-cols-5 gap-2 mb-6">
-                  {Array.from({ length: 10 }, (_, i) => {
-                    const score = i + 1;
-                    const isSelected = currentArea.score === score;
-                    
-                    return (
-                      <button
-                        key={score}
-                        onClick={() => updateScore(currentAreaIndex, score)}
-                        className={`aspect-square rounded-lg border-2 font-bold text-sm transition-all duration-200 hover:scale-110 ${
-                          isSelected
-                            ? 'border-purple-500 text-white shadow-lg transform scale-110'
-                            : 'border-slate-300 text-slate-700 hover:border-slate-400'
-                        }`}
-                        style={{
-                          backgroundColor: isSelected ? currentArea.color : 'white'
-                        }}
-                      >
-                        {score}
-                      </button>
-                    );
                   })}
                 </div>
 
