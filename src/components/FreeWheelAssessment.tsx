@@ -427,7 +427,7 @@ const FreeWheelAssessment: React.FC<FreeWheelAssessmentProps> = ({ onComplete, o
                           y={y + totalHeight / 2 + 8}
                           textAnchor={textAnchor}
                           dominantBaseline="middle"
-                          className={`text-xs font-semibold pointer-events-none ${segment.score === 0 ? 'opacity-70' : ''}`}
+                          className="text-xs font-semibold pointer-events-none"
                           fill="white" 
                           stroke="white" 
                           strokeWidth="2"
@@ -439,8 +439,8 @@ const FreeWheelAssessment: React.FC<FreeWheelAssessmentProps> = ({ onComplete, o
                           y={y + totalHeight / 2 + 8}
                           textAnchor={textAnchor}
                           dominantBaseline="middle"
-                          className={`text-xs font-semibold pointer-events-none ${segment.score === 0 ? 'opacity-70' : ''}`}
-                          fill={segment.score > 0 ? segment.color : '#94a3b8'}
+                          className="text-xs font-semibold pointer-events-none"
+                          fill={segment.score > 0 ? segment.color : '#64748b'}
                         >
                           Score: {segment.score}
                         </text>
@@ -723,27 +723,32 @@ const FreeWheelAssessment: React.FC<FreeWheelAssessmentProps> = ({ onComplete, o
                         let opacity = 0.3;
                         let strokeWidth = 1;
                         
-                        if (isScored && segment.score > 0) {
+                        if (isScored) {
                           fillColor = segment.color;
                           opacity = 0.4 + (ring / 10) * 0.5;
-                          strokeColor = '#e2e8f0'; // Keep neutral stroke for filled segments
                         }
                         
-                        if (isCurrent && currentStep === 'satisfaction') {
-                          strokeColor = segment.darkColor;
-                          strokeWidth = 3;
-                        } else if (isCurrent && segment.score > 0) {
-                          strokeColor = segment.darkColor;
-                          strokeWidth = 2;
-                        } else if (isCurrent) { 
-                          strokeColor = '#94a3b8'; // Lighter slate color for current segment with no score
-                          strokeWidth = 2;
-                        }
-                        
-                        if (isHovered && currentStep === 'rating') {
-                          opacity = Math.max(opacity, 0.9);
-                          strokeColor = segment.darkColor;
-                          strokeWidth = 3;
+                        // Set stroke color and width based on segment state
+                        if (segment.score === 0) {
+                          // Unscored segments always have neutral gray borders
+                          strokeColor = '#e2e8f0';
+                          strokeWidth = 1;
+                        } else {
+                          // Scored segments can have colored borders based on state
+                          if (isCurrent && currentStep === 'satisfaction') {
+                            strokeColor = segment.darkColor;
+                            strokeWidth = 3;
+                          } else if (isCurrent) {
+                            strokeColor = segment.darkColor;
+                            strokeWidth = 2;
+                          }
+                          
+                          // Apply hover effect only during rating step and only for scored segments
+                          if (isHovered && currentStep === 'rating') {
+                            opacity = Math.max(opacity, 0.9);
+                            strokeColor = segment.darkColor;
+                            strokeWidth = 3;
+                          }
                         }
                         
                         return (
@@ -820,7 +825,6 @@ const FreeWheelAssessment: React.FC<FreeWheelAssessmentProps> = ({ onComplete, o
                   const totalHeight = wrappedText.length * lineHeight;
                   const startY = y - totalHeight / 2 - 5;
                   const isCurrent = index === currentAreaIndex;
-                  const textColor = segment.score > 0 ? segment.darkColor : '#64748b';
                   
                   return (
                     <g key={`label-${index}`}>
@@ -829,22 +833,22 @@ const FreeWheelAssessment: React.FC<FreeWheelAssessmentProps> = ({ onComplete, o
                           <text
                             x={x}
                             y={startY + (lineIndex * lineHeight)}
-                            textAnchor={textAnchor} 
-                            dominantBaseline="middle" 
-                            className="text-xs font-semibold pointer-events-none" 
-                            fill="white" 
-                            stroke="white" 
-                            strokeWidth="2" 
+                            textAnchor={textAnchor}
+                            dominantBaseline="middle"
+                            className={`text-sm font-bold pointer-events-none ${isCurrent ? 'animate-pulse' : ''}`}
+                            fill="white"
+                            stroke="white"
+                            strokeWidth="3"
                           >
                             {line}
                           </text>
                           <text
                             x={x}
                             y={startY + (lineIndex * lineHeight)}
-                            textAnchor={textAnchor} 
-                            dominantBaseline="middle" 
-                            className="text-xs font-semibold pointer-events-none" 
-                            fill={segment.score > 0 ? segment.color : '#94a3b8'} 
+                            textAnchor={textAnchor}
+                            dominantBaseline="middle"
+                            className={`text-sm font-bold pointer-events-none ${isCurrent ? 'animate-pulse' : ''}`}
+                            fill={isCurrent ? segment.color : segment.darkColor}
                           >
                             {line}
                           </text>
