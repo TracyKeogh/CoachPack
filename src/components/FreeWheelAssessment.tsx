@@ -724,8 +724,6 @@ const FreeWheelAssessment: React.FC<FreeWheelAssessmentProps> = ({ onComplete, o
                         let strokeColor = '#e2e8f0';
                         let opacity = 0.3;
                         let strokeWidth = 1;
-                        let opacity = 0.3;
-                        let strokeWidth = 1;
                         
                         if (isScored) {
                           fillColor = segment.color;
