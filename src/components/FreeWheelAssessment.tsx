@@ -440,7 +440,7 @@ const FreeWheelAssessment: React.FC<FreeWheelAssessmentProps> = ({ onComplete, o
                           textAnchor={textAnchor}
                           dominantBaseline="middle"
                           className="text-xs font-semibold pointer-events-none"
-                          fill={segment.color}
+                          fill={segment.score > 0 ? segment.color : '#64748b'}
                         >
                           Score: {segment.score}
                         </text>
@@ -816,7 +816,7 @@ const FreeWheelAssessment: React.FC<FreeWheelAssessmentProps> = ({ onComplete, o
                   const totalHeight = wrappedText.length * lineHeight;
                   const startY = y - totalHeight / 2 - 5;
                   const isCurrent = index === currentAreaIndex;
-                 const textColor = segment.score > 0 ? segment.darkColor : segment.darkColor;
+                 const textColor = segment.score > 0 ? segment.darkColor : '#64748b';
                   
                   return (
                     <g key={`label-${index}`}>
@@ -840,7 +840,7 @@ const FreeWheelAssessment: React.FC<FreeWheelAssessmentProps> = ({ onComplete, o
                             textAnchor={textAnchor}
                             dominantBaseline="middle"
                             className={`text-sm font-bold pointer-events-none ${isCurrent ? 'animate-pulse' : ''}`}
-                            fill={isCurrent ? segment.color : segment.darkColor}
+                            fill={isCurrent ? segment.color : textColor}
                           >
                             {line}
                           </text>
