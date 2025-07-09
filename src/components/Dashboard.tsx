@@ -625,6 +625,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               <CalendarIcon className="w-5 h-5" />
               <span className="font-medium">Daily Actions</span>
             </div>
+          </div>
         </div>
       </div>
 
