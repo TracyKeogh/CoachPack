@@ -893,6 +893,7 @@ const GoalSetting: React.FC = () => {
                     </div>
                   </div>
                   
+                  <>
                   <div className="mt-6">
                     <div className="flex items-center space-x-2 mb-2">
                       <Clock className="w-5 h-5 text-slate-500" />
@@ -908,6 +909,7 @@ const GoalSetting: React.FC = () => {
                       Target completion date for this 90-day goal
                     </p>
                   </div>
+                  </>
                 </>
               )}
             </>
