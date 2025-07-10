@@ -789,8 +789,8 @@ const GoalSetting: React.FC = () => {
               
               {/* Milestones (for 90-day goals) */}
               {timeframe === '90day' && (
-                <>
-                        <h4 className="text-sm font-medium text-slate-700">Milestones</h4>
+                <div className="mt-6">
+                  <div className="flex items-center justify-between mb-3">
                       <label className="block text-sm font-medium text-slate-500">Milestones</label>
                       <button
                         onClick={() => addMilestone(timeframe, goal.id)}
