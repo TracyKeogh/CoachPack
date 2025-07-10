@@ -493,3 +493,6 @@ const GoalSetting: React.FC = () => {
   const prevStep = () => {
     if (currentStep === 2) {
       // Move from 90-day to annual
+    }
+  }
+}
