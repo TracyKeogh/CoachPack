@@ -3,21 +3,23 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 
-// Import components
-import LoginPage from './components/auth/LoginPage'; 
-import SignupPage from './components/auth/SignupPage'; 
-import ProtectedRoute from './components/ProtectedRoute'; 
-import AuthProvider from './AuthProvider'; 
-import Header from './components/Header'; 
-import Navigation from './components/Navigation'; 
-import Dashboard from './components/Dashboard'; 
-import WheelOfLife from './components/WheelOfLife'; 
-import ValuesClarity from './components/ValuesClarity'; 
-import VisionBoard from './components/VisionBoard'; 
-import GoalSetting from './components/GoalSetting'; 
-import Calendar from './components/Calendar'; 
-import LandingPage from './components/LandingPage'; 
-import FreeWheelAssessment from './components/FreeWheelAssessment'; 
+// Auth Components
+import LoginPage from './components/auth/LoginPage';
+import SignupPage from './components/auth/SignupPage';
+import ProtectedRoute from './components/ProtectedRoute';
+import AuthProvider from './AuthProvider';
+
+// Main App Components
+import Header from './components/Header';
+import Navigation from './components/Navigation';
+import Dashboard from './components/Dashboard';
+import WheelOfLife from './components/WheelOfLife';
+import ValuesClarity from './components/ValuesClarity';
+import VisionBoard from './components/VisionBoard';
+import GoalSetting from './components/GoalSetting';
+import Calendar from './components/Calendar';
+import LandingPage from './components/LandingPage';
+import FreeWheelAssessment from './components/FreeWheelAssessment';
 import PricingPage from './components/PricingPage';
 
 export type ViewType = 'landing' | 'free-wheel' | 'dashboard' | 'wheel' | 'values' | 'vision' | 'goals' | 'calendar';
@@ -49,7 +51,7 @@ function AppContent() {
           <main 
             className={`flex-1 p-6 transition-all duration-300 ${
               isNavigationCollapsed ? 'ml-16' : 'ml-64'
-            } bg-gradient-to-br from-slate-50 to-indigo-50`}
+            }`}
           >
             <div className="max-w-7xl mx-auto">
               <Routes>
