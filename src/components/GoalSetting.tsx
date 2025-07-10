@@ -32,6 +32,7 @@ interface GoalItem {
   category: string;
   text: string;
   mantra?: string;
+  whyImportant?: string;
   actions: string[];
   milestones?: Milestone[];
   deadline?: string;
@@ -210,6 +211,7 @@ const GoalSetting: React.FC = () => {
   const [editingAction, setEditingAction] = useState<{timeframe: GoalTimeframe, goalId: string, index: number} | null>(null);
   const [newGoalText, setNewGoalText] = useState('');
   const [newMantra, setNewMantra] = useState('');
+  const [newWhyImportant, setNewWhyImportant] = useState('');
   const [newActionText, setNewActionText] = useState('');
   const [newMilestoneTitle, setNewMilestoneTitle] = useState('');
   const [newMilestoneDueDate, setNewMilestoneDueDate] = useState('');
@@ -228,6 +230,7 @@ const GoalSetting: React.FC = () => {
     if (goal) {
       setNewGoalText(goal.text);
       setNewMantra(goal.mantra || '');
+      setNewWhyImportant(goal.whyImportant || '');
       setEditingGoal({timeframe, id});
     }
   };
@@ -241,7 +244,8 @@ const GoalSetting: React.FC = () => {
         goal.id === editingGoal.id ? { 
           ...goal, 
           text: newGoalText,
-          mantra: editingGoal.timeframe === 'annual' ? newMantra : goal.mantra
+          mantra: editingGoal.timeframe === 'annual' ? newMantra : goal.mantra,
+          whyImportant: editingGoal.timeframe === 'annual' ? newWhyImportant : goal.whyImportant
         } : goal
       )
     }));
@@ -249,12 +253,14 @@ const GoalSetting: React.FC = () => {
     setEditingGoal(null);
     setNewGoalText('');
     setNewMantra('');
+    setNewWhyImportant('');
   };
 
   const cancelEditGoal = () => {
     setEditingGoal(null);
     setNewGoalText('');
     setNewMantra('');
+    setNewWhyImportant('');
   };
 
   const startEditingAction = (timeframe: GoalTimeframe, goalId: string, index: number) => {
@@ -496,6 +502,18 @@ const GoalSetting: React.FC = () => {
                 />
               </div>
               
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Why is this important?</label>
+                <textarea
+                  placeholder="Describe why this goal matters to you..."
+                  className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  rows={3}
+                />
+                <p className="text-xs text-slate-500 mt-1">
+                  Connecting your goal to your deeper motivation increases your likelihood of success
+                </p>
+              </div>
+              
               {timeframe === 'annual' && (
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">Mantra (optional)</label>
@@ -534,8 +552,28 @@ const GoalSetting: React.FC = () => {
                   <div className="flex-1">
                     <p className="text-slate-700 text-lg font-medium">{goal.text}</p>
                     
-                    {timeframe === 'annual' && goal.mantra && (
-                      <p className="text-slate-500 italic mt-2">"{goal.mantra}"</p>
+                    {timeframe === 'annual' && (
+                      <>
+                        {goal.mantra && (
+                          <p className="text-slate-500 italic mt-2">"{goal.mantra}"</p>
+                        )}
+                        
+                        <div className="mt-4 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                          <h4 className="text-sm font-medium text-slate-700 mb-1">Why is this important?</h4>
+                          <p className="text-sm text-slate-600">
+                            {goal.whyImportant || "Click edit to add why this goal matters to you..."}
+                          </p>
+                        </div>
+                      </>
+                    )}
+                    
+                    {timeframe === 'annual' && (
+                      <div className="mt-4 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <h4 className="text-sm font-medium text-slate-700 mb-1">Why is this important?</h4>
+                        <p className="text-sm text-slate-600">
+                          {goal.whyImportant || "Click edit to add why this goal matters to you..."}
+                        </p>
+                      </div>
                     )}
                   </div>
                   <button
@@ -619,6 +657,12 @@ const GoalSetting: React.FC = () => {
                         >
                           + Add your first action
                         </button>
+                      </div>
+                    )}
+                    
+                    {goal.whyImportant && (
+                      <div className="mt-2 text-sm">
+                        <span className="font-medium text-slate-700">Why it matters:</span> {goal.whyImportant}
                       </div>
                     )}
                   </div>
