@@ -782,24 +782,12 @@ const GoalSetting: React.FC = () => {
                     className="p-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                   <p className="text-xs text-slate-500 mt-1">
+                  />
+                  <p className="text-xs text-slate-500 mt-1">
                     Target completion date for this annual goal
                   </p>
                 </div>
               )}
-              
-              {/* Milestones and Deadline (only for 90-day) */}
-              {timeframe === '90day' && (
-                <>
-                  <div className="mt-8 border-t border-slate-100 pt-6">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center space-x-2">
-                        <Trophy className="w-5 h-5 text-amber-500" />
-                        <label className="text-sm font-medium text-slate-500">Milestones</label>
-                      </div>
-                      <button
-                        onClick={() => addMilestone(timeframe, goal.id)}
-                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
-                      >
                         <Plus className="w-4 h-4" />
                       </button>
                     </div>
