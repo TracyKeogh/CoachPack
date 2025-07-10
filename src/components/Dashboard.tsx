@@ -1,226 +1,124 @@
 import React, { useState } from 'react';
-import { getTwelveWeeksFromNow } from '../types/goals';
-import { useValuesData } from '../hooks/useValuesData';
 import { 
-  ChevronDown,
-  ChevronUp,
-  Plus, 
   Target,
-  Edit3,
-  X,
-  Check,
-  Flag,
-  Calendar as CalendarIcon,
-  Pencil,
-  ArrowRight,
-  ArrowLeft,
-  Save,
-  Clock,
-  Trophy
+  BarChart3,
+  Heart,
+  ImageIcon,
+  Calendar,
+  ArrowRight
 } from 'lucide-react';
 
-type GoalTimeframe = 'annual' | '90day' | 'weekly';
-
-interface GoalCategory {
-  id: string;
-  name: string;
-  icon: React.ReactNode;
-  color: string;
+interface DashboardProps {
+  onNavigate?: (view: string) => void;
 }
 
-interface GoalItem {
-  id: string;
-  category: string;
-  text: string;
-  mantra?: string;
-  whyImportant?: string;
-  values?: string[];
-  actions: string[];
-  milestones?: Milestone[];
-  deadline?: string;
-  isEditing?: boolean;
-}
-
-interface Milestone {
-  id: string;
-  title: string;
-  dueDate: string;
-  completed: boolean;
-}
-
-const CATEGORIES: GoalCategory[] = [
-  { 
-    id: 'personal', 
-    name: 'Personal', 
-    icon: <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">⚖️</div>, 
-    color: 'blue' 
-  },
-  { 
-    id: 'physical', 
-    name: 'Physical', 
-    icon: <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600">💪</div>, 
-    color: 'green' 
-  },
-  { 
-    id: 'professional', 
-    name: 'Professional', 
-    icon: <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">💼</div>, 
-    color: 'purple' 
-  }
-];
-
-const DEFAULT_GOALS: Record<GoalTimeframe, GoalItem[]> = {
-  annual: [
-    { 
-      id: 'annual-personal', 
-      category: 'personal', 
-      text: 'Happy home full of love and fun.',
-      mantra: 'The bedrock of life.',
-      actions: []
+const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
+  const features = [
+    {
+      id: 'wheel',
+      name: 'Wheel of Life',
+      description: 'Assess your satisfaction across 8 key life areas',
+      icon: <BarChart3 className="w-6 h-6 text-purple-600" />,
+      color: 'bg-purple-100',
+      progress: 0
     },
-    { 
-      id: 'annual-physical', 
-      category: 'physical', 
-      text: 'Healthy, active, light body',
-      mantra: 'Energy to live life.',
-      actions: []
+    {
+      id: 'values',
+      name: 'Values Clarity',
+      description: 'Discover what truly matters to you',
+      icon: <Heart className="w-6 h-6 text-red-500" />,
+      color: 'bg-red-100',
+      progress: 0
     },
-    { 
-      id: 'annual-professional', 
-      category: 'professional', 
-      text: '100k in the year.',
-      mantra: 'Money is energy is life.',
-      actions: []
+    {
+      id: 'vision',
+      name: 'Vision Board',
+      description: 'Create visual representations of your goals',
+      icon: <ImageIcon className="w-6 h-6 text-teal-600" />,
+      color: 'bg-teal-100',
+      progress: 0
+    },
+    {
+      id: 'goals',
+      name: 'Goal Setting',
+      description: 'Define your goals from annual vision to weekly actions',
+      icon: <Target className="w-6 h-6 text-orange-500" />,
+      color: 'bg-orange-100',
+      progress: 0
+    },
+    {
+      id: 'calendar',
+      name: 'Action Calendar',
+      description: 'Schedule time for what matters most',
+      icon: <Calendar className="w-6 h-6 text-indigo-600" />,
+      color: 'bg-indigo-100',
+      progress: 0
     }
-  ],
-  '90day': [
-    { 
-      id: '90day-personal', 
-      category: 'personal', 
-      text: 'A happy home full of fun and love',
-      actions: [
-        '2x friends and family each weekly',
-        'Get out and meet people x1 per week',
-        'Organise (cleaner, meals, clothes process, dishwasher)'
-      ],
-      milestones: [
-        {
-          id: 'ms-personal-1',
-          title: 'Family dinner night established',
-          dueDate: getTwelveWeeksFromNow(4),
-          completed: false
-        },
-        {
-          id: 'ms-personal-2',
-          title: 'Home organization system implemented',
-          dueDate: getTwelveWeeksFromNow(8),
-          completed: false
-        }
-      ],
-      deadline: getTwelveWeeksFromNow(12)
-    },
-    { 
-      id: '90day-physical', 
-      category: 'physical', 
-      text: '8.8 on the way to happy healthy active and light',
-      actions: [
-        'Prep meal weekly and count the calories',
-        '3x gym, 10k steps, 1 cycle at least',
-        'A focus on the feeling of light, which can happen at any time'
-      ],
-      milestones: [
-        {
-          id: 'ms-physical-1',
-          title: 'Complete first 5k run',
-          dueDate: getTwelveWeeksFromNow(4),
-          completed: false
-        },
-        {
-          id: 'ms-physical-2',
-          title: 'Establish consistent meal prep routine',
-          dueDate: getTwelveWeeksFromNow(6),
-          completed: false
-        }
-      ],
-      deadline: getTwelveWeeksFromNow(12)
-    },
-    { 
-      id: '90day-professional', 
-      category: 'professional', 
-      text: '10k in sales',
-      actions: [
-        'Build',
-        'Sell',
-        'Build'
-      ],
-      milestones: [
-        {
-          id: 'ms-professional-1',
-          title: 'Launch MVP',
-          dueDate: getTwelveWeeksFromNow(4),
-          completed: false
-        },
-        {
-          id: 'ms-professional-2',
-          title: 'First 5 paying customers',
-          dueDate: getTwelveWeeksFromNow(8),
-          completed: false
-        }
-      ],
-      deadline: getTwelveWeeksFromNow(12)
+  ];
+
+  const handleNavigate = (view: string) => {
+    if (onNavigate) {
+      onNavigate(view);
     }
-  ],
-  weekly: [
-    { 
-      id: 'weekly-personal', 
-      category: 'personal', 
-      text: 'Weekly Actions:',
-      actions: [
-        '2x friends and family - calls in the evening, on walks/while cooking',
-        'Meet new people - join a club or attend an event',
-        'Home organization - 30 minutes daily'
-      ]
-    },
-    { 
-      id: 'weekly-physical', 
-      category: 'physical', 
-      text: 'Weekly Actions:',
-      actions: [
-        'Prep every Sunday - including tracking in MyFitnessPal',
-        'Monday/Wednesday/Friday gym sessions - 45 minutes each',
-        'Daily 10k step minimum - walk during calls'
-      ]
-    },
-    { 
-      id: 'weekly-professional', 
-      category: 'professional', 
-      text: 'Weekly Actions:',
-      actions: [
-        'Launch the app before the end of April',
-        'Contact 10 potential clients',
-        'Complete product documentation'
-      ]
-    }
-  ]
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
+        <p className="text-slate-600 mt-1">
+          Welcome to Coach Pack. Start your journey to intentional living.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {features.map((feature) => (
+          <div 
+            key={feature.id}
+            className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => handleNavigate(feature.id)}
+          >
+            <div className="p-4">
+              <div className="flex items-center space-x-3 mb-3">
+                <div className={`w-10 h-10 rounded-full ${feature.color} flex items-center justify-center`}>
+                  {feature.icon}
+                </div>
+                <h3 className="font-semibold text-slate-800">{feature.name}</h3>
+              </div>
+              
+              <p className="text-sm text-slate-600 mb-3">{feature.description}</p>
+              
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <div className="w-full bg-slate-200 rounded-full h-2">
+                    <div 
+                      className="bg-gradient-to-r from-purple-500 to-indigo-600 h-2 rounded-full"
+                      style={{ width: `${feature.progress}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-slate-500">{feature.progress}%</span>
+                </div>
+                
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleNavigate(feature.id);
+                  }}
+                  className="flex items-center space-x-1 text-xs text-purple-600 hover:text-purple-700 font-medium"
+                >
+                  <span>Start</span>
+                  <ArrowRight className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 };
 
-const GoalSetting: React.FC = () => {
-  const [goals, setGoals] = useState<Record<GoalTimeframe, GoalItem[]>>(DEFAULT_GOALS);
-  const { data: valuesData } = useValuesData();
-  const [currentStep, setCurrentStep] = useState<number>(1);
-  const [currentTimeframe, setCurrentTimeframe] = useState<GoalTimeframe>('annual');
-  const [currentCategory, setCurrentCategory] = useState<string>('personal');
-  const [editingGoal, setEditingGoal] = useState<{timeframe: GoalTimeframe, id: string} | null>(null);
-  const [editingAction, setEditingAction] = useState<{timeframe: GoalTimeframe, goalId: string, index: number} | null>(null);
-  const [newGoalText, setNewGoalText] = useState('');
-  const [newMantra, setNewMantra] = useState('');
-  const [newWhyImportant, setNewWhyImportant] = useState('');
-  const [selectedValues, setSelectedValues] = useState<string[]>([]); 
-  const [newActionText, setNewActionText] = useState('');
-  const [newMilestoneTitle, setNewMilestoneTitle] = useState('');
-  const [newMilestoneDueDate, setNewMilestoneDueDate] = useState('');
-  const [editingMilestone, setEditingMilestone] = useState<{timeframe: GoalTimeframe, goalId: string, milestoneId: string} | null>(null);
-  const [showSummary, setShowSummary] = useState(false);
+export default Dashboard;
 
   // Helper function to get date X weeks from now
   function getTwelveWeeksFromNow(weeks = 12) {
