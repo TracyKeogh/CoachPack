@@ -696,7 +696,7 @@ const Calendar: React.FC = () => {
                   {milestones.length > 0 && (
                     <div className="space-y-1">
                       <div className="text-xs font-medium text-yellow-600 flex items-center space-x-1">
-                        <Trophy className="w-3 h-3" />
+                        <div className="w-2 h-2 bg-purple-200 rounded-full"></div>
                         <span>{milestones.length} milestone{milestones.length !== 1 ? 's' : ''}</span>
                       </div>
                       {milestones.slice(0, 2).map((milestone) => (
@@ -797,7 +797,7 @@ const Calendar: React.FC = () => {
               </div>
             ))}
             <div className="flex items-center space-x-1">
-              <Trophy className="w-3 h-3 text-yellow-500" />
+              <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
               <span className="text-sm text-slate-600">Milestones</span>
             </div>
           </div>
@@ -854,7 +854,7 @@ const Calendar: React.FC = () => {
               
               {getMilestones().filter(milestone => new Date(milestone.date) >= new Date()).length === 0 && (
                 <div className="text-center py-4 text-yellow-700">
-                  <Flag className="w-6 h-6 mx-auto mb-2 opacity-50" />
+                  <div className="w-2 h-2 bg-yellow-500 rounded-full mx-auto mb-2"></div>
                   <p className="text-sm">No upcoming milestones</p>
                 </div>
               )}
