@@ -751,33 +751,41 @@ const GoalSetting: React.FC = () => {
               )}
               
               {/* Values Display */}
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-slate-500 mb-3">
-                  Connected Values
-                </label>
-                {goal.values && goal.values.length > 0 ? (
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {goal.values.map(value => (
-                      <div 
-                        key={value}
-                        className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm border border-blue-200 font-medium"
-                      >
-                        {value}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-slate-500 border border-dashed border-slate-200 rounded-xl bg-slate-50">
-                    <p className="mb-2">No values connected to this goal yet</p>
+              {!goal.values || goal.values.length === 0 && (
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Connected Values
+                  </label>
+                  <div className="text-center py-4 text-slate-500 border border-dashed border-slate-300 rounded-lg">
+                    <p>No values connected to this goal yet</p>
                     <button
                       onClick={() => startEditingGoal(timeframe, goal.id)}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                      className="mt-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
                     >
                       + Connect values to this goal
                     </button>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
+              
+              {/* Deadline (for annual goals) */}
+              {timeframe === 'annual' && (
+                <div className="mt-4">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Clock className="w-4 h-4 text-slate-500" />
+                    <label className="text-sm font-medium text-slate-700">Deadline</label>
+                  </div>
+                  <input
+                    type="date"
+                    value={goal.deadline || getTwelveWeeksFromNow(52)} // 52 weeks = 1 year
+                    onChange={(e) => updateDeadline(timeframe, goal.id, e.target.value)}
+                    className="p-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">
+                    Target completion date for this annual goal
+                  </p>
+                </div>
+              )}
               
               {/* Milestones and Deadline (only for 90-day) */}
               {timeframe === '90day' && (
@@ -976,6 +984,11 @@ const GoalSetting: React.FC = () => {
                       <p className="text-slate-700 font-medium mb-2">{goal.text}</p>
                       {goal.mantra && (
                         <p className="text-slate-500 italic text-sm">"{goal.mantra}"</p>
+                      )}
+                      {goal.deadline && (
+                        <div className="mt-2 text-xs text-slate-500">
+                          Target date: {new Date(goal.deadline).toLocaleDateString()}
+                        </div>
                       )}
                       {goal.deadline && (
                         <div className="mt-2 flex items-center space-x-2 text-xs text-slate-500">
