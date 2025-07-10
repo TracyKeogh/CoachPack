@@ -493,6 +493,30 @@ const GoalSetting: React.FC = () => {
   const prevStep = () => {
     if (currentStep === 2) {
       // Move from 90-day to annual
+      setCurrentTimeframe('annual');
+      setCurrentStep(1);
+    } else if (currentStep === 3) {
+      // Move from weekly to 90-day
+      setCurrentTimeframe('90day');
+      setCurrentStep(2);
     }
-  }
-}
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Goal Setting</h1>
+          <p className="text-gray-600">Set and track your goals across different timeframes</p>
+        </div>
+        
+        {/* Content would go here */}
+        <div className="bg-white rounded-lg shadow-lg p-8">
+          <p className="text-gray-600">Goal setting interface coming soon...</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default GoalSetting;
