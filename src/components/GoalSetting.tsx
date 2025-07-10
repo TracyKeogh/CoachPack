@@ -787,14 +787,6 @@ const GoalSetting: React.FC = () => {
                 </div>
               )}
               
-                    className="p-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  <p className="text-xs text-slate-500 mt-1">
-                    Target completion date for this annual goal
-                  </p>
-                </div>
-              )}
-              
               {/* Milestones and Deadline (only for 90-day) */}
               {timeframe === '90day' && (
                 <>
