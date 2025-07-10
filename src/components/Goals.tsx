@@ -348,6 +348,7 @@ const Goals: React.FC = () => {
                       >
                         <Plus className="w-4 h-4" />
                       </button>
+                    </div>
                     
                     <div className="space-y-2">
                       {goal.actions.map((action, index) => (
