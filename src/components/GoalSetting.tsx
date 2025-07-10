@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { getTwelveWeeksFromNow } from '../types/goals';
+import { useValuesData } from '../hooks/useValuesData';
 import { 
   ChevronDown,
   ChevronUp,
@@ -205,6 +206,7 @@ const DEFAULT_GOALS: Record<GoalTimeframe, GoalItem[]> = {
 
 const GoalSetting: React.FC = () => {
   const [goals, setGoals] = useState<Record<GoalTimeframe, GoalItem[]>>(DEFAULT_GOALS);
+  const { data: valuesData } = useValuesData();
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [currentTimeframe, setCurrentTimeframe] = useState<GoalTimeframe>('annual');
   const [currentCategory, setCurrentCategory] = useState<string>('personal');
@@ -213,7 +215,7 @@ const GoalSetting: React.FC = () => {
   const [newGoalText, setNewGoalText] = useState('');
   const [newMantra, setNewMantra] = useState('');
   const [newWhyImportant, setNewWhyImportant] = useState('');
-  const [selectedValues, setSelectedValues] = useState<string[]>([]);
+  const [selectedValues, setSelectedValues] = useState<string[]>([]); 
   const [newActionText, setNewActionText] = useState('');
   const [newMilestoneTitle, setNewMilestoneTitle] = useState('');
   const [newMilestoneDueDate, setNewMilestoneDueDate] = useState('');
@@ -233,7 +235,7 @@ const GoalSetting: React.FC = () => {
       setNewGoalText(goal.text);
       setNewMantra(goal.mantra || '');
       setNewWhyImportant(goal.whyImportant || '');
-      setSelectedValues(goal.values || []);
+      setSelectedValues(goal.values || []); 
       setEditingGoal({timeframe, id});
     }
   };
@@ -440,12 +442,22 @@ const GoalSetting: React.FC = () => {
     );
   };
 
-  // Sample values for demonstration
-  const availableValues = [
-    'Growth', 'Excellence', 'Health', 'Balance', 'Family', 
-    'Freedom', 'Creativity', 'Connection', 'Integrity', 'Adventure',
-    'Wisdom', 'Courage', 'Gratitude', 'Joy', 'Peace'
-  ];
+  // Get values from the values data
+  const getAvailableValues = () => {
+    // First try to use the user's actual values
+    if (valuesData.rankedCoreValues.length > 0 || valuesData.supportingValues.length > 0) {
+      const coreValues = valuesData.rankedCoreValues.map(v => v.name);
+      const supportingValues = valuesData.supportingValues.map(v => v.name);
+      return [...coreValues, ...supportingValues];
+    }
+    
+    // Fallback to sample values
+    return [
+      'Growth', 'Excellence', 'Health', 'Balance', 'Family', 
+      'Freedom', 'Creativity', 'Connection', 'Integrity', 'Adventure',
+      'Wisdom', 'Courage', 'Gratitude', 'Joy', 'Peace'
+    ];
+  };
 
   const getTimeframeIcon = (timeframe: GoalTimeframe) => {
     switch (timeframe) {
@@ -591,25 +603,13 @@ const GoalSetting: React.FC = () => {
                       <div className="mt-4 bg-blue-50 p-3 rounded-lg border border-blue-200">
                         <h4 className="text-sm font-medium text-blue-700 mb-2">Values Supported</h4>
                         <div className="flex flex-wrap gap-1">
-                          {goal.values.map((value, i) => (
+                          {goal.values && goal.values.length > 0 ? goal.values.map((value, i) => (
                             <span key={i} className="px-2 py-1 bg-white text-blue-700 rounded-full text-xs border border-blue-200">
                               {value}
                             </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Values */}
-                    {goal.values && goal.values.length > 0 && (
-                      <div className="mt-4 bg-blue-50 p-3 rounded-lg border border-blue-200">
-                        <h4 className="text-sm font-medium text-blue-700 mb-2">Values Supported</h4>
-                        <div className="flex flex-wrap gap-1">
-                          {goal.values.map((value, i) => (
-                            <span key={i} className="px-2 py-1 bg-white text-blue-700 rounded-full text-xs border border-blue-200">
-                              {value}
-                            </span>
-                          ))}
+                          )) : (
+                            <span className="text-xs text-slate-500">No values connected</span>
+                          )}
                         </div>
                       </div>
                     )}
@@ -627,8 +627,8 @@ const GoalSetting: React.FC = () => {
                 <label className="block text-sm font-medium text-slate-700 mb-2">
                   Which values does this goal support?
                 </label>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {availableValues.map(value => (
+                <div className="flex flex-wrap gap-2 mb-2 max-h-40 overflow-y-auto p-2 border border-slate-200 rounded-lg">
+                  {getAvailableValues().map(value => (
                     <button
                       key={value}
                       onClick={() => toggleValue(value)}
@@ -641,6 +641,9 @@ const GoalSetting: React.FC = () => {
                       {value}
                     </button>
                   ))}
+                </div>
+                <div className="text-sm text-blue-600 mt-2">
+                  {selectedValues.length} values selected
                 </div>
                 <p className="text-xs text-slate-500">
                   Select the values that this goal helps you express or honor
