@@ -105,17 +105,6 @@ const GoalSetting: React.FC = () => {
     return date.toISOString().split('T')[0]; // YYYY-MM-DD format
   }
 
-  const startEditingGoal = (timeframe: GoalTimeframe, id: string) => {
-    const goal = goals[timeframe].find(g => g.id === id);
-    if (goal) {
-      setNewGoalText(goal.text);
-      setNewMantra(goal.mantra || '');
-      setNewWhyImportant(goal.whyImportant || '');
-      setSelectedValues(goal.values || []); 
-      setEditingGoal({timeframe, id});
-    }
-  };
-
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-bold text-slate-900 mb-4">Goal Setting</h1>
