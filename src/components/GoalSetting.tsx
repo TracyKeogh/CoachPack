@@ -782,12 +782,21 @@ const GoalSetting: React.FC = () => {
                     className="p-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                   <p className="text-xs text-slate-500 mt-1">
-                  />
-                  <p className="text-xs text-slate-500 mt-1">
                     Target completion date for this annual goal
                   </p>
                 </div>
               )}
+              
+              {/* Milestones (for 90-day goals) */}
+              {timeframe === '90day' && (
+                <>
+                  <div className="mt-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="block text-sm font-medium text-slate-500">Milestones</label>
+                      <button
+                        onClick={() => addMilestone(timeframe, goal.id)}
+                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                      >
                         <Plus className="w-4 h-4" />
                       </button>
                     </div>
@@ -901,29 +910,6 @@ const GoalSetting: React.FC = () => {
                     </p>
                   </div>
                 </>
-              )}
-              
-              {/* Deadline for Annual Goals */}
-              {timeframe === 'annual' && (
-                <div className="mt-6">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <Clock className="w-5 h-5 text-slate-500" />
-                    <label className="text-sm font-medium text-slate-500">Deadline</label>
-                  </div>
-                  <input
-                    type="date"
-                    value={goal.deadline || (() => {
-                      const oneYearFromNow = new Date();
-                      oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
-                      return oneYearFromNow.toISOString().split('T')[0];
-                    })()}
-                    onChange={(e) => updateDeadline(timeframe, goal.id, e.target.value)}
-                    className="p-3 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  <p className="text-xs text-slate-500 mt-1">
-                    Target completion date for this annual goal
-                  </p>
-                </div>
               )}
             </>
           )}
