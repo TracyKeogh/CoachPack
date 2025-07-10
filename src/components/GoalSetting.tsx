@@ -790,8 +790,7 @@ const GoalSetting: React.FC = () => {
               {/* Milestones (for 90-day goals) */}
               {timeframe === '90day' && (
                 <>
-                  <div className="mt-6">
-                    <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-sm font-medium text-slate-700">Milestones</h4>
                       <label className="block text-sm font-medium text-slate-500">Milestones</label>
                       <button
                         onClick={() => addMilestone(timeframe, goal.id)}
@@ -1027,13 +1026,11 @@ const GoalSetting: React.FC = () => {
                     {/* Show milestones for 90-day goals in summary */}
                     {goal.milestones && goal.milestones.length > 0 && (
                       <div className="mt-3 border-t border-slate-100 pt-3">
-                        <h4 className="text-sm font-medium text-slate-700 mb-2 flex items-center">
-                          <Trophy className="w-3 h-3 text-amber-500 mr-1" /> Milestones
-                        </h4>
+                        <h4 className="text-sm font-medium text-slate-700 mb-2">Milestones</h4>
                         <div className="space-y-2">
                           {goal.milestones.map(milestone => (
                             <div key={milestone.id} className="flex items-center space-x-2 text-xs">
-                              <div className={`w-3 h-3 rounded-full ${milestone.completed ? 'bg-green-500' : 'bg-slate-300'}`}></div>
+                              <div className={`w-2 h-2 rounded-full ${milestone.completed ? 'bg-green-500' : 'bg-slate-300'}`}></div>
                               <span className={milestone.completed ? 'line-through text-slate-500' : 'text-slate-700'}>
                                 {milestone.title} ({new Date(milestone.dueDate).toLocaleDateString()})
                               </span>
