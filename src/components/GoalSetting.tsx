@@ -643,6 +643,19 @@ const GoalSetting: React.FC = () => {
                       </div>
                     )}
                     
+                    {/* Connected Values */}
+                    {goal.values && goal.values.length > 0 && (
+                      <div className="mt-6">
+                        <h4 className="text-sm font-medium text-slate-500 mb-3">Connected Values</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {goal.values.map((value, i) => (
+                            <span key={i} className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm border border-blue-200 font-medium">
+                              {value}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <button
                     onClick={() => startEditingGoal(timeframe, goal.id)}
@@ -766,25 +779,6 @@ const GoalSetting: React.FC = () => {
                     type="date"
                     value={goal.deadline || getTwelveWeeksFromNow(52)} // 52 weeks = 1 year
                     onChange={(e) => updateDeadline(timeframe, goal.id, e.target.value)}
-              {/* Deadline (for all timeframes) */}
-              {timeframe === 'annual' && (
-                <div className="mt-4">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <Clock className="w-4 h-4 text-slate-500" />
-                    <label className="text-sm font-medium text-slate-700">Deadline</label>
-                  </div>
-                  <input
-                    type="date"
-                    value={goal.deadline || getTwelveWeeksFromNow(52)} // One year from now
-                    onChange={(e) => updateDeadline(timeframe, goal.id, e.target.value)}
-                    className="p-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  <p className="text-xs text-slate-500 mt-1">
-                    Target completion date for this annual goal
-                  </p>
-                </div>
-              )}
-              
                     className="p-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                   <p className="text-xs text-slate-500 mt-1">
@@ -990,12 +984,6 @@ const GoalSetting: React.FC = () => {
                       <p className="text-slate-700 font-medium mb-2">{goal.text}</p>
                       {goal.mantra && (
                         <p className="text-slate-500 italic text-sm">"{goal.mantra}"</p>
-                      )}
-                      {goal.deadline && (
-                        <div className="mt-2 text-xs text-slate-500 flex items-center">
-                          <Clock className="w-3 h-3 mr-1" />
-                          <span>Due: {new Date(goal.deadline).toLocaleDateString()}</span>
-                        </div>
                       )}
                       {goal.deadline && (
                         <div className="mt-2 text-xs text-slate-500">
