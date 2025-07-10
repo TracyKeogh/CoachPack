@@ -775,7 +775,7 @@ const GoalSetting: React.FC = () => {
                     <Clock className="w-4 h-4 text-slate-500" />
                     <label className="text-sm font-medium text-slate-700">Deadline</label>
                   </div>
-                  <input
+                  <input></input>
                     type="date"
                     value={goal.deadline || getTwelveWeeksFromNow(52)} // 52 weeks = 1 year
                     onChange={(e) => updateDeadline(timeframe, goal.id, e.target.value)}
