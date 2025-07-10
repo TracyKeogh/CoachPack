@@ -34,6 +34,8 @@ const GoalSetting: React.FC = () => {
       setNewWhyImportant(goal.whyImportant || '');
       setSelectedValues(goal.values || []); 
       setEditingGoal({timeframe, id});
+    }
+  }
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-bold text-slate-900 mb-4">Goal Setting</h1>
