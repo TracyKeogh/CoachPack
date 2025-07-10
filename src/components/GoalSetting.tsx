@@ -536,6 +536,8 @@ const GoalSetting: React.FC = () => {
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">Why is this important?</label>
                 <textarea
+                  value={newWhyImportant}
+                  onChange={(e) => setNewWhyImportant(e.target.value)}
                   placeholder="Describe why this goal matters to you..."
                   className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   rows={3}
