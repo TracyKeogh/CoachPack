@@ -33,6 +33,7 @@ interface GoalItem {
   text: string;
   mantra?: string;
   whyImportant?: string;
+  values?: string[];
   actions: string[];
   milestones?: Milestone[];
   deadline?: string;
@@ -212,6 +213,7 @@ const GoalSetting: React.FC = () => {
   const [newGoalText, setNewGoalText] = useState('');
   const [newMantra, setNewMantra] = useState('');
   const [newWhyImportant, setNewWhyImportant] = useState('');
+  const [selectedValues, setSelectedValues] = useState<string[]>([]);
   const [newActionText, setNewActionText] = useState('');
   const [newMilestoneTitle, setNewMilestoneTitle] = useState('');
   const [newMilestoneDueDate, setNewMilestoneDueDate] = useState('');
@@ -231,6 +233,7 @@ const GoalSetting: React.FC = () => {
       setNewGoalText(goal.text);
       setNewMantra(goal.mantra || '');
       setNewWhyImportant(goal.whyImportant || '');
+      setSelectedValues(goal.values || []);
       setEditingGoal({timeframe, id});
     }
   };
@@ -245,7 +248,8 @@ const GoalSetting: React.FC = () => {
           ...goal, 
           text: newGoalText,
           mantra: editingGoal.timeframe === 'annual' ? newMantra : goal.mantra,
-          whyImportant: editingGoal.timeframe === 'annual' ? newWhyImportant : goal.whyImportant
+          whyImportant: editingGoal.timeframe === 'annual' ? newWhyImportant : goal.whyImportant,
+          values: selectedValues
         } : goal
       )
     }));
@@ -428,6 +432,21 @@ const GoalSetting: React.FC = () => {
     }));
   };
 
+  const toggleValue = (value: string) => {
+    setSelectedValues(prev => 
+      prev.includes(value) 
+        ? prev.filter(v => v !== value) 
+        : [...prev, value]
+    );
+  };
+
+  // Sample values for demonstration
+  const availableValues = [
+    'Growth', 'Excellence', 'Health', 'Balance', 'Family', 
+    'Freedom', 'Creativity', 'Connection', 'Integrity', 'Adventure',
+    'Wisdom', 'Courage', 'Gratitude', 'Joy', 'Peace'
+  ];
+
   const getTimeframeIcon = (timeframe: GoalTimeframe) => {
     switch (timeframe) {
       case 'annual': return <Target className="w-6 h-6 text-blue-600" />;
@@ -567,12 +586,31 @@ const GoalSetting: React.FC = () => {
                       </>
                     )}
                     
-                    {timeframe === 'annual' && (
-                      <div className="mt-4 bg-slate-50 p-3 rounded-lg border border-slate-200">
-                        <h4 className="text-sm font-medium text-slate-700 mb-1">Why is this important?</h4>
-                        <p className="text-sm text-slate-600">
-                          {goal.whyImportant || "Click edit to add why this goal matters to you..."}
-                        </p>
+                    {/* Values */}
+                    {goal.values && goal.values.length > 0 && (
+                      <div className="mt-4 bg-blue-50 p-3 rounded-lg border border-blue-200">
+                        <h4 className="text-sm font-medium text-blue-700 mb-2">Values Supported</h4>
+                        <div className="flex flex-wrap gap-1">
+                          {goal.values.map((value, i) => (
+                            <span key={i} className="px-2 py-1 bg-white text-blue-700 rounded-full text-xs border border-blue-200">
+                              {value}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Values */}
+                    {goal.values && goal.values.length > 0 && (
+                      <div className="mt-4 bg-blue-50 p-3 rounded-lg border border-blue-200">
+                        <h4 className="text-sm font-medium text-blue-700 mb-2">Values Supported</h4>
+                        <div className="flex flex-wrap gap-1">
+                          {goal.values.map((value, i) => (
+                            <span key={i} className="px-2 py-1 bg-white text-blue-700 rounded-full text-xs border border-blue-200">
+                              {value}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -583,6 +621,30 @@ const GoalSetting: React.FC = () => {
                     <Pencil className="w-4 h-4" />
                   </button>
                 </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Which values does this goal support?
+                </label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {availableValues.map(value => (
+                    <button
+                      key={value}
+                      onClick={() => toggleValue(value)}
+                      className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                        selectedValues.includes(value)
+                          ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                          : 'bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200'
+                      }`}
+                    >
+                      {value}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-slate-500">
+                  Select the values that this goal helps you express or honor
+                </p>
               </div>
               
               {timeframe !== 'annual' && (
@@ -662,7 +724,7 @@ const GoalSetting: React.FC = () => {
                     
                     {goal.whyImportant && (
                       <div className="mt-2 text-sm">
-                        <span className="font-medium text-slate-700">Why it matters:</span> {goal.whyImportant}
+                        <span className="font-medium text-slate-700">Why it matters:</span> <span className="text-slate-600">{goal.whyImportant}</span>
                       </div>
                     )}
                   </div>
