@@ -1,844 +1,495 @@
-import React, { useState, useRef } from 'react';
-import { useDrag, useDrop } from 'react-dnd';
-import { Plus, Upload, Edit3, Trash2, Save, Grid3X3, Layout, X, Check, Image as ImageIcon, Move, Download, RotateCcw } from 'lucide-react';
-import { useVisionBoardData, type VisionItem, type TextElement } from '../hooks/useVisionBoardData';
+import React, { useState } from 'react';
+import { getTwelveWeeksFromNow } from '../types/goals';
+import { useValuesData } from '../hooks/useValuesData';
+import { 
+  ChevronDown,
+  ChevronUp,
+  Plus, 
+  Target,
+  Edit3,
+  X,
+  Check,
+  Flag,
+  Calendar as CalendarIcon,
+  Pencil,
+  ArrowRight,
+  ArrowLeft,
+  Save,
+  Clock,
+  Trophy
+} from 'lucide-react';
 
-interface EditingItem {
+type GoalTimeframe = 'annual' | '90day' | 'weekly';
+
+interface GoalCategory {
+  id: string;
+  name: string;
+  icon: React.ReactNode;
+  color: string;
+}
+
+interface GoalItem {
+  id: string;
+  category: string;
+  text: string;
+  mantra?: string;
+  whyImportant?: string;
+  values?: string[];
+  actions: string[];
+  milestones?: Milestone[];
+  deadline?: string;
+  isEditing?: boolean;
+}
+
+interface Milestone {
   id: string;
   title: string;
-  description: string;
-  imageUrl: string;
+  dueDate: string;
+  completed: boolean;
 }
 
-interface DraggableVisionItemProps {
-  item: VisionItem;
-  index: number;
-  quadrantId: string;
-  onMove: (dragIndex: number, hoverIndex: number, sourceQuadrant: string, targetQuadrant: string) => void;
-  onPositionUpdate: (itemId: string, position: { x: number; y: number }) => void;
-  isCollageMode?: boolean;
-}
+const CATEGORIES: GoalCategory[] = [
+  { 
+    id: 'personal', 
+    name: 'Personal', 
+    icon: <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">⚖️</div>, 
+    color: 'blue' 
+  },
+  { 
+    id: 'physical', 
+    name: 'Physical', 
+    icon: <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600">💪</div>, 
+    color: 'green' 
+  },
+  { 
+    id: 'professional', 
+    name: 'Professional', 
+    icon: <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">💼</div>, 
+    color: 'purple' 
+  }
+];
 
-const DraggableVisionItem: React.FC<DraggableVisionItemProps> = ({ 
-  item, 
-  index, 
-  quadrantId, 
-  onMove, 
-  onPositionUpdate,
-  isCollageMode = false 
-}) => {
-  const [{ isDragging }, drag] = useDrag({
-    type: 'vision-item',
-    item: { 
-      id: item.id, 
-      index, 
-      quadrant: quadrantId,
-      isCollageMode 
+const DEFAULT_GOALS: Record<GoalTimeframe, GoalItem[]> = {
+  annual: [
+    { 
+      id: 'annual-personal', 
+      category: 'personal', 
+      text: 'Happy home full of love and fun.',
+      mantra: 'The bedrock of life.',
+      actions: []
     },
-    collect: (monitor) => ({
-      isDragging: monitor.isDragging(),
-    }),
-  });
-
-  const [, drop] = useDrop({
-    accept: 'vision-item',
-    hover: (draggedItem: { id: string; index: number; quadrant: string; isCollageMode: boolean }) => {
-      if (draggedItem.isCollageMode !== isCollageMode) return;
-      
-      if (draggedItem.index !== index || draggedItem.quadrant !== quadrantId) {
-        onMove(draggedItem.index, index, draggedItem.quadrant, quadrantId);
-        draggedItem.index = index;
-        draggedItem.quadrant = quadrantId;
-      }
+    { 
+      id: 'annual-physical', 
+      category: 'physical', 
+      text: 'Healthy, active, light body',
+      mantra: 'Energy to live life.',
+      actions: []
     },
-  });
-
-  const handleDragEnd = (event: React.DragEvent) => {
-    if (isCollageMode) {
-      const rect = event.currentTarget.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-      onPositionUpdate(item.id, { x, y });
+    { 
+      id: 'annual-professional', 
+      category: 'professional', 
+      text: '100k in the year.',
+      mantra: 'Money is energy is life.',
+      actions: []
     }
-  };
-
-  return (
-    <div
-      ref={(node) => drag(drop(node))}
-      className={`relative group cursor-move transition-all duration-200 ${
-        isDragging ? 'opacity-50 scale-95' : 'hover:scale-105'
-      } ${isCollageMode ? 'absolute' : ''}`}
-      style={isCollageMode && item.position ? {
-        left: item.position.x,
-        top: item.position.y,
-        zIndex: isDragging ? 1000 : 1
-      } : {}}
-      onDragEnd={handleDragEnd}
-    >
-      <img
-        src={item.imageUrl}
-        alt={item.title}
-        className={`object-cover rounded-lg shadow-sm ${
-          isCollageMode ? 'w-20 h-20' : 'w-full h-24'
-        }`}
-        onError={(e) => {
-          const target = e.target as HTMLImageElement;
-          target.src = 'https://images.pexels.com/photos/220301/pexels-photo-220301.jpeg?auto=compress&cs=tinysrgb&w=400';
-        }}
-      />
-      
-      {/* Overlay with title and move indicator */}
-      <div className={`absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 transition-all duration-200 rounded-lg flex items-center justify-center ${
-        isCollageMode ? 'flex-col' : ''
-      }`}>
-        <div className="opacity-0 group-hover:opacity-100 transition-opacity text-center">
-          <Move className="w-4 h-4 text-white mx-auto mb-1" />
-          <span className="text-white text-xs font-medium px-2">
-            {item.title}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
+  ],
+  '90day': [
+    { 
+      id: '90day-personal', 
+      category: 'personal', 
+      text: 'A happy home full of fun and love',
+      actions: [
+        '2x friends and family each weekly',
+        'Get out and meet people x1 per week',
+        'Organise (cleaner, meals, clothes process, dishwasher)'
+      ],
+      milestones: [
+        {
+          id: 'ms-personal-1',
+          title: 'Family dinner night established',
+          dueDate: getTwelveWeeksFromNow(4),
+          completed: false
+        },
+        {
+          id: 'ms-personal-2',
+          title: 'Home organization system implemented',
+          dueDate: getTwelveWeeksFromNow(8),
+          completed: false
+        }
+      ],
+      deadline: getTwelveWeeksFromNow(12)
+    },
+    { 
+      id: '90day-physical', 
+      category: 'physical', 
+      text: '8.8 on the way to happy healthy active and light',
+      actions: [
+        'Prep meal weekly and count the calories',
+        '3x gym, 10k steps, 1 cycle at least',
+        'A focus on the feeling of light, which can happen at any time'
+      ],
+      milestones: [
+        {
+          id: 'ms-physical-1',
+          title: 'Complete first 5k run',
+          dueDate: getTwelveWeeksFromNow(4),
+          completed: false
+        },
+        {
+          id: 'ms-physical-2',
+          title: 'Establish consistent meal prep routine',
+          dueDate: getTwelveWeeksFromNow(6),
+          completed: false
+        }
+      ],
+      deadline: getTwelveWeeksFromNow(12)
+    },
+    { 
+      id: '90day-professional', 
+      category: 'professional', 
+      text: '10k in sales',
+      actions: [
+        'Build',
+        'Sell',
+        'Build'
+      ],
+      milestones: [
+        {
+          id: 'ms-professional-1',
+          title: 'Launch MVP',
+          dueDate: getTwelveWeeksFromNow(4),
+          completed: false
+        },
+        {
+          id: 'ms-professional-2',
+          title: 'First 5 paying customers',
+          dueDate: getTwelveWeeksFromNow(8),
+          completed: false
+        }
+      ],
+      deadline: getTwelveWeeksFromNow(12)
+    }
+  ],
+  weekly: [
+    { 
+      id: 'weekly-personal', 
+      category: 'personal', 
+      text: 'Weekly Actions:',
+      actions: [
+        '2x friends and family - calls in the evening, on walks/while cooking',
+        'Meet new people - join a club or attend an event',
+        'Home organization - 30 minutes daily'
+      ]
+    },
+    { 
+      id: 'weekly-physical', 
+      category: 'physical', 
+      text: 'Weekly Actions:',
+      actions: [
+        'Prep every Sunday - including tracking in MyFitnessPal',
+        'Monday/Wednesday/Friday gym sessions - 45 minutes each',
+        'Daily 10k step minimum - walk during calls'
+      ]
+    },
+    { 
+      id: 'weekly-professional', 
+      category: 'professional', 
+      text: 'Weekly Actions:',
+      actions: [
+        'Launch the app before the end of April',
+        'Contact 10 potential clients',
+        'Complete product documentation'
+      ]
+    }
+  ]
 };
 
-interface DraggableTextProps {
-  text: string;
-  id: string;
-  position: { x: number; y: number };
-  onPositionUpdate: (id: string, position: { x: number; y: number }) => void;
-  onEdit: (id: string, newText: string) => void;
-  onRemove: (id: string) => void;
-  className?: string;
-}
+const GoalSetting: React.FC = () => {
+  const [goals, setGoals] = useState<Record<GoalTimeframe, GoalItem[]>>(DEFAULT_GOALS);
+  const { data: valuesData } = useValuesData();
+  const [currentStep, setCurrentStep] = useState<number>(1);
+  const [currentTimeframe, setCurrentTimeframe] = useState<GoalTimeframe>('annual');
+  const [currentCategory, setCurrentCategory] = useState<string>('personal');
+  const [editingGoal, setEditingGoal] = useState<{timeframe: GoalTimeframe, id: string} | null>(null);
+  const [editingAction, setEditingAction] = useState<{timeframe: GoalTimeframe, goalId: string, index: number} | null>(null);
+  const [newGoalText, setNewGoalText] = useState('');
+  const [newMantra, setNewMantra] = useState('');
+  const [newWhyImportant, setNewWhyImportant] = useState('');
+  const [selectedValues, setSelectedValues] = useState<string[]>([]); 
+  const [newActionText, setNewActionText] = useState('');
+  const [newMilestoneTitle, setNewMilestoneTitle] = useState('');
+  const [newMilestoneDueDate, setNewMilestoneDueDate] = useState('');
+  const [editingMilestone, setEditingMilestone] = useState<{timeframe: GoalTimeframe, goalId: string, milestoneId: string} | null>(null);
+  const [showSummary, setShowSummary] = useState(false);
 
-const DraggableText: React.FC<DraggableTextProps> = ({ 
-  text, 
-  id, 
-  position, 
-  onPositionUpdate, 
-  onEdit,
-  onRemove,
-  className = ''
-}) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editText, setEditText] = useState(text);
-
-  const [{ isDragging }, drag] = useDrag({
-    type: 'text-element',
-    item: { id, type: 'text' },
-    collect: (monitor) => ({
-      isDragging: monitor.isDragging(),
-    }),
-  });
-
-  const handleDragEnd = (event: React.DragEvent) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-    onPositionUpdate(id, { x, y });
-  };
-
-  const handleSaveEdit = () => {
-    onEdit(id, editText);
-    setIsEditing(false);
-  };
-
-  const handleCancelEdit = () => {
-    setEditText(text);
-    setIsEditing(false);
-  };
-
-  return (
-    <div
-      ref={drag}
-      className={`absolute cursor-move group ${className}`}
-      style={{
-        left: position.x,
-        top: position.y,
-        zIndex: isDragging ? 1000 : 2
-      }}
-      onDragEnd={handleDragEnd}
-    >
-      {isEditing ? (
-        <div className="flex items-center space-x-2 bg-white rounded-lg p-2 shadow-lg border">
-          <input
-            type="text"
-            value={editText}
-            onChange={(e) => setEditText(e.target.value)}
-            className="text-sm font-semibold text-slate-700 bg-transparent border-none outline-none"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleSaveEdit();
-              if (e.key === 'Escape') handleCancelEdit();
-            }}
-            autoFocus
-          />
-          <button
-            onClick={handleSaveEdit}
-            className="text-green-600 hover:text-green-700"
-          >
-            <Check className="w-3 h-3" />
-          </button>
-          <button
-            onClick={handleCancelEdit}
-            className="text-red-600 hover:text-red-700"
-          >
-            <X className="w-3 h-3" />
-          </button>
-        </div>
-      ) : (
-        <div
-          className={`bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1 shadow-sm border transition-all duration-200 ${
-            isDragging ? 'opacity-50' : 'group-hover:shadow-md'
-          }`}
-          onDoubleClick={() => setIsEditing(true)}
-        >
-          <span className="text-sm font-semibold text-slate-700">{text}</span>
-          <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
-            <button
-              onClick={() => onRemove(id)}
-              className="w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600"
-            >
-              <X className="w-2 h-2" />
-            </button>
-            <Move className="w-3 h-3 text-slate-400" />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-const VisionBoard: React.FC = () => {
-  const {
-    visionItems,
-    textElements,
-    isCollageEditMode,
-    isLoaded,
-    lastSaved,
-    addVisionItem,
-    updateVisionItem,
-    removeVisionItem,
-    moveVisionItem,
-    updateItemPosition,
-    getQuadrantItems,
-    addTextElement,
-    updateTextPosition,
-    updateTextContent,
-    removeTextElement,
-    setIsCollageEditMode,
-    saveData,
-    getCompletionStats,
-    exportData,
-    importData,
-    clearAllData
-  } = useVisionBoardData();
-
-  const [editingItem, setEditingItem] = useState<EditingItem | null>(null);
-  const [showImageSelector, setShowImageSelector] = useState(false);
-  const [showDataManagement, setShowDataManagement] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const importInputRef = useRef<HTMLInputElement>(null);
-  
-  // Curated stock photos for different categories
-  const stockPhotos = {
-    business: [
-      'https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg?auto=compress&cs=tinysrgb&w=400',
-      'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=400',
-      'https://images.pexels.com/photos/3184338/pexels-photo-3184338.jpeg?auto=compress&cs=tinysrgb&w=400',
-      'https://images.pexels.com/photos/3184339/pexels-photo-3184339.jpeg?auto=compress&cs=tinysrgb&w=400',
-      'https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=400',
-      'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400'
-    ],
-    body: [
-      'https://images.pexels.com/photos/618833/pexels-photo-618833.jpeg?auto=compress&cs=tinysrgb&w=400',
-      'https://images.pexels.com/photos/416778/pexels-photo-416778.jpeg?auto=compress&cs=tinysrgb&w=400',
-      'https://images.pexels.com/photos/1552242/pexels-photo-1552242.jpeg?auto=compress&cs=tinysrgb&w=400',
-      'https://images.pexels.com/photos/1552106/pexels-photo-1552106.jpeg?auto=compress&cs=tinysrgb&w=400',
-      'https://images.pexels.com/photos/1552103/pexels-photo-1552103.jpeg?auto=compress&cs=tinysrgb&w=400',
-      'https://images.pexels.com/photos/1552252/pexels-photo-1552252.jpeg?auto=compress&cs=tinysrgb&w=400'
-    ],
-    balance: [
-      'https://images.pexels.com/photos/1128318/pexels-photo-1128318.jpeg?auto=compress&cs=tinysrgb&w=400',
-      'https://images.pexels.com/photos/1128317/pexels-photo-1128317.jpeg?auto=compress&cs=tinysrgb&w=400',
-      'https://images.pexels.com/photos/1128316/pexels-photo-1128316.jpeg?auto=compress&cs=tinysrgb&w=400',
-      'https://images.pexels.com/photos/1128319/pexels-photo-1128319.jpeg?auto=compress&cs=tinysrgb&w=400',
-      'https://images.pexels.com/photos/1128320/pexels-photo-1128320.jpeg?auto=compress&cs=tinysrgb&w=400',
-      'https://images.pexels.com/photos/1128321/pexels-photo-1128321.jpeg?auto=compress&cs=tinysrgb&w=400'
-    ],
-    feelings: [
-      'https://images.pexels.com/photos/1051838/pexels-photo-1051838.jpeg?auto=compress&cs=tinysrgb&w=400',
-      'https://images.pexels.com/photos/1051837/pexels-photo-1051837.jpeg?auto=compress&cs=tinysrgb&w=400',
-      'https://images.pexels.com/photos/1051839/pexels-photo-1051839.jpeg?auto=compress&cs=tinysrgb&w=400',
-      'https://images.pexels.com/photos/1051840/pexels-photo-1051840.jpeg?auto=compress&cs=tinysrgb&w=400',
-      'https://images.pexels.com/photos/1051841/pexels-photo-1051841.jpeg?auto=compress&cs=tinysrgb&w=400',
-      'https://images.pexels.com/photos/1051842/pexels-photo-1051842.jpeg?auto=compress&cs=tinysrgb&w=400'
-    ]
-  };
-
-  const quadrants = [
-    {
-      id: 'business',
-      title: 'Business & Career',
-      description: 'Professional goals and achievements',
-      color: 'border-purple-300 bg-purple-50',
-      icon: '💼'
-    },
-    {
-      id: 'body',
-      title: 'Health & Body',
-      description: 'Physical wellness and fitness goals',
-      color: 'border-green-300 bg-green-50',
-      icon: '💪'
-    },
-    {
-      id: 'balance',
-      title: 'Life Balance',
-      description: 'Relationships and lifestyle balance',
-      color: 'border-blue-300 bg-blue-50',
-      icon: '⚖️'
-    },
-    {
-      id: 'feelings',
-      title: 'Emotions & Growth',
-      description: 'Personal development and emotional well-being',
-      color: 'border-pink-300 bg-pink-50',
-      icon: '❤️'
-    }
-  ];
-
-  const startEditing = (item: VisionItem) => {
-    setEditingItem({
-      id: item.id,
-      title: item.title,
-      description: item.description,
-      imageUrl: item.imageUrl
-    });
-  };
-
-  const saveEdit = () => {
-    if (!editingItem) return;
-    
-    updateVisionItem(editingItem.id, {
-      title: editingItem.title,
-      description: editingItem.description,
-      imageUrl: editingItem.imageUrl
-    });
-    setEditingItem(null);
-  };
-
-  const cancelEdit = () => {
-    setEditingItem(null);
-    setShowImageSelector(false);
-  };
-
-  const selectStockPhoto = (imageUrl: string) => {
-    if (editingItem) {
-      setEditingItem(prev => prev ? { ...prev, imageUrl } : null);
-    }
-    setShowImageSelector(false);
-  };
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !editingItem) return;
-
-    // Create a local URL for the uploaded file
-    const imageUrl = URL.createObjectURL(file);
-    setEditingItem(prev => prev ? { ...prev, imageUrl } : null);
-    setShowImageSelector(false);
-    
-    // Reset the file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  const handleExportData = () => {
-    const dataString = exportData();
-    const blob = new Blob([dataString], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `vision-board-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
-  const handleImportData = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const content = e.target?.result as string;
-      if (importData(content)) {
-        alert('Vision board data imported successfully!');
-      } else {
-        alert('Failed to import data. Please check the file format.');
-      }
-    };
-    reader.readAsText(file);
-  };
-
-  const handleClearAllData = () => {
-    if (window.confirm('Are you sure you want to clear all your vision board data? This action cannot be undone.')) {
-      clearAllData();
-    }
-  };
-
-  const getCurrentQuadrantPhotos = () => {
-    if (!editingItem) return [];
-    const item = visionItems.find(v => v.id === editingItem.id);
-    if (!item) return [];
-    return stockPhotos[item.quadrant as keyof typeof stockPhotos] || [];
-  };
-
-  const stats = getCompletionStats();
-
-  // Early return if not loaded yet
-  if (!isLoaded) {
-    return (
-      <div className="space-y-8">
-        <div className="flex items-center justify-center min-h-96">
-          <div className="text-center">
-            <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-slate-900 mb-2">Loading Your Vision Board...</h2>
-            <p className="text-slate-600">Retrieving your saved progress...</p>
-          </div>
-        </div>
-      </div>
-    );
+  // Helper function to get date X weeks from now
+  function getTwelveWeeksFromNow(weeks = 12) {
+    const date = new Date();
+    date.setDate(date.getDate() + (weeks * 7));
+    return date.toISOString().split('T')[0]; // YYYY-MM-DD format
   }
 
-  return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Vision Board</h1>
-          <p className="text-slate-600 mt-2">
-            Create visual representations of your goals across four key life areas
-          </p>
-          {lastSaved && (
-            <p className="text-sm text-green-600 mt-1">
-              ✓ Last saved: {lastSaved.toLocaleTimeString()}
-            </p>
-          )}
-        </div>
-        <div className="flex items-center space-x-3">
-          <button 
-            onClick={() => setShowDataManagement(!showDataManagement)}
-            className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
-          >
-            <Download className="w-4 h-4" />
-            <span>Data</span>
-          </button>
-          <button className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors">
-            <Layout className="w-4 h-4" />
-            <span>Template</span>
-          </button>
-          <button 
-            onClick={saveData}
-            className="flex items-center space-x-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-          >
-            <Save className="w-4 h-4" />
-            <span>Save Now</span>
-          </button>
-        </div>
-      </div>
+  const startEditingGoal = (timeframe: GoalTimeframe, id: string) => {
+    const goal = goals[timeframe].find(g => g.id === id);
+    if (goal) {
+      setNewGoalText(goal.text);
+      setNewMantra(goal.mantra || '');
+      setNewWhyImportant(goal.whyImportant || '');
+      setSelectedValues(goal.values || []); 
+      setEditingGoal({timeframe, id});
+    }
+  };
 
-      {/* Data Management Panel */}
-      {showDataManagement && (
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">Data Management</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button
-              onClick={handleExportData}
-              className="flex items-center justify-center space-x-2 px-4 py-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors border border-blue-200"
-            >
-              <Download className="w-4 h-4" />
-              <span>Export Data</span>
-            </button>
-            
-            <button
-              onClick={() => importInputRef.current?.click()}
-              className="flex items-center justify-center space-x-2 px-4 py-3 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors border border-green-200"
-            >
-              <Upload className="w-4 h-4" />
-              <span>Import Data</span>
-            </button>
-            
-            <button
-              onClick={handleClearAllData}
-              className="flex items-center justify-center space-x-2 px-4 py-3 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors border border-red-200"
-            >
-              <RotateCcw className="w-4 h-4" />
-              <span>Reset Board</span>
-            </button>
-          </div>
-          
-          <input
-            ref={importInputRef}
-            type="file"
-            accept=".json"
-            onChange={handleImportData}
-            className="hidden"
-          />
-          
-          <div className="mt-4 p-3 bg-slate-50 rounded-lg">
-            <h4 className="font-medium text-slate-900 mb-2">Your Progress</h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div>
-                <div className="text-slate-500">Total Items</div>
-                <div className="font-semibold text-slate-900">{stats.totalItems}</div>
-              </div>
-              <div>
-                <div className="text-slate-500">Customized</div>
-                <div className="font-semibold text-slate-900">{stats.itemsWithCustomContent}</div>
-              </div>
-              <div>
-                <div className="text-slate-500">Custom Text</div>
-                <div className="font-semibold text-slate-900">{stats.customTextElements}</div>
-              </div>
-              <div>
-                <div className="text-slate-500">Completion</div>
-                <div className="font-semibold text-slate-900">{stats.completionPercentage}%</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+  const saveGoal = () => {
+    if (!editingGoal) return;
+    
+    setGoals(prev => ({
+      ...prev,
+      [editingGoal.timeframe]: prev[editingGoal.timeframe].map(goal => 
+        goal.id === editingGoal.id ? { 
+          ...goal, 
+          text: newGoalText,
+          mantra: editingGoal.timeframe === 'annual' ? newMantra : goal.mantra,
+          whyImportant: editingGoal.timeframe === 'annual' ? newWhyImportant : goal.whyImportant,
+          values: selectedValues
+        } : goal
+      )
+    }));
+    
+    setEditingGoal(null);
+    setNewGoalText('');
+    setNewMantra('');
+    setNewWhyImportant('');
+  };
 
-      {/* Vision Board Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {quadrants.map((quadrant) => {
-          const items = getQuadrantItems(quadrant.id);
-          
-          return (
-            <div
-              key={quadrant.id}
-              className={`rounded-2xl border-2 border-dashed p-6 min-h-96 ${quadrant.color} transition-all duration-200 hover:shadow-lg`}
-            >
-              {/* Quadrant Header */}
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center space-x-3">
-                  <span className="text-2xl">{quadrant.icon}</span>
-                  <div>
-                    <h3 className="text-lg font-semibold text-slate-900">{quadrant.title}</h3>
-                    <p className="text-sm text-slate-600">{quadrant.description}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => addVisionItem(quadrant.id)}
-                  className="p-2 text-slate-500 hover:text-slate-700 hover:bg-white hover:shadow-sm rounded-lg transition-all"
-                >
-                  <Plus className="w-5 h-5" />
-                </button>
-              </div>
+  const cancelEditGoal = () => {
+    setEditingGoal(null);
+    setNewGoalText('');
+    setNewMantra('');
+    setNewWhyImportant('');
+  };
 
-              {/* Vision Items */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {items.map((item, index) => (
-                  <div key={item.id}>
-                    <DraggableVisionItem
-                      item={item}
-                      index={index}
-                      quadrantId={quadrant.id}
-                      onMove={moveVisionItem}
-                      onPositionUpdate={updateItemPosition}
-                    />
-                    <div className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 group mt-2">
-                      <div className="relative">
-                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                          <div className="flex items-center space-x-2">
-                            <button
-                              onClick={() => startEditing(item)}
-                              className="p-2 bg-white text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
-                            >
-                              <Edit3 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                startEditing(item);
-                                setShowImageSelector(true);
-                              }}
-                              className="p-2 bg-white text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
-                            >
-                              <Upload className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => removeVisionItem(item.id)}
-                              className="p-2 bg-white text-red-500 rounded-lg hover:bg-red-50 transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="p-4">
-                        <h4 className="font-semibold text-slate-900 mb-1">{item.title}</h4>
-                        <p className="text-sm text-slate-600">{item.description}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+  const startEditingAction = (timeframe: GoalTimeframe, goalId: string, index: number) => {
+    const goal = goals[timeframe].find(g => g.id === goalId);
+    if (goal && goal.actions[index]) {
+      setNewActionText(goal.actions[index]);
+      setEditingAction({timeframe, goalId, index});
+    }
+  };
 
-                {/* Add New Item Placeholder */}
-                {items.length === 0 && (
-                  <div
-                    onClick={() => addVisionItem(quadrant.id)}
-                    className="border-2 border-dashed border-slate-300 rounded-lg h-32 flex flex-col items-center justify-center text-slate-500 hover:text-slate-700 hover:border-slate-400 cursor-pointer transition-all"
-                  >
-                    <Plus className="w-8 h-8 mb-2" />
-                    <span className="text-sm font-medium">Add Vision Item</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+  const saveAction = () => {
+    if (!editingAction) return;
+    
+    setGoals(prev => ({
+      ...prev,
+      [editingAction.timeframe]: prev[editingAction.timeframe].map(goal => {
+        if (goal.id === editingAction.goalId) {
+          const newActions = [...goal.actions];
+          newActions[editingAction.index] = newActionText;
+          return { ...goal, actions: newActions };
+        }
+        return goal;
+      })
+    }));
+    
+    setEditingAction(null);
+    setNewActionText('');
+  };
 
-      {/* Edit Modal */}
-      {editingItem && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-slate-900">Edit Vision Item</h3>
-              <button
-                onClick={cancelEdit}
-                className="text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
+  const cancelEditAction = () => {
+    setEditingAction(null);
+    setNewActionText('');
+  };
 
-            <div className="space-y-6">
-              {/* Image Preview */}
-              <div className="relative">
-                <img
-                  src={editingItem.imageUrl}
-                  alt={editingItem.title}
-                  className="w-full h-48 object-cover rounded-lg"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = 'https://images.pexels.com/photos/220301/pexels-photo-220301.jpeg?auto=compress&cs=tinysrgb&w=400';
-                  }}
-                />
-                <button
-                  onClick={() => setShowImageSelector(!showImageSelector)}
-                  className="absolute top-2 right-2 p-2 bg-white text-slate-700 rounded-lg hover:bg-slate-100 transition-colors shadow-sm"
-                >
-                  <ImageIcon className="w-4 h-4" />
-                </button>
-              </div>
+  const addAction = (timeframe: GoalTimeframe, goalId: string) => {
+    setGoals(prev => ({
+      ...prev,
+      [timeframe]: prev[timeframe].map(goal => 
+        goal.id === goalId ? { 
+          ...goal, 
+          actions: [...goal.actions, 'New action item'] 
+        } : goal
+      )
+    }));
+  };
 
-              {/* Image Selector */}
-              {showImageSelector && (
-                <div className="border border-slate-200 rounded-lg p-4">
-                  <h4 className="font-medium text-slate-900 mb-4">Choose Image</h4>
-                  
-                  {/* Upload Option */}
-                  <div className="mb-4">
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileUpload}
-                      className="hidden"
-                    />
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="flex items-center space-x-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors border border-blue-200"
-                    >
-                      <Upload className="w-4 h-4" />
-                      <span>Upload Your Own Image</span>
-                    </button>
-                  </div>
+  const removeAction = (timeframe: GoalTimeframe, goalId: string, index: number) => {
+    setGoals(prev => ({
+      ...prev,
+      [timeframe]: prev[timeframe].map(goal => {
+        if (goal.id === goalId) {
+          const newActions = [...goal.actions];
+          newActions.splice(index, 1);
+          return { ...goal, actions: newActions };
+        }
+        return goal;
+      })
+    }));
+  };
 
-                  {/* Stock Photos */}
-                  <div>
-                    <h5 className="text-sm font-medium text-slate-700 mb-3">Or choose from stock photos:</h5>
-                    <div className="grid grid-cols-3 gap-3">
-                      {getCurrentQuadrantPhotos().map((photoUrl, index) => (
-                        <button
-                          key={index}
-                          onClick={() => selectStockPhoto(photoUrl)}
-                          className={`relative rounded-lg overflow-hidden border-2 transition-all ${
-                            editingItem.imageUrl === photoUrl
-                              ? 'border-purple-500 ring-2 ring-purple-200'
-                              : 'border-slate-200 hover:border-slate-300'
-                          }`}
-                        >
-                          <img
-                            src={photoUrl}
-                            alt={`Stock photo ${index + 1}`}
-                            className="w-full h-20 object-cover"
-                          />
-                          {editingItem.imageUrl === photoUrl && (
-                            <div className="absolute inset-0 bg-purple-500 bg-opacity-20 flex items-center justify-center">
-                              <Check className="w-5 h-5 text-purple-600" />
-                            </div>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
+  const addMilestone = (timeframe: GoalTimeframe, goalId: string) => {
+    const newMilestone: Milestone = {
+      id: `ms-${Date.now()}`,
+      title: 'New milestone',
+      dueDate: getTwelveWeeksFromNow(6),
+      completed: false
+    };
+    
+    setGoals(prev => ({
+      ...prev,
+      [timeframe]: prev[timeframe].map(goal => 
+        goal.id === goalId ? { 
+          ...goal, 
+          milestones: [...(goal.milestones || []), newMilestone]
+        } : goal
+      )
+    }));
+  };
 
-              {/* Title Input */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Title
-                </label>
-                <input
-                  type="text"
-                  value={editingItem.title}
-                  onChange={(e) => setEditingItem(prev => prev ? { ...prev, title: e.target.value } : null)}
-                  className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  placeholder="Enter a title for your vision item"
-                />
-              </div>
+  const startEditingMilestone = (timeframe: GoalTimeframe, goalId: string, milestoneId: string) => {
+    const goal = goals[timeframe].find(g => g.id === goalId);
+    const milestone = goal?.milestones?.find(m => m.id === milestoneId);
+    
+    if (milestone) {
+      setNewMilestoneTitle(milestone.title);
+      setNewMilestoneDueDate(milestone.dueDate);
+      setEditingMilestone({timeframe, goalId, milestoneId});
+    }
+  };
 
-              {/* Description Input */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Description
-                </label>
-                <textarea
-                  value={editingItem.description}
-                  onChange={(e) => setEditingItem(prev => prev ? { ...prev, description: e.target.value } : null)}
-                  className="w-full p-3 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  rows={3}
-                  placeholder="Describe what this vision means to you"
-                />
-              </div>
+  const saveMilestone = () => {
+    if (!editingMilestone) return;
+    
+    setGoals(prev => ({
+      ...prev,
+      [editingMilestone.timeframe]: prev[editingMilestone.timeframe].map(goal => {
+        if (goal.id === editingMilestone.goalId && goal.milestones) {
+          return {
+            ...goal,
+            milestones: goal.milestones.map(milestone => 
+              milestone.id === editingMilestone.milestoneId ? 
+              { 
+                ...milestone, 
+                title: newMilestoneTitle,
+                dueDate: newMilestoneDueDate
+              } : milestone
+            )
+          };
+        }
+        return goal;
+      })
+    }));
+    
+    setEditingMilestone(null);
+    setNewMilestoneTitle('');
+    setNewMilestoneDueDate('');
+  };
 
-              {/* Action Buttons */}
-              <div className="flex items-center justify-end space-x-3 pt-4 border-t border-slate-200">
-                <button
-                  onClick={cancelEdit}
-                  className="px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={saveEdit}
-                  className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                >
-                  Save Changes
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+  const cancelEditMilestone = () => {
+    setEditingMilestone(null);
+    setNewMilestoneTitle('');
+    setNewMilestoneDueDate('');
+  };
 
-      {/* Interactive Vision Summary with Combined Image Collage */}
-      <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-semibold text-slate-900">Your Interactive Vision Collage</h3>
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={() => setIsCollageEditMode(!isCollageEditMode)}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-                isCollageEditMode 
-                  ? 'bg-purple-100 text-purple-700 border border-purple-300' 
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
-            >
-              <Move className="w-4 h-4" />
-              <span>{isCollageEditMode ? 'Exit Edit Mode' : 'Edit Layout'}</span>
-            </button>
-            {isCollageEditMode && (
-              <button
-                onClick={addTextElement}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors border border-blue-300"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Add Text</span>
-              </button>
-            )}
-          </div>
-        </div>
-        
-        {/* Interactive Collage Canvas */}
-        <div className="relative bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl border-2 border-dashed border-slate-300 overflow-hidden" style={{ height: '500px' }}>
-          {isCollageEditMode && (
-            <div className="absolute top-4 left-4 bg-blue-100 text-blue-800 px-3 py-1 rounded-lg text-sm font-medium z-10">
-              🎨 Edit Mode: Drag images and text to rearrange • Double-click text to edit
-            </div>
-          )}
-          
-          {visionItems.length > 0 ? (
-            <>
-              {/* Draggable Images */}
-              {visionItems.map((item, index) => (
-                <DraggableVisionItem
-                  key={item.id}
-                  item={item}
-                  index={index}
-                  quadrantId={item.quadrant}
-                  onMove={moveVisionItem}
-                  onPositionUpdate={updateItemPosition}
-                  isCollageMode={true}
-                />
-              ))}
-              
-              {/* Draggable Text Elements */}
-              {isCollageEditMode && textElements.map((textElement) => (
-                <DraggableText
-                  key={textElement.id}
-                  text={textElement.text}
-                  id={textElement.id}
-                  position={textElement.position}
-                  onPositionUpdate={updateTextPosition}
-                  onEdit={updateTextContent}
-                  onRemove={removeTextElement}
-                  className={textElement.className}
-                />
-              ))}
-              
-              {/* Static Text Elements (when not in edit mode) */}
-              {!isCollageEditMode && textElements.map((textElement) => (
-                <div
-                  key={textElement.id}
-                  className="absolute bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1 shadow-sm border"
-                  style={{
-                    left: textElement.position.x,
-                    top: textElement.position.y,
-                    zIndex: 2
-                  }}
-                >
-                  <span className={`text-slate-700 ${textElement.className}`}>{textElement.text}</span>
-                </div>
-              ))}
-            </>
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center">
-                <div className="text-6xl mb-4">🎯</div>
-                <h4 className="text-lg font-semibold text-slate-700 mb-2">Your Vision Awaits</h4>
-                <p className="text-slate-500">Add vision items to see your interactive collage</p>
-              </div>
-            </div>
-          )}
-        </div>
-        
-        {/* Instructions */}
-        <div className="mt-6 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg border border-purple-200">
-          <p className="text-purple-800 font-medium">💡 Interactive Vision Collage</p>
-          <p className="text-purple-700 text-sm mt-1">
-            Click "Edit Layout" to rearrange your vision elements freely. Drag images and text around to create your perfect vision board layout. Double-click text to edit it directly. All changes are automatically saved.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-};
+  const toggleMilestoneCompletion = (timeframe: GoalTimeframe, goalId: string, milestoneId: string) => {
+    setGoals(prev => ({
+      ...prev,
+      [timeframe]: prev[timeframe].map(goal => {
+        if (goal.id === goalId && goal.milestones) {
+          return {
+            ...goal,
+            milestones: goal.milestones.map(milestone => 
+              milestone.id === milestoneId ? 
+              { ...milestone, completed: !milestone.completed } : 
+              milestone
+            )
+          };
+        }
+        return goal;
+      })
+    }));
+  };
 
-export default VisionBoard;
+  const removeMilestone = (timeframe: GoalTimeframe, goalId: string, milestoneId: string) => {
+    setGoals(prev => ({
+      ...prev,
+      [timeframe]: prev[timeframe].map(goal => {
+        if (goal.id === goalId && goal.milestones) {
+          return {
+            ...goal,
+            milestones: goal.milestones.filter(m => m.id !== milestoneId)
+          };
+        }
+        return goal;
+      })
+    }));
+  };
+
+  const updateDeadline = (timeframe: GoalTimeframe, goalId: string, deadline: string) => {
+    setGoals(prev => ({
+      ...prev,
+      [timeframe]: prev[timeframe].map(goal => 
+        goal.id === goalId ? { ...goal, deadline } : goal
+      )
+    }));
+  };
+
+  const toggleValue = (value: string) => {
+    setSelectedValues(prev => 
+      prev.includes(value) 
+        ? prev.filter(v => v !== value) 
+        : [...prev, value]
+    );
+  };
+
+  // Get values from the values data
+  const getAvailableValues = () => {
+    // First try to use the user's actual values
+    if (valuesData.rankedCoreValues.length > 0 || valuesData.supportingValues.length > 0) {
+      const coreValues = valuesData.rankedCoreValues.map(v => v.name);
+      const supportingValues = valuesData.supportingValues.map(v => v.name);
+      return [...coreValues, ...supportingValues];
+    }
+    
+    // Fallback to sample values
+    return [
+      'Growth', 'Excellence', 'Health', 'Balance', 'Family', 
+      'Freedom', 'Creativity', 'Connection', 'Integrity', 'Adventure',
+      'Wisdom', 'Courage', 'Gratitude', 'Joy', 'Peace'
+    ];
+  };
+
+  const getTimeframeIcon = (timeframe: GoalTimeframe) => {
+    switch (timeframe) {
+      case 'annual': return <Target className="w-6 h-6 text-blue-600" />;
+      case '90day': return <Flag className="w-6 h-6 text-blue-600" />;
+      case 'weekly': return <CalendarIcon className="w-6 h-6 text-blue-600" />;
+    }
+  };
+
+  const getTimeframeTitle = (timeframe: GoalTimeframe) => {
+    switch (timeframe) {
+      case 'annual': return 'Annual Goals';
+      case '90day': return '90-Day Focus';
+      case 'weekly': return 'Weekly Actions';
+    }
+  };
+
+  const nextStep = () => {
+    if (currentStep === 1) {
+      // Move from annual to 90-day
+      setCurrentTimeframe('90day');
+      setCurrentStep(2);
+    } else if (currentStep === 2) {
+      // Move from 90-day to weekly
+      setCurrentTimeframe('weekly');
+      setCurrentStep(3);
+    } else if (currentStep === 3) {
+      // Show summary
+      setShowSummary(true);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep === 2) {
+      // Move from 90-day to annual
