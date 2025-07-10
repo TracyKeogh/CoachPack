@@ -1,322 +1,495 @@
 import React, { useState } from 'react';
+import { getTwelveWeeksFromNow } from '../types/goals';
+import { useValuesData } from '../hooks/useValuesData';
 import { 
-  StickyNote, 
+  ChevronDown,
+  ChevronUp,
   Plus, 
-  Edit3, 
-  Trash2, 
-  Save, 
-  X, 
-  Lightbulb, 
-  Target, 
-  BookOpen, 
-  Heart, 
-  Zap, 
-  HelpCircle 
+  Target,
+  Edit3,
+  X,
+  Check,
+  Flag,
+  Calendar as CalendarIcon,
+  Pencil,
+  ArrowRight,
+  ArrowLeft,
+  Save,
+  Clock,
+  Trophy
 } from 'lucide-react';
-import { useNotes, Note } from '../hooks/useNotes';
 
-interface NotesPanelProps {
-  feature?: Note['related_feature'];
-  compact?: boolean;
+type GoalTimeframe = 'annual' | '90day' | 'weekly';
+
+interface GoalCategory {
+  id: string;
+  name: string;
+  icon: React.ReactNode;
+  color: string;
 }
 
-const NotesPanel: React.FC<NotesPanelProps> = ({ feature = 'general', compact = false }) => {
-  const { notes, isLoading, error, createNote, updateNote, deleteNote } = useNotes(feature);
-  const [isCreating, setIsCreating] = useState(false);
-  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
-  const [newNote, setNewNote] = useState({
-    title: '',
-    content: '',
-    category: 'insight' as Note['category']
-  });
-  const [editNote, setEditNote] = useState({
-    title: '',
-    content: '',
-    category: 'insight' as Note['category']
-  });
+interface GoalItem {
+  id: string;
+  category: string;
+  text: string;
+  mantra?: string;
+  whyImportant?: string;
+  values?: string[];
+  actions: string[];
+  milestones?: Milestone[];
+  deadline?: string;
+  isEditing?: boolean;
+}
 
-  const handleCreateNote = async () => {
-    if (!newNote.title.trim() || !newNote.content.trim()) return;
-    
-    await createNote({
-      title: newNote.title,
-      content: newNote.content,
-      category: newNote.category,
-      related_feature: feature
-    });
-    
-    setNewNote({
-      title: '',
-      content: '',
-      category: 'insight'
-    });
-    
-    setIsCreating(false);
-  };
+interface Milestone {
+  id: string;
+  title: string;
+  dueDate: string;
+  completed: boolean;
+}
 
-  const handleUpdateNote = async (id: string) => {
-    if (!editNote.title.trim() || !editNote.content.trim()) return;
-    
-    await updateNote(id, {
-      title: editNote.title,
-      content: editNote.content,
-      category: editNote.category
-    });
-    
-    setEditingNoteId(null);
-  };
-
-  const startEditing = (note: Note) => {
-    setEditNote({
-      title: note.title,
-      content: note.content,
-      category: note.category
-    });
-    setEditingNoteId(note.id);
-  };
-
-  const cancelEditing = () => {
-    setEditingNoteId(null);
-  };
-
-  const getCategoryIcon = (category: Note['category']) => {
-    switch (category) {
-      case 'insight': return <Lightbulb className="w-4 h-4 text-yellow-500" />;
-      case 'action': return <Target className="w-4 h-4 text-blue-500" />;
-      case 'reflection': return <BookOpen className="w-4 h-4 text-purple-500" />;
-      case 'gratitude': return <Heart className="w-4 h-4 text-red-500" />;
-      case 'idea': return <Zap className="w-4 h-4 text-green-500" />;
-      default: return <HelpCircle className="w-4 h-4 text-slate-500" />;
-    }
-  };
-
-  const getCategoryColor = (category: Note['category']) => {
-    switch (category) {
-      case 'insight': return 'bg-yellow-50 border-yellow-200 text-yellow-800';
-      case 'action': return 'bg-blue-50 border-blue-200 text-blue-800';
-      case 'reflection': return 'bg-purple-50 border-purple-200 text-purple-800';
-      case 'gratitude': return 'bg-red-50 border-red-200 text-red-800';
-      case 'idea': return 'bg-green-50 border-green-200 text-green-800';
-      default: return 'bg-slate-50 border-slate-200 text-slate-800';
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
-  };
-
-  if (isLoading) {
-    return (
-      <div className="p-4 text-center">
-        <div className="w-6 h-6 border-2 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-        <p className="text-slate-600 text-sm">Loading notes...</p>
-      </div>
-    );
+const CATEGORIES: GoalCategory[] = [
+  { 
+    id: 'personal', 
+    name: 'Personal', 
+    icon: <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">⚖️</div>, 
+    color: 'blue' 
+  },
+  { 
+    id: 'physical', 
+    name: 'Physical', 
+    icon: <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600">💪</div>, 
+    color: 'green' 
+  },
+  { 
+    id: 'professional', 
+    name: 'Professional', 
+    icon: <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">💼</div>, 
+    color: 'purple' 
   }
+];
 
-  if (error) {
-    return (
-      <div className="p-4 text-center text-red-600">
-        <p>Error loading notes: {error}</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className={`space-y-4 ${compact ? '' : 'p-4'}`}>
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <StickyNote className="w-5 h-5 text-purple-600" />
-          <h3 className="font-semibold text-slate-900">
-            {compact ? 'Notes' : `Notes (${notes.length})`}
-          </h3>
-        </div>
-        <button
-          onClick={() => setIsCreating(!isCreating)}
-          className="p-1 text-slate-600 hover:text-purple-600 hover:bg-purple-50 rounded-full transition-colors"
-          title="Add note"
-        >
-          {isCreating ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-        </button>
-      </div>
-
-      {/* Create Note Form */}
-      {isCreating && (
-        <div className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm">
-          <div className="space-y-3">
-            <input
-              type="text"
-              value={newNote.title}
-              onChange={(e) => setNewNote(prev => ({ ...prev, title: e.target.value }))}
-              placeholder="Note title"
-              className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            />
-            
-            <textarea
-              value={newNote.content}
-              onChange={(e) => setNewNote(prev => ({ ...prev, content: e.target.value }))}
-              placeholder="Write your note here..."
-              className="w-full p-2 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              rows={3}
-            />
-            
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <label className="text-sm text-slate-600">Category:</label>
-                <select
-                  value={newNote.category}
-                  onChange={(e) => setNewNote(prev => ({ ...prev, category: e.target.value as Note['category'] }))}
-                  className="p-1 text-sm border border-slate-200 rounded focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                >
-                  <option value="insight">Insight</option>
-                  <option value="action">Action</option>
-                  <option value="reflection">Reflection</option>
-                  <option value="gratitude">Gratitude</option>
-                  <option value="idea">Idea</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => setIsCreating(false)}
-                  className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded transition-colors text-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleCreateNote}
-                  className="flex items-center space-x-1 p-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors text-sm"
-                >
-                  <Save className="w-3 h-3" />
-                  <span>Save</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Notes List */}
-      <div className="space-y-3">
-        {notes.length === 0 ? (
-          <div className="text-center py-6 text-slate-500">
-            <StickyNote className="w-8 h-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">No notes yet</p>
-            <button
-              onClick={() => setIsCreating(true)}
-              className="mt-2 text-purple-600 hover:text-purple-700 text-sm font-medium"
-            >
-              Add your first note
-            </button>
-          </div>
-        ) : (
-          notes.map(note => (
-            <div 
-              key={note.id} 
-              className={`bg-white rounded-lg border shadow-sm transition-all ${
-                editingNoteId === note.id ? 'border-purple-300 shadow-md' : 'border-slate-200 hover:shadow'
-              }`}
-            >
-              {editingNoteId === note.id ? (
-                <div className="p-4 space-y-3">
-                  <input
-                    type="text"
-                    value={editNote.title}
-                    onChange={(e) => setEditNote(prev => ({ ...prev, title: e.target.value }))}
-                    placeholder="Note title"
-                    className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  />
-                  
-                  <textarea
-                    value={editNote.content}
-                    onChange={(e) => setEditNote(prev => ({ ...prev, content: e.target.value }))}
-                    placeholder="Write your note here..."
-                    className="w-full p-2 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    rows={3}
-                  />
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <label className="text-sm text-slate-600">Category:</label>
-                      <select
-                        value={editNote.category}
-                        onChange={(e) => setEditNote(prev => ({ ...prev, category: e.target.value as Note['category'] }))}
-                        className="p-1 text-sm border border-slate-200 rounded focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      >
-                        <option value="insight">Insight</option>
-                        <option value="action">Action</option>
-                        <option value="reflection">Reflection</option>
-                        <option value="gratitude">Gratitude</option>
-                        <option value="idea">Idea</option>
-                        <option value="other">Other</option>
-                      </select>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={cancelEditing}
-                        className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded transition-colors text-sm"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={() => handleUpdateNote(note.id)}
-                        className="flex items-center space-x-1 p-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors text-sm"
-                      >
-                        <Save className="w-3 h-3" />
-                        <span>Update</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center space-x-2">
-                      <h4 className="font-medium text-slate-900">{note.title}</h4>
-                      <div className={`px-2 py-0.5 rounded-full text-xs flex items-center space-x-1 ${getCategoryColor(note.category)}`}>
-                        {getCategoryIcon(note.category)}
-                        <span className="capitalize">{note.category}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <button
-                        onClick={() => startEditing(note)}
-                        className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                        title="Edit note"
-                      >
-                        <Edit3 className="w-3 h-3" />
-                      </button>
-                      <button
-                        onClick={() => deleteNote(note.id)}
-                        className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                        title="Delete note"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <p className="text-sm text-slate-700 whitespace-pre-line mb-2">{note.content}</p>
-                  
-                  <div className="text-xs text-slate-500">
-                    {formatDate(note.created_at)}
-                  </div>
-                </div>
-              )}
-            </div>
-          ))
-        )}
-      </div>
-    </div>
-  );
+const DEFAULT_GOALS: Record<GoalTimeframe, GoalItem[]> = {
+  annual: [
+    { 
+      id: 'annual-personal', 
+      category: 'personal', 
+      text: 'Happy home full of love and fun.',
+      mantra: 'The bedrock of life.',
+      actions: []
+    },
+    { 
+      id: 'annual-physical', 
+      category: 'physical', 
+      text: 'Healthy, active, light body',
+      mantra: 'Energy to live life.',
+      actions: []
+    },
+    { 
+      id: 'annual-professional', 
+      category: 'professional', 
+      text: '100k in the year.',
+      mantra: 'Money is energy is life.',
+      actions: []
+    }
+  ],
+  '90day': [
+    { 
+      id: '90day-personal', 
+      category: 'personal', 
+      text: 'A happy home full of fun and love',
+      actions: [
+        '2x friends and family each weekly',
+        'Get out and meet people x1 per week',
+        'Organise (cleaner, meals, clothes process, dishwasher)'
+      ],
+      milestones: [
+        {
+          id: 'ms-personal-1',
+          title: 'Family dinner night established',
+          dueDate: getTwelveWeeksFromNow(4),
+          completed: false
+        },
+        {
+          id: 'ms-personal-2',
+          title: 'Home organization system implemented',
+          dueDate: getTwelveWeeksFromNow(8),
+          completed: false
+        }
+      ],
+      deadline: getTwelveWeeksFromNow(12)
+    },
+    { 
+      id: '90day-physical', 
+      category: 'physical', 
+      text: '8.8 on the way to happy healthy active and light',
+      actions: [
+        'Prep meal weekly and count the calories',
+        '3x gym, 10k steps, 1 cycle at least',
+        'A focus on the feeling of light, which can happen at any time'
+      ],
+      milestones: [
+        {
+          id: 'ms-physical-1',
+          title: 'Complete first 5k run',
+          dueDate: getTwelveWeeksFromNow(4),
+          completed: false
+        },
+        {
+          id: 'ms-physical-2',
+          title: 'Establish consistent meal prep routine',
+          dueDate: getTwelveWeeksFromNow(6),
+          completed: false
+        }
+      ],
+      deadline: getTwelveWeeksFromNow(12)
+    },
+    { 
+      id: '90day-professional', 
+      category: 'professional', 
+      text: '10k in sales',
+      actions: [
+        'Build',
+        'Sell',
+        'Build'
+      ],
+      milestones: [
+        {
+          id: 'ms-professional-1',
+          title: 'Launch MVP',
+          dueDate: getTwelveWeeksFromNow(4),
+          completed: false
+        },
+        {
+          id: 'ms-professional-2',
+          title: 'First 5 paying customers',
+          dueDate: getTwelveWeeksFromNow(8),
+          completed: false
+        }
+      ],
+      deadline: getTwelveWeeksFromNow(12)
+    }
+  ],
+  weekly: [
+    { 
+      id: 'weekly-personal', 
+      category: 'personal', 
+      text: 'Weekly Actions:',
+      actions: [
+        '2x friends and family - calls in the evening, on walks/while cooking',
+        'Meet new people - join a club or attend an event',
+        'Home organization - 30 minutes daily'
+      ]
+    },
+    { 
+      id: 'weekly-physical', 
+      category: 'physical', 
+      text: 'Weekly Actions:',
+      actions: [
+        'Prep every Sunday - including tracking in MyFitnessPal',
+        'Monday/Wednesday/Friday gym sessions - 45 minutes each',
+        'Daily 10k step minimum - walk during calls'
+      ]
+    },
+    { 
+      id: 'weekly-professional', 
+      category: 'professional', 
+      text: 'Weekly Actions:',
+      actions: [
+        'Launch the app before the end of April',
+        'Contact 10 potential clients',
+        'Complete product documentation'
+      ]
+    }
+  ]
 };
 
-export default NotesPanel;
+const GoalSetting: React.FC = () => {
+  const [goals, setGoals] = useState<Record<GoalTimeframe, GoalItem[]>>(DEFAULT_GOALS);
+  const { data: valuesData } = useValuesData();
+  const [currentStep, setCurrentStep] = useState<number>(1);
+  const [currentTimeframe, setCurrentTimeframe] = useState<GoalTimeframe>('annual');
+  const [currentCategory, setCurrentCategory] = useState<string>('personal');
+  const [editingGoal, setEditingGoal] = useState<{timeframe: GoalTimeframe, id: string} | null>(null);
+  const [editingAction, setEditingAction] = useState<{timeframe: GoalTimeframe, goalId: string, index: number} | null>(null);
+  const [newGoalText, setNewGoalText] = useState('');
+  const [newMantra, setNewMantra] = useState('');
+  const [newWhyImportant, setNewWhyImportant] = useState('');
+  const [selectedValues, setSelectedValues] = useState<string[]>([]); 
+  const [newActionText, setNewActionText] = useState('');
+  const [newMilestoneTitle, setNewMilestoneTitle] = useState('');
+  const [newMilestoneDueDate, setNewMilestoneDueDate] = useState('');
+  const [editingMilestone, setEditingMilestone] = useState<{timeframe: GoalTimeframe, goalId: string, milestoneId: string} | null>(null);
+  const [showSummary, setShowSummary] = useState(false);
+
+  // Helper function to get date X weeks from now
+  function getTwelveWeeksFromNow(weeks = 12) {
+    const date = new Date();
+    date.setDate(date.getDate() + (weeks * 7));
+    return date.toISOString().split('T')[0]; // YYYY-MM-DD format
+  }
+
+  const startEditingGoal = (timeframe: GoalTimeframe, id: string) => {
+    const goal = goals[timeframe].find(g => g.id === id);
+    if (goal) {
+      setNewGoalText(goal.text);
+      setNewMantra(goal.mantra || '');
+      setNewWhyImportant(goal.whyImportant || '');
+      setSelectedValues(goal.values || []); 
+      setEditingGoal({timeframe, id});
+    }
+  };
+
+  const saveGoal = () => {
+    if (!editingGoal) return;
+    
+    setGoals(prev => ({
+      ...prev,
+      [editingGoal.timeframe]: prev[editingGoal.timeframe].map(goal => 
+        goal.id === editingGoal.id ? { 
+          ...goal, 
+          text: newGoalText,
+          mantra: editingGoal.timeframe === 'annual' ? newMantra : goal.mantra,
+          whyImportant: editingGoal.timeframe === 'annual' ? newWhyImportant : goal.whyImportant,
+          values: selectedValues
+        } : goal
+      )
+    }));
+    
+    setEditingGoal(null);
+    setNewGoalText('');
+    setNewMantra('');
+    setNewWhyImportant('');
+  };
+
+  const cancelEditGoal = () => {
+    setEditingGoal(null);
+    setNewGoalText('');
+    setNewMantra('');
+    setNewWhyImportant('');
+  };
+
+  const startEditingAction = (timeframe: GoalTimeframe, goalId: string, index: number) => {
+    const goal = goals[timeframe].find(g => g.id === goalId);
+    if (goal && goal.actions[index]) {
+      setNewActionText(goal.actions[index]);
+      setEditingAction({timeframe, goalId, index});
+    }
+  };
+
+  const saveAction = () => {
+    if (!editingAction) return;
+    
+    setGoals(prev => ({
+      ...prev,
+      [editingAction.timeframe]: prev[editingAction.timeframe].map(goal => {
+        if (goal.id === editingAction.goalId) {
+          const newActions = [...goal.actions];
+          newActions[editingAction.index] = newActionText;
+          return { ...goal, actions: newActions };
+        }
+        return goal;
+      })
+    }));
+    
+    setEditingAction(null);
+    setNewActionText('');
+  };
+
+  const cancelEditAction = () => {
+    setEditingAction(null);
+    setNewActionText('');
+  };
+
+  const addAction = (timeframe: GoalTimeframe, goalId: string) => {
+    setGoals(prev => ({
+      ...prev,
+      [timeframe]: prev[timeframe].map(goal => 
+        goal.id === goalId ? { 
+          ...goal, 
+          actions: [...goal.actions, 'New action item'] 
+        } : goal
+      )
+    }));
+  };
+
+  const removeAction = (timeframe: GoalTimeframe, goalId: string, index: number) => {
+    setGoals(prev => ({
+      ...prev,
+      [timeframe]: prev[timeframe].map(goal => {
+        if (goal.id === goalId) {
+          const newActions = [...goal.actions];
+          newActions.splice(index, 1);
+          return { ...goal, actions: newActions };
+        }
+        return goal;
+      })
+    }));
+  };
+
+  const addMilestone = (timeframe: GoalTimeframe, goalId: string) => {
+    const newMilestone: Milestone = {
+      id: `ms-${Date.now()}`,
+      title: 'New milestone',
+      dueDate: getTwelveWeeksFromNow(6),
+      completed: false
+    };
+    
+    setGoals(prev => ({
+      ...prev,
+      [timeframe]: prev[timeframe].map(goal => 
+        goal.id === goalId ? { 
+          ...goal, 
+          milestones: [...(goal.milestones || []), newMilestone]
+        } : goal
+      )
+    }));
+  };
+
+  const startEditingMilestone = (timeframe: GoalTimeframe, goalId: string, milestoneId: string) => {
+    const goal = goals[timeframe].find(g => g.id === goalId);
+    const milestone = goal?.milestones?.find(m => m.id === milestoneId);
+    
+    if (milestone) {
+      setNewMilestoneTitle(milestone.title);
+      setNewMilestoneDueDate(milestone.dueDate);
+      setEditingMilestone({timeframe, goalId, milestoneId});
+    }
+  };
+
+  const saveMilestone = () => {
+    if (!editingMilestone) return;
+    
+    setGoals(prev => ({
+      ...prev,
+      [editingMilestone.timeframe]: prev[editingMilestone.timeframe].map(goal => {
+        if (goal.id === editingMilestone.goalId && goal.milestones) {
+          return {
+            ...goal,
+            milestones: goal.milestones.map(milestone => 
+              milestone.id === editingMilestone.milestoneId ? 
+              { 
+                ...milestone, 
+                title: newMilestoneTitle,
+                dueDate: newMilestoneDueDate
+              } : milestone
+            )
+          };
+        }
+        return goal;
+      })
+    }));
+    
+    setEditingMilestone(null);
+    setNewMilestoneTitle('');
+    setNewMilestoneDueDate('');
+  };
+
+  const cancelEditMilestone = () => {
+    setEditingMilestone(null);
+    setNewMilestoneTitle('');
+    setNewMilestoneDueDate('');
+  };
+
+  const toggleMilestoneCompletion = (timeframe: GoalTimeframe, goalId: string, milestoneId: string) => {
+    setGoals(prev => ({
+      ...prev,
+      [timeframe]: prev[timeframe].map(goal => {
+        if (goal.id === goalId && goal.milestones) {
+          return {
+            ...goal,
+            milestones: goal.milestones.map(milestone => 
+              milestone.id === milestoneId ? 
+              { ...milestone, completed: !milestone.completed } : 
+              milestone
+            )
+          };
+        }
+        return goal;
+      })
+    }));
+  };
+
+  const removeMilestone = (timeframe: GoalTimeframe, goalId: string, milestoneId: string) => {
+    setGoals(prev => ({
+      ...prev,
+      [timeframe]: prev[timeframe].map(goal => {
+        if (goal.id === goalId && goal.milestones) {
+          return {
+            ...goal,
+            milestones: goal.milestones.filter(m => m.id !== milestoneId)
+          };
+        }
+        return goal;
+      })
+    }));
+  };
+
+  const updateDeadline = (timeframe: GoalTimeframe, goalId: string, deadline: string) => {
+    setGoals(prev => ({
+      ...prev,
+      [timeframe]: prev[timeframe].map(goal => 
+        goal.id === goalId ? { ...goal, deadline } : goal
+      )
+    }));
+  };
+
+  const toggleValue = (value: string) => {
+    setSelectedValues(prev => 
+      prev.includes(value) 
+        ? prev.filter(v => v !== value) 
+        : [...prev, value]
+    );
+  };
+
+  // Get values from the values data
+  const getAvailableValues = () => {
+    // First try to use the user's actual values
+    if (valuesData.rankedCoreValues.length > 0 || valuesData.supportingValues.length > 0) {
+      const coreValues = valuesData.rankedCoreValues.map(v => v.name);
+      const supportingValues = valuesData.supportingValues.map(v => v.name);
+      return [...coreValues, ...supportingValues];
+    }
+    
+    // Fallback to sample values
+    return [
+      'Growth', 'Excellence', 'Health', 'Balance', 'Family', 
+      'Freedom', 'Creativity', 'Connection', 'Integrity', 'Adventure',
+      'Wisdom', 'Courage', 'Gratitude', 'Joy', 'Peace'
+    ];
+  };
+
+  const getTimeframeIcon = (timeframe: GoalTimeframe) => {
+    switch (timeframe) {
+      case 'annual': return <Target className="w-6 h-6 text-blue-600" />;
+      case '90day': return <Flag className="w-6 h-6 text-blue-600" />;
+      case 'weekly': return <CalendarIcon className="w-6 h-6 text-blue-600" />;
+    }
+  };
+
+  const getTimeframeTitle = (timeframe: GoalTimeframe) => {
+    switch (timeframe) {
+      case 'annual': return 'Annual Goals';
+      case '90day': return '90-Day Focus';
+      case 'weekly': return 'Weekly Actions';
+    }
+  };
+
+  const nextStep = () => {
+    if (currentStep === 1) {
+      // Move from annual to 90-day
+      setCurrentTimeframe('90day');
+      setCurrentStep(2);
+    } else if (currentStep === 2) {
+      // Move from 90-day to weekly
+      setCurrentTimeframe('weekly');
+      setCurrentStep(3);
+    } else if (currentStep === 3) {
+      // Show summary
+      setShowSummary(true);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep === 2) {
+      // Move from 90-day to annual
