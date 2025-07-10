@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { Heart } from 'lucide-react';
+import { Heart, Star, Check, ArrowRight } from 'lucide-react';
 
 const ValuesClarity: React.FC = () => {
+  const [currentStep, setCurrentStep] = useState(1);
+  
   return (
     <div className="p-4">
       <h1 className="text-xl font-bold text-slate-900 mb-4">Values Clarity</h1>

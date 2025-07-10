@@ -1,5 +1,84 @@
 import React, { useState } from 'react';
-import { Target } from 'lucide-react';
+import { Target, ChevronDown, ChevronUp, Plus, Edit3, X, Check, Flag, Calendar as CalendarIcon, Pencil, ArrowRight, ArrowLeft, Save, Clock, Trophy } from 'lucide-react';
+import { useValuesData } from '../hooks/useValuesData';
+
+type GoalTimeframe = 'annual' | '90day' | 'weekly';
+
+interface GoalCategory {
+  id: string;
+  name: string;
+  icon: React.ReactNode;
+  color: string;
+}
+
+interface GoalItem {
+  id: string;
+  category: string;
+  text: string;
+  mantra?: string;
+  whyImportant?: string;
+  values?: string[];
+  actions: string[];
+  milestones?: Milestone[];
+  deadline?: string;
+  isEditing?: boolean;
+}
+
+interface Milestone {
+  id: string;
+  title: string;
+  dueDate: string;
+  completed: boolean;
+}
+
+const CATEGORIES: GoalCategory[] = [
+  { 
+    id: 'personal', 
+    name: 'Personal', 
+    icon: <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">⚖️</div>, 
+    color: 'blue' 
+  },
+  { 
+    id: 'physical', 
+    name: 'Physical', 
+    icon: <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600">💪</div>, 
+    color: 'green' 
+  },
+  { 
+    id: 'professional', 
+    name: 'Professional', 
+    icon: <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">💼</div>, 
+    color: 'purple' 
+  }
+];
+
+const DEFAULT_GOALS: Record<GoalTimeframe, GoalItem[]> = {
+  annual: [
+    { 
+      id: 'annual-personal', 
+      category: 'personal', 
+      text: 'Happy home full of love and fun.',
+      mantra: 'The bedrock of life.',
+      actions: []
+    },
+    { 
+      id: 'annual-physical', 
+      category: 'physical', 
+      text: 'Healthy, active, light body',
+      mantra: 'Energy to live life.',
+      actions: []
+    },
+    { 
+      id: 'annual-professional', 
+      category: 'professional', 
+      text: '100k in the year.',
+      mantra: 'Money is energy is life.',
+      actions: []
+    }
+  ],
+  '90day': [],
+  weekly: []
+};
 
 const GoalSetting: React.FC = () => {
   const [goals, setGoals] = useState<Record<GoalTimeframe, GoalItem[]>>(DEFAULT_GOALS);
@@ -35,7 +114,8 @@ const GoalSetting: React.FC = () => {
       setSelectedValues(goal.values || []); 
       setEditingGoal({timeframe, id});
     }
-  }
+  };
+
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-bold text-slate-900 mb-4">Goal Setting</h1>

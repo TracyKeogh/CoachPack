@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { BarChart3 } from 'lucide-react';
+import { BarChart3, Info, TrendingUp, ThumbsUp, ThumbsDown } from 'lucide-react';
 
 const WheelOfLife: React.FC = () => {
+  const [selectedArea, setSelectedArea] = useState<number | null>(null);
+
   return (
     <div className="p-4">
       <h1 className="text-xl font-bold text-slate-900 mb-4">Wheel of Life</h1>
