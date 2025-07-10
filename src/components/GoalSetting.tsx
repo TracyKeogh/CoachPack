@@ -558,6 +558,36 @@ const GoalSetting: React.FC = () => {
                 </div>
               )}
               
+              {/* Values Selection (only when editing) */}
+              {editingGoal && editingGoal.id === goal.id && (
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Which values does this goal support?
+                  </label>
+                  <div className="flex flex-wrap gap-2 mb-2 max-h-40 overflow-y-auto p-2 border border-slate-200 rounded-lg">
+                    {getAvailableValues().map(value => (
+                      <button
+                        key={value}
+                        onClick={() => toggleValue(value)}
+                        className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                          selectedValues.includes(value)
+                            ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                            : 'bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200'
+                        }`}
+                      >
+                        {value}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="text-sm text-blue-600 mt-2">
+                    {selectedValues.length} values selected
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    Select the values that this goal helps you express or honor
+                  </p>
+                </div>
+              )}
+              
               <div className="flex justify-end space-x-2">
                 <button
                   onClick={cancelEditGoal}
@@ -583,33 +613,29 @@ const GoalSetting: React.FC = () => {
                   <div className="flex-1">
                     <p className="text-slate-700 text-lg font-medium">{goal.text}</p>
                     
-                    {timeframe === 'annual' && (
-                      <>
-                        {goal.mantra && (
-                          <p className="text-slate-500 italic mt-2">"{goal.mantra}"</p>
-                        )}
-                        
-                        <div className="mt-4 bg-slate-50 p-3 rounded-lg border border-slate-200">
-                          <h4 className="text-sm font-medium text-slate-700 mb-1">Why is this important?</h4>
-                          <p className="text-sm text-slate-600">
-                            {goal.whyImportant || "Click edit to add why this goal matters to you..."}
-                          </p>
-                        </div>
-                      </>
+                    {timeframe === 'annual' && goal.mantra && (
+                      <p className="text-slate-500 italic mt-2">"{goal.mantra}"</p>
                     )}
                     
-                    {/* Values */}
+                    {timeframe === 'annual' && (
+                      <div className="mt-4 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <h4 className="text-sm font-medium text-slate-700 mb-1">Why is this important?</h4>
+                        <p className="text-sm text-slate-600">
+                          {goal.whyImportant || "Click edit to add why this goal matters to you..."}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {/* Connected Values */}
                     {goal.values && goal.values.length > 0 && (
-                      <div className="mt-4 bg-blue-50 p-3 rounded-lg border border-blue-200">
-                        <h4 className="text-sm font-medium text-blue-700 mb-2">Values Supported</h4>
+                      <div className="mt-4">
+                        <h4 className="text-sm font-medium text-slate-700 mb-2">Connected Values</h4>
                         <div className="flex flex-wrap gap-1">
-                          {goal.values && goal.values.length > 0 ? goal.values.map((value, i) => (
-                            <span key={i} className="px-2 py-1 bg-white text-blue-700 rounded-full text-xs border border-blue-200">
+                          {goal.values.map((value, i) => (
+                            <span key={i} className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs border border-blue-300">
                               {value}
                             </span>
-                          )) : (
-                            <span className="text-xs text-slate-500">No values connected</span>
-                          )}
+                          ))}
                         </div>
                       </div>
                     )}
@@ -621,33 +647,6 @@ const GoalSetting: React.FC = () => {
                     <Pencil className="w-4 h-4" />
                   </button>
                 </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Which values does this goal support?
-                </label>
-                <div className="flex flex-wrap gap-2 mb-2 max-h-40 overflow-y-auto p-2 border border-slate-200 rounded-lg">
-                  {getAvailableValues().map(value => (
-                    <button
-                      key={value}
-                      onClick={() => toggleValue(value)}
-                      className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                        selectedValues.includes(value)
-                          ? 'bg-blue-100 text-blue-700 border border-blue-300'
-                          : 'bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200'
-                      }`}
-                    >
-                      {value}
-                    </button>
-                  ))}
-                </div>
-                <div className="text-sm text-blue-600 mt-2">
-                  {selectedValues.length} values selected
-                </div>
-                <p className="text-xs text-slate-500">
-                  Select the values that this goal helps you express or honor
-                </p>
               </div>
               
               {timeframe !== 'annual' && (
@@ -733,6 +732,35 @@ const GoalSetting: React.FC = () => {
                   </div>
                 </div>
               )}
+              
+              {/* Values Display */}
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Connected Values
+                </label>
+                {goal.values && goal.values.length > 0 ? (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {goal.values.map(value => (
+                      <div 
+                        key={value}
+                        className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm border border-blue-300"
+                      >
+                        {value}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-slate-500 border border-dashed border-slate-300 rounded-lg">
+                    <p>No values connected to this goal yet</p>
+                    <button
+                      onClick={() => startEditingGoal(timeframe, goal.id)}
+                      className="mt-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                    >
+                      + Connect values to this goal
+                    </button>
+                  </div>
+                )}
+              </div>
               
               {/* Milestones and Deadline (only for 90-day) */}
               {timeframe === '90day' && (
