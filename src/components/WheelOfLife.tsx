@@ -20,8 +20,6 @@ const WheelOfLife: React.FC = () => {
       </div>
     </div>
   );
-    }
-  }
-}
+};
 
 export default WheelOfLife;
