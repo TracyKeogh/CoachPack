@@ -2,20 +2,20 @@ import React, { useState } from 'react';
 import { getTwelveWeeksFromNow } from '../types/goals';
 import { useValuesData } from '../hooks/useValuesData';
 import {
-  Plus, 
-  Target,
-  Edit3,
-  X,
+  CalendarIcon,
   Check,
+  Clock,
+  Edit3,
   Flag,
-  Calendar as CalendarIcon,
   Pencil,
+  Plus, 
+  Save,
+  Target,
+  Trophy,
+  X,
   ArrowRight,
   ArrowLeft,
-  Save,
-  Clock,
-  Trophy,
-  ChevronRight
+  ChevronRight,
 } from 'lucide-react';
 
 type GoalTimeframe = 'annual' | '90day' | 'weekly';
@@ -231,6 +231,20 @@ const GoalSetting: React.FC = () => {
   const startEditingGoal = (timeframe: GoalTimeframe, id: string) => {
     const goal = goals[timeframe].find(g => g.id === id);
     if (goal) {
+      // Set default deadline for annual goals if not already set
+      if (timeframe === 'annual' && !goal.deadline) {
+        const oneYearFromNow = new Date();
+        oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+        const formattedDate = oneYearFromNow.toISOString().split('T')[0];
+        
+        setGoals(prev => ({
+          ...prev,
+          [timeframe]: prev[timeframe].map(g => 
+            g.id === id ? { ...g, deadline: formattedDate } : g
+          )
+        }));
+      }
+      
       setNewGoalText(goal.text);
       setNewMantra(goal.mantra || '');
       setNewWhyImportant(goal.whyImportant || '');
@@ -892,6 +906,29 @@ const GoalSetting: React.FC = () => {
                   </div>
                 </>
               )}
+              
+              {/* Deadline for Annual Goals */}
+              {timeframe === 'annual' && (
+                <div className="mt-6">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Clock className="w-5 h-5 text-slate-500" />
+                    <label className="text-sm font-medium text-slate-500">Deadline</label>
+                  </div>
+                  <input
+                    type="date"
+                    value={goal.deadline || (() => {
+                      const oneYearFromNow = new Date();
+                      oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+                      return oneYearFromNow.toISOString().split('T')[0];
+                    })()}
+                    onChange={(e) => updateDeadline(timeframe, goal.id, e.target.value)}
+                    className="p-3 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">
+                    Target completion date for this annual goal
+                  </p>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -939,6 +976,12 @@ const GoalSetting: React.FC = () => {
                       <p className="text-slate-700 font-medium mb-2">{goal.text}</p>
                       {goal.mantra && (
                         <p className="text-slate-500 italic text-sm">"{goal.mantra}"</p>
+                      )}
+                      {goal.deadline && (
+                        <div className="mt-2 flex items-center space-x-2 text-xs text-slate-500">
+                          <Clock className="w-3 h-3" />
+                          <span>Due: {new Date(goal.deadline).toLocaleDateString()}</span>
+                        </div>
                       )}
                     </div>
                   </div>
