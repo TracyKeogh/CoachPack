@@ -447,42 +447,21 @@ const Calendar: React.FC = () => {
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-slate-900">
-            Week {currentWeekNumber} of 12
+            Week {currentWeekInQuarter} of 12
           </h3>
           
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => goToWeek(1)}
-              className={`px-2 py-1 text-xs rounded ${
-                currentWeekNumber === 1 ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
-            >
-              Week 1
-            </button>
-            <button
-              onClick={() => goToWeek(4)}
-              className={`px-2 py-1 text-xs rounded ${
-                currentWeekNumber === 4 ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
-            >
-              Week 4
-            </button>
-            <button
-              onClick={() => goToWeek(8)}
-              className={`px-2 py-1 text-xs rounded ${
-                currentWeekNumber === 8 ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
-            >
-              Week 8
-            </button>
-            <button
-              onClick={() => goToWeek(12)}
-              className={`px-2 py-1 text-xs rounded ${
-                currentWeekNumber === 12 ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
-            >
-              Week 12
-            </button>
+          <div className="flex items-center space-x-1 overflow-x-auto">
+            {Array.from({ length: 12 }, (_, i) => i + 1).map(weekNum => (
+              <button
+                key={`week-btn-${weekNum}`}
+                onClick={() => goToWeek(weekNum)}
+                className={`px-2 py-1 text-xs rounded ${
+                  currentWeekInQuarter === weekNum ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                Week {weekNum}
+              </button>
+            ))}
           </div>
         </div>
         
@@ -609,11 +588,11 @@ const Calendar: React.FC = () => {
               <button
                 onClick={() => {
                   setCurrentView('weekly');
-                  goToWeek(1);
+                  goToWeek(currentWeekInQuarter);
                 }}
                 className="px-3 py-1 text-sm bg-purple-100 text-purple-800 rounded hover:bg-purple-200 transition-colors"
               >
-                View Week 1
+                View Week {currentWeekInQuarter}
               </button>
             </div>
           </div>
@@ -776,21 +755,23 @@ const Calendar: React.FC = () => {
         <div className="flex items-center space-x-3">
           <button
             onClick={goToPreviousWeek}
-            className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+            className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors" 
+            title="Previous Week"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           
           <button
-            onClick={goToToday}
+            onClick={() => goToWeek(currentWeekInQuarter)}
             className="px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
           >
-            Today
+            Week {currentWeekInQuarter}
           </button>
           
           <button
             onClick={goToNextWeek}
             className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+            title="Next Week"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
