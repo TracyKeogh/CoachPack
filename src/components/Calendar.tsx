@@ -27,6 +27,7 @@ const Calendar: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showVisionOverlay, setShowVisionOverlay] = useState(false);
   const [showAddEventForm, setShowAddEventForm] = useState(false);
+  const [draggedAction, setDraggedAction] = useState<ActionItem | null>(null);
   const [newEvent, setNewEvent] = useState({
     title: '',
     date: '',
@@ -402,7 +403,6 @@ const Calendar: React.FC = () => {
   const render90DayView = () => {
     const weeks = Array.from({ length: 12 }, (_, i) => i + 1);
     const categories = ['business', 'body', 'balance'];
-    const [draggedAction, setDraggedAction] = useState<ActionItem | null>(null);
 
     return (
       <div className="bg-white rounded-lg shadow-sm border border-slate-200">
