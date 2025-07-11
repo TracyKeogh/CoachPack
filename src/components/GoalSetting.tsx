@@ -1,23 +1,8 @@
 import React, { useState } from 'react';
 import { 
   ArrowRight, 
-  ArrowLeft, 
-  Save, 
-  Target, 
-  Flag, 
-  Calendar as CalendarIcon,
-  Plus,
-  Edit3,
-  X,
-  Check,
-  Clock,
-  ChevronRight,
-  ChevronDown,
-  ChevronUp,
-  Heart,
-  Lightbulb,
-  Sparkles
-} from 'lucide-react';
+import { Plus, Target, Edit3, X, Check, Flag, Calendar, Pencil, ArrowRight, ArrowLeft, Save } from 'lucide-react';
+import MilestonesSection from './MilestonesSection';
 import { getTwelveWeeksFromNow } from '../types/goals';
 import { useValuesData } from '../hooks/useValuesData';
 import MilestonesSection from './MilestonesSection';
@@ -389,7 +374,7 @@ const GoalSetting: React.FC = () => {
     switch (timeframe) {
       case 'annual': return <Target className="w-6 h-6 text-slate-700" />;
       case '90day': return <Flag className="w-6 h-6 text-slate-700" />;
-      case 'weekly': return <CalendarIcon className="w-6 h-6 text-slate-700" />;
+      case 'weekly': return <Calendar className="w-6 h-6 text-blue-600" />;
     }
   };
 
@@ -595,7 +580,6 @@ const GoalSetting: React.FC = () => {
                   
                   <div className="space-y-3">
                     {goal.actions.map((action, index) => (
-                      <div key={index} className="flex items-start group">
                         {editingAction && 
                          editingAction.goalId === goal.id && 
                          editingAction.index === index ? (
@@ -663,111 +647,17 @@ const GoalSetting: React.FC = () => {
               {timeframe === '90day' && goal.milestones && (
                 <div className="mt-6 border-t border-slate-200 pt-4">
                   <MilestonesSection 
-                    milestones={goal.milestones} 
-                    goalId={goal.id}
-                    timeframe={timeframe}
+                    milestones={goal.milestones || []}
                     onAddMilestone={() => addMilestone(timeframe, goal.id)}
-                    onUpdateMilestone={(milestoneId, updates) => {
-                      setGoals(prev => ({
-                        ...prev,
-                        [timeframe]: prev[timeframe].map(g => {
-                          if (g.id === goal.id && g.milestones) {
-                            return {
-                              ...g,
-                              milestones: g.milestones.map(m => 
-                                m.id === milestoneId ? { ...m, ...updates } : m
-                              )
-                            };
-                          }
-                          return g;
-                        })
-                      }));
+                    onEditMilestone={(milestoneId, title, dueDate) => {
+                      setNewMilestoneTitle(title);
+                      setNewMilestoneDueDate(dueDate);
+                      setEditingMilestone({timeframe, goalId: goal.id, milestoneId});
+                      saveMilestone();
                     }}
-                    onRemoveMilestone={(milestoneId) => {
-                      setGoals(prev => ({
-                        ...prev,
-                        [timeframe]: prev[timeframe].map(g => {
-                          if (g.id === goal.id && g.milestones) {
-                            return {
-                              ...g,
-                              milestones: g.milestones.filter(m => m.id !== milestoneId)
-                            };
-                          }
-                          return g;
-                        })
-                      }));
-                    }}
+                    onToggleMilestoneCompletion={(milestoneId) => toggleMilestoneCompletion(timeframe, goal.id, milestoneId)}
+                    onRemoveMilestone={(milestoneId) => removeMilestone(timeframe, goal.id, milestoneId)}
                   />
-                   
-                  <div className="mt-4">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <Clock className="w-4 h-4 text-slate-500" />
-                      <label className="text-sm font-medium text-slate-700">Deadline</label>
-                    </div>
-                    <input
-                      type="date"
-                      value={goal.deadline || getTwelveWeeksFromNow()}
-                      onChange={(e) => updateDeadline(timeframe, goal.id, e.target.value)}
-                      className="p-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                    <p className="text-xs text-slate-500 mt-1">
-                      Target completion date for this 90-day goal
-                    </p>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  const renderStepContent = () => {
-    if (showSummary) {
-      return (
-        <div className="space-y-8">
-          {/* Annual Goals Section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-700">
-                  <Target className="w-6 h-6" />
-                </div>
-                <h2 className="text-2xl font-bold text-slate-900">Annual Vision</h2>
-              </div>
-              <button
-                onClick={() => {
-                  setCurrentTimeframe('annual');
-                  setCurrentStep(1);
-                  setShowSummary(false);
-                }}
-                className="px-3 py-1 text-sm text-blue-600 hover:text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-50"
-              >
-                Edit
-              </button>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {CATEGORIES.map(category => {
-                const goal = goals.annual.find(g => g.category === category.id);
-                if (!goal) return null;
-                
-                return (
-                  <div key={category.id} className={`rounded-xl shadow-sm border overflow-hidden ${category.borderColor}`}>
-                    <div className={`p-4 ${category.bgColor}`}>
-                      <div className="flex items-center space-x-3">
-                        {category.icon}
-                        <h3 className={`font-semibold ${category.textColor}`}>{category.name}</h3>
-                      </div>
-                    </div>
-                    <div className="p-4 bg-white">
-                      <p className="text-slate-700 font-medium mb-2">{goal.text}</p>
-                      {goal.mantra && (
-                        <p className="text-slate-500 italic text-sm">"{goal.mantra}"</p>
-                      )}
-                    </div>
-                  </div>
                 );
               })}
             </div>

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 import { 
   ChevronLeft, 
@@ -19,12 +19,15 @@ import {
   Zap,
   Target,
   CheckCircle2,
-  Circle
+  Circle,
+  BarChart3,
+  ArrowRight,
+  Info
 } from 'lucide-react';
 import { useGoalSettingData } from '../hooks/useGoalSettingData';
 import { ActionItem, Milestone } from '../types/goals';
 
-type ViewMode = 'daily' | 'weekly' | 'monthly' | 'yearly';
+type ViewMode = 'daily' | 'weekly' | '90day' | 'yearly';
 
 interface CalendarEvent {
   id: string;
@@ -248,10 +251,11 @@ const DroppableCalendarCell: React.FC<DroppableCalendarCellProps> = ({
 const Calendar: React.FC = () => {
   const { data: goalData } = useGoalSettingData();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState<ViewMode>('monthly');
+  const [view, setView] = useState<ViewMode>('weekly');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showNewEventModal, setShowNewEventModal] = useState(false);
   const [newEventDate, setNewEventDate] = useState<string>('');
+  const [showInfoModal, setShowInfoModal] = useState(false);
   
   const [events, setEvents] = useState<CalendarEvent[]>([
     {
@@ -272,6 +276,46 @@ const Calendar: React.FC = () => {
       time: '10:00',
       category: 'business',
       duration: 90
+    },
+    {
+      id: '3',
+      title: 'Family Dinner',
+      description: 'Weekly family dinner night',
+      date: '2025-01-12',
+      time: '18:30',
+      category: 'balance',
+      duration: 120,
+      frequency: 'weekly'
+    },
+    {
+      id: '4',
+      title: 'Meal Prep',
+      description: 'Prepare meals for the week',
+      date: '2025-01-12',
+      time: '14:00',
+      category: 'body',
+      duration: 90,
+      frequency: 'weekly'
+    },
+    {
+      id: '5',
+      title: 'Team Meeting',
+      description: 'Weekly team sync',
+      date: '2025-01-13',
+      time: '09:00',
+      category: 'business',
+      duration: 60,
+      frequency: 'weekly'
+    },
+    {
+      id: '6',
+      title: 'Meditation',
+      description: 'Morning mindfulness practice',
+      date: '2025-01-14',
+      time: '06:30',
+      category: 'balance',
+      duration: 20,
+      frequency: 'daily'
     }
   ]);
 
@@ -406,8 +450,8 @@ const Calendar: React.FC = () => {
         case 'weekly':
           newDate.setDate(prev.getDate() + (direction === 'next' ? 7 : -7));
           break;
-        case 'monthly':
-          newDate.setMonth(prev.getMonth() + (direction === 'next' ? 1 : -1));
+        case '90day':
+          newDate.setMonth(prev.getMonth() + (direction === 'next' ? 3 : -3));
           break;
         case 'yearly':
           newDate.setFullYear(prev.getFullYear() + (direction === 'next' ? 1 : -1));
@@ -426,9 +470,12 @@ const Calendar: React.FC = () => {
         weekStart.setDate(currentDate.getDate() - currentDate.getDay());
         const weekEnd = new Date(weekStart);
         weekEnd.setDate(weekStart.getDate() + 6);
-        return `${weekStart.toLocaleDateString()} - ${weekEnd.toLocaleDateString()}`;
-      case 'monthly':
-        return currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        return `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+      case '90day':
+        const quarterStart = new Date(currentDate);
+        const quarterEnd = new Date(currentDate);
+        quarterEnd.setDate(quarterEnd.getDate() + 90);
+        return `${quarterStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${quarterEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
       case 'yearly':
         return currentDate.getFullYear().toString();
       default:
@@ -439,7 +486,7 @@ const Calendar: React.FC = () => {
   // Generate hours for daily view
   const generateHours = () => {
     const hours = [];
-    for (let i = 0; i < 24; i++) {
+    for (let i = 6; i < 22; i++) { // 6am to 10pm
       const hour = i.toString().padStart(2, '0');
       hours.push(`${hour}:00`);
     }
@@ -497,6 +544,35 @@ const Calendar: React.FC = () => {
     return months;
   };
 
+  // Get weeks for 90-day view
+  const getWeeksIn90Days = (date: Date) => {
+    const weeks = [];
+    const startDate = new Date(date);
+    const endDate = new Date(date);
+    endDate.setDate(endDate.getDate() + 90);
+    
+    // Start with the beginning of the week
+    const startOfWeek = new Date(startDate);
+    startOfWeek.setDate(startDate.getDate() - startDate.getDay());
+    
+    // Generate weeks until we reach the end date
+    let currentWeekStart = new Date(startOfWeek);
+    while (currentWeekStart < endDate) {
+      const weekEnd = new Date(currentWeekStart);
+      weekEnd.setDate(currentWeekStart.getDate() + 6);
+      
+      weeks.push({
+        start: new Date(currentWeekStart),
+        end: weekEnd
+      });
+      
+      // Move to next week
+      currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+    }
+    
+    return weeks;
+  };
+
   const renderDailyView = () => {
     const hours = generateHours();
     const dayEvents = getEventsForDate(currentDate);
@@ -507,7 +583,7 @@ const Calendar: React.FC = () => {
           <h3 className="font-semibold text-slate-900">{formatDate(currentDate)}</h3>
         </div>
         
-        <div className="max-h-96 overflow-y-auto">
+        <div className="max-h-[calc(100vh-300px)] overflow-y-auto">
           {hours.map((hour) => {
             const hourEvents = dayEvents.filter(event => event.time.startsWith(hour.split(':')[0]));
             
@@ -530,7 +606,6 @@ const Calendar: React.FC = () => {
                         onMove={(eventId, newDate) => handleDrop({ id: eventId, type: 'calendar-event' }, newDate)}
                         onTimeChange={handleEventTimeChange}
                         onRemove={handleEventRemove}
-                        compact
                       />
                     ))}
                   </div>
@@ -600,68 +675,149 @@ const Calendar: React.FC = () => {
     );
   };
 
-  const renderMonthlyView = () => {
-    const days = getDaysInMonth(currentDate);
-
+  const render90DayView = () => {
+    const weeks = getWeeksIn90Days(currentDate);
+    
     return (
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        {/* Days of Week Header */}
-        <div className="grid grid-cols-7 border-b border-slate-200">
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-            <div key={day} className="p-4 text-center font-medium text-slate-600 bg-slate-50">
-              {day}
-            </div>
-          ))}
+        <div className="p-4 border-b border-slate-200 bg-slate-50">
+          <h3 className="font-semibold text-slate-900">90-Day Plan</h3>
+          <p className="text-sm text-slate-600">Milestones and key actions for the next 90 days</p>
         </div>
-
-        {/* Calendar Days */}
-        <div className="grid grid-cols-7">
-          {days.map((day, index) => {
-            const dayEvents = day ? getEventsForDate(day) : [];
-            const isToday = day && day.toDateString() === new Date().toDateString();
-            const isSelected = selectedDate && day && day.toDateString() === selectedDate.toDateString();
-
-            return (
-              <DroppableCalendarCell
-                key={index}
-                date={day ? day.toISOString().split('T')[0] : ''}
-                onDrop={handleDrop}
-                className={`min-h-24 p-2 border-r border-b border-slate-100 ${
-                  day ? 'cursor-pointer hover:bg-slate-50' : 'bg-slate-25'
-                } ${isSelected ? 'bg-purple-50' : ''} ${isToday ? 'bg-blue-50' : ''}`}
-              >
-                {day && (
-                  <>
-                    <div 
-                      className={`text-sm font-medium mb-1 ${
-                        isToday ? 'bg-purple-600 text-white w-6 h-6 rounded-full flex items-center justify-center' : 'text-slate-900'
-                      }`}
-                      onClick={() => setSelectedDate(day)}
-                    >
-                      {day.getDate()}
-                    </div>
-                    <div className="space-y-1">
-                      {dayEvents.slice(0, 2).map((event) => (
-                        <DraggableEvent
-                          key={event.id}
-                          event={event}
-                          onMove={(eventId, newDate) => handleDrop({ id: eventId, type: 'calendar-event' }, newDate)}
-                          onTimeChange={handleEventTimeChange}
-                          onRemove={handleEventRemove}
-                          compact
-                        />
-                      ))}
-                      {dayEvents.length > 2 && (
-                        <div className="text-xs text-slate-500">
-                          +{dayEvents.length - 2} more
+        
+        <div className="max-h-[calc(100vh-300px)] overflow-y-auto p-4">
+          {/* Milestone Timeline */}
+          <div className="mb-8">
+            <h4 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
+              <Trophy className="w-5 h-5 text-amber-500 mr-2" />
+              Milestones
+            </h4>
+            
+            <div className="relative">
+              {/* Timeline line */}
+              <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-amber-200"></div>
+              
+              <div className="space-y-6">
+                {getMilestones()
+                  .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                  .map((milestone) => {
+                    const milestoneDate = new Date(milestone.date);
+                    const isPast = milestoneDate < new Date();
+                    const isNear = Math.abs(milestoneDate.getTime() - new Date().getTime()) < 7 * 24 * 60 * 60 * 1000; // Within a week
+                    
+                    return (
+                      <div key={milestone.id} className="flex items-start ml-4 pl-6 relative">
+                        {/* Timeline dot */}
+                        <div className={`absolute left-0 w-4 h-4 rounded-full border-2 ${
+                          isPast ? 'bg-amber-500 border-amber-600' : 
+                          isNear ? 'bg-amber-300 border-amber-400 animate-pulse' : 
+                          'bg-amber-100 border-amber-300'
+                        }`}></div>
+                        
+                        <div className={`bg-white rounded-lg p-3 shadow-sm border ${
+                          isPast ? 'border-amber-300' : 
+                          isNear ? 'border-amber-400' : 
+                          'border-slate-200'
+                        } w-full`}>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <Trophy className={`w-4 h-4 ${
+                                isPast ? 'text-amber-500' : 
+                                isNear ? 'text-amber-400' : 
+                                'text-amber-300'
+                              }`} />
+                              <span className="font-medium text-slate-900">{milestone.title}</span>
+                            </div>
+                            <span className="text-sm text-slate-500">
+                              {new Date(milestone.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            </span>
+                          </div>
+                          {milestone.description && (
+                            <p className="text-sm text-slate-600 mt-1">{milestone.description}</p>
+                          )}
                         </div>
-                      )}
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          </div>
+          
+          {/* Weekly Overview */}
+          <div>
+            <h4 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
+              <CalendarIcon className="w-5 h-5 text-blue-500 mr-2" />
+              Weekly Plan
+            </h4>
+            
+            <div className="space-y-4">
+              {weeks.slice(0, 13).map((week, index) => {
+                const weekEvents = allEvents.filter(event => {
+                  const eventDate = new Date(event.date);
+                  return eventDate >= week.start && eventDate <= week.end;
+                });
+                
+                const weekMilestones = weekEvents.filter(event => event.isMilestone);
+                const weekActions = weekEvents.filter(event => !event.isMilestone);
+                
+                return (
+                  <div key={index} className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                    <div className="flex items-center justify-between mb-3">
+                      <h5 className="font-medium text-slate-900">
+                        Week {index + 1}: {week.start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {week.end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </h5>
+                      <span className="text-xs text-slate-500 bg-white px-2 py-1 rounded-full border border-slate-200">
+                        {weekEvents.length} events
+                      </span>
                     </div>
-                  </>
-                )}
-              </DroppableCalendarCell>
-            );
-          })}
+                    
+                    {weekMilestones.length > 0 && (
+                      <div className="mb-3">
+                        <div className="text-xs font-medium text-amber-700 mb-2">Milestones:</div>
+                        <div className="flex flex-wrap gap-2">
+                          {weekMilestones.map(milestone => (
+                            <div key={milestone.id} className="bg-amber-50 text-amber-800 text-xs px-2 py-1 rounded-full border border-amber-200 flex items-center space-x-1">
+                              <Trophy className="w-3 h-3 text-amber-500" />
+                              <span>{milestone.title}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {weekActions.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        {categories.map(category => {
+                          const categoryEvents = weekActions.filter(event => event.category === category.id);
+                          if (categoryEvents.length === 0) return null;
+                          
+                          return (
+                            <div key={category.id} className={`${category.bgColor} rounded-lg p-2 border border-${category.id === 'business' ? 'purple' : category.id === 'body' ? 'green' : category.id === 'balance' ? 'blue' : 'orange'}-200`}>
+                              <div className={`text-xs font-medium ${category.textColor} mb-1`}>{category.name}:</div>
+                              <div className="space-y-1">
+                                {categoryEvents.slice(0, 3).map(event => (
+                                  <div key={event.id} className="text-xs text-slate-700 bg-white/80 px-2 py-1 rounded truncate">
+                                    {event.title}
+                                  </div>
+                                ))}
+                                {categoryEvents.length > 3 && (
+                                  <div className="text-xs text-slate-500 text-center">+{categoryEvents.length - 3} more</div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-center py-2 text-slate-500 text-sm">
+                        No events scheduled
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -672,6 +828,11 @@ const Calendar: React.FC = () => {
 
     return (
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="p-4 border-b border-slate-200 bg-slate-50">
+          <h3 className="font-semibold text-slate-900">Yearly Vision {currentDate.getFullYear()}</h3>
+          <p className="text-sm text-slate-600">Big picture view of your year</p>
+        </div>
+        
         <div className="grid grid-cols-3 md:grid-cols-4 gap-4 p-6">
           {months.map((month) => {
             const monthEvents = allEvents.filter(event => {
@@ -683,7 +844,7 @@ const Calendar: React.FC = () => {
             const milestones = monthEvents.filter(event => event.isMilestone);
 
             return (
-              <div key={month.getMonth()} className="border border-slate-200 rounded-lg p-3">
+              <div key={month.getMonth()} className="border border-slate-200 rounded-lg p-3 hover:shadow-md transition-shadow">
                 <h4 className="font-semibold text-slate-900 mb-2">
                   {month.toLocaleDateString('en-US', { month: 'long' })}
                 </h4>
@@ -696,7 +857,7 @@ const Calendar: React.FC = () => {
                   {milestones.length > 0 && (
                     <div className="space-y-1">
                       <div className="text-xs font-medium text-yellow-600 flex items-center space-x-1">
-                        <div className="w-2 h-2 bg-purple-200 rounded-full"></div>
+                        <Trophy className="w-3 h-3" />
                         <span>{milestones.length} milestone{milestones.length !== 1 ? 's' : ''}</span>
                       </div>
                       {milestones.slice(0, 2).map((milestone) => (
@@ -704,8 +865,24 @@ const Calendar: React.FC = () => {
                           🎯 {milestone.title}
                         </div>
                       ))}
+                      {milestones.length > 2 && (
+                        <div className="text-xs text-slate-500">+{milestones.length - 2} more</div>
+                      )}
                     </div>
                   )}
+                  
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {categories.map(category => {
+                      const count = monthEvents.filter(e => e.category === category.id && !e.isMilestone).length;
+                      if (count === 0) return null;
+                      
+                      return (
+                        <div key={category.id} className={`text-xs ${category.textColor} ${category.bgColor} px-1.5 py-0.5 rounded-full`}>
+                          {count} {category.name}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             );
@@ -721,12 +898,12 @@ const Calendar: React.FC = () => {
         return renderDailyView();
       case 'weekly':
         return renderWeeklyView();
-      case 'monthly':
-        return renderMonthlyView();
+      case '90day':
+        return render90DayView();
       case 'yearly':
         return renderYearlyView();
       default:
-        return renderMonthlyView();
+        return renderWeeklyView();
     }
   };
 
@@ -742,7 +919,7 @@ const Calendar: React.FC = () => {
         </div>
         <div className="flex items-center space-x-3">
           <div className="flex items-center bg-slate-100 rounded-lg p-1">
-            {(['daily', 'weekly', 'monthly', 'yearly'] as ViewMode[]).map((viewType) => (
+            {(['daily', 'weekly', '90day', 'yearly'] as ViewMode[]).map((viewType) => (
               <button
                 key={viewType}
                 onClick={() => setView(viewType)}
@@ -752,10 +929,18 @@ const Calendar: React.FC = () => {
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                {viewType.charAt(0).toUpperCase() + viewType.slice(1)}
+                {viewType === 'daily' ? 'Day' : 
+                 viewType === 'weekly' ? 'Week' : 
+                 viewType === '90day' ? '90 Days' : 'Year'}
               </button>
             ))}
           </div>
+          <button
+            onClick={() => setShowInfoModal(true)}
+            className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors"
+          >
+            <Info className="w-5 h-5" />
+          </button>
           <button 
             onClick={() => {
               setNewEventDate(new Date().toISOString().split('T')[0]);
@@ -797,7 +982,7 @@ const Calendar: React.FC = () => {
               </div>
             ))}
             <div className="flex items-center space-x-1">
-              <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+              <Trophy className="w-3 h-3 text-yellow-500" />
               <span className="text-sm text-slate-600">Milestones</span>
             </div>
           </div>
@@ -854,10 +1039,46 @@ const Calendar: React.FC = () => {
               
               {getMilestones().filter(milestone => new Date(milestone.date) >= new Date()).length === 0 && (
                 <div className="text-center py-4 text-yellow-700">
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full mx-auto mb-2"></div>
+                  <Flag className="w-6 h-6 mx-auto mb-2 opacity-50" />
                   <p className="text-sm">No upcoming milestones</p>
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* Goal Progress Summary */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+            <div className="flex items-center space-x-2 mb-4">
+              <BarChart3 className="w-5 h-5 text-blue-600" />
+              <h3 className="text-lg font-semibold text-slate-900">Progress Summary</h3>
+            </div>
+            
+            <div className="space-y-4">
+              {categories.map(category => {
+                const categoryGoal = goalData.categoryGoals[category.id];
+                if (!categoryGoal) return null;
+                
+                const totalMilestones = categoryGoal.milestones.length;
+                const completedMilestones = categoryGoal.milestones.filter(m => m.completed).length;
+                const progress = totalMilestones > 0 ? (completedMilestones / totalMilestones) * 100 : 0;
+                
+                return (
+                  <div key={category.id} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className={`text-sm font-medium ${category.textColor}`}>{category.name}</span>
+                      <span className="text-xs text-slate-500">
+                        {completedMilestones}/{totalMilestones} milestones
+                      </span>
+                    </div>
+                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-2 ${category.color}`}
+                        style={{ width: `${progress}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -867,6 +1088,116 @@ const Calendar: React.FC = () => {
           {renderCurrentView()}
         </div>
       </div>
+
+      {/* Info Modal */}
+      {showInfoModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-slate-900">Calendar Guide</h3>
+              <button 
+                onClick={() => setShowInfoModal(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                <h4 className="font-semibold text-slate-900 mb-2 flex items-center">
+                  <CalendarIcon className="w-4 h-4 text-purple-600 mr-2" />
+                  Calendar Views
+                </h4>
+                <ul className="space-y-2 text-sm text-slate-700">
+                  <li className="flex items-start space-x-2">
+                    <div className="w-5 h-5 bg-purple-100 rounded-full flex items-center justify-center text-purple-700 mt-0.5">D</div>
+                    <div>
+                      <span className="font-medium">Daily View</span> - Time-block your entire day with no white space. Hour-by-hour planning from 6am to 10pm.
+                    </div>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 mt-0.5">W</div>
+                    <div>
+                      <span className="font-medium">Weekly View</span> - See your week at a glance. Drag and drop tasks to reschedule.
+                    </div>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center text-green-700 mt-0.5">Q</div>
+                    <div>
+                      <span className="font-medium">90-Day View</span> - Track progress toward quarterly goals and milestones.
+                    </div>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <div className="w-5 h-5 bg-amber-100 rounded-full flex items-center justify-center text-amber-700 mt-0.5">Y</div>
+                    <div>
+                      <span className="font-medium">Yearly View</span> - Big picture view of your entire year with key milestones.
+                    </div>
+                  </li>
+                </ul>
+              </div>
+              
+              <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                <h4 className="font-semibold text-slate-900 mb-2 flex items-center">
+                  <Target className="w-4 h-4 text-green-600 mr-2" />
+                  Goal Integration
+                </h4>
+                <p className="text-sm text-slate-700 mb-2">
+                  Your calendar automatically integrates with your goals:
+                </p>
+                <ul className="space-y-1 text-sm text-slate-700">
+                  <li className="flex items-center space-x-2">
+                    <ArrowRight className="w-3 h-3 text-slate-400" />
+                    <span>Annual goals cascade to 90-day goals</span>
+                  </li>
+                  <li className="flex items-center space-x-2">
+                    <ArrowRight className="w-3 h-3 text-slate-400" />
+                    <span>90-day goals break down into weekly actions</span>
+                  </li>
+                  <li className="flex items-center space-x-2">
+                    <ArrowRight className="w-3 h-3 text-slate-400" />
+                    <span>Weekly actions appear in your calendar</span>
+                  </li>
+                </ul>
+              </div>
+              
+              <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                <h4 className="font-semibold text-slate-900 mb-2 flex items-center">
+                  <Move className="w-4 h-4 text-blue-600 mr-2" />
+                  Tips & Tricks
+                </h4>
+                <ul className="space-y-1 text-sm text-slate-700">
+                  <li className="flex items-center space-x-2">
+                    <CheckCircle2 className="w-3 h-3 text-green-500" />
+                    <span>Drag and drop actions from the sidebar to schedule them</span>
+                  </li>
+                  <li className="flex items-center space-x-2">
+                    <CheckCircle2 className="w-3 h-3 text-green-500" />
+                    <span>Drag events between days to reschedule</span>
+                  </li>
+                  <li className="flex items-center space-x-2">
+                    <CheckCircle2 className="w-3 h-3 text-green-500" />
+                    <span>Click on time to edit event timing</span>
+                  </li>
+                  <li className="flex items-center space-x-2">
+                    <CheckCircle2 className="w-3 h-3 text-green-500" />
+                    <span>Milestones automatically appear from your goals</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+            
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setShowInfoModal(false)}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
