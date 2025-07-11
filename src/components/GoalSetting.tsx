@@ -38,7 +38,7 @@ const GoalSetting: React.FC = () => {
   const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0);
   const [categories] = useState(['business', 'body', 'balance']);
   const [annualSnapshot, setAnnualSnapshot] = useState({
-    vision: 'I feel energized and healthy. My career is thriving with new opportunities and growth. My relationships are deep and fulfilling, and I'm living with purpose and joy every day.',
+    vision: 'I feel energized and healthy. My career is thriving with new opportunities and growth. My relationships are deep and fulfilling, and I\'m living with purpose and joy every day.',
     priorities: '1. Build a sustainable business\n2. Improve physical health and energy\n3. Create more balance between work and personal life',
     growth: 'Develop deeper self-awareness and emotional intelligence. Learn new skills that expand my capabilities both professionally and personally.'
   });
