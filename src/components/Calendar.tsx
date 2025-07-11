@@ -30,6 +30,7 @@ import { useCalendarData } from '../hooks/useCalendarData';
 import { useWheelData } from '../hooks/useWheelData';
 import { useValuesData } from '../hooks/useValuesData';
 import { useVisionBoardData } from '../hooks/useVisionBoardData';
+import { useGoalSettingData } from '../hooks/useGoalSettingData';
 
 type CalendarView = 'daily' | 'weekly' | '90-day' | 'yearly';
 
@@ -58,6 +59,7 @@ const Calendar: React.FC = () => {
   const { data: wheelData } = useWheelData();
   const { data: valuesData } = useValuesData();
   const { visionItems } = useVisionBoardData();
+  const { data: goalsData } = useGoalSettingData();
 
   // Refresh action pool when component mounts
   useEffect(() => {
