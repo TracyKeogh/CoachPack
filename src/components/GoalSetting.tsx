@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   ArrowRight,
 } from 'lucide-react';
-import { Plus, Target, Edit3, X, Check, Flag, Calendar, Pencil, ArrowLeft, Save, Heart, Lightbulb, Sparkles, CalendarIcon } from 'lucide-react';
+import { Plus, Target, Edit3, X, Check, Flag, Calendar, Pencil, ArrowRight, ArrowLeft, Save, Heart, Lightbulb, Sparkles, CalendarIcon } from 'lucide-react';
 import MilestonesSection from './MilestonesSection';
 import { getTwelveWeeksFromNow } from '../types/goals';
 import { useValuesData } from '../hooks/useValuesData';
