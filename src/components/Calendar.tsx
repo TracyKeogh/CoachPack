@@ -402,6 +402,7 @@ const Calendar: React.FC = () => {
   const render90DayView = () => {
     const weeks = Array.from({ length: 12 }, (_, i) => i + 1);
     const categories = ['business', 'body', 'balance'];
+    const [draggedAction, setDraggedAction] = useState<ActionItem | null>(null);
 
     return (
       <div className="bg-white rounded-lg shadow-sm border border-slate-200">
@@ -425,7 +426,7 @@ const Calendar: React.FC = () => {
           <div className="grid grid-cols-4 gap-6">
             {/* Categories sidebar */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-slate-900">Focus Areas</h3>
+              <h3 className="text-lg font-semibold text-slate-900 mb-4">Action Pool</h3>
               <div className="space-y-2">
                 {categories.map(category => (
                   <div key={category} className="p-4 border border-slate-200 rounded-lg">
@@ -440,9 +441,18 @@ const Calendar: React.FC = () => {
                           <div className="mt-2 text-xs text-slate-500">
                             <div className="font-medium mb-1">Actions:</div>
                             <ul className="list-disc pl-4 space-y-1">
-                              <li>Write weekly newsletter</li>
-                              <li>Reach out to 3 potential clients</li>
-                              <li>Review metrics and adjust strategy</li>
+                              {actionPool
+                                .filter(action => action.category === 'business')
+                                .map((action, idx) => (
+                                  <li 
+                                    key={idx}
+                                    draggable
+                                    onDragStart={() => setDraggedAction(action)}
+                                    className="cursor-move hover:text-blue-600"
+                                  >
+                                    {action.title}
+                                  </li>
+                                ))}
                             </ul>
                           </div>
                         </>
@@ -456,9 +466,18 @@ const Calendar: React.FC = () => {
                           <div className="mt-2 text-xs text-slate-500">
                             <div className="font-medium mb-1">Actions:</div>
                             <ul className="list-disc pl-4 space-y-1">
-                              <li>Exercise for 30 minutes</li>
-                              <li>Meal prep on Sundays</li>
-                              <li>No screens 1 hour before bed</li>
+                              {actionPool
+                                .filter(action => action.category === 'body')
+                                .map((action, idx) => (
+                                  <li 
+                                    key={idx}
+                                    draggable
+                                    onDragStart={() => setDraggedAction(action)}
+                                    className="cursor-move hover:text-green-600"
+                                  >
+                                    {action.title}
+                                  </li>
+                                ))}
                             </ul>
                           </div>
                         </>
@@ -472,9 +491,18 @@ const Calendar: React.FC = () => {
                           <div className="mt-2 text-xs text-slate-500">
                             <div className="font-medium mb-1">Actions:</div>
                             <ul className="list-disc pl-4 space-y-1">
-                              <li>Schedule quality time with loved ones</li>
-                              <li>Dedicate 30 minutes to a hobby</li>
-                              <li>Practice mindfulness meditation</li>
+                              {actionPool
+                                .filter(action => action.category === 'balance')
+                                .map((action, idx) => (
+                                  <li 
+                                    key={idx}
+                                    draggable
+                                    onDragStart={() => setDraggedAction(action)}
+                                    className="cursor-move hover:text-purple-600"
+                                  >
+                                    {action.title}
+                                  </li>
+                                ))}
                             </ul>
                           </div>
                         </>
@@ -488,17 +516,59 @@ const Calendar: React.FC = () => {
             {/* 12-week timeline */}
             <div className="col-span-3">
               <div className="grid grid-cols-4 gap-4">
-                {weeks.map(week => (
-                  <div key={week} className="border border-slate-200 rounded-lg p-4">
+                {weeks.map((week) => (
+                  <div 
+                    key={week} 
+                    className="border border-slate-200 rounded-lg p-4"
+                  >
                     <div className="text-center mb-3">
                       <div className="text-sm font-medium text-slate-600">Week</div>
                       <div className="text-xl font-bold text-slate-900">{week}</div>
                     </div>
                     
                     <div className="space-y-2">
-                      {categories.map(category => (
-                        <div key={category} className="h-8 bg-slate-50 rounded border-2 border-dashed border-slate-200 flex items-center justify-center">
-                          <span className="text-xs text-slate-400">Drop milestone</span>
+                      {categories.map((category) => (
+                        <div 
+                          key={category} 
+                          className={`h-12 rounded border-2 border-dashed ${
+                            category === 'business' ? 'border-blue-200 bg-blue-50' : 
+                            category === 'body' ? 'border-green-200 bg-green-50' : 
+                            'border-purple-200 bg-purple-50'
+                          } flex items-center justify-center`}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.currentTarget.classList.add('bg-opacity-70');
+                          }}
+                          onDragLeave={(e) => {
+                            e.currentTarget.classList.remove('bg-opacity-70');
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            e.currentTarget.classList.remove('bg-opacity-70');
+                            if (draggedAction) {
+                              // Here we would normally update state with the dropped action
+                              // For now, we'll just show a visual indicator
+                              const target = e.currentTarget;
+                              const originalContent = target.innerHTML;
+                              target.innerHTML = `
+                                <div class="p-1 text-xs font-medium ${
+                                  draggedAction.category === 'business' ? 'text-blue-700' : 
+                                  draggedAction.category === 'body' ? 'text-green-700' : 
+                                  'text-purple-700'
+                                }">
+                                  ${draggedAction.title}
+                                </div>
+                              `;
+                              
+                              // Reset after animation
+                              setTimeout(() => {
+                                const allDropZones = document.querySelectorAll('.drop-highlight');
+                                allDropZones.forEach(zone => zone.classList.remove('drop-highlight'));
+                              }, 100);
+                            }
+                          }}
+                        >
+                          <span className="text-xs text-slate-400">Drop action here</span>
                         </div>
                       ))}
                     </div>
@@ -693,6 +763,12 @@ const Calendar: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <style jsx>{`
+        .drop-highlight {
+          box-shadow: inset 0 0 0 2px rgba(79, 70, 229, 0.6);
+          background-color: rgba(79, 70, 229, 0.1);
+        }
+      `}</style>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
