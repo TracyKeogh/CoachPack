@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Clock, Eye, Target, Heart, Briefcase, User } from 'lucide-react';
 import { useCalendarData } from '../hooks/useCalendarData';
-import { useGoalSettingData } from '../hooks/useGoalSettingData';
+import { STORAGE_KEY as GOALS_STORAGE_KEY } from '../hooks/useGoalSettingData';
 
 interface CalendarEvent {
   id: string;
@@ -22,6 +22,7 @@ interface ActionItem {
 }
 
 const Calendar: React.FC = () => {
+  const [goalsData, setGoalsData] = useState<any>(null);
   const [currentView, setCurrentView] = useState<'daily' | 'weekly' | '90-day' | 'yearly'>('yearly');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showVisionOverlay, setShowVisionOverlay] = useState(false);
@@ -34,8 +35,29 @@ const Calendar: React.FC = () => {
     category: 'business' as const
   });
 
-  const { calendarData, addEvent, updateEvent, removeEvent } = useCalendarData();
-  const { goalsData } = useGoalSettingData();
+  const { data: calendarData, addEvent, updateEvent, removeEvent, refreshActionPool } = useCalendarData();
+  
+  // Load goals data directly from localStorage
+  useEffect(() => {
+    try {
+      const storedGoalsData = localStorage.getItem(GOALS_STORAGE_KEY);
+      if (storedGoalsData) {
+        const parsedData = JSON.parse(storedGoalsData);
+        console.log("Loaded goals data:", parsedData);
+        setGoalsData(parsedData);
+      }
+    } catch (error) {
+      console.error("Error loading goals data:", error);
+    }
+  }, []);
+  
+  // Refresh action pool when goals data changes
+  useEffect(() => {
+    if (goalsData) {
+      console.log("Refreshing action pool with goals data");
+      refreshActionPool();
+    }
+  }, [goalsData, refreshActionPool]);
 
   // Default action items that match the screenshot
   const defaultActions: ActionItem[] = [
@@ -48,7 +70,10 @@ const Calendar: React.FC = () => {
     { id: '7', title: 'Meditation', duration: 20, frequency: 'daily', category: 'balance' }
   ];
 
-  const actionPool = calendarData?.actionPool?.length > 0 ? calendarData.actionPool : defaultActions;
+  // Use calendar data action pool if available, otherwise use defaults
+  const actionPool = calendarData && calendarData.actionPool && calendarData.actionPool.length > 0 
+    ? calendarData.actionPool 
+    : defaultActions;
 
   const getCategoryColor = (category: string) => {
     switch (category) {
@@ -402,13 +427,15 @@ const Calendar: React.FC = () => {
               <h3 className="text-lg font-semibold text-slate-900">Focus Areas</h3>
               {categories.map(category => (
                 <div key={category} className="p-4 border border-slate-200 rounded-lg">
-                  <h4 className="font-medium text-slate-900 mb-2">{category}</h4>
+                  <h4 className="font-medium text-slate-900 mb-2 capitalize">{category}</h4>
                   <div className="space-y-2">
-                    {goalsData?.categoryGoals?.[category.toLowerCase()]?.map((goal: any, index: number) => (
-                      <div key={index} className="text-sm text-slate-600">
-                        {typeof goal === 'string' ? goal : goal.text || goal.title || 'Goal'}
+                    {goalsData && goalsData.categoryGoals && goalsData.categoryGoals[category.toLowerCase()] ? (
+                      <div className="text-sm text-slate-600">
+                        {goalsData.categoryGoals[category.toLowerCase()].goal || 
+                         goalsData.categoryGoals[category.toLowerCase()].title || 
+                         'Goal'}
                       </div>
-                    )) || (
+                    ) : (
                       <div className="text-sm text-slate-400">No goals set</div>
                     )}
                   </div>
