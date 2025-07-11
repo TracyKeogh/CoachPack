@@ -390,7 +390,7 @@ const Calendar: React.FC = () => {
                           className={`p-2 rounded-lg border text-xs mb-1 ${getCategoryColor(action.category)}`}
                         >
                           <div className="font-medium">{action.title}</div>
-                          <div className="flex items-center space-x-1 mt-1 opacity-75">
+                          <div className="flex items-center space-x-1 mt-1 opacity-75 z-20">
                             <Clock className="w-3 h-3" />
                             <span>{action.duration}m</span>
                             <button 
@@ -401,7 +401,7 @@ const Calendar: React.FC = () => {
                                   [slotKey]: prev[slotKey].filter((a, i) => a.id !== action.id)
                                 }));
                               }}
-                              className="ml-1 text-gray-400 hover:text-red-500"
+                              className="ml-1 text-gray-400 hover:text-red-500 z-30"
                             >
                               <X className="w-3 h-3" />
                             </button>
@@ -412,15 +412,17 @@ const Calendar: React.FC = () => {
                       <div
                         onDragOver={(e) => {
                           e.preventDefault();
-                          if (draggedAction) {
-                            e.currentTarget.classList.add('drop-highlight');
-                          }
+                          e.stopPropagation();
+                          e.currentTarget.classList.add('drop-highlight');
                         }}
                         onDragLeave={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
                           e.currentTarget.classList.remove('drop-highlight');
                         }}
                         onDrop={(e) => {
                           e.preventDefault();
+                          e.stopPropagation();
                           e.currentTarget.classList.remove('drop-highlight');
                           if (draggedAction) {
                             const slotKey = generateSlotKey(dayIndex, slot);
@@ -434,11 +436,11 @@ const Calendar: React.FC = () => {
                        className="absolute inset-0 flex items-center justify-center text-slate-400 text-xs"
                       >
                        {(!sampleEvents.some(event => event.day === dayIndex && event.slot === slot) &&
-                         (!slotActions[generateSlotKey(dayIndex, slot)] || slotActions[generateSlotKey(dayIndex, slot)]?.length === 0)) && (
+                         (!slotActions[generateSlotKey(dayIndex, slot)] || slotActions[generateSlotKey(dayIndex, slot)]?.length === 0)) ? (
                          <div className="text-slate-400 text-xs">
                            Drop actions here
                          </div>
-                       )}
+                       ) : null}
                       </div>
                     </div>
                   ))}
@@ -588,13 +590,17 @@ const Calendar: React.FC = () => {
                           } flex items-center justify-center`}
                           onDragOver={(e) => {
                             e.preventDefault();
+                           e.stopPropagation();
                             e.currentTarget.classList.add('drop-highlight');
                           }}
                           onDragLeave={(e) => {
+                           e.preventDefault();
+                           e.stopPropagation();
                             e.currentTarget.classList.remove('drop-highlight');
                           }}
                           onDrop={(e) => {
                             e.preventDefault();
+                           e.stopPropagation();
                             e.currentTarget.classList.remove('drop-highlight');
                             if (draggedAction) {
                               // Get the week number and category
@@ -852,8 +858,14 @@ const Calendar: React.FC = () => {
       <style jsx>{`
         .drop-highlight {
           box-shadow: inset 0 0 0 3px rgba(79, 70, 229, 0.8) !important;
-          background-color: rgba(79, 70, 229, 0.3) !important;
+          background-color: rgba(79, 70, 229, 0.3) !important; 
           z-index: 10 !important;
+          pointer-events: none;
+        }
+        
+        .h-32 {
+          min-height: 8rem;
+          position: relative;
         }
       `}</style>
       {/* Header */}
