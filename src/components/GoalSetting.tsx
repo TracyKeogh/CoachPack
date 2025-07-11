@@ -264,7 +264,7 @@ const GoalSetting: React.FC = () => {
       <div className="max-w-4xl mx-auto p-6 space-y-8">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Annual Vision</h1>
-          <p className="text-gray-600">Set the foundation for your year ahead</p>
+          <p className="text-gray-600">Set the foundation for your goals, milestones, and actions</p>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 space-y-6">
@@ -310,9 +310,9 @@ const GoalSetting: React.FC = () => {
           <div className="flex justify-end pt-4">
             <button
               onClick={() => setCurrentStep('category')}
-              className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+              className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
             >
-              Continue to Goals
+              Continue to Goals, Milestones & Actions
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -326,7 +326,7 @@ const GoalSetting: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 capitalize">
-            {currentCategory} Goals
+            {currentCategory} Goals & Action Plan
           </h1>
           <p className="text-gray-600 mt-1">
             Step {currentCategoryIndex + 1} of {categories.length}
@@ -372,8 +372,9 @@ const GoalSetting: React.FC = () => {
               {React.createElement(getCategoryIcon(currentCategory), {
                 className: `w-6 h-6 text-${getCategoryColor(currentCategory)}-600`
               })}
-              <h2 className="text-xl font-semibold text-gray-900 capitalize">
+              <h2 className="text-xl font-semibold text-gray-900 capitalize flex items-center">
                 Add {currentCategory} Goal
+                <span className="ml-2 px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">Includes Actions & Milestones</span>
               </h2>
             </div>
 
@@ -467,7 +468,7 @@ const GoalSetting: React.FC = () => {
         <div className="space-y-6">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 capitalize">
-              {currentCategory} Goals ({categoryGoals[currentCategory].length})
+              {currentCategory} Goals with Milestones & Actions ({categoryGoals[currentCategory].length})
             </h3>
 
             {categoryGoals[currentCategory].length === 0 ? (
@@ -485,7 +486,19 @@ const GoalSetting: React.FC = () => {
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h4 className="font-medium text-gray-900">{goal.title}</h4>
+                        <div className="flex items-center space-x-2 mb-2">
+                          <h4 className="font-medium text-gray-900">{goal.title}</h4>
+                          <div className="flex items-center space-x-1">
+                            <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-medium flex items-center">
+                              <Flag className="w-3 h-3 mr-1" />
+                              Milestones
+                            </span>
+                            <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium flex items-center">
+                              <Lightbulb className="w-3 h-3 mr-1" />
+                              Actions
+                            </span>
+                          </div>
+                        </div>
                         <p className="text-sm text-gray-600 mt-1">{goal.description}</p>
                         
                         {goal.connectedValues.length > 0 && (
@@ -504,11 +517,15 @@ const GoalSetting: React.FC = () => {
                         <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
                           <div className="flex items-center gap-1">
                             <CalendarIcon className="w-4 h-4" />
-                            {new Date(goal.targetDate).toLocaleDateString()}
+                            Due: {new Date(goal.targetDate).toLocaleDateString()}
                           </div>
                           <div className="flex items-center gap-1">
-                            <Flag className="w-4 h-4" />
-                            {goal.milestones.length} milestones
+                            <Flag className="w-4 h-4 text-amber-500" />
+                            <span className="font-medium">{goal.milestones.length} milestones</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Lightbulb className="w-4 h-4 text-blue-500" />
+                            <span className="font-medium">{goal.actionItems.length} actions</span>
                           </div>
                         </div>
                       </div>
@@ -531,6 +548,22 @@ const GoalSetting: React.FC = () => {
 
                     {editingGoal === goal.id && (
                       <div className="mt-4 pt-4 border-t border-gray-200">
+                        <div className="bg-amber-50 rounded-lg p-3 mb-4 border border-amber-200">
+                          <div className="flex items-center mb-2">
+                            <Flag className="w-5 h-5 text-amber-600 mr-2" />
+                            <h3 className="font-semibold text-amber-800">Milestones track your progress</h3>
+                          </div>
+                          <p className="text-sm text-amber-700">Break your goal into key achievements that mark your progress.</p>
+                        </div>
+                        
+                        <div className="bg-blue-50 rounded-lg p-3 mb-4 border border-blue-200">
+                          <div className="flex items-center mb-2">
+                            <Lightbulb className="w-5 h-5 text-blue-600 mr-2" />
+                            <h3 className="font-semibold text-blue-800">Actions drive daily progress</h3>
+                          </div>
+                          <p className="text-sm text-blue-700">Regular actions that move you toward your milestones and goal.</p>
+                        </div>
+                        
                         <MilestonesSection
                           goalId={goal.id}
                           milestones={goal.milestones}
