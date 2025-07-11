@@ -1,23 +1,25 @@
 import React, { useState } from 'react';
-import { getTwelveWeeksFromNow } from '../types/goals';
-import { useValuesData } from '../hooks/useValuesData';
 import { 
-  ChevronDown,
-  ChevronUp,
-  Plus, 
-  Target,
+  ArrowRight, 
+  ArrowLeft, 
+  Save, 
+  Target, 
+  Flag, 
+  Calendar as CalendarIcon,
+  Plus,
   Edit3,
   X,
   Check,
-  Flag,
-  Calendar as CalendarIcon,
-  Pencil,
-  ArrowRight,
-  ArrowLeft,
-  Save,
   Clock,
-  Trophy
+  ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  Heart,
+  Lightbulb,
+  Sparkles
 } from 'lucide-react';
+import { getTwelveWeeksFromNow } from '../types/goals';
+import { useValuesData } from '../hooks/useValuesData';
 import MilestonesSection from './MilestonesSection';
 
 type GoalTimeframe = 'annual' | '90day' | 'weekly';
@@ -27,6 +29,9 @@ interface GoalCategory {
   name: string;
   icon: React.ReactNode;
   color: string;
+  bgColor: string;
+  borderColor: string;
+  textColor: string;
 }
 
 interface GoalItem {
@@ -54,19 +59,28 @@ const CATEGORIES: GoalCategory[] = [
     id: 'personal', 
     name: 'Personal', 
     icon: <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">⚖️</div>, 
-    color: 'blue' 
+    color: 'blue',
+    bgColor: 'bg-blue-50',
+    borderColor: 'border-blue-200',
+    textColor: 'text-blue-800'
   },
   { 
     id: 'physical', 
     name: 'Physical', 
     icon: <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600">💪</div>, 
-    color: 'green' 
+    color: 'green',
+    bgColor: 'bg-green-50',
+    borderColor: 'border-green-200',
+    textColor: 'text-green-800'
   },
   { 
     id: 'professional', 
     name: 'Professional', 
     icon: <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">💼</div>, 
-    color: 'purple' 
+    color: 'purple',
+    bgColor: 'bg-purple-50',
+    borderColor: 'border-purple-200',
+    textColor: 'text-purple-800'
   }
 ];
 
@@ -373,15 +387,15 @@ const GoalSetting: React.FC = () => {
 
   const getTimeframeIcon = (timeframe: GoalTimeframe) => {
     switch (timeframe) {
-      case 'annual': return <Target className="w-6 h-6 text-blue-600" />;
-      case '90day': return <Flag className="w-6 h-6 text-blue-600" />;
-      case 'weekly': return <CalendarIcon className="w-6 h-6 text-blue-600" />;
+      case 'annual': return <Target className="w-6 h-6 text-slate-700" />;
+      case '90day': return <Flag className="w-6 h-6 text-slate-700" />;
+      case 'weekly': return <CalendarIcon className="w-6 h-6 text-slate-700" />;
     }
   };
 
   const getTimeframeTitle = (timeframe: GoalTimeframe) => {
     switch (timeframe) {
-      case 'annual': return 'Annual Goals';
+      case 'annual': return 'Annual Vision';
       case '90day': return '90-Day Focus';
       case 'weekly': return 'Weekly Actions';
     }
@@ -423,19 +437,24 @@ const GoalSetting: React.FC = () => {
     const goal = goals[timeframe].find(g => g.category === category);
     if (!goal) return null;
     
+    const categoryData = CATEGORIES.find(c => c.id === category);
+    if (!categoryData) return null;
+    
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="p-6">
-          <div className="flex items-center space-x-3 mb-6">
-            {CATEGORIES.find(c => c.id === category)?.icon}
-            <h3 className="text-xl font-semibold text-slate-800">{CATEGORIES.find(c => c.id === category)?.name}</h3>
+      <div className={`rounded-xl shadow-sm border overflow-hidden ${categoryData.borderColor}`}>
+        <div className={`p-4 ${categoryData.bgColor}`}>
+          <div className="flex items-center space-x-3">
+            {categoryData.icon}
+            <h3 className={`text-xl font-semibold ${categoryData.textColor}`}>{categoryData.name}</h3>
           </div>
-          
+        </div>
+        
+        <div className="p-6 bg-white">
           {editingGoal && editingGoal.id === goal.id ? (
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  {timeframe === 'annual' ? 'Annual Goal' : timeframe === '90day' ? '90-Day Focus' : 'Weekly Actions Title'}
+                  {timeframe === 'annual' ? 'Annual Vision' : timeframe === '90day' ? '90-Day Focus' : 'Weekly Actions Title'}
                 </label>
                 <textarea
                   value={newGoalText}
@@ -472,35 +491,30 @@ const GoalSetting: React.FC = () => {
                 </div>
               )}
               
-              {/* Values Selection (only when editing) */}
-              {editingGoal && editingGoal.id === goal.id && (
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Which values does this goal support?
-                  </label>
-                  <div className="flex flex-wrap gap-2 mb-2 max-h-40 overflow-y-auto p-2 border border-slate-200 rounded-lg">
-                    {getAvailableValues().map(value => (
-                      <button
-                        key={value}
-                        onClick={() => toggleValue(value)}
-                        className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                          selectedValues.includes(value)
-                            ? 'bg-blue-100 text-blue-700 border border-blue-300'
-                            : 'bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200'
-                        }`}
-                      >
-                        {value}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="text-sm text-blue-600 mt-2">
-                    {selectedValues.length} values selected
-                  </div>
-                  <p className="text-xs text-slate-500">
-                    Select the values that this goal helps you express or honor
-                  </p>
+              {/* Values Selection */}
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Which values does this goal support?
+                </label>
+                <div className="flex flex-wrap gap-2 mb-2 max-h-40 overflow-y-auto p-2 border border-slate-200 rounded-lg">
+                  {getAvailableValues().map(value => (
+                    <button
+                      key={value}
+                      onClick={() => toggleValue(value)}
+                      className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                        selectedValues.includes(value)
+                          ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                          : 'bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200'
+                      }`}
+                    >
+                      {value}
+                    </button>
+                  ))}
                 </div>
-              )}
+                <div className="text-sm text-blue-600 mt-2">
+                  {selectedValues.length} values selected
+                </div>
+              </div>
               
               <div className="flex justify-end space-x-2">
                 <button
@@ -520,37 +534,20 @@ const GoalSetting: React.FC = () => {
           ) : (
             <>
               <div className="mb-6">
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  {timeframe === 'annual' ? 'Annual Goal' : timeframe === '90day' ? '90-Day Focus' : 'Weekly Actions Title'}
-                </label>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <p className="text-slate-700 text-lg font-medium">{goal.text}</p>
+                    <h4 className="text-lg font-medium text-slate-900 mb-3">{goal.text}</h4>
                     
                     {timeframe === 'annual' && goal.mantra && (
-                      <p className="text-slate-500 italic mt-2">"{goal.mantra}"</p>
+                      <p className="text-slate-500 italic mt-2 mb-4">"{goal.mantra}"</p>
                     )}
                     
-                    {timeframe === 'annual' && (
+                    {goal.whyImportant && (
                       <div className="mt-4 bg-slate-50 p-3 rounded-lg border border-slate-200">
-                        <h4 className="text-sm font-medium text-slate-700 mb-1">Why is this important?</h4>
+                        <h4 className="text-sm font-medium text-slate-700 mb-1">Why This Matters:</h4>
                         <p className="text-sm text-slate-600">
-                          {goal.whyImportant || "Click edit to add why this goal matters to you..."}
+                          {goal.whyImportant}
                         </p>
-                      </div>
-                    )}
-                    
-                    {/* Connected Values */}
-                    {goal.values && goal.values.length > 0 && (
-                      <div className="mt-4">
-                        <h4 className="text-sm font-medium text-slate-700 mb-2">Connected Values</h4>
-                        <div className="flex flex-wrap gap-1">
-                          {goal.values.map((value, i) => (
-                            <span key={i} className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs border border-blue-300">
-                              {value}
-                            </span>
-                          ))}
-                        </div>
                       </div>
                     )}
                   </div>
@@ -558,15 +555,36 @@ const GoalSetting: React.FC = () => {
                     onClick={() => startEditingGoal(timeframe, goal.id)}
                     className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors ml-2"
                   >
-                    <Pencil className="w-4 h-4" />
+                    <Edit3 className="w-4 h-4" />
                   </button>
                 </div>
+                
+                {/* Values Display */}
+                {goal.values && goal.values.length > 0 && (
+                  <div className="mt-4">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Heart className="w-4 h-4 text-red-500" />
+                      <h4 className="text-sm font-medium text-slate-700">Connected Values</h4>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {goal.values.map(value => (
+                        <div 
+                          key={value}
+                          className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm border border-blue-300"
+                        >
+                          {value}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               
               {timeframe !== 'annual' && (
                 <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <label className="block text-sm font-medium text-slate-700">Action Items</label>
+                  <div className="flex items-center space-x-2 mb-3">
+                    <Lightbulb className="w-4 h-4 text-amber-500" />
+                    <label className="text-sm font-medium text-slate-700">Action Items</label>
                     <button
                       onClick={() => addAction(timeframe, goal.id)}
                       className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
@@ -637,44 +655,9 @@ const GoalSetting: React.FC = () => {
                         </button>
                       </div>
                     )}
-                    
-                    {goal.whyImportant && (
-                      <div className="mt-2 text-sm">
-                        <span className="font-medium text-slate-700">Why it matters:</span> <span className="text-slate-600">{goal.whyImportant}</span>
-                      </div>
-                    )}
                   </div>
                 </div>
               )}
-              
-              {/* Values Display */}
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Connected Values
-                </label>
-                {goal.values && goal.values.length > 0 ? (
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {goal.values.map(value => (
-                      <div 
-                        key={value}
-                        className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm border border-blue-300"
-                      >
-                        {value}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-4 text-slate-500 border border-dashed border-slate-300 rounded-lg">
-                    <p>No values connected to this goal yet</p>
-                    <button
-                      onClick={() => startEditingGoal(timeframe, goal.id)}
-                      className="mt-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
-                    >
-                      + Connect values to this goal
-                    </button>
-                  </div>
-                )}
-              </div>
               
               {/* Milestones Section (only for 90-day) */}
               {timeframe === '90day' && goal.milestones && (
@@ -715,7 +698,7 @@ const GoalSetting: React.FC = () => {
                       }));
                     }}
                   />
-                  
+                   
                   <div className="mt-4">
                     <div className="flex items-center space-x-2 mb-2">
                       <Clock className="w-4 h-4 text-slate-500" />
@@ -748,10 +731,10 @@ const GoalSetting: React.FC = () => {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-700">
                   <Target className="w-6 h-6" />
                 </div>
-                <h2 className="text-2xl font-bold text-slate-900">Annual Goals</h2>
+                <h2 className="text-2xl font-bold text-slate-900">Annual Vision</h2>
               </div>
               <button
                 onClick={() => {
@@ -771,12 +754,14 @@ const GoalSetting: React.FC = () => {
                 if (!goal) return null;
                 
                 return (
-                  <div key={category.id} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div className="p-4">
-                      <div className="flex items-center space-x-3 mb-3">
+                  <div key={category.id} className={`rounded-xl shadow-sm border overflow-hidden ${category.borderColor}`}>
+                    <div className={`p-4 ${category.bgColor}`}>
+                      <div className="flex items-center space-x-3">
                         {category.icon}
-                        <h3 className="font-semibold text-slate-800">{category.name}</h3>
+                        <h3 className={`font-semibold ${category.textColor}`}>{category.name}</h3>
                       </div>
+                    </div>
+                    <div className="p-4 bg-white">
                       <p className="text-slate-700 font-medium mb-2">{goal.text}</p>
                       {goal.mantra && (
                         <p className="text-slate-500 italic text-sm">"{goal.mantra}"</p>
@@ -792,7 +777,7 @@ const GoalSetting: React.FC = () => {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-700">
                   <Flag className="w-6 h-6" />
                 </div>
                 <h2 className="text-2xl font-bold text-slate-900">90-Day Focus</h2>
@@ -815,12 +800,14 @@ const GoalSetting: React.FC = () => {
                 if (!goal) return null;
                 
                 return (
-                  <div key={category.id} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div className="p-4">
-                      <div className="flex items-center space-x-3 mb-3">
+                  <div key={category.id} className={`rounded-xl shadow-sm border overflow-hidden ${category.borderColor}`}>
+                    <div className={`p-4 ${category.bgColor}`}>
+                      <div className="flex items-center space-x-3">
                         {category.icon}
-                        <h3 className="font-semibold text-slate-800">{category.name}</h3>
+                        <h3 className={`font-semibold ${category.textColor}`}>{category.name}</h3>
                       </div>
+                    </div>
+                    <div className="p-4 bg-white">
                       <p className="text-slate-700 font-medium mb-3">{goal.text}</p>
                       
                       <div className="space-y-2">
@@ -837,9 +824,9 @@ const GoalSetting: React.FC = () => {
                     
                     {/* Show milestones for 90-day goals in summary */}
                     {goal.milestones && goal.milestones.length > 0 && (
-                      <div className="mt-3 border-t border-slate-100 pt-3">
+                      <div className="mt-3 border-t border-slate-100 pt-3 px-4 pb-4 bg-white">
                         <h4 className="text-sm font-medium text-slate-700 mb-2 flex items-center">
-                          <Trophy className="w-3 h-3 text-amber-500 mr-1" /> Milestones
+                          <Sparkles className="w-3 h-3 text-amber-500 mr-1" /> Milestones
                         </h4>
                         <div className="space-y-2">
                           {goal.milestones.map(milestone => (
@@ -863,7 +850,7 @@ const GoalSetting: React.FC = () => {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-700">
                   <CalendarIcon className="w-6 h-6" />
                 </div>
                 <h2 className="text-2xl font-bold text-slate-900">Weekly Actions</h2>
@@ -886,12 +873,14 @@ const GoalSetting: React.FC = () => {
                 if (!goal) return null;
                 
                 return (
-                  <div key={category.id} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div className="p-4">
-                      <div className="flex items-center space-x-3 mb-3">
+                  <div key={category.id} className={`rounded-xl shadow-sm border overflow-hidden ${category.borderColor}`}>
+                    <div className={`p-4 ${category.bgColor}`}>
+                      <div className="flex items-center space-x-3">
                         {category.icon}
-                        <h3 className="font-semibold text-slate-800">{category.name}</h3>
+                        <h3 className={`font-semibold ${category.textColor}`}>{category.name}</h3>
                       </div>
+                    </div>
+                    <div className="p-4 bg-white">
                       <p className="text-slate-700 font-medium mb-3">{goal.text}</p>
                       
                       <div className="space-y-2">
@@ -916,39 +905,41 @@ const GoalSetting: React.FC = () => {
 
     return (
       <div className="space-y-6">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-          <div className="flex items-center space-x-3 mb-6">
-            {getTimeframeIcon(currentTimeframe)}
-            <div>
-              <h2 className="text-2xl font-bold text-slate-900">{getTimeframeTitle(currentTimeframe)}</h2>
-              <p className="text-slate-600">
-                {currentTimeframe === 'annual' 
-                  ? 'Define your vision for the year ahead' 
-                  : currentTimeframe === '90day' 
-                  ? 'Set your focus for the next 90 days' 
-                  : 'Plan your weekly actions to achieve your goals'}
-              </p>
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="p-6">
+            <div className="flex items-center space-x-3 mb-6">
+              {getTimeframeIcon(currentTimeframe)}
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900">{getTimeframeTitle(currentTimeframe)}</h2>
+                <p className="text-slate-600">
+                  {currentTimeframe === 'annual' 
+                    ? 'Define your vision for the year ahead' 
+                    : currentTimeframe === '90day' 
+                    ? 'Set your focus for the next 90 days' 
+                    : 'Plan your weekly actions to achieve your goals'}
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div className="flex space-x-4 mb-6">
-            {CATEGORIES.map(category => (
-              <button
-                key={category.id}
-                onClick={() => setCurrentCategory(category.id)}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-                  currentCategory === category.id 
-                    ? 'bg-blue-50 text-blue-700 border border-blue-200' 
-                    : 'text-slate-600 hover:bg-slate-50 border border-transparent'
-                }`}
-              >
-                {category.icon}
-                <span>{category.name}</span>
-              </button>
-            ))}
-          </div>
+            <div className="flex space-x-4 mb-6">
+              {CATEGORIES.map(category => (
+                <button
+                  key={category.id}
+                  onClick={() => setCurrentCategory(category.id)}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+                    currentCategory === category.id 
+                      ? `${category.bgColor} ${category.textColor} border ${category.borderColor}` 
+                      : 'text-slate-600 hover:bg-slate-50 border border-transparent'
+                  }`}
+                >
+                  {category.icon}
+                  <span>{category.name}</span>
+                </button>
+              ))}
+            </div>
 
-          {renderGoalForm(currentTimeframe, currentCategory)}
+            {renderGoalForm(currentTimeframe, currentCategory)}
+          </div>
         </div>
       </div>
     );
@@ -966,8 +957,8 @@ const GoalSetting: React.FC = () => {
             {currentStep > 1 ? <Check className="w-5 h-5" /> : 1}
           </div>
           <div className="hidden md:block">
-            <p className={`font-medium ${currentStep === 1 ? 'text-blue-600' : 'text-slate-700'}`}>Annual Goals</p>
-            <p className="text-xs text-slate-500">Your vision for the year</p>
+            <p className={`font-medium ${currentStep === 1 ? 'text-blue-600' : 'text-slate-700'}`}>Annual Vision</p>
+            <p className="text-xs text-slate-500">Your big picture</p>
           </div>
           <div className="w-8 h-0.5 bg-slate-200"></div>
           <div 
@@ -1052,7 +1043,7 @@ const GoalSetting: React.FC = () => {
             </>
           ) : (
             <>
-              <span>Save & Continue</span>
+              <span>Continue</span>
               <ArrowRight className="w-4 h-4" />
             </>
           )}

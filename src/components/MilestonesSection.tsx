@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trophy, Plus, Edit3, X, Check, Clock } from 'lucide-react';
+import { Sparkles, Plus, Edit3, X, Check, Clock } from 'lucide-react';
 
 interface Milestone {
   id: string;
@@ -66,11 +66,9 @@ const MilestonesSection: React.FC<MilestonesSectionProps> = ({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center space-x-2">
-          <Trophy className="w-4 h-4 text-amber-500" />
-          <label className="text-sm font-medium text-slate-700">Milestones</label>
-        </div>
+      <div className="flex items-center space-x-2 mb-3">
+        <Sparkles className="w-4 h-4 text-amber-500" />
+        <label className="text-sm font-medium text-slate-700">Milestones</label>
         <button
           onClick={onAddMilestone}
           className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
