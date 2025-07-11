@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { STORAGE_KEY as GOALS_STORAGE_KEY } from './useGoalSettingData';
-import { ActionItem, Milestone } from '../types/goals';
+import { ActionItem, Milestone, GoalSettingData } from '../types/goals';
 
 export interface Event {
   id: string;
@@ -79,15 +79,25 @@ export const useCalendarData = () => {
   const loadGoalsIntoActionPool = useCallback(() => {
     try {
       const goalsData = localStorage.getItem(GOALS_STORAGE_KEY);
-      if (!goalsData) return;
+      if (!goalsData) {
+        console.log("No goals data found in localStorage");
+        return;
+      }
       
-      const parsedGoalsData = JSON.parse(goalsData);
+      console.log("Found goals data in localStorage:", goalsData);
+      const parsedGoalsData: GoalSettingData = JSON.parse(goalsData);
       const actionPool: ActionPoolItem[] = [];
       
       // Extract actions from goals
       if (parsedGoalsData.categoryGoals) {
+        console.log("Processing category goals:", Object.keys(parsedGoalsData.categoryGoals));
+        
         Object.entries(parsedGoalsData.categoryGoals).forEach(([category, goalData]: [string, any]) => {
-          if (goalData && goalData.actions) {
+          console.log(`Processing ${category} goal:`, goalData);
+          
+          if (goalData && Array.isArray(goalData.actions)) {
+            console.log(`Found ${goalData.actions.length} actions for ${category}`);
+            
             goalData.actions.forEach((action: any, index: number) => {
               // Map goal category to calendar category
               const calendarCategory = 
@@ -95,19 +105,29 @@ export const useCalendarData = () => {
                 category === 'body' ? 'body' : 
                 category === 'balance' ? 'balance' : 'personal';
               
+              const actionText = typeof action === 'string' 
+                ? action 
+                : action.text || '';
+                
+              const actionFrequency = typeof action === 'object' && action.frequency
+                ? action.frequency
+                : 'weekly';
+                
               // Create action pool item
               actionPool.push({
                 id: `${category}-action-${index}`,
-                title: action.text || '',
+                title: actionText,
                 duration: 60, // Default 60 minutes
                 category: calendarCategory as 'business' | 'body' | 'balance' | 'personal',
-                frequency: action.frequency || 'weekly',
+                frequency: actionFrequency as 'daily' | 'weekly' | '3x-week',
                 relatedGoal: goalData.goal
               });
             });
           }
         });
       }
+      
+      console.log("Created action pool items:", actionPool.length);
       
       // Update action pool
       setData(prev => ({

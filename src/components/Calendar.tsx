@@ -26,7 +26,7 @@ import {
   Zap,
   Sparkles
 } from 'lucide-react';
-import { useCalendarData } from '../hooks/useCalendarData';
+import { useCalendarData, Event, ActionPoolItem } from '../hooks/useCalendarData';
 import { useWheelData } from '../hooks/useWheelData';
 import { useValuesData } from '../hooks/useValuesData';
 import { useVisionBoardData } from '../hooks/useVisionBoardData';
@@ -54,7 +54,7 @@ const Calendar: React.FC = () => {
     refreshActionPool
   } = useCalendarData();
   
-  const { events, actionPool } = calendarData;
+  const { events, actionPool } = calendarData || { events: [], actionPool: [] };
   
   const { data: wheelData } = useWheelData();
   const { data: valuesData } = useValuesData();
@@ -64,7 +64,8 @@ const Calendar: React.FC = () => {
   // Refresh action pool when component mounts
   useEffect(() => {
     refreshActionPool();
-  }, [refreshActionPool]);
+    console.log("Refreshing action pool with goals data:", goalsData);
+  }, [refreshActionPool, goalsData]);
 
   const handlePrevious = () => {
     const newDate = new Date(currentDate);
@@ -516,7 +517,7 @@ const Calendar: React.FC = () => {
             <div className="space-y-8">
               {/* Sample milestones */}
               {['business', 'body', 'balance'].map((category, index) => {
-                const milestones = goalsData.categoryGoals[category]?.milestones || [];
+                const milestones = goalsData?.categoryGoals?.[category]?.milestones || [];
                 return milestones.map((milestone, mIndex) => {
                   const weekIndex = Math.floor(mIndex * 4); // Distribute across 12 weeks
                   const date = new Date(startDate);
@@ -693,7 +694,7 @@ const Calendar: React.FC = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {['business', 'body', 'balance'].map(category => {
-              const goal = goalsData.categoryGoals[category];
+              const goal = goalsData?.categoryGoals?.[category];
               
               return (
                 <div 
