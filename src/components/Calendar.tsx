@@ -426,17 +426,17 @@ const Calendar: React.FC = () => {
                               ...prev,
                               [slotKey]: [...(prev[slotKey] || []), { ...draggedAction, id: `${draggedAction.id}-${Date.now()}` }]
                             }));
+                           setDraggedAction(null); // Reset dragged action after drop
                           }
                         }}
-                        className={`absolute inset-0 flex items-center justify-center text-slate-400 text-xs ${
-                          !sampleEvents.some(event => event.day === dayIndex && event.slot === slot) &&
-                          (!slotActions[generateSlotKey(dayIndex, slot)] || slotActions[generateSlotKey(dayIndex, slot)]?.length === 0) 
-                            ? 'visible' : 'hidden'
-                        }`}
+                       className="absolute inset-0 flex items-center justify-center text-slate-400 text-xs"
                       >
-                        <div className="absolute inset-0 flex items-center justify-center text-slate-400 text-xs">
-                          Drop actions here
-                        </div>
+                       {(!sampleEvents.some(event => event.day === dayIndex && event.slot === slot) &&
+                         (!slotActions[generateSlotKey(dayIndex, slot)] || slotActions[generateSlotKey(dayIndex, slot)]?.length === 0)) && (
+                         <div className="text-slate-400 text-xs">
+                           Drop actions here
+                         </div>
+                       )}
                       </div>
                     </div>
                   ))}
@@ -851,8 +851,9 @@ const Calendar: React.FC = () => {
     <div className="space-y-6">
       <style jsx>{`
         .drop-highlight {
-          box-shadow: inset 0 0 0 2px rgba(79, 70, 229, 0.6);
-          background-color: rgba(79, 70, 229, 0.2) !important;
+         box-shadow: inset 0 0 0 3px rgba(79, 70, 229, 0.8) !important;
+         background-color: rgba(79, 70, 229, 0.3) !important;
+         z-index: 10 !important;
         }
       `}</style>
       {/* Header */}
