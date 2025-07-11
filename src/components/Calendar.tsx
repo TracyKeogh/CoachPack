@@ -52,6 +52,7 @@ const Calendar: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentView, setCurrentView] = useState<'daily' | 'weekly' | '90day' | 'yearly'>('weekly');
   const [showAddActionForm, setShowAddActionForm] = useState(false);
+  const [currentWeekInQuarter, setCurrentWeekInQuarter] = useState<number>(1);
   const [newAction, setNewAction] = useState<Partial<ActionPoolItem>>({
     title: '',
     duration: 60,
@@ -341,18 +342,66 @@ const Calendar: React.FC = () => {
   // Navigation functions
   const goToPreviousWeek = () => {
     const newDate = new Date(currentDate);
-    newDate.setDate(currentDate.getDate() - 7);
+    
+    if (currentView === 'weekly') {
+      // If we're in the first week of the quarter and going back, we should stay in the first week
+      const currentWeekNumber = getWeekNumberFor90DayView(currentDate);
+      if (currentWeekNumber <= 1) {
+        // Set to the first day of the quarter
+        newDate.setTime(startOf90DayPeriod.getTime());
+      } else {
+        newDate.setDate(currentDate.getDate() - 7);
+        setCurrentWeekInQuarter(Math.max(1, currentWeekInQuarter - 1));
+      }
+    } else {
+      // Default behavior for other views
+      newDate.setDate(currentDate.getDate() - 7);
+    }
+    
     setCurrentDate(newDate);
   };
 
   const goToNextWeek = () => {
     const newDate = new Date(currentDate);
-    newDate.setDate(currentDate.getDate() + 7);
+    
+    if (currentView === 'weekly') {
+      // If we're in the last week of the quarter (week 12) and going forward, we should stay in week 12
+      const currentWeekNumber = getWeekNumberFor90DayView(currentDate);
+      if (currentWeekNumber >= 12) {
+        // Set to the last day of the quarter (12 weeks from the start)
+        const lastDay = new Date(startOf90DayPeriod);
+        lastDay.setDate(lastDay.getDate() + (12 * 7) - 1);
+        newDate.setTime(lastDay.getTime());
+      } else {
+        newDate.setDate(currentDate.getDate() + 7);
+        setCurrentWeekInQuarter(Math.min(12, currentWeekInQuarter + 1));
+      }
+    } else {
+      // Default behavior for other views
+      newDate.setDate(currentDate.getDate() + 7);
+    }
+    
     setCurrentDate(newDate);
   };
 
   const goToToday = () => {
     setCurrentDate(new Date());
+    const weekNumber = getWeekNumberFor90DayView(new Date());
+    setCurrentWeekInQuarter(weekNumber);
+  };
+
+  // Jump to a specific week in the quarter
+  const goToWeek = (weekNumber: number) => {
+    if (weekNumber < 1 || weekNumber > 12) return;
+    
+    const targetDate = getDateForWeekAndDay(weekNumber, 0); // Get Sunday of the target week
+    setCurrentDate(targetDate);
+    setCurrentWeekInQuarter(weekNumber);
+    
+    // If not already in weekly view, switch to it
+    if (currentView !== 'weekly') {
+      setCurrentView('weekly');
+    }
   };
 
   // Form handlers
@@ -391,10 +440,52 @@ const Calendar: React.FC = () => {
   // Render the weekly view
   const renderWeeklyView = () => {
     const weekDates = getWeekDates();
+    const currentWeekNumber = getWeekNumberFor90DayView(currentDate);
     const timeSlots = ['Morning', 'Afternoon', 'Evening'];
     
     return (
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-slate-900">
+            Week {currentWeekNumber} of 12
+          </h3>
+          
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => goToWeek(1)}
+              className={`px-2 py-1 text-xs rounded ${
+                currentWeekNumber === 1 ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              Week 1
+            </button>
+            <button
+              onClick={() => goToWeek(4)}
+              className={`px-2 py-1 text-xs rounded ${
+                currentWeekNumber === 4 ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              Week 4
+            </button>
+            <button
+              onClick={() => goToWeek(8)}
+              className={`px-2 py-1 text-xs rounded ${
+                currentWeekNumber === 8 ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              Week 8
+            </button>
+            <button
+              onClick={() => goToWeek(12)}
+              className={`px-2 py-1 text-xs rounded ${
+                currentWeekNumber === 12 ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              Week 12
+            </button>
+          </div>
+        </div>
+        
         <div className="grid grid-cols-8 gap-4">
           {/* Time slots column */}
           <div className="col-span-1">
@@ -512,7 +603,20 @@ const Calendar: React.FC = () => {
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
         <div className="mb-6">
           <h3 className="text-xl font-semibold text-slate-900">90-Day Action Plan</h3>
-          <p className="text-slate-600">Drag actions to weeks and categories to plan your quarter</p>
+          <div className="flex items-center justify-between">
+            <p className="text-slate-600">Drag actions to weeks and categories to plan your quarter</p>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => {
+                  setCurrentView('weekly');
+                  goToWeek(1);
+                }}
+                className="px-3 py-1 text-sm bg-purple-100 text-purple-800 rounded hover:bg-purple-200 transition-colors"
+              >
+                View Week 1
+              </button>
+            </div>
+          </div>
         </div>
         
         <div className="grid grid-cols-[auto_repeat(12,1fr)] gap-2 overflow-x-auto">
@@ -560,7 +664,7 @@ const Calendar: React.FC = () => {
                     onDrop={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      setHighlightedWeekCategory(null);
+                      setHighlightedWeekCategory(null); 
                       
                       if (draggedAction) {
                         handleActionDrop(
@@ -585,6 +689,7 @@ const Calendar: React.FC = () => {
                           <div 
                             key={`${action.id}-${index}`}
                             className={`p-1 rounded text-xs relative ${
+                              action.scheduledId ? 'cursor-move ' : '' +
                               action.category.toLowerCase() === 'business' ? 'bg-purple-100 text-purple-800' :
                               action.category.toLowerCase() === 'body' ? 'bg-green-100 text-green-800' :
                               'bg-blue-100 text-blue-800'
@@ -593,7 +698,7 @@ const Calendar: React.FC = () => {
                             onDragStart={(e) => {
                               e.stopPropagation();
                               setDraggedAction(action);
-                              setDragSource('90day');
+                              setDragSource(action.scheduledId ? '90day' : 'pool');
                               console.log("Dragging from 90-day view:", action);
                             }}
                             onDragEnd={() => {
@@ -607,7 +712,9 @@ const Calendar: React.FC = () => {
                                 className="absolute top-0 right-0 text-slate-400 hover:text-red-500 transition-colors"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  removeAction(action.scheduledId);
+                                  if (action.scheduledId) {
+                                    removeAction(action.scheduledId);
+                                  }
                                 }}
                               >
                                 <X className="w-3 h-3" />
@@ -638,6 +745,21 @@ const Calendar: React.FC = () => {
       </div>
     );
   };
+
+  // Helper function to check if a date is within the 90-day period
+  const isDateInQuarter = (date: Date): boolean => {
+    const endOf90DayPeriod = new Date(startOf90DayPeriod);
+    endOf90DayPeriod.setDate(startOf90DayPeriod.getDate() + (12 * 7));
+    return date >= startOf90DayPeriod && date < endOf90DayPeriod;
+  };
+
+  // Update current week in quarter when current date changes
+  useEffect(() => {
+    if (isDateInQuarter(currentDate)) {
+      const weekNumber = getWeekNumberFor90DayView(currentDate);
+      setCurrentWeekInQuarter(weekNumber);
+    }
+  }, [currentDate]);
 
   // Main render
   return (
