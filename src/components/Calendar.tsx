@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Clock, Eye, Target, Heart, Briefcase, User } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Clock, Eye, Target, Heart, Briefcase, User, X } from 'lucide-react';
 import { useCalendarData } from '../hooks/useCalendarData';
 import { useGoalSettingData } from '../hooks/useGoalSettingData';
 import { STORAGE_KEY as GOALS_STORAGE_KEY } from '../hooks/useGoalSettingData';
@@ -267,6 +267,8 @@ const Calendar: React.FC = () => {
                   key={action.id}
                   className={`p-3 rounded-lg border cursor-move ${getCategoryColor(action.category)}`}
                   draggable
+                  onDragStart={() => setDraggedAction(action)}
+                  onDragEnd={() => setDraggedAction(null)}
                 >
                   <div className="flex items-center space-x-2 mb-1">
                     {getCategoryIcon(action.category)}
@@ -413,11 +415,9 @@ const Calendar: React.FC = () => {
                           if (draggedAction) {
                             e.currentTarget.classList.add('drop-highlight');
                           }
-                         return false;
                         }}
                         onDragLeave={(e) => {
                           e.currentTarget.classList.remove('drop-highlight');
-                         return false;
                         }}
                         onDrop={(e) => {
                           e.preventDefault();
@@ -428,9 +428,8 @@ const Calendar: React.FC = () => {
                               ...prev,
                               [slotKey]: [...(prev[slotKey] || []), { ...draggedAction, id: `${draggedAction.id}-${Date.now()}` }]
                             }));
-                           setDraggedAction(null); // Reset dragged action after drop
+                            setDraggedAction(null);
                           }
-                         return false;
                         }}
                        className="absolute inset-0 flex items-center justify-center text-slate-400 text-xs"
                       >
@@ -590,13 +589,9 @@ const Calendar: React.FC = () => {
                           onDragOver={(e) => {
                             e.preventDefault();
                             e.currentTarget.classList.add('drop-highlight');
-                           return false;
-                            return false;
                           }}
                           onDragLeave={(e) => {
                             e.currentTarget.classList.remove('drop-highlight');
-                           return false;
-                            return false;
                           }}
                           onDrop={(e) => {
                             e.preventDefault();
@@ -621,9 +616,8 @@ const Calendar: React.FC = () => {
                                 }
                                 return prev;
                               });
+                              setDraggedAction(null);
                             }
-                           return false;
-                            return false;
                           }}
                         >
                           {weeklyActions[`week-${index + 1}-${category}`] && 
