@@ -12,7 +12,8 @@ import {
   LayoutGrid,
   CalendarDays,
   CalendarRange,
-  CalendarClock
+  CalendarClock,
+  ArrowLeft
 } from 'lucide-react';
 import { useCalendarData, type Event, type ActionPoolItem as BaseActionPoolItem } from '../hooks/useCalendarData';
 
@@ -51,6 +52,7 @@ const Calendar: React.FC = () => {
   // Calendar state
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentView, setCurrentView] = useState<'daily' | 'weekly' | '90day' | 'yearly'>('weekly');
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [showAddActionForm, setShowAddActionForm] = useState(false);
   const [currentWeekInQuarter, setCurrentWeekInQuarter] = useState<number>(1);
   const [newAction, setNewAction] = useState<Partial<ActionPoolItem>>({
@@ -65,6 +67,13 @@ const Calendar: React.FC = () => {
   const [dragSource, setDragSource] = useState<'pool' | 'weekly' | '90day' | null>(null);
   const [highlightedSlot, setHighlightedSlot] = useState<string | null>(null);
   const [highlightedWeekCategory, setHighlightedWeekCategory] = useState<string | null>(null);
+
+  // Time slots for day view
+  const timeSlots = [
+    '6:00 AM', '7:00 AM', '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', 
+    '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM',
+    '6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM'
+  ];
 
   // Filter action pool by frequency
   const dailyActions = data.actionPool.filter(action => action.frequency === 'daily');
@@ -484,7 +493,10 @@ const Calendar: React.FC = () => {
                 <div className={`font-medium ${date.getDate() === new Date().getDate() ? 'text-purple-600' : 'text-slate-900'}`}>
                   {getDayName(date.getDay()).substring(0, 3)}
                 </div>
-                <div className={`text-sm ${date.getDate() === new Date().getDate() ? 'text-purple-600 font-bold' : 'text-slate-500'}`}>
+                <div 
+                  className={`text-sm ${date.getDate() === new Date().getDate() ? 'text-purple-600 font-bold' : 'text-slate-500'} cursor-pointer hover:text-purple-600 hover:underline`}
+                  onClick={() => openDayView(date)}
+                >
                   {date.getDate()}
                 </div>
               </div>
@@ -604,6 +616,16 @@ const Calendar: React.FC = () => {
           {weeks.map(week => (
             <div key={week} className="col-span-1 text-center">
               <div className="font-medium text-slate-900">Week {week}</div>
+              <div className="flex items-center justify-center">
+                <button
+                  onClick={() => goToWeek(week)}
+                  className={`px-3 py-1 text-sm ${
+                    currentWeekInQuarter === week ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  } rounded transition-colors`}
+                >
+                  Week {week}
+                </button>
+              </div>
             </div>
           ))}
           
@@ -740,6 +762,60 @@ const Calendar: React.FC = () => {
     }
   }, [currentDate]);
 
+  // Helper function to get actions for a specific day
+  const getActionsForDay = (date: Date) => {
+    const dayIndex = date.getDay(); // 0-6 for Sunday-Saturday
+    const result: ScheduledAction[] = [];
+    
+    // Collect actions from all slots for this day
+    Object.entries(slotActions).forEach(([slotKey, actions]) => {
+      const parts = slotKey.split('-');
+      if (parts.length >= 3 && parseInt(parts[1]) === dayIndex) {
+        result.push(...actions);
+      }
+    });
+    
+    return result;
+  };
+
+  // Helper function to format time for display
+  const formatTime = (timeString: string) => {
+    return timeString;
+  };
+
+  // Helper function to get actions for a specific time slot on a specific day
+  const getActionsForTimeSlot = (date: Date, timeSlot: string) => {
+    const dayIndex = date.getDay();
+    let slot = 'Morning';
+    
+    // Determine slot based on time
+    const hour = parseInt(timeSlot.split(':')[0]);
+    const isPM = timeSlot.includes('PM');
+    const hour24 = isPM && hour !== 12 ? hour + 12 : hour;
+    
+    if (hour24 < 12) {
+      slot = 'Morning';
+    } else if (hour24 < 17) {
+      slot = 'Afternoon';
+    } else {
+      slot = 'Evening';
+    }
+    
+    const slotKey = `day-${dayIndex}-${slot}`;
+    return slotActions[slotKey] || [];
+  };
+
+  // Open day view for a specific date
+  const openDayView = (date: Date) => {
+    setSelectedDay(new Date(date));
+    // We don't change the current view to maintain the weekly context
+  };
+
+  // Close day view
+  const closeDayView = () => {
+    setSelectedDay(null);
+  };
+
   // Main render
   return (
     <div className="space-y-8">
@@ -781,6 +857,102 @@ const Calendar: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Day View Modal */}
+      {selectedDay && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Day View Header */}
+            <div className="p-6 border-b border-slate-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <button
+                    onClick={closeDayView}
+                    className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+                  >
+                    <ArrowLeft className="w-5 h-5" />
+                  </button>
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-900">Daily Focus</h2>
+                    <p className="text-slate-600">
+                      {selectedDay.toLocaleDateString('en-US', { 
+                        weekday: 'long', 
+                        month: 'long', 
+                        day: 'numeric', 
+                        year: 'numeric' 
+                      })}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Task</span>
+                </button>
+              </div>
+            </div>
+            
+            {/* Day View Content */}
+            <div className="p-6">
+              <div className="grid grid-cols-[100px_1fr] gap-2">
+                {timeSlots.map((timeSlot) => {
+                  const actionsForSlot = getActionsForTimeSlot(selectedDay, timeSlot);
+                  
+                  return (
+                    <React.Fragment key={timeSlot}>
+                      {/* Time Column */}
+                      <div className="text-right pr-4 py-2 text-slate-600 font-medium">
+                        {formatTime(timeSlot)}
+                      </div>
+                      
+                      {/* Content Column */}
+                      <div 
+                        className="border border-slate-200 border-dashed rounded-lg min-h-16 p-2 hover:bg-slate-50 transition-colors"
+                      >
+                        {actionsForSlot.length > 0 ? (
+                          <div className="space-y-2">
+                            {actionsForSlot.map((action) => (
+                              <div 
+                                key={action.scheduledId}
+                                className={`p-2 rounded-lg text-sm relative ${
+                                  action.category.toLowerCase() === 'business' ? 'bg-purple-100 text-purple-800' :
+                                  action.category.toLowerCase() === 'body' ? 'bg-green-100 text-green-800' :
+                                  'bg-blue-100 text-blue-800'
+                                }`}
+                              >
+                                <div className="flex items-start">
+                                  <div className="flex-1 pr-6">{action.title}</div>
+                                  <button 
+                                    className="absolute top-1 right-1 text-slate-400 hover:text-red-500 transition-colors"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      removeAction(action.scheduledId);
+                                    }}
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
+                                <div className="text-xs opacity-75 mt-1">
+                                  {action.duration} min • {action.frequency}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center text-sm text-slate-400 h-full flex items-center justify-center">
+                            Drop tasks here
+                          </div>
+                        )}
+                      </div>
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* View selector */}
       <div className="flex items-center space-x-4 border-b border-slate-200 pb-4 overflow-x-auto mb-4">
