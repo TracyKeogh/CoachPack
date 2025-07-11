@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Clock, Eye, Target, Heart, Briefcase, User } from 'lucide-react';
 import { useCalendarData } from '../hooks/useCalendarData';
-import { useGoalSettingData } from '../hooks/useGoalSettingData';
-
-interface CalendarEvent {
-  id: string;
-  title: string;
-  date: string;
-  time?: string;
-  duration?: number;
-  category: 'business' | 'body' | 'balance' | 'personal';
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Clock,
+  Eye,
+  Target,
+  Heart,
+  Briefcase,
+  User,
+  Check
   frequency?: 'daily' | 'weekly' | '3x-week';
 }
 
@@ -28,6 +29,7 @@ const Calendar: React.FC = () => {
   const [showVisionOverlay, setShowVisionOverlay] = useState(false);
   const [showAddEventForm, setShowAddEventForm] = useState(false);
   const [draggedAction, setDraggedAction] = useState<ActionItem | null>(null);
+  const [weeklyActions, setWeeklyActions] = useState<Record<string, string[]>>({});
   const [newEvent, setNewEvent] = useState({
     title: '',
     date: '',
@@ -403,7 +405,7 @@ const Calendar: React.FC = () => {
   const render90DayView = () => {
     const weeks = Array.from({ length: 12 }, (_, i) => i + 1);
     const categories = ['business', 'body', 'balance'];
-
+    
     return (
       <div className="bg-white rounded-lg shadow-sm border border-slate-200">
         <div className="p-6 border-b border-slate-200">
@@ -559,7 +561,7 @@ const Calendar: React.FC = () => {
                                   ${draggedAction.title}
                                 </div>
                               `;
-                              
+                                  <div className="font-medium mb-1">Drag these actions to weeks:</div>
                               // Reset after animation
                               setTimeout(() => {
                                 const allDropZones = document.querySelectorAll('.drop-highlight');
@@ -766,7 +768,7 @@ const Calendar: React.FC = () => {
       <style jsx>{`
         .drop-highlight {
           box-shadow: inset 0 0 0 2px rgba(79, 70, 229, 0.6);
-          background-color: rgba(79, 70, 229, 0.1);
+          background-color: rgba(79, 70, 229, 0.2);
         }
       `}</style>
       {/* Header */}
