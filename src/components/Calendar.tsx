@@ -61,13 +61,17 @@ const Calendar: React.FC = () => {
   // Helper function to get the week number (1-12) for a given date
   const getWeekNumber = (date: Date): number => {
     const startDate = new Date(currentDate);
-    startDate.setDate(startDate.getDate() - startDate.getDay()); // Start of current week
+    // Set to the first day of the current week (Sunday)
+    startDate.setDate(startDate.getDate() - startDate.getDay());
     
     const diffTime = date.getTime() - startDate.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
     const weekNumber = Math.floor(diffDays / 7) + 1;
     
-    return Math.max(1, Math.min(12, weekNumber));
+    // Ensure week number is between 1 and 12
+    const clampedWeekNumber = Math.max(1, Math.min(12, weekNumber));
+    console.log(`Date: ${date.toDateString()}, Week Number: ${clampedWeekNumber}`);
+    return clampedWeekNumber;
   };
 
   // Helper function to get the day index (0-6) for a given date
@@ -105,10 +109,16 @@ const Calendar: React.FC = () => {
   // Centralized function to handle action drops
   const handleActionDrop = (action: ActionPoolItem, targetType: 'weeklySlot' | '90DayCategory', targetIdentifier: any) => {
     // Ensure the action has a unique ID
-    const actionWithId = {
+    console.log("handleActionDrop called with:", { action, targetType, targetIdentifier });
+    
+    // Create a deep copy of the action with a unique ID
+    const actionWithId: ActionPoolItem = {
       ...action,
-      id: action.id || `${Date.now()}-${Math.random().toString(36).substring(2)}`
+      id: action.id || `${Date.now()}-${Math.random().toString(36).substring(2)}`,
+      category: action.category
     };
+    
+    console.log("Action with ID:", actionWithId);
 
     if (targetType === 'weeklySlot') {
       const { dayIndex, slot } = targetIdentifier;
@@ -129,7 +139,7 @@ const Calendar: React.FC = () => {
       
       // Calculate week number and category for 90-day view
       const weekNumber = getWeekNumber(getWeekDates()[dayIndex]);
-      const category = slot.toLowerCase();
+      const category = slot.toLowerCase() as 'business' | 'body' | 'balance';
       const weekCategoryKey = `week-${weekNumber}-${category}`;
       
       // Update 90-day view
@@ -147,6 +157,8 @@ const Calendar: React.FC = () => {
     } else if (targetType === '90DayCategory') {
       const { weekNumber, category } = targetIdentifier;
       
+      console.log("Dropping in 90-day view:", { weekNumber, category });
+      
       // Update 90-day view
       const weekCategoryKey = `week-${weekNumber}-${category}`;
       setWeeklyActionItems(prev => {
@@ -163,9 +175,35 @@ const Calendar: React.FC = () => {
       
       // Calculate a suitable day index and slot for weekly view
       // For simplicity, we'll use the first day of the week and the corresponding slot
+      // Find a day that falls within this week number
       const weekDates = getWeekDates();
-      const dayIndex = 1; // Monday (assuming Sunday is 0)
-      const slot = category.charAt(0).toUpperCase() + category.slice(1); // Capitalize first letter
+      let dayIndex = -1;
+      
+      // Find the first day that belongs to this week number
+      for (let i = 0; i < weekDates.length; i++) {
+        if (getWeekNumber(weekDates[i]) === weekNumber) {
+          dayIndex = i;
+          break;
+        }
+      }
+      
+      // If no matching day found, use Monday (index 1) as fallback
+      if (dayIndex === -1) {
+        dayIndex = 1;
+      }
+      
+      // Map category to slot
+      let slot: string;
+      if (category === 'business') {
+        slot = 'Morning';
+      } else if (category === 'body') {
+        slot = 'Afternoon';
+      } else {
+        slot = 'Evening';
+      }
+      
+      console.log("Calculated weekly slot:", { dayIndex, slot });
+      
       const slotKey = `day-${dayIndex}-${slot}`;
       
       // Update weekly view
@@ -186,6 +224,7 @@ const Calendar: React.FC = () => {
   // Centralized function to remove actions
   const removeAction = (actionId: string) => {
     // Remove from weekly view
+    console.log("Removing action:", actionId);
     setSlotActions(prev => {
       const newSlotActions: Record<string, ActionPoolItem[]> = {};
       let found = false;
@@ -388,7 +427,7 @@ const Calendar: React.FC = () => {
           <p className="text-slate-600">Drag actions to weeks and categories to plan your quarter</p>
         </div>
         
-        <div className="grid grid-cols-13 gap-2">
+        <div className="grid grid-cols-[auto_repeat(12,1fr)] gap-2">
           {/* Header row with week numbers */}
           <div className="col-span-1"></div> {/* Empty cell for category labels */}
           {weeks.map(week => (
@@ -398,8 +437,8 @@ const Calendar: React.FC = () => {
           ))}
           
           {/* Category rows */}
-          {categories.map(category => (
-            <React.Fragment key={category}>
+          {categories.map((category) => (
+            <React.Fragment key={`category-${category}`}>
               {/* Category label */}
               <div className="col-span-1 flex items-center">
                 <div className={`p-2 rounded-lg ${
@@ -415,7 +454,7 @@ const Calendar: React.FC = () => {
               
               {/* Week cells */}
               {weeks.map(week => {
-                const weekCategoryKey = `week-${week}-${category}`;
+                const weekCategoryKey = `week-${week}-${category.toLowerCase()}`;
                 const weekActions = weeklyActionItems[weekCategoryKey] || [];
                 
                 return (
@@ -427,6 +466,7 @@ const Calendar: React.FC = () => {
                     onDragOver={(e) => {
                       e.preventDefault();
                       setHighlightedWeekCategory(weekCategoryKey);
+                      e.stopPropagation();
                     }}
                     onDragLeave={() => setHighlightedWeekCategory(null)}
                     onDrop={(e) => {
@@ -435,8 +475,9 @@ const Calendar: React.FC = () => {
                       setHighlightedWeekCategory(null);
                       
                       if (draggedAction) {
-                        handleActionDrop(draggedAction, '90DayCategory', { weekNumber: week, category });
+                        handleActionDrop(draggedAction, '90DayCategory', { weekNumber: week, category: category.toLowerCase() });
                         setDraggedAction(null);
+                        e.stopPropagation();
                       }
                     }}
                   >
@@ -605,21 +646,20 @@ const Calendar: React.FC = () => {
                 key={action.id}
                 className={`p-3 rounded-lg border border-slate-200 hover:shadow-sm transition-all cursor-move ${
                   action.category === 'business' ? 'bg-purple-50' :
-                  action.category === 'body' ? 'bg-green-50' :
-                  'bg-blue-50'
+                  action.category === 'body' ? 'bg-green-50' : 'bg-blue-50'
                 }`}
                 draggable={true}
                 onDragStart={(e) => {
                   e.stopPropagation();
                   setDraggedAction(action);
+                  console.log("Dragging from action pool:", action);
                 }}
                 onDragEnd={() => setDraggedAction(null)}
               >
                 <div className="flex items-start">
                   <div className={`p-2 rounded-lg mr-3 ${
                     action.category === 'business' ? 'bg-purple-100 text-purple-800' :
-                    action.category === 'body' ? 'bg-green-100 text-green-800' :
-                    'bg-blue-100 text-blue-800'
+                    action.category === 'body' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
                   }`}>
                     {action.category === 'business' ? <Briefcase className="w-4 h-4" /> :
                      action.category === 'body' ? <Heart className="w-4 h-4" /> :
@@ -643,7 +683,7 @@ const Calendar: React.FC = () => {
   // Main render
   return (
     <div className="space-y-8">
-      {/* Header */}
+      {/* Header with title and description */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Calendar</h1>
@@ -681,7 +721,7 @@ const Calendar: React.FC = () => {
       </div>
 
       {/* View selector */}
-      <div className="flex items-center space-x-4 border-b border-slate-200 pb-4">
+      <div className="flex items-center space-x-4 border-b border-slate-200 pb-4 overflow-x-auto">
         <button
           onClick={() => setCurrentView('daily')}
           className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
@@ -724,7 +764,7 @@ const Calendar: React.FC = () => {
       </div>
 
       {/* Main content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-8">
         {/* Calendar view */}
         <div className="lg:col-span-2">
           {currentView === 'daily' && renderDailyView()}
