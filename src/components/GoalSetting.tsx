@@ -927,129 +927,6 @@ const GoalSetting: React.FC = () => {
       </div>
     );
   };
-  
-  // Render milestones section separately
-  const renderMilestonesSection = (timeframe: GoalTimeframe, category: string) => {
-    const goal = goals[timeframe].find(g => g.category === category);
-    if (!goal || timeframe !== '90day') return null;
-    
-    return (
-      <div className="bg-amber-50 rounded-xl shadow-sm border-2 border-amber-200 overflow-hidden mt-6">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center text-amber-600">
-                🏆
-              </div>
-              <h3 className="text-xl font-semibold text-amber-800">Milestones</h3>
-            </div>
-            <button
-              onClick={() => addMilestone(timeframe, goal.id)}
-              className="p-2 text-amber-600 hover:text-amber-700 hover:bg-amber-100 rounded-lg transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
-          </div>
-          
-          <div className="space-y-3">
-            {goal.milestones?.map((milestone) => (
-              <div key={milestone.id} className="flex items-start group bg-white p-4 rounded-lg border border-amber-200 hover:shadow-sm transition-all">
-                {editingMilestone && 
-                 editingMilestone.goalId === goal.id && 
-                 editingMilestone.milestoneId === milestone.id ? (
-                  <div className="flex-1 space-y-2">
-                    <input
-                      type="text"
-                      value={newMilestoneTitle}
-                      onChange={(e) => setNewMilestoneTitle(e.target.value)}
-                      className="w-full p-2 text-sm border border-amber-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                      placeholder="Milestone title"
-                    />
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="date"
-                        value={newMilestoneDueDate}
-                        onChange={(e) => setNewMilestoneDueDate(e.target.value)}
-                        className="p-2 text-sm border border-amber-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                      />
-                      <div className="flex space-x-1">
-                        <button
-                          onClick={saveMilestone}
-                          className="p-1 text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors"
-                        >
-                          <Check className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={cancelEditMilestone}
-                          className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="w-2 h-2 bg-amber-500 rounded-full mt-2 mr-3 flex-shrink-0" />
-                    <div className="flex-1">
-                      <div className={`font-medium text-amber-900 ${milestone.completed ? 'line-through opacity-70' : ''}`}>
-                        {milestone.title}
-                      </div>
-                      <div className="text-sm text-amber-700 mt-1">
-                        ({new Date(milestone.dueDate).toLocaleDateString()})
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => toggleMilestoneCompletion(timeframe, goal.id, milestone.id)}
-                        className={`w-6 h-6 rounded-full border flex items-center justify-center ${
-                          milestone.completed 
-                            ? 'bg-green-500 border-green-500 text-white' 
-                            : 'border-amber-300 bg-white'
-                        }`}
-                      >
-                        {milestone.completed && <Check className="w-3 h-3" />}
-                      </button>
-                      <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => startEditingMilestone(timeframe, goal.id, milestone.id)}
-                          className="p-1 text-amber-500 hover:text-amber-600 hover:bg-amber-100 rounded transition-colors"
-                        >
-                          <Edit3 className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={() => removeMilestone(timeframe, goal.id, milestone.id)}
-                          className="p-1 text-amber-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            ))}
-            
-            {(!goal.milestones || goal.milestones.length === 0) && (
-              <div className="text-center py-6 text-amber-700 border-2 border-dashed border-amber-200 rounded-lg bg-white">
-                <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 mx-auto mb-3">
-                  🏆
-                </div>
-                <p className="font-medium mb-2">No milestones yet</p>
-                <p className="text-sm mb-4">Milestones are key points on your journey</p>
-                <button
-                  onClick={() => addMilestone(timeframe, goal.id)}
-                  className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm font-medium"
-                >
-                  + Add Your First Milestone
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   const renderStepContent = () => {
     if (showSummary) {
@@ -1156,52 +1033,25 @@ const GoalSetting: React.FC = () => {
                         ))}
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          
-          {/* Milestones Summary Section */}
-          <div className="space-y-4 mt-8">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
-                  🏆
-                </div>
-                <h2 className="text-2xl font-bold text-slate-900">Milestones</h2>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {CATEGORIES.map(category => {
-                const goal = goals['90day'].find(g => g.category === category.id);
-                if (!goal || !goal.milestones || goal.milestones.length === 0) return null;
-                
-                return (
-                  <div key={category.id} className="bg-amber-50 rounded-xl shadow-sm border-2 border-amber-200 overflow-hidden">
-                    <div className="p-4">
-                      <div className="flex items-center space-x-3 mb-3">
-                        {category.icon}
-                        <h3 className="font-semibold text-amber-800">{category.name}</h3>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        {goal.milestones.map(milestone => (
-                          <div key={milestone.id} className="flex items-start">
-                            <div className="w-2 h-2 bg-amber-500 rounded-full mt-2 mr-2 flex-shrink-0" />
-                            <div className="flex-1">
-                              <div className={`text-sm font-medium text-amber-900 ${milestone.completed ? 'line-through opacity-70' : ''}`}>
-                                {milestone.title}
-                              </div>
-                              <div className="text-xs text-amber-700">
-                                ({new Date(milestone.dueDate).toLocaleDateString()})
-                              </div>
+                    
+                    {/* Show milestones for 90-day goals in summary */}
+                    {goal.milestones && goal.milestones.length > 0 && (
+                      <div className="mt-3 border-t border-slate-100 pt-3">
+                        <h4 className="text-sm font-medium text-slate-700 mb-2 flex items-center">
+                          <div className="w-2 h-2 bg-amber-500 rounded-full mr-1"></div> Milestones
+                        </h4>
+                        <div className="space-y-2">
+                          {goal.milestones.map(milestone => (
+                            <div key={milestone.id} className="flex items-center space-x-2 text-xs">
+                              <div className={`w-3 h-3 rounded-full ${milestone.completed ? 'bg-green-500' : 'bg-slate-300'}`}></div>
+                              <span className={milestone.completed ? 'line-through text-slate-500' : 'text-slate-700'}>
+                                {milestone.title} ({new Date(milestone.dueDate).toLocaleDateString()})
+                              </span>
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 );
               })}
@@ -1299,9 +1149,6 @@ const GoalSetting: React.FC = () => {
 
           {renderGoalForm(currentTimeframe, currentCategory)}
         </div>
-        
-        {/* Render Milestones Section */}
-        {currentTimeframe === '90day' && renderMilestonesSection(currentTimeframe, currentCategory)}
       </div>
     );
   };
