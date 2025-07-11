@@ -15,7 +15,6 @@ import {
   X,
   ArrowRight,
   ArrowLeft,
-  Clock
 } from 'react-feather';
 import MilestonesSection from './MilestonesSection';
 
