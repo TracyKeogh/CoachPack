@@ -26,39 +26,16 @@ import {
   Zap,
   Sparkles
 } from 'lucide-react';
-import { useGoalSettingData } from '../hooks/useGoalSettingData';
+import { useCalendarData } from '../hooks/useCalendarData';
 import { useWheelData } from '../hooks/useWheelData';
 import { useValuesData } from '../hooks/useValuesData';
 import { useVisionBoardData } from '../hooks/useVisionBoardData';
 
 type CalendarView = 'daily' | 'weekly' | '90-day' | 'yearly';
 
-interface Event {
-  id: string;
-  title: string;
-  start: Date;
-  end: Date;
-  category: 'business' | 'body' | 'balance' | 'personal';
-  frequency?: 'daily' | 'weekly' | '3x-week';
-  completed?: boolean;
-  relatedGoal?: string;
-}
-
-interface ActionItem {
-  id: string;
-  title: string;
-  duration: number; // in minutes
-  category: 'business' | 'body' | 'balance' | 'personal';
-  frequency: 'daily' | 'weekly' | '3x-week';
-  completed?: boolean;
-  relatedGoal?: string;
-}
-
 const Calendar: React.FC = () => {
   const [currentView, setCurrentView] = useState<CalendarView>('weekly');
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [events, setEvents] = useState<Event[]>([]);
-  const [actionPool, setActionPool] = useState<ActionItem[]>([]);
   const [showVisionOverlay, setShowVisionOverlay] = useState(false);
   const [isAddingEvent, setIsAddingEvent] = useState(false);
   const [newEvent, setNewEvent] = useState<Partial<Event>>({
@@ -67,82 +44,25 @@ const Calendar: React.FC = () => {
     end: new Date(new Date().getTime() + 60 * 60 * 1000) // 1 hour later
   });
   
-  const { data: goalsData } = useGoalSettingData();
+  const { 
+    data: calendarData, 
+    addEvent, 
+    updateEvent, 
+    removeEvent, 
+    scheduleActionFromPool,
+    refreshActionPool
+  } = useCalendarData();
+  
+  const { events, actionPool } = calendarData;
+  
   const { data: wheelData } = useWheelData();
   const { data: valuesData } = useValuesData();
   const { visionItems } = useVisionBoardData();
 
-  // Initialize action pool from goals
+  // Refresh action pool when component mounts
   useEffect(() => {
-    const actions: ActionItem[] = [];
-    
-    // Extract actions from goals
-    Object.entries(goalsData.categoryGoals).forEach(([category, goal]) => {
-      if (goal && goal.actions) {
-        goal.actions.forEach((action, index) => {
-          actions.push({
-            id: `${category}-action-${index}`,
-            title: action.text,
-            duration: 60, // Default 60 minutes
-            category: category as 'business' | 'body' | 'balance' | 'personal',
-            frequency: action.frequency || 'weekly',
-            relatedGoal: goal.goal
-          });
-        });
-      }
-    });
-    
-    setActionPool(actions);
-  }, [goalsData]);
-
-  // Sample events for demo
-  useEffect(() => {
-    const now = new Date();
-    const sampleEvents: Event[] = [
-      {
-        id: '1',
-        title: 'Morning Workout',
-        start: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 7, 0),
-        end: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 8, 0),
-        category: 'body',
-        frequency: 'daily'
-      },
-      {
-        id: '2',
-        title: 'Team Meeting',
-        start: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 10, 0),
-        end: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 11, 30),
-        category: 'business',
-        frequency: 'weekly'
-      },
-      {
-        id: '3',
-        title: 'Family Dinner',
-        start: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 18, 0),
-        end: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 19, 30),
-        category: 'balance',
-        frequency: 'daily'
-      },
-      {
-        id: '4',
-        title: 'Reading Time',
-        start: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 20, 0),
-        end: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 21, 0),
-        category: 'personal',
-        frequency: '3x-week'
-      },
-      {
-        id: '5',
-        title: 'Project Work',
-        start: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2, 9, 0),
-        end: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2, 12, 0),
-        category: 'business',
-        frequency: '3x-week'
-      }
-    ];
-    
-    setEvents(sampleEvents);
-  }, []);
+    refreshActionPool();
+  }, [refreshActionPool]);
 
   const handlePrevious = () => {
     const newDate = new Date(currentDate);
@@ -193,7 +113,6 @@ const Calendar: React.FC = () => {
   const handleAddEvent = () => {
     if (newEvent.title && newEvent.start && newEvent.end && newEvent.category) {
       const event: Event = {
-        id: Date.now().toString(),
         title: newEvent.title,
         start: new Date(newEvent.start),
         end: new Date(newEvent.end),
@@ -201,7 +120,7 @@ const Calendar: React.FC = () => {
         frequency: newEvent.frequency as 'daily' | 'weekly' | '3x-week' | undefined
       };
       
-      setEvents([...events, event]);
+      addEvent(event);
       setIsAddingEvent(false);
       setNewEvent({
         category: 'business',
@@ -212,13 +131,14 @@ const Calendar: React.FC = () => {
   };
 
   const handleDeleteEvent = (id: string) => {
-    setEvents(events.filter(event => event.id !== id));
+    removeEvent(id);
   };
 
   const handleToggleEventCompletion = (id: string) => {
-    setEvents(events.map(event => 
-      event.id === id ? { ...event, completed: !event.completed } : event
-    ));
+    const event = events.find(e => e.id === id);
+    if (event) {
+      updateEvent(id, { completed: !event.completed });
+    }
   };
 
   const formatDate = (date: Date): string => {
@@ -705,8 +625,18 @@ const Calendar: React.FC = () => {
   const renderYearlyView = () => {
     const year = currentDate.getFullYear();
     const months = [
-      'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 
-      'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'
+      { abbr: 'JAN', name: 'January' },
+      { abbr: 'FEB', name: 'February' },
+      { abbr: 'MAR', name: 'March' },
+      { abbr: 'APR', name: 'April' },
+      { abbr: 'MAY', name: 'May' },
+      { abbr: 'JUN', name: 'June' },
+      { abbr: 'JUL', name: 'July' },
+      { abbr: 'AUG', name: 'August' },
+      { abbr: 'SEP', name: 'September' },
+      { abbr: 'OCT', name: 'October' },
+      { abbr: 'NOV', name: 'November' },
+      { abbr: 'DEC', name: 'December' }
     ];
     
     // Get days in a month (1-31)
@@ -716,54 +646,44 @@ const Calendar: React.FC = () => {
     
     return (
       <div className="space-y-6">
-        <div className="text-center">
-          <h2 className="text-5xl font-bold text-blue-600 mb-4">THE BIG A## CALENDAR {year}</h2>
+        <div className="text-center mb-4">
+          <h2 className="text-5xl font-bold text-blue-600">THE BIG A## CALENDAR {year}</h2>
         </div>
         
-        <div className="bg-white rounded-xl shadow-sm border border-blue-200 overflow-hidden">
-          <div className="border-b border-blue-300">
-            {/* Empty cell for month column */}
-            <div className="flex">
-              <div className="w-16 border-r border-blue-300"></div>
-              
-              {/* Day numbers across the top */}
-              <div className="flex-1 grid grid-cols-31 text-center">
+        <div className="bg-white rounded-xl shadow-sm border-2 border-blue-500 overflow-hidden">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="border-b-2 border-blue-500">
+                <th className="w-16 border-r-2 border-blue-500"></th>
                 {Array.from({ length: 31 }, (_, i) => (
-                  <div key={i} className="py-2 text-blue-600 font-medium border-r border-blue-300">
+                  <th key={i} className="text-center py-2 text-blue-600 font-medium border-r border-blue-300">
                     {i + 1}
-                  </div>
+                  </th>
                 ))}
-              </div>
-            </div>
-          </div>
-          
-          {/* Month rows */}
-          <div>
-            {months.map((month, monthIndex) => (
-              <div key={month} className="flex border-b border-blue-300">
-                {/* Month label */}
-                <div className="w-16 py-4 flex items-center justify-center border-r border-blue-300">
-                  <span className="text-blue-600 font-bold text-xl">{month}</span>
-                </div>
-                
-                {/* Days grid */}
-                <div className="flex-1 grid grid-cols-31">
+              </tr>
+            </thead>
+            <tbody>
+              {months.map((month, monthIndex) => (
+                <tr key={month.abbr} className="border-b border-blue-300">
+                  <td className="w-16 py-4 text-center border-r-2 border-blue-500">
+                    <span className="text-blue-600 font-bold text-xl">{month.abbr}</span>
+                  </td>
                   {Array.from({ length: 31 }, (_, dayIndex) => {
                     const isValidDay = dayIndex < daysInMonth(monthIndex, year);
                     
                     return (
-                      <div 
+                      <td 
                         key={dayIndex}
                         className={`min-h-12 border-r border-blue-300 ${isValidDay ? 'bg-blue-50' : 'bg-slate-100'}`}
                       >
                         {/* Event indicators would go here */}
-                      </div>
+                      </td>
                     );
                   })}
-                </div>
-              </div>
-            ))}
-          </div>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
         
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
