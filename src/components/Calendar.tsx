@@ -16,7 +16,7 @@ const Calendar: React.FC = () => {
   const [currentView, setCurrentView] = useState<'daily' | 'weekly' | '90-day' | 'yearly'>('weekly');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showVisionOverlay, setShowVisionOverlay] = useState(false);
-  const [slotActions, setSlotActions] = useState<Record<string, ActionItem[]>>({});
+  const [slotActions, setSlotActions] = useState<Record<string, any[]>>({});
   const [showAddEventForm, setShowAddEventForm] = useState(false);
   const [draggedAction, setDraggedAction] = useState<ActionItem | null>(null);
   const [weeklyActions, setWeeklyActions] = useState<Record<string, string[]>>({});
@@ -383,13 +383,25 @@ const Calendar: React.FC = () => {
                       {/* Display actions dropped into this slot */}
                       {slotActions[generateSlotKey(dayIndex, slot)]?.map((action, index) => (
                         <div
-                          key={`${action.id}-${index}`}
+                          key={action.id}
                           className={`p-2 rounded-lg border text-xs mb-1 ${getCategoryColor(action.category)}`}
                         >
                           <div className="font-medium">{action.title}</div>
                           <div className="flex items-center space-x-1 mt-1 opacity-75">
                             <Clock className="w-3 h-3" />
                             <span>{action.duration}m</span>
+                            <button 
+                              onClick={() => {
+                                const slotKey = generateSlotKey(dayIndex, slot);
+                                setSlotActions(prev => ({
+                                  ...prev,
+                                  [slotKey]: prev[slotKey].filter((a, i) => a.id !== action.id)
+                                }));
+                              }}
+                              className="ml-1 text-gray-400 hover:text-red-500"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
                           </div>
                         </div>
                       ))}
@@ -411,13 +423,13 @@ const Calendar: React.FC = () => {
                             const slotKey = generateSlotKey(dayIndex, slot);
                             setSlotActions(prev => ({
                               ...prev,
-                              [slotKey]: [...(prev[slotKey] || []), draggedAction]
+                              [slotKey]: [...(prev[slotKey] || []), { ...draggedAction, id: `${draggedAction.id}-${Date.now()}` }]
                             }));
                           }
                         }}
                         className={`absolute inset-0 flex items-center justify-center text-slate-400 text-xs ${
                           !sampleEvents.some(event => event.day === dayIndex && event.slot === slot) &&
-                          (!slotActions[generateSlotKey(dayIndex, slot)] || slotActions[generateSlotKey(dayIndex, slot)].length === 0) 
+                          (!slotActions[generateSlotKey(dayIndex, slot)] || slotActions[generateSlotKey(dayIndex, slot)]?.length === 0) 
                             ? 'visible' : 'invisible'
                         }`}
                       >
