@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Clock, Eye, Target, Heart, Briefcase, User } from 'lucide-react';
 import { useCalendarData } from '../hooks/useCalendarData';
-import { STORAGE_KEY as GOALS_STORAGE_KEY } from '../hooks/useGoalSettingData';
+import { useGoalSettingData } from '../hooks/useGoalSettingData';
 
 interface CalendarEvent {
   id: string;
@@ -22,8 +22,8 @@ interface ActionItem {
 }
 
 const Calendar: React.FC = () => {
-  const [goalsData, setGoalsData] = useState<any>(null);
-  const [currentView, setCurrentView] = useState<'daily' | 'weekly' | '90-day' | 'yearly'>('yearly');
+  const { data: goalsData } = useGoalSettingData();
+  const [currentView, setCurrentView] = useState<'daily' | 'weekly' | '90-day' | 'yearly'>('weekly');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showVisionOverlay, setShowVisionOverlay] = useState(false);
   const [showAddEventForm, setShowAddEventForm] = useState(false);
@@ -37,24 +37,10 @@ const Calendar: React.FC = () => {
 
   const { data: calendarData, addEvent, updateEvent, removeEvent, refreshActionPool } = useCalendarData();
   
-  // Load goals data directly from localStorage
-  useEffect(() => {
-    try {
-      const storedGoalsData = localStorage.getItem(GOALS_STORAGE_KEY);
-      if (storedGoalsData) {
-        const parsedData = JSON.parse(storedGoalsData);
-        console.log("Loaded goals data:", parsedData);
-        setGoalsData(parsedData);
-      }
-    } catch (error) {
-      console.error("Error loading goals data:", error);
-    }
-  }, []);
-  
   // Refresh action pool when goals data changes
   useEffect(() => {
-    if (goalsData) {
-      console.log("Refreshing action pool with goals data");
+    if (goalsData && Object.keys(goalsData.categoryGoals || {}).length > 0) {
+      console.log("Refreshing action pool with goals data:", goalsData);
       refreshActionPool();
     }
   }, [goalsData, refreshActionPool]);
@@ -227,6 +213,16 @@ const Calendar: React.FC = () => {
                   placeholder="Most important task..."
                 />
               </div>
+              <div className="text-center py-6">
+                <p className="text-slate-500">No actions available</p>
+                <p className="text-xs text-slate-500">Add goals to see actions here</p>
+                <button
+                  onClick={refreshActionPool}
+                  className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm"
+                >
+                  Refresh Actions
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -289,7 +285,12 @@ const Calendar: React.FC = () => {
               <div className="text-center py-8 text-slate-500">
                 <CalendarIcon className="w-8 h-8 mx-auto mb-2 opacity-50" />
                 <p className="text-sm">No actions available</p>
-                <p className="text-xs">Add goals to see actions here</p>
+                <button
+                  onClick={refreshActionPool}
+                  className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm"
+                >
+                  Refresh Actions
+                </button>
               </div>
             )}
           </div>
@@ -400,7 +401,7 @@ const Calendar: React.FC = () => {
 
   const render90DayView = () => {
     const weeks = Array.from({ length: 12 }, (_, i) => i + 1);
-    const categories = ['Business', 'Body', 'Balance'];
+    const categories = ['business', 'body', 'balance'];
 
     return (
       <div className="bg-white rounded-lg shadow-sm border border-slate-200">
@@ -425,22 +426,40 @@ const Calendar: React.FC = () => {
             {/* Categories sidebar */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-slate-900">Focus Areas</h3>
-              {categories.map(category => (
-                <div key={category} className="p-4 border border-slate-200 rounded-lg">
-                  <h4 className="font-medium text-slate-900 mb-2 capitalize">{category}</h4>
-                  <div className="space-y-2">
-                    {goalsData && goalsData.categoryGoals && goalsData.categoryGoals[category.toLowerCase()] ? (
-                      <div className="text-sm text-slate-600">
-                        {goalsData.categoryGoals[category.toLowerCase()].goal || 
-                         goalsData.categoryGoals[category.toLowerCase()].title || 
-                         'Goal'}
-                      </div>
-                    ) : (
-                      <div className="text-sm text-slate-400">No goals set</div>
-                    )}
+              <div className="space-y-2">
+                {categories.map(category => (
+                  <div key={category} className="p-4 border border-slate-200 rounded-lg">
+                    <h4 className="font-medium text-slate-900 mb-2 capitalize">{category === 'business' ? 'Business' : category === 'body' ? 'Body' : 'Balance'}</h4>
+                    <div className="space-y-2">
+                      {goalsData?.categoryGoals && goalsData.categoryGoals[category.toLowerCase()] ? (
+                        <>
+                          <div className="text-sm text-slate-600 font-medium">
+                            {goalsData.categoryGoals[category.toLowerCase()].goal || 
+                             goalsData.categoryGoals[category.toLowerCase()].title || 
+                             'Goal'}
+                          </div>
+                          {Array.isArray(goalsData.categoryGoals[category.toLowerCase()].actions) && 
+                           goalsData.categoryGoals[category.toLowerCase()].actions.length > 0 && (
+                            <div className="mt-2 text-xs text-slate-500">
+                              <div className="font-medium mb-1">Actions:</div>
+                              <ul className="list-disc pl-4 space-y-1">
+                                {goalsData.categoryGoals[category.toLowerCase()].actions.slice(0, 2).map((action, i) => (
+                                  <li key={i}>
+                                    {typeof action === 'string' ? action : 
+                                     action.text || action.title || 'Action'}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="text-sm text-slate-400">No goals set</div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
 
             {/* 12-week timeline */}
