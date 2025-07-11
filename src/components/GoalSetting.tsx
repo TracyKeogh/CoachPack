@@ -38,14 +38,146 @@ const GoalSetting: React.FC = () => {
   const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0);
   const [categories] = useState(['business', 'body', 'balance']);
   const [annualSnapshot, setAnnualSnapshot] = useState({
-    vision: '',
-    priorities: '',
-    growth: ''
+    vision: 'I feel energized and healthy. My career is thriving with new opportunities and growth. My relationships are deep and fulfilling, and I'm living with purpose and joy every day.',
+    priorities: '1. Build a sustainable business\n2. Improve physical health and energy\n3. Create more balance between work and personal life',
+    growth: 'Develop deeper self-awareness and emotional intelligence. Learn new skills that expand my capabilities both professionally and personally.'
   });
   const [categoryGoals, setCategoryGoals] = useState<Record<string, Goal[]>>({
-    business: [],
-    body: [],
-    balance: []
+    business: [
+      {
+        id: '1',
+        title: 'Grow my business to $10k/month revenue',
+        description: 'Create a sustainable business model with consistent monthly revenue through product sales and client work',
+        category: 'business',
+        milestones: [
+          {
+            id: 'm1',
+            title: 'Launch new product offering',
+            targetDate: getTwelveWeeksFromNow(),
+            completed: false
+          },
+          {
+            id: 'm2',
+            title: 'Reach 1,000 email subscribers',
+            targetDate: getTwelveWeeksFromNow(),
+            completed: false
+          }
+        ],
+        actionItems: [
+          {
+            id: 'a1',
+            title: 'Write weekly newsletter',
+            frequency: 'weekly',
+            completed: false
+          },
+          {
+            id: 'a2',
+            title: 'Reach out to 3 potential clients',
+            frequency: 'weekly',
+            completed: false
+          },
+          {
+            id: 'a3',
+            title: 'Review metrics and adjust strategy',
+            frequency: 'weekly',
+            completed: false
+          }
+        ],
+        connectedValues: ['Growth', 'Freedom', 'Excellence'],
+        targetDate: getTwelveWeeksFromNow(),
+        progress: 0
+      }
+    ],
+    body: [
+      {
+        id: '2',
+        title: 'Improve energy and physical health',
+        description: 'Establish consistent exercise routine, improve nutrition, and prioritize sleep for better overall energy and health',
+        category: 'body',
+        milestones: [
+          {
+            id: 'm3',
+            title: 'Complete 30 consecutive days of exercise',
+            targetDate: getTwelveWeeksFromNow(),
+            completed: false
+          },
+          {
+            id: 'm4',
+            title: 'Establish 7-hour sleep routine',
+            targetDate: getTwelveWeeksFromNow(),
+            completed: false
+          }
+        ],
+        actionItems: [
+          {
+            id: 'a4',
+            title: 'Exercise for 30 minutes',
+            frequency: '3x-week',
+            completed: false
+          },
+          {
+            id: 'a5',
+            title: 'Meal prep on Sundays',
+            frequency: 'weekly',
+            completed: false
+          },
+          {
+            id: 'a6',
+            title: 'No screens 1 hour before bed',
+            frequency: 'daily',
+            completed: false
+          }
+        ],
+        connectedValues: ['Health', 'Vitality', 'Discipline'],
+        targetDate: getTwelveWeeksFromNow(),
+        progress: 0
+      }
+    ],
+    balance: [
+      {
+        id: '3',
+        title: 'Create better work-life harmony',
+        description: 'Establish clear boundaries between work and personal life, prioritize relationships, and make time for activities that bring joy',
+        category: 'balance',
+        milestones: [
+          {
+            id: 'm5',
+            title: 'Implement no-work weekends',
+            targetDate: getTwelveWeeksFromNow(),
+            completed: false
+          },
+          {
+            id: 'm6',
+            title: 'Plan quarterly weekend getaway',
+            targetDate: getTwelveWeeksFromNow(),
+            completed: false
+          }
+        ],
+        actionItems: [
+          {
+            id: 'a7',
+            title: 'Schedule quality time with loved ones',
+            frequency: 'weekly',
+            completed: false
+          },
+          {
+            id: 'a8',
+            title: 'Dedicate 30 minutes to a hobby',
+            frequency: '3x-week',
+            completed: false
+          },
+          {
+            id: 'a9',
+            title: 'Practice mindfulness meditation',
+            frequency: 'daily',
+            completed: false
+          }
+        ],
+        connectedValues: ['Balance', 'Connection', 'Joy'],
+        targetDate: getTwelveWeeksFromNow(),
+        progress: 0
+      }
+    ]
   });
   const [editingGoal, setEditingGoal] = useState<string | null>(null);
   const [newGoal, setNewGoal] = useState<Partial<Goal>>({});
