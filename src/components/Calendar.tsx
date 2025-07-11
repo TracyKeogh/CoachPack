@@ -442,6 +442,7 @@ const Calendar: React.FC = () => {
                             <ul className="list-disc pl-4 space-y-1">
                               <li>Write weekly newsletter</li>
                               <li>Reach out to 3 potential clients</li>
+                              <li>Review metrics and adjust strategy</li>
                             </ul>
                           </div>
                         </>
@@ -457,6 +458,7 @@ const Calendar: React.FC = () => {
                             <ul className="list-disc pl-4 space-y-1">
                               <li>Exercise for 30 minutes</li>
                               <li>Meal prep on Sundays</li>
+                              <li>No screens 1 hour before bed</li>
                             </ul>
                           </div>
                         </>
@@ -472,6 +474,7 @@ const Calendar: React.FC = () => {
                             <ul className="list-disc pl-4 space-y-1">
                               <li>Schedule quality time with loved ones</li>
                               <li>Dedicate 30 minutes to a hobby</li>
+                              <li>Practice mindfulness meditation</li>
                             </ul>
                           </div>
                         </>

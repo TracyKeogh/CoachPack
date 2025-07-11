@@ -87,59 +87,75 @@ export const useCalendarData = () => {
       // Initialize with some default actions if no goals data found
       const actionPool: ActionPoolItem[] = [
         {
-          id: 'morning-workout',
-          title: 'Morning Workout',
-          duration: 60, // 60 minutes
+          id: 'exercise',
+          title: 'Exercise for 30 minutes',
+          duration: 30, // 30 minutes
           category: 'body',
-          frequency: 'daily',
+          frequency: '3x-week',
           completed: false
         },
         {
-          id: 'team-meeting',
-          title: 'Team Meeting',
-          duration: 90, // 90 minutes
+          id: 'newsletter',
+          title: 'Write weekly newsletter',
+          duration: 60, // 60 minutes
           category: 'business',
           frequency: 'weekly',
           completed: false
         },
         {
           id: 'meal-prep',
-          title: 'Meal Prep',
+          title: 'Meal prep on Sundays',
           duration: 120, // 120 minutes
-          category: 'body',
+          category: 'body', 
           frequency: 'weekly',
           completed: false
         },
         {
-          id: 'reading-time',
-          title: 'Reading Time',
+          id: 'hobby-time',
+          title: 'Dedicate 30 minutes to a hobby',
           duration: 45, // 45 minutes
-          category: 'balance',
+          category: 'balance', 
           frequency: '3x-week',
           completed: false
         },
         {
-          id: 'family-dinner',
-          title: 'Family Dinner',
+          id: 'family-time',
+          title: 'Schedule quality time with loved ones',
           duration: 90, // 90 minutes
           category: 'balance',
-          frequency: 'daily',
+          frequency: 'weekly',
           completed: false
         },
         {
-          id: 'project-work',
-          title: 'Project Work',
-          duration: 180, // 180 minutes
+          id: 'client-outreach',
+          title: 'Reach out to 3 potential clients',
+          duration: 60, // 60 minutes
           category: 'business',
-          frequency: '3x-week',
+          frequency: 'weekly',
           completed: false
         },
         {
-          id: 'meditation',
-          title: 'Meditation',
+          id: 'mindfulness',
+          title: 'Practice mindfulness meditation',
           duration: 20, // 20 minutes
           category: 'balance',
           frequency: 'daily',
+          completed: false
+        },
+        {
+          id: 'no-screens',
+          title: 'No screens 1 hour before bed',
+          duration: 60, // 60 minutes
+          category: 'body',
+          frequency: 'daily',
+          completed: false
+        },
+        {
+          id: 'metrics-review',
+          title: 'Review metrics and adjust strategy',
+          duration: 45, // 45 minutes
+          category: 'business',
+          frequency: 'weekly',
           completed: false
         }
       ];
