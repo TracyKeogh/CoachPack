@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Clock, Eye, Target, Heart, Briefcase, User } from 'lucide-react';
 import { useCalendarData } from '../hooks/useCalendarData';
-import { useGoalSettingData } from '../hooks/useGoalSettingData';
+import { STORAGE_KEY as GOALS_STORAGE_KEY } from '../hooks/useGoalSettingData';
 
 interface ActionItem {
   id: string;
@@ -16,7 +16,7 @@ const Calendar: React.FC = () => {
   const [currentView, setCurrentView] = useState<'daily' | 'weekly' | '90-day' | 'yearly'>('weekly');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showVisionOverlay, setShowVisionOverlay] = useState(false);
-  const [slotActions, setSlotActions] = useState<Record<string, any[]>>({});
+  const [slotActions, setSlotActions] = useState<Record<string, ActionItem[]>>({});
   const [showAddEventForm, setShowAddEventForm] = useState(false);
   const [draggedAction, setDraggedAction] = useState<ActionItem | null>(null);
   const [weeklyActions, setWeeklyActions] = useState<Record<string, string[]>>({});
@@ -410,15 +410,15 @@ const Calendar: React.FC = () => {
                         onDragOver={(e) => {
                           e.preventDefault();
                           if (draggedAction) {
-                            e.currentTarget.classList.add('bg-opacity-70');
+                            e.currentTarget.classList.add('drop-highlight');
                           }
                         }}
                         onDragLeave={(e) => {
-                          e.currentTarget.classList.remove('bg-opacity-70');
+                          e.currentTarget.classList.remove('drop-highlight');
                         }}
                         onDrop={(e) => {
                           e.preventDefault();
-                          e.currentTarget.classList.remove('bg-opacity-70');
+                          e.currentTarget.classList.remove('drop-highlight');
                           if (draggedAction) {
                             const slotKey = generateSlotKey(dayIndex, slot);
                             setSlotActions(prev => ({
@@ -430,7 +430,7 @@ const Calendar: React.FC = () => {
                         className={`absolute inset-0 flex items-center justify-center text-slate-400 text-xs ${
                           !sampleEvents.some(event => event.day === dayIndex && event.slot === slot) &&
                           (!slotActions[generateSlotKey(dayIndex, slot)] || slotActions[generateSlotKey(dayIndex, slot)]?.length === 0) 
-                            ? 'visible' : 'invisible'
+                            ? 'visible' : 'hidden'
                         }`}
                       >
                         <div className="absolute inset-0 flex items-center justify-center text-slate-400 text-xs">
@@ -564,7 +564,7 @@ const Calendar: React.FC = () => {
             {/* 12-week timeline */}
             <div className="col-span-3">
               <div className="grid grid-cols-4 gap-4">
-                {weeks.map((week) => (
+                {weeks.map((week, index) => (
                   <div 
                     key={week} 
                     className="border border-slate-200 rounded-lg p-4"
@@ -585,38 +585,75 @@ const Calendar: React.FC = () => {
                           } flex items-center justify-center`}
                           onDragOver={(e) => {
                             e.preventDefault();
-                            e.currentTarget.classList.add('bg-opacity-70');
+                            e.currentTarget.classList.add('drop-highlight');
+                            return false;
                           }}
                           onDragLeave={(e) => {
-                            e.currentTarget.classList.remove('bg-opacity-70');
+                            e.currentTarget.classList.remove('drop-highlight');
+                            return false;
                           }}
                           onDrop={(e) => {
                             e.preventDefault();
-                            e.currentTarget.classList.remove('bg-opacity-70');
+                            e.currentTarget.classList.remove('drop-highlight');
                             if (draggedAction) {
-                              // Here we would normally update state with the dropped action
-                              // For now, we'll just show a visual indicator
-                              const target = e.currentTarget;
-                              const originalContent = target.innerHTML;
-                              target.innerHTML = `
-                                <div class="p-1 text-xs font-medium ${
-                                  draggedAction.category === 'business' ? 'text-blue-700' : 
-                                  draggedAction.category === 'body' ? 'text-green-700' : 
-                                  'text-purple-700'
-                                }">
-                                  ${draggedAction.title}
-                                </div>
-                              `;
-                                  <div className="font-medium mb-1">Drag these actions to weeks:</div>
-                              // Reset after animation
-                              setTimeout(() => {
-                                const allDropZones = document.querySelectorAll('.drop-highlight');
-                                allDropZones.forEach(zone => zone.classList.remove('drop-highlight'));
-                              }, 100);
+                              // Get the week number and category
+                              const week = index + 1; // Week 1-12
+                              const category = category;
+                              
+                              // Create a unique key for this week-category combination
+                              const weekCategoryKey = `week-${week}-${category}`;
+                              
+                              // Update the weeklyActions state
+                              setWeeklyActions(prev => {
+                                const currentActions = prev[weekCategoryKey] || [];
+                                // Only add if not already in the list
+                                if (!currentActions.includes(draggedAction.title)) {
+                                  return {
+                                    ...prev,
+                                    [weekCategoryKey]: [...currentActions, draggedAction.title]
+                                  };
+                                }
+                                return prev;
+                              });
                             }
+                            return false;
                           }}
                         >
-                          <span className="text-xs text-slate-400">Drop action here</span>
+                          {weeklyActions[`week-${index + 1}-${category}`] && 
+                           weeklyActions[`week-${index + 1}-${category}`].length > 0 ? (
+                            <div className="p-1 space-y-1 max-h-full overflow-y-auto">
+                              {weeklyActions[`week-${index + 1}-${category}`].map((actionTitle, idx) => (
+                                <div 
+                                  key={`${actionTitle}-${idx}`}
+                                  className={`p-1 text-xs font-medium rounded ${
+                                    category === 'business' ? 'bg-blue-100 text-blue-700' : 
+                                    category === 'body' ? 'bg-green-100 text-green-700' : 
+                                    'bg-purple-100 text-purple-700'
+                                  } flex justify-between items-center`}
+                                >
+                                  <span>{actionTitle}</span>
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setWeeklyActions(prev => {
+                                        const currentActions = [...(prev[`week-${index + 1}-${category}`] || [])];
+                                        const newActions = currentActions.filter(a => a !== actionTitle);
+                                        return {
+                                          ...prev,
+                                          [`week-${index + 1}-${category}`]: newActions
+                                        };
+                                      });
+                                    }}
+                                    className="ml-1 text-gray-400 hover:text-red-500 text-xs"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-slate-400">Drop action here</span>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -814,7 +851,7 @@ const Calendar: React.FC = () => {
       <style jsx>{`
         .drop-highlight {
           box-shadow: inset 0 0 0 2px rgba(79, 70, 229, 0.6);
-          background-color: rgba(79, 70, 229, 0.2);
+          background-color: rgba(79, 70, 229, 0.2) !important;
         }
       `}</style>
       {/* Header */}
