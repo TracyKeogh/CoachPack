@@ -1,18 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Clock, Eye, Target, Heart, Briefcase, User } from 'lucide-react';
 import { useCalendarData } from '../hooks/useCalendarData';
-  ChevronLeft,
-  ChevronRight,
-  Plus,
-  Clock,
-  Eye,
-  Target,
-  Heart,
-  Briefcase,
-  User,
-  Check
-  frequency?: 'daily' | 'weekly' | '3x-week';
-}
+import { useGoalSettingData } from '../hooks/useGoalSettingData';
 
 interface ActionItem {
   id: string;
