@@ -273,8 +273,14 @@ const Calendar: React.FC = () => {
                   <div className="flex-1 min-h-16 border border-slate-200 rounded-lg">
                     {hourEvents.length > 0 ? (
                       <div className="p-2 space-y-2">
-                        {hourEvents.map(event => (
-                          <div 
+                        <div className="text-xs font-medium text-slate-500 mb-1">Morning</div>                        
+                        {[...getEventsForDay(date), ...sampleEvents.filter(event => {
+                          const eventDate = new Date(event.start);
+                          return eventDate.getDate() === date.getDate() &&
+                                 eventDate.getMonth() === date.getMonth() &&
+                                 eventDate.getFullYear() === date.getFullYear() &&
+                                 eventDate.getHours() >= 5 && eventDate.getHours() < 12;
+                        })]
                             key={event.id}
                             className={`p-2 rounded-lg border ${getCategoryColor(event.category)} flex items-center justify-between`}
                           >
@@ -334,6 +340,31 @@ const Calendar: React.FC = () => {
   const renderWeeklyView = () => {
     const weekDates = getWeekDates();
     
+    // Sample events for the week
+    const sampleEvents = [
+      {
+        id: 'event-1',
+        title: 'Team Meeting',
+        start: new Date(weekDates[1].setHours(10, 0, 0)),
+        end: new Date(weekDates[1].setHours(11, 30, 0)),
+        category: 'business' as 'business' | 'body' | 'balance' | 'personal',
+      },
+      {
+        id: 'event-2',
+        title: 'Morning Workout',
+        start: new Date(weekDates[3].setHours(7, 0, 0)),
+        end: new Date(weekDates[3].setHours(8, 0, 0)),
+        category: 'body' as 'business' | 'body' | 'balance' | 'personal',
+      },
+      {
+        id: 'event-3',
+        title: 'Reading Time',
+        start: new Date(weekDates[4].setHours(19, 0, 0)),
+        end: new Date(weekDates[4].setHours(19, 45, 0)),
+        category: 'balance' as 'business' | 'body' | 'balance' | 'personal',
+      }
+    ];
+    
     return (
       <div className="space-y-6">
         <div className="text-center">
@@ -349,7 +380,7 @@ const Calendar: React.FC = () => {
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
             <h3 className="text-lg font-semibold text-slate-900 mb-4">Action Pool</h3>
             <div className="space-y-3">
-              {actionPool.map(action => (
+              {actionPool.length > 0 ? actionPool.map(action => (
                 <div 
                   key={action.id}
                   className={`p-3 rounded-lg border ${getCategoryColor(action.category)} cursor-move hover:shadow-md transition-shadow`}
@@ -372,7 +403,11 @@ const Calendar: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <div className="text-center py-4 text-slate-500">
+                  <p>No actions in pool. Add some from your goals!</p>
+                </div>
+              )}
               
               <button
                 onClick={() => setIsAddingEvent(true)}
@@ -437,7 +472,13 @@ const Calendar: React.FC = () => {
                   
                   <div className="p-2 space-y-2">
                     <div className="text-xs font-medium text-slate-500 mb-1">Afternoon</div>
-                    {getEventsForDay(date)
+                    {[...getEventsForDay(date), ...sampleEvents.filter(event => {
+                      const eventDate = new Date(event.start);
+                      return eventDate.getDate() === date.getDate() &&
+                             eventDate.getMonth() === date.getMonth() &&
+                             eventDate.getFullYear() === date.getFullYear() &&
+                             eventDate.getHours() >= 12 && eventDate.getHours() < 17;
+                    })]
                       .filter(event => {
                         const hour = new Date(event.start).getHours();
                         return hour >= 12 && hour < 17;
@@ -458,7 +499,13 @@ const Calendar: React.FC = () => {
                   
                   <div className="p-2 space-y-2">
                     <div className="text-xs font-medium text-slate-500 mb-1">Evening</div>
-                    {getEventsForDay(date)
+                    {[...getEventsForDay(date), ...sampleEvents.filter(event => {
+                      const eventDate = new Date(event.start);
+                      return eventDate.getDate() === date.getDate() &&
+                             eventDate.getMonth() === date.getMonth() &&
+                             eventDate.getFullYear() === date.getFullYear() &&
+                             eventDate.getHours() >= 17 && eventDate.getHours() < 24;
+                    })]
                       .filter(event => {
                         const hour = new Date(event.start).getHours();
                         return hour >= 17 && hour < 24;
@@ -489,6 +536,9 @@ const Calendar: React.FC = () => {
     const startDate = new Date(currentDate);
     const endDate = new Date(currentDate);
     endDate.setDate(endDate.getDate() + 90);
+
+    // Get goals data
+    const { data: goalsData } = useGoalSettingData();
     
     // Generate 12 weeks
     const weeks = Array.from({ length: 12 }, (_, i) => {
