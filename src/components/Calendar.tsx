@@ -14,7 +14,24 @@ import {
   CalendarRange,
   CalendarClock
 } from 'lucide-react';
-import { useCalendarData, type Event, type ActionPoolItem } from '../hooks/useCalendarData';
+import { useCalendarData, type Event, type ActionPoolItem as BaseActionPoolItem } from '../hooks/useCalendarData';
+
+// Extended interface for action pool items
+interface ActionPoolItem extends BaseActionPoolItem {
+  id: string;
+}
+
+// Interface for scheduled actions (actions that have been placed on the calendar)
+interface ScheduledAction {
+  scheduledId: string;      // Unique ID for this scheduled instance
+  originalId: string;       // ID of the original action from the pool
+  title: string;            // Title of the action
+  duration: number;         // Duration in minutes
+  category: 'business' | 'body' | 'balance'; // Category
+  frequency: 'daily' | 'weekly' | '3x-week'; // Frequency
+  dayIndex: number;         // 0-6 for Sunday-Saturday
+  slot: string;             // 'Morning', 'Afternoon', or 'Evening'
+}
 
 const Calendar: React.FC = () => {
   const { 
@@ -43,35 +60,108 @@ const Calendar: React.FC = () => {
   });
 
   // Drag and drop state
-  const [draggedAction, setDraggedAction] = useState<ActionPoolItem | null>(null);
+  const [draggedAction, setDraggedAction] = useState<ActionPoolItem | ScheduledAction | null>(null);
+  const [dragSource, setDragSource] = useState<'pool' | 'weekly' | '90day' | null>(null);
   const [highlightedSlot, setHighlightedSlot] = useState<string | null>(null);
   const [highlightedWeekCategory, setHighlightedWeekCategory] = useState<string | null>(null);
 
   // Weekly view state
-  const [slotActions, setSlotActions] = useState<Record<string, ActionPoolItem[]>>({});
+  const [slotActions, setSlotActions] = useState<Record<string, ScheduledAction[]>>({});
 
   // 90-day view state
-  const [weeklyActionItems, setWeeklyActionItems] = useState<Record<string, ActionPoolItem[]>>({});
+  const [weeklyActionItems, setWeeklyActionItems] = useState<Record<string, ScheduledAction[]>>({});
+
+  // Reference date for the start of the 90-day period (first Sunday of the current quarter)
+  const [startOf90DayPeriod] = useState(() => {
+    const today = new Date();
+    const firstDayOfQuarter = new Date(today.getFullYear(), Math.floor(today.getMonth() / 3) * 3, 1);
+    const dayOfWeek = firstDayOfQuarter.getDay();
+    const firstSundayOfQuarter = new Date(firstDayOfQuarter);
+    // If first day is not Sunday, go to the next Sunday
+    if (dayOfWeek !== 0) {
+      firstSundayOfQuarter.setDate(firstDayOfQuarter.getDate() + (7 - dayOfWeek));
+    }
+    return firstSundayOfQuarter;
+  });
 
   // Refresh action pool on mount
   useEffect(() => {
     refreshActionPool();
   }, [refreshActionPool]);
 
-  // Helper function to get the week number (1-12) for a given date
-  const getWeekNumber = (date: Date): number => {
-    const startDate = new Date(currentDate);
-    // Set to the first day of the current week (Sunday)
-    startDate.setDate(startDate.getDate() - startDate.getDay());
+  // Derive weeklyActionItems from slotActions whenever slotActions changes
+  useEffect(() => {
+    const newWeeklyActionItems: Record<string, ScheduledAction[]> = {};
     
-    const diffTime = date.getTime() - startDate.getTime();
+    // Iterate through all slotActions
+    Object.entries(slotActions).forEach(([slotKey, actions]) => {
+      // Extract dayIndex from slotKey (format: "day-{dayIndex}-{slot}")
+      const parts = slotKey.split('-');
+      if (parts.length >= 3) {
+        const dayIndex = parseInt(parts[1]);
+        
+        // Get the date for this day
+        const weekDates = getWeekDates();
+        const date = weekDates[dayIndex];
+        
+        // Calculate week number for 90-day view
+        const weekNumber = getWeekNumberFor90DayView(date);
+        
+        // Process each action in this slot
+        actions.forEach(action => {
+          // Map slot to category
+          let category: 'business' | 'body' | 'balance';
+          const slot = parts.slice(2).join('-').toLowerCase();
+          
+          if (slot.includes('morning')) {
+            category = 'business';
+          } else if (slot.includes('afternoon')) {
+            category = 'body';
+          } else {
+            category = 'balance';
+          }
+          
+          // Create key for weeklyActionItems
+          const weekCategoryKey = `week-${weekNumber}-${category}`;
+          
+          // Initialize array if it doesn't exist
+          if (!newWeeklyActionItems[weekCategoryKey]) {
+            newWeeklyActionItems[weekCategoryKey] = [];
+          }
+          
+          // Add action to weeklyActionItems if it's not already there
+          if (!newWeeklyActionItems[weekCategoryKey].some(a => a.scheduledId === action.scheduledId)) {
+            newWeeklyActionItems[weekCategoryKey].push(action);
+          }
+        });
+      }
+    });
+    
+    // Update weeklyActionItems state
+    setWeeklyActionItems(newWeeklyActionItems);
+  }, [slotActions]);
+
+  // Helper function to get the week number (1-12) for a given date relative to startOf90DayPeriod
+  const getWeekNumberFor90DayView = (date: Date): number => {
+    // Calculate days between the date and startOf90DayPeriod
+    const diffTime = date.getTime() - startOf90DayPeriod.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    // Calculate week number (0-indexed, then add 1)
     const weekNumber = Math.floor(diffDays / 7) + 1;
     
     // Ensure week number is between 1 and 12
-    const clampedWeekNumber = Math.max(1, Math.min(12, weekNumber));
-    console.log(`Date: ${date.toDateString()}, Week Number: ${clampedWeekNumber}`);
-    return clampedWeekNumber;
+    return Math.max(1, Math.min(12, weekNumber));
+  };
+
+  // Helper function to get a date for a specific week number and day index
+  const getDateForWeekAndDay = (weekNumber: number, dayIndex: number): Date => {
+    const result = new Date(startOf90DayPeriod);
+    // Add (weekNumber - 1) weeks to get to the start of the target week
+    result.setDate(result.getDate() + (weekNumber - 1) * 7);
+    // Add dayIndex days to get to the specific day within that week
+    result.setDate(result.getDate() + dayIndex);
+    return result;
   };
 
   // Helper function to get the day index (0-6) for a given date
@@ -106,131 +196,133 @@ const Calendar: React.FC = () => {
     return dates;
   };
 
-  // Centralized function to handle action drops
-  const handleActionDrop = (action: ActionPoolItem, targetType: 'weeklySlot' | '90DayCategory', targetIdentifier: any) => {
-    // Ensure the action has a unique ID
-    console.log("handleActionDrop called with:", { action, targetType, targetIdentifier });
-    
-    // Create a deep copy of the action with a unique ID
-    const actionWithId: ActionPoolItem = {
-      ...action,
-      id: action.id || `${Date.now()}-${Math.random().toString(36).substring(2)}`,
-      category: action.category
-    };
-    
-    console.log("Action with ID:", actionWithId);
+  // Function to map a slot name to a category
+  const slotToCategory = (slot: string): 'business' | 'body' | 'balance' => {
+    const lowerSlot = slot.toLowerCase();
+    if (lowerSlot.includes('morning')) return 'business';
+    if (lowerSlot.includes('afternoon')) return 'body';
+    return 'balance';
+  };
 
+  // Function to map a category to a default slot
+  const categoryToSlot = (category: string): string => {
+    const lowerCategory = category.toLowerCase();
+    if (lowerCategory === 'business') return 'Morning';
+    if (lowerCategory === 'body') return 'Afternoon';
+    return 'Evening';
+  };
+
+  // Centralized function to handle action drops
+  const handleActionDrop = (
+    action: ActionPoolItem | ScheduledAction, 
+    targetType: 'weeklySlot' | '90DayCategory', 
+    targetIdentifier: any,
+    source: 'pool' | 'weekly' | '90day'
+  ) => {
+    console.log("handleActionDrop called with:", { action, targetType, targetIdentifier, source });
+    
     if (targetType === 'weeklySlot') {
       const { dayIndex, slot } = targetIdentifier;
-      
-      // Update weekly view
       const slotKey = `day-${dayIndex}-${slot}`;
-      setSlotActions(prev => {
-        const existingActions = prev[slotKey] || [];
-        // Check if action already exists in this slot
-        if (existingActions.some(a => a.id === actionWithId.id)) {
-          return prev;
-        }
-        return {
-          ...prev,
-          [slotKey]: [...existingActions, actionWithId]
-        };
-      });
       
-      // Calculate week number and category for 90-day view
-      const weekNumber = getWeekNumber(getWeekDates()[dayIndex]);
-      const category = slot.toLowerCase() as 'business' | 'body' | 'balance';
-      const weekCategoryKey = `week-${weekNumber}-${category}`;
-      
-      // Update 90-day view
-      setWeeklyActionItems(prev => {
-        const existingActions = prev[weekCategoryKey] || [];
-        // Check if action already exists in this week/category
-        if (existingActions.some(a => a.id === actionWithId.id)) {
-          return prev;
-        }
-        return {
-          ...prev,
-          [weekCategoryKey]: [...existingActions, actionWithId]
+      if (source === 'pool') {
+        // Creating a new scheduled action from the action pool
+        const poolAction = action as ActionPoolItem;
+        const scheduledAction: ScheduledAction = {
+          scheduledId: `${Date.now()}-${Math.random().toString(36).substring(2)}`,
+          originalId: poolAction.id,
+          title: poolAction.title,
+          duration: poolAction.duration,
+          category: poolAction.category,
+          frequency: poolAction.frequency,
+          dayIndex: dayIndex,
+          slot: slot
         };
-      });
+        
+        // Add to slotActions (weeklyActionItems will be updated via useEffect)
+        setSlotActions(prev => {
+          const existingActions = prev[slotKey] || [];
+          return {
+            ...prev,
+            [slotKey]: [...existingActions, scheduledAction]
+          };
+        });
+      } 
+      else if (source === 'weekly' || source === '90day') {
+        // Moving an existing scheduled action
+        const scheduledAction = action as ScheduledAction;
+        
+        // Remove from old slot
+        setSlotActions(prev => {
+          const newSlotActions: Record<string, ScheduledAction[]> = {};
+          
+          Object.entries(prev).forEach(([key, actions]) => {
+            // Filter out the action from its old location
+            newSlotActions[key] = actions.filter(a => a.scheduledId !== scheduledAction.scheduledId);
+          });
+          
+          // Add to new slot
+          const existingActions = newSlotActions[slotKey] || [];
+          newSlotActions[slotKey] = [...existingActions, {
+            ...scheduledAction,
+            dayIndex: dayIndex,
+            slot: slot
+          }];
+          
+          return newSlotActions;
+        });
+      }
     } else if (targetType === '90DayCategory') {
       const { weekNumber, category } = targetIdentifier;
+      console.log("Dropping in 90-day view:", { weekNumber, category, action });
       
-      console.log("Dropping in 90-day view:", { weekNumber, category });
-      
-      // Update 90-day view
-      const weekCategoryKey = `week-${weekNumber}-${category}`;
-      setWeeklyActionItems(prev => {
-        const existingActions = prev[weekCategoryKey] || [];
-        // Check if action already exists in this week/category
-        if (existingActions.some(a => a.id === actionWithId.id)) {
-          return prev;
-        }
-        return {
-          ...prev,
-          [weekCategoryKey]: [...existingActions, actionWithId]
-        };
-      });
-      
-      // Calculate a suitable day index and slot for weekly view
-      // For simplicity, we'll use the first day of the week and the corresponding slot
-      // Find a day that falls within this week number
-      const weekDates = getWeekDates();
-      let dayIndex = -1;
-      
-      // Find the first day that belongs to this week number
-      for (let i = 0; i < weekDates.length; i++) {
-        if (getWeekNumber(weekDates[i]) === weekNumber) {
-          dayIndex = i;
-          break;
-        }
+      if (source === 'weekly' || source === '90day') {
+        // This is an existing scheduled action being moved
+        const scheduledAction = action as ScheduledAction;
+        
+        // Find a suitable day in the target week
+        // If possible, keep the same day of week (e.g., Monday stays Monday)
+        const targetDate = getDateForWeekAndDay(weekNumber, scheduledAction.dayIndex % 7);
+        const targetDayIndex = targetDate.getDay(); // 0-6 for Sunday-Saturday
+        
+        // Map category to slot
+        const slot = categoryToSlot(category);
+        const slotKey = `day-${targetDayIndex}-${slot}`;
+        
+        // Update slotActions (weeklyActionItems will be updated via useEffect)
+        setSlotActions(prev => {
+          const newSlotActions: Record<string, ScheduledAction[]> = {};
+          
+          Object.entries(prev).forEach(([key, actions]) => {
+            // Filter out the action from its old location
+            newSlotActions[key] = actions.filter(a => a.scheduledId !== scheduledAction.scheduledId);
+          });
+          
+          // Add to new slot
+          const existingActions = newSlotActions[slotKey] || [];
+          newSlotActions[slotKey] = [...existingActions, {
+            ...scheduledAction,
+            dayIndex: targetDayIndex,
+            slot: slot,
+            category: category as 'business' | 'body' | 'balance'
+          }];
+          
+          return newSlotActions;
+        });
       }
-      
-      // If no matching day found, use Monday (index 1) as fallback
-      if (dayIndex === -1) {
-        dayIndex = 1;
-      }
-      
-      // Map category to slot
-      let slot: string;
-      if (category === 'business') {
-        slot = 'Morning';
-      } else if (category === 'body') {
-        slot = 'Afternoon';
-      } else {
-        slot = 'Evening';
-      }
-      
-      console.log("Calculated weekly slot:", { dayIndex, slot });
-      
-      const slotKey = `day-${dayIndex}-${slot}`;
-      
-      // Update weekly view
-      setSlotActions(prev => {
-        const existingActions = prev[slotKey] || [];
-        // Check if action already exists in this slot
-        if (existingActions.some(a => a.id === actionWithId.id)) {
-          return prev;
-        }
-        return {
-          ...prev,
-          [slotKey]: [...existingActions, actionWithId]
-        };
-      });
     }
   };
 
   // Centralized function to remove actions
-  const removeAction = (actionId: string) => {
+  const removeAction = (scheduledId: string) => {
     // Remove from weekly view
-    console.log("Removing action:", actionId);
+    console.log("Removing action:", scheduledId);
     setSlotActions(prev => {
       const newSlotActions: Record<string, ActionPoolItem[]> = {};
       let found = false;
       
       Object.entries(prev).forEach(([key, actions]) => {
-        const filteredActions = actions.filter(a => a.id !== actionId);
+        const filteredActions = actions.filter(a => a.scheduledId !== scheduledId);
         if (filteredActions.length !== actions.length) {
           found = true;
         }
@@ -238,22 +330,6 @@ const Calendar: React.FC = () => {
       });
       
       return found ? newSlotActions : prev;
-    });
-    
-    // Remove from 90-day view
-    setWeeklyActionItems(prev => {
-      const newWeeklyActionItems: Record<string, ActionPoolItem[]> = {};
-      let found = false;
-      
-      Object.entries(prev).forEach(([key, actions]) => {
-        const filteredActions = actions.filter(a => a.id !== actionId);
-        if (filteredActions.length !== actions.length) {
-          found = true;
-        }
-        newWeeklyActionItems[key] = filteredActions;
-      });
-      
-      return found ? newWeeklyActionItems : prev;
     });
   };
 
@@ -352,6 +428,7 @@ const Calendar: React.FC = () => {
                     onDragOver={(e) => {
                       e.preventDefault();
                       setHighlightedSlot(slotKey);
+                      e.stopPropagation();
                     }}
                     onDragLeave={() => setHighlightedSlot(null)}
                     onDrop={(e) => {
@@ -360,8 +437,9 @@ const Calendar: React.FC = () => {
                       setHighlightedSlot(null);
                       
                       if (draggedAction) {
-                        handleActionDrop(draggedAction, 'weeklySlot', { dayIndex, slot });
+                        handleActionDrop(draggedAction, 'weeklySlot', { dayIndex, slot }, dragSource || 'pool');
                         setDraggedAction(null);
+                        setDragSource(null);
                       }
                     }}
                   >
@@ -375,16 +453,21 @@ const Calendar: React.FC = () => {
                           <div 
                             key={`${action.id}-${index}`}
                             className={`p-2 rounded-lg text-sm relative ${
-                              action.category === 'business' ? 'bg-purple-100 text-purple-800' :
-                              action.category === 'body' ? 'bg-green-100 text-green-800' :
+                              action.category.toLowerCase() === 'business' ? 'bg-purple-100 text-purple-800' :
+                              action.category.toLowerCase() === 'body' ? 'bg-green-100 text-green-800' :
                               'bg-blue-100 text-blue-800'
                             }`}
                             draggable={true}
                             onDragStart={(e) => {
                               e.stopPropagation();
                               setDraggedAction(action);
+                              setDragSource('weekly');
+                              console.log("Dragging from weekly view:", action);
                             }}
-                            onDragEnd={() => setDraggedAction(null)}
+                            onDragEnd={() => {
+                              setDraggedAction(null);
+                              setDragSource(null);
+                            }}
                           >
                             <div className="flex items-start">
                               <div className="flex-1 pr-6">{action.title}</div>
@@ -392,7 +475,7 @@ const Calendar: React.FC = () => {
                                 className="absolute top-1 right-1 text-slate-400 hover:text-red-500 transition-colors"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  removeAction(action.id);
+                                  removeAction(action.scheduledId);
                                 }}
                               >
                                 <X className="w-4 h-4" />
@@ -418,7 +501,7 @@ const Calendar: React.FC = () => {
   // Render the 90-day view
   const render90DayView = () => {
     const weeks = Array.from({ length: 12 }, (_, i) => i + 1);
-    const categories = ['business', 'body', 'balance'];
+    const categories: ('business' | 'body' | 'balance')[] = ['business', 'body', 'balance'];
     
     return (
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
@@ -427,7 +510,7 @@ const Calendar: React.FC = () => {
           <p className="text-slate-600">Drag actions to weeks and categories to plan your quarter</p>
         </div>
         
-        <div className="grid grid-cols-[auto_repeat(12,1fr)] gap-2">
+        <div className="grid grid-cols-[auto_repeat(12,1fr)] gap-2 overflow-x-auto">
           {/* Header row with week numbers */}
           <div className="col-span-1"></div> {/* Empty cell for category labels */}
           {weeks.map(week => (
@@ -438,16 +521,16 @@ const Calendar: React.FC = () => {
           
           {/* Category rows */}
           {categories.map((category) => (
-            <React.Fragment key={`category-${category}`}>
+            <React.Fragment key={`category-row-${category}`}>
               {/* Category label */}
               <div className="col-span-1 flex items-center">
                 <div className={`p-2 rounded-lg ${
-                  category === 'business' ? 'bg-purple-100 text-purple-800' :
-                  category === 'body' ? 'bg-green-100 text-green-800' :
+                  category.toLowerCase() === 'business' ? 'bg-purple-100 text-purple-800' :
+                  category.toLowerCase() === 'body' ? 'bg-green-100 text-green-800' :
                   'bg-blue-100 text-blue-800'
                 }`}>
-                  {category === 'business' ? <Briefcase className="w-5 h-5" /> :
-                   category === 'body' ? <Heart className="w-5 h-5" /> :
+                  {category.toLowerCase() === 'business' ? <Briefcase className="w-5 h-5" /> :
+                   category.toLowerCase() === 'body' ? <Heart className="w-5 h-5" /> :
                    <Zap className="w-5 h-5" />}
                 </div>
               </div>
@@ -475,8 +558,14 @@ const Calendar: React.FC = () => {
                       setHighlightedWeekCategory(null);
                       
                       if (draggedAction) {
-                        handleActionDrop(draggedAction, '90DayCategory', { weekNumber: week, category: category.toLowerCase() });
+                        handleActionDrop(
+                          draggedAction, 
+                          '90DayCategory', 
+                          { weekNumber: week, category: category.toLowerCase() },
+                          dragSource || 'pool'
+                        );
                         setDraggedAction(null);
+                        setDragSource(null);
                         e.stopPropagation();
                       }
                     }}
@@ -491,16 +580,21 @@ const Calendar: React.FC = () => {
                           <div 
                             key={`${action.id}-${index}`}
                             className={`p-1 rounded text-xs relative ${
-                              action.category === 'business' ? 'bg-purple-100 text-purple-800' :
-                              action.category === 'body' ? 'bg-green-100 text-green-800' :
+                              action.category.toLowerCase() === 'business' ? 'bg-purple-100 text-purple-800' :
+                              action.category.toLowerCase() === 'body' ? 'bg-green-100 text-green-800' :
                               'bg-blue-100 text-blue-800'
                             }`}
                             draggable={true}
                             onDragStart={(e) => {
                               e.stopPropagation();
                               setDraggedAction(action);
+                              setDragSource('90day');
+                              console.log("Dragging from 90-day view:", action);
                             }}
-                            onDragEnd={() => setDraggedAction(null)}
+                            onDragEnd={() => {
+                              setDraggedAction(null);
+                              setDragSource(null);
+                            }}
                           >
                             <div className="flex items-start">
                               <div className="flex-1 pr-5 truncate">{action.title}</div>
@@ -508,7 +602,7 @@ const Calendar: React.FC = () => {
                                 className="absolute top-0 right-0 text-slate-400 hover:text-red-500 transition-colors"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  removeAction(action.id);
+                                  removeAction(action.scheduledId);
                                 }}
                               >
                                 <X className="w-3 h-3" />
@@ -652,9 +746,13 @@ const Calendar: React.FC = () => {
                 onDragStart={(e) => {
                   e.stopPropagation();
                   setDraggedAction(action);
+                  setDragSource('pool');
                   console.log("Dragging from action pool:", action);
                 }}
-                onDragEnd={() => setDraggedAction(null)}
+                onDragEnd={() => {
+                  setDraggedAction(null);
+                  setDragSource(null);
+                }}
               >
                 <div className="flex items-start">
                   <div className={`p-2 rounded-lg mr-3 ${
@@ -721,7 +819,7 @@ const Calendar: React.FC = () => {
       </div>
 
       {/* View selector */}
-      <div className="flex items-center space-x-4 border-b border-slate-200 pb-4 overflow-x-auto">
+      <div className="flex items-center space-x-4 border-b border-slate-200 pb-4 overflow-x-auto mb-4">
         <button
           onClick={() => setCurrentView('daily')}
           className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
@@ -764,7 +862,7 @@ const Calendar: React.FC = () => {
       </div>
 
       {/* Main content */}
-      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-[3fr_1fr] gap-8">
         {/* Calendar view */}
         <div className="lg:col-span-2">
           {currentView === 'daily' && renderDailyView()}
@@ -774,7 +872,7 @@ const Calendar: React.FC = () => {
         </div>
         
         {/* Action pool */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 lg:max-w-md">
           {renderActionPool()}
         </div>
       </div>
