@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Clock, Eye, Target, Heart, Briefcase, User } from 'lucide-react';
 import { useCalendarData } from '../hooks/useCalendarData';
+import { useGoalSettingData } from '../hooks/useGoalSettingData';
 import { STORAGE_KEY as GOALS_STORAGE_KEY } from '../hooks/useGoalSettingData';
 
 interface ActionItem {
