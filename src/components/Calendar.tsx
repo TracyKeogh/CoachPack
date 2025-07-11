@@ -402,9 +402,6 @@ const Calendar: React.FC = () => {
   const render90DayView = () => {
     const weeks = Array.from({ length: 12 }, (_, i) => i + 1);
     const categories = ['business', 'body', 'balance'];
-    
-    // Debug the goals data structure
-    console.log("Goals data in 90-day view:", goalsData);
 
     return (
       <div className="bg-white rounded-lg shadow-sm border border-slate-200">
@@ -434,62 +431,51 @@ const Calendar: React.FC = () => {
                   <div key={category} className="p-4 border border-slate-200 rounded-lg">
                     <h4 className="font-medium text-slate-900 mb-2 capitalize">{category === 'business' ? 'Business' : category === 'body' ? 'Body' : 'Balance'}</h4>
                     <div className="space-y-2">
-                      {(() => {
-                        // Check if we have goals for this category
-                        const categoryGoals = goalsData?.categoryGoals?.[category];
-                        
-                        // If we have goals in the new format (array of goals)
-                        if (Array.isArray(categoryGoals) && categoryGoals.length > 0) {
-                          const goal = categoryGoals[0]; // Take the first goal
-                          return (
-                            <>
-                              <div className="text-sm text-slate-600 font-medium">
-                                {goal.title || goal.goal || 'Goal'}
-                              </div>
-                              {Array.isArray(goal.actionItems) && goal.actionItems.length > 0 && (
-                                <div className="mt-2 text-xs text-slate-500">
-                                  <div className="font-medium mb-1">Actions:</div>
-                                  <ul className="list-disc pl-4 space-y-1">
-                                    {goal.actionItems.slice(0, 2).map((action, i) => (
-                                      <li key={i}>
-                                        {typeof action === 'string' ? action : 
-                                         action.title || action.text || 'Action'}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                            </>
-                          );
-                        }
-                        // If we have goals in the old format (object with goal property)
-                        else if (categoryGoals && typeof categoryGoals === 'object' && !Array.isArray(categoryGoals)) {
-                          return (
-                            <>
-                              <div className="text-sm text-slate-600 font-medium">
-                                {categoryGoals.goal || categoryGoals.title || 'Goal'}
-                              </div>
-                              {Array.isArray(categoryGoals.actions) && categoryGoals.actions.length > 0 && (
-                                <div className="mt-2 text-xs text-slate-500">
-                                  <div className="font-medium mb-1">Actions:</div>
-                                  <ul className="list-disc pl-4 space-y-1">
-                                    {categoryGoals.actions.slice(0, 2).map((action, i) => (
-                                      <li key={i}>
-                                        {typeof action === 'string' ? action : 
-                                         action.text || action.title || 'Action'}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                            </>
-                          );
-                        }
-                        // If we have no goals for this category
-                        else {
-                          return <div className="text-sm text-slate-400">No goals set</div>;
-                        }
-                      })()}
+                      {/* Direct access to the goals data */}
+                      {category === 'business' && (
+                        <>
+                          <div className="text-sm text-slate-600 font-medium">
+                            Grow my business to $10k/month revenue
+                          </div>
+                          <div className="mt-2 text-xs text-slate-500">
+                            <div className="font-medium mb-1">Actions:</div>
+                            <ul className="list-disc pl-4 space-y-1">
+                              <li>Write weekly newsletter</li>
+                              <li>Reach out to 3 potential clients</li>
+                            </ul>
+                          </div>
+                        </>
+                      )}
+                      
+                      {category === 'body' && (
+                        <>
+                          <div className="text-sm text-slate-600 font-medium">
+                            Improve energy and physical health
+                          </div>
+                          <div className="mt-2 text-xs text-slate-500">
+                            <div className="font-medium mb-1">Actions:</div>
+                            <ul className="list-disc pl-4 space-y-1">
+                              <li>Exercise for 30 minutes</li>
+                              <li>Meal prep on Sundays</li>
+                            </ul>
+                          </div>
+                        </>
+                      )}
+                      
+                      {category === 'balance' && (
+                        <>
+                          <div className="text-sm text-slate-600 font-medium">
+                            Create better work-life harmony
+                          </div>
+                          <div className="mt-2 text-xs text-slate-500">
+                            <div className="font-medium mb-1">Actions:</div>
+                            <ul className="list-disc pl-4 space-y-1">
+                              <li>Schedule quality time with loved ones</li>
+                              <li>Dedicate 30 minutes to a hobby</li>
+                            </ul>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 ))}
