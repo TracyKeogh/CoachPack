@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+// Import the storage key directly
 import { STORAGE_KEY as GOALS_STORAGE_KEY } from './useGoalSettingData';
 import { ActionItem, Milestone, GoalSettingData } from '../types/goals';
 
@@ -78,8 +79,10 @@ export const useCalendarData = () => {
   // Load goals data into action pool
   const loadGoalsIntoActionPool = useCallback(() => {
     try {
+      console.log("Loading goals into action pool");
       // Use the correct storage key for goal setting data
-      const storedGoalsData = localStorage.getItem('coach-pack-goal-setting');
+      const storedGoalsData = localStorage.getItem(GOALS_STORAGE_KEY);
+      console.log("Raw stored goals data:", storedGoalsData);
       
       // Initialize with some default actions if no goals data found
       const actionPool: ActionPoolItem[] = [
@@ -144,7 +147,7 @@ export const useCalendarData = () => {
       // Add goals data if available
       if (storedGoalsData) {
         console.log("Found goals data in localStorage:", storedGoalsData);
-        const parsedGoalsData = JSON.parse(storedGoalsData) || {};
+        const parsedGoalsData: GoalSettingData = JSON.parse(storedGoalsData) || {};
         
         // Extract actions from goals if they exist
         console.log("Parsed goals data:", parsedGoalsData);
@@ -152,6 +155,7 @@ export const useCalendarData = () => {
         // Check for the format in GoalSetting.tsx
         if (parsedGoalsData.categoryGoals) {
           try {
+            console.log("Found categoryGoals:", parsedGoalsData.categoryGoals);
             Object.entries(parsedGoalsData.categoryGoals).forEach(([category, goalData]) => {
               console.log(`Processing category: ${category}`, goalData);
               
@@ -162,9 +166,9 @@ export const useCalendarData = () => {
               
               // Map goal category to calendar category
               const calendarCategory = 
-                category === 'business' ? 'business' : 
-                category === 'body' ? 'body' : 
-                category === 'balance' ? 'balance' : 'personal';
+                category.toLowerCase() === 'business' ? 'business' : 
+                category.toLowerCase() === 'body' ? 'body' : 
+                category.toLowerCase() === 'balance' ? 'balance' : 'personal';
               
               // Get actions from the goal data
               let actions = [];
@@ -173,6 +177,18 @@ export const useCalendarData = () => {
               if (Array.isArray(goalData.actionItems)) {
                 console.log(`Found actionItems array for ${category}:`, goalData.actionItems);
                 actions = goalData.actionItems;
+              } else if (Array.isArray(goalData) && goalData.length > 0) {
+                // Handle case where goalData is an array of goals
+                console.log(`Found array of goals for ${category}:`, goalData);
+                // Take the first goal's action items
+                const firstGoal = goalData[0];
+                if (firstGoal && Array.isArray(firstGoal.actionItems)) {
+                  console.log(`Using actionItems from first goal:`, firstGoal.actionItems);
+                  actions = firstGoal.actionItems;
+                } else if (firstGoal && Array.isArray(firstGoal.actions)) {
+                  console.log(`Using actions from first goal:`, firstGoal.actions);
+                  actions = firstGoal.actions;
+                }
               } else if (Array.isArray(goalData.actions)) {
                 console.log(`Found actions array for ${category}:`, goalData.actions);
                 actions = goalData.actions;
@@ -199,6 +215,9 @@ export const useCalendarData = () => {
                   if (typeof action === 'string') {
                     console.log(`Action is string: ${action}`);
                     actionTitle = action;
+                  } else if (action && typeof action === 'object' && action.title) {
+                    console.log(`Action has title: ${action.title}`);
+                    actionTitle = action.title;
                   } else if (action && typeof action === 'object') {
                     // New format with title property
                     if (action.title) {
@@ -223,7 +242,7 @@ export const useCalendarData = () => {
                     // Create action pool item
                     actionPool.push({
                       id: `${category}-action-${index}`,
-                      title: actionTitle,
+                      title: actionTitle || `Action ${index + 1}`,
                       duration: 60, // Default 60 minutes
                       category: calendarCategory as 'business' | 'body' | 'balance' | 'personal',
                       frequency: actionFrequency,
@@ -246,7 +265,7 @@ export const useCalendarData = () => {
       // Update action pool
       setData(prev => ({
         ...prev,
-        actionPool
+        actionPool: actionPool.length > 0 ? actionPool : prev.actionPool
       }));
       
       console.log("Final action pool:", actionPool);

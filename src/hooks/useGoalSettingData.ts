@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { GoalSettingData, defaultGoalSettingData, AnnualSnapshot, CategoryGoal, getTwelveWeeksFromNow, ActionItem, Milestone } from '../types/goals';
 
+// Export the storage key so other components can access it directly
 export const STORAGE_KEY = 'coach-pack-goal-setting';
 
 // Deep merge function to ensure all nested properties exist
@@ -67,8 +68,10 @@ export const useGoalSettingData = () => {
   // Load data on mount
   useEffect(() => {
     try {
+      console.log("Loading goal setting data from localStorage");
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
+        console.log("Found stored goal setting data:", stored);
         const parsedData = JSON.parse(stored);
         
         // Migrate old formats to new formats
@@ -98,7 +101,10 @@ export const useGoalSettingData = () => {
         // Deep merge with default data to ensure all properties exist
         const mergedData: GoalSettingData = deepMerge(defaultGoalSettingData, parsedData);
         setData(mergedData);
+        console.log("Merged goal setting data:", mergedData);
         setLastSaved(new Date(mergedData.lastUpdated));
+      } else {
+        console.log("No stored goal setting data found");
       }
     } catch (error) {
       console.error('Failed to load goal setting data:', error);
@@ -110,6 +116,7 @@ export const useGoalSettingData = () => {
   // Auto-save function
   const saveData = useCallback(() => {
     if (!isLoaded) return;
+    console.log("Saving goal setting data");
 
     try {
       const dataToSave: GoalSettingData = {
@@ -118,6 +125,7 @@ export const useGoalSettingData = () => {
       };
       
       localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+      console.log("Saved goal setting data to localStorage");
       setLastSaved(new Date());
     } catch (error) {
       console.error('Failed to save goal setting data:', error);
