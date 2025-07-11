@@ -65,6 +65,11 @@ const Calendar: React.FC = () => {
   const [highlightedSlot, setHighlightedSlot] = useState<string | null>(null);
   const [highlightedWeekCategory, setHighlightedWeekCategory] = useState<string | null>(null);
 
+  // Filter action pool by frequency
+  const dailyActions = data.actionPool.filter(action => action.frequency === 'daily');
+  const weeklyActions = data.actionPool.filter(action => action.frequency === 'weekly');
+  const otherActions = data.actionPool.filter(action => action.frequency !== 'daily' && action.frequency !== 'weekly');
+
   // Weekly view state
   const [slotActions, setSlotActions] = useState<Record<string, ScheduledAction[]>>({});
 
@@ -634,150 +639,6 @@ const Calendar: React.FC = () => {
     );
   };
 
-  // Render the action pool
-  const renderActionPool = () => {
-    return (
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-slate-900">Action Pool</h3>
-          <button
-            onClick={() => setShowAddActionForm(!showAddActionForm)}
-            className="p-2 text-slate-600 hover:text-purple-600 hover:bg-purple-50 rounded-full transition-colors"
-          >
-            {showAddActionForm ? <X className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
-          </button>
-        </div>
-        
-        {showAddActionForm && (
-          <div className="mb-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Action Title
-                </label>
-                <input
-                  type="text"
-                  value={newAction.title}
-                  onChange={(e) => setNewAction(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  placeholder="Enter action title"
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Duration (minutes)
-                  </label>
-                  <input
-                    type="number"
-                    value={newAction.duration}
-                    onChange={(e) => setNewAction(prev => ({ ...prev, duration: parseInt(e.target.value) || 30 }))}
-                    className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    min="15"
-                    step="15"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Category
-                  </label>
-                  <select
-                    value={newAction.category}
-                    onChange={(e) => setNewAction(prev => ({ ...prev, category: e.target.value as any }))}
-                    className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  >
-                    <option value="business">Business</option>
-                    <option value="body">Body</option>
-                    <option value="balance">Balance</option>
-                  </select>
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Frequency
-                </label>
-                <select
-                  value={newAction.frequency}
-                  onChange={(e) => setNewAction(prev => ({ ...prev, frequency: e.target.value as any }))}
-                  className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                >
-                  <option value="daily">Daily</option>
-                  <option value="weekly">Weekly</option>
-                  <option value="3x-week">3x per Week</option>
-                </select>
-              </div>
-              
-              <div className="flex justify-end">
-                <button
-                  onClick={handleAddAction}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                >
-                  Add Action
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        <div className="space-y-3 max-h-96 overflow-y-auto">
-          {data.actionPool.length === 0 ? (
-            <div className="text-center py-8 text-slate-500">
-              <Clock className="w-8 h-8 mx-auto mb-2 text-slate-300" />
-              <p>No actions in your pool</p>
-              <button
-                onClick={() => setShowAddActionForm(true)}
-                className="mt-2 text-purple-600 hover:text-purple-700 text-sm font-medium"
-              >
-                Add your first action
-              </button>
-            </div>
-          ) : (
-            data.actionPool.map((action) => (
-              <div 
-                key={action.id}
-                className={`p-3 rounded-lg border border-slate-200 hover:shadow-sm transition-all cursor-move ${
-                  action.category === 'business' ? 'bg-purple-50' :
-                  action.category === 'body' ? 'bg-green-50' : 'bg-blue-50'
-                }`}
-                draggable={true}
-                onDragStart={(e) => {
-                  e.stopPropagation();
-                  setDraggedAction(action);
-                  setDragSource('pool');
-                  console.log("Dragging from action pool:", action);
-                }}
-                onDragEnd={() => {
-                  setDraggedAction(null);
-                  setDragSource(null);
-                }}
-              >
-                <div className="flex items-start">
-                  <div className={`p-2 rounded-lg mr-3 ${
-                    action.category === 'business' ? 'bg-purple-100 text-purple-800' :
-                    action.category === 'body' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
-                  }`}>
-                    {action.category === 'business' ? <Briefcase className="w-4 h-4" /> :
-                     action.category === 'body' ? <Heart className="w-4 h-4" /> :
-                     <Zap className="w-4 h-4" />}
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-medium text-slate-900">{action.title}</div>
-                    <div className="text-sm text-slate-500 mt-1">
-                      {action.duration} min • {action.frequency}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-    );
-  };
-
   // Main render
   return (
     <div className="space-y-8">
@@ -862,18 +723,252 @@ const Calendar: React.FC = () => {
       </div>
 
       {/* Main content */}
-      <div className="grid grid-cols-1 lg:grid-cols-[3fr_1fr] gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-1 gap-8">
+        {/* Action Pool - Above Calendar */}
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-slate-900">Action Pool</h3>
+            <button
+              onClick={() => setShowAddActionForm(!showAddActionForm)}
+              className="p-2 text-slate-600 hover:text-purple-600 hover:bg-purple-50 rounded-full transition-colors"
+            >
+              {showAddActionForm ? <X className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+            </button>
+          </div>
+          
+          {showAddActionForm && (
+            <div className="mb-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Action Title
+                  </label>
+                  <input
+                    type="text"
+                    value={newAction.title}
+                    onChange={(e) => setNewAction(prev => ({ ...prev, title: e.target.value }))}
+                    className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="Enter action title"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Duration (minutes)
+                    </label>
+                    <input
+                      type="number"
+                      value={newAction.duration}
+                      onChange={(e) => setNewAction(prev => ({ ...prev, duration: parseInt(e.target.value) || 30 }))}
+                      className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      min="15"
+                      step="15"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Category
+                    </label>
+                    <select
+                      value={newAction.category}
+                      onChange={(e) => setNewAction(prev => ({ ...prev, category: e.target.value as any }))}
+                      className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    >
+                      <option value="business">Business</option>
+                      <option value="body">Body</option>
+                      <option value="balance">Balance</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Frequency
+                  </label>
+                  <select
+                    value={newAction.frequency}
+                    onChange={(e) => setNewAction(prev => ({ ...prev, frequency: e.target.value as any }))}
+                    className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  >
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="3x-week">3x per Week</option>
+                  </select>
+                </div>
+                
+                <div className="flex justify-end">
+                  <button
+                    onClick={handleAddAction}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    Add Action
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Daily Actions */}
+            <div className="space-y-3">
+              <h4 className="font-medium text-slate-800 flex items-center">
+                <Clock className="w-4 h-4 mr-2 text-purple-600" /> Daily Actions
+              </h4>
+              {dailyActions.length === 0 ? (
+                <div className="text-center py-4 text-slate-500 bg-slate-50 rounded-lg">
+                  <p>No daily actions</p>
+                </div>
+              ) : (
+                dailyActions.map((action) => (
+                  <div 
+                    key={action.id}
+                    className={`p-3 rounded-lg border border-slate-200 hover:shadow-sm transition-all cursor-move ${
+                      action.category === 'business' ? 'bg-purple-50' :
+                      action.category === 'body' ? 'bg-green-50' : 'bg-blue-50'
+                    }`}
+                    draggable={true}
+                    onDragStart={(e) => {
+                      e.stopPropagation();
+                      setDraggedAction(action);
+                      setDragSource('pool');
+                      console.log("Dragging from action pool:", action);
+                    }}
+                    onDragEnd={() => {
+                      setDraggedAction(null);
+                      setDragSource(null);
+                    }}
+                  >
+                    <div className="flex items-start">
+                      <div className={`p-2 rounded-lg mr-3 ${
+                        action.category === 'business' ? 'bg-purple-100 text-purple-800' :
+                        action.category === 'body' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {action.category === 'business' ? <Briefcase className="w-4 h-4" /> :
+                         action.category === 'body' ? <Heart className="w-4 h-4" /> :
+                         <Zap className="w-4 h-4" />}
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-medium text-slate-900">{action.title}</div>
+                        <div className="text-sm text-slate-500 mt-1">
+                          {action.duration} min • {action.frequency}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            
+            {/* Weekly Actions */}
+            <div className="space-y-3">
+              <h4 className="font-medium text-slate-800 flex items-center">
+                <CalendarDays className="w-4 h-4 mr-2 text-purple-600" /> Weekly Actions
+              </h4>
+              {weeklyActions.length === 0 ? (
+                <div className="text-center py-4 text-slate-500 bg-slate-50 rounded-lg">
+                  <p>No weekly actions</p>
+                </div>
+              ) : (
+                weeklyActions.map((action) => (
+                  <div 
+                    key={action.id}
+                    className={`p-3 rounded-lg border border-slate-200 hover:shadow-sm transition-all cursor-move ${
+                      action.category === 'business' ? 'bg-purple-50' :
+                      action.category === 'body' ? 'bg-green-50' : 'bg-blue-50'
+                    }`}
+                    draggable={true}
+                    onDragStart={(e) => {
+                      e.stopPropagation();
+                      setDraggedAction(action);
+                      setDragSource('pool');
+                      console.log("Dragging from action pool:", action);
+                    }}
+                    onDragEnd={() => {
+                      setDraggedAction(null);
+                      setDragSource(null);
+                    }}
+                  >
+                    <div className="flex items-start">
+                      <div className={`p-2 rounded-lg mr-3 ${
+                        action.category === 'business' ? 'bg-purple-100 text-purple-800' :
+                        action.category === 'body' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {action.category === 'business' ? <Briefcase className="w-4 h-4" /> :
+                         action.category === 'body' ? <Heart className="w-4 h-4" /> :
+                         <Zap className="w-4 h-4" />}
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-medium text-slate-900">{action.title}</div>
+                        <div className="text-sm text-slate-500 mt-1">
+                          {action.duration} min • {action.frequency}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            
+            {/* Other Actions (3x-week, etc.) */}
+            <div className="space-y-3">
+              <h4 className="font-medium text-slate-800 flex items-center">
+                <CalendarRange className="w-4 h-4 mr-2 text-purple-600" /> Other Actions
+              </h4>
+              {otherActions.length === 0 ? (
+                <div className="text-center py-4 text-slate-500 bg-slate-50 rounded-lg">
+                  <p>No other actions</p>
+                </div>
+              ) : (
+                otherActions.map((action) => (
+                  <div 
+                    key={action.id}
+                    className={`p-3 rounded-lg border border-slate-200 hover:shadow-sm transition-all cursor-move ${
+                      action.category === 'business' ? 'bg-purple-50' :
+                      action.category === 'body' ? 'bg-green-50' : 'bg-blue-50'
+                    }`}
+                    draggable={true}
+                    onDragStart={(e) => {
+                      e.stopPropagation();
+                      setDraggedAction(action);
+                      setDragSource('pool');
+                      console.log("Dragging from action pool:", action);
+                    }}
+                    onDragEnd={() => {
+                      setDraggedAction(null);
+                      setDragSource(null);
+                    }}
+                  >
+                    <div className="flex items-start">
+                      <div className={`p-2 rounded-lg mr-3 ${
+                        action.category === 'business' ? 'bg-purple-100 text-purple-800' :
+                        action.category === 'body' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {action.category === 'business' ? <Briefcase className="w-4 h-4" /> :
+                         action.category === 'body' ? <Heart className="w-4 h-4" /> :
+                         <Zap className="w-4 h-4" />}
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-medium text-slate-900">{action.title}</div>
+                        <div className="text-sm text-slate-500 mt-1">
+                          {action.duration} min • {action.frequency}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+        
         {/* Calendar view */}
-        <div className="lg:col-span-2">
+        <div>
           {currentView === 'daily' && renderDailyView()}
           {currentView === 'weekly' && renderWeeklyView()}
           {currentView === '90day' && render90DayView()}
           {currentView === 'yearly' && renderYearlyView()}
-        </div>
-        
-        {/* Action pool */}
-        <div className="lg:col-span-1 lg:max-w-md">
-          {renderActionPool()}
         </div>
       </div>
     </div>
