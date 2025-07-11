@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Clock, Eye, Target, Heart, Briefcase, User, X } from 'lucide-react';
-import { useCalendarData } from '../hooks/useCalendarData';
+import { useCalendarData, ActionPoolItem } from '../hooks/useCalendarData';
 import { useGoalSettingData } from '../hooks/useGoalSettingData';
 import { STORAGE_KEY as GOALS_STORAGE_KEY } from '../hooks/useGoalSettingData';
 
@@ -21,6 +21,7 @@ const Calendar: React.FC = () => {
   const [showAddEventForm, setShowAddEventForm] = useState(false);
   const [draggedAction, setDraggedAction] = useState<ActionItem | null>(null);
   const [weeklyActions, setWeeklyActions] = useState<Record<string, string[]>>({});
+  const [weeklyActionItems, setWeeklyActionItems] = useState<Record<string, ActionPoolItem[]>>({});
   const [newEvent, setNewEvent] = useState({
     title: '',
     date: '',
@@ -38,6 +39,42 @@ const Calendar: React.FC = () => {
       refreshActionPool();
     }
   }, [goalsData, refreshActionPool]);
+  
+  // Sync weekly actions with 90-day view
+  useEffect(() => {
+    // Convert slotActions to weeklyActionItems for 90-day view
+    const newWeeklyActionItems: Record<string, ActionPoolItem[]> = {};
+    
+    Object.entries(slotActions).forEach(([slotKey, actions]) => {
+      // Extract day and slot from the key (format: "day-{dayIndex}-{slot}")
+      const match = slotKey.match(/day-(\d+)-(.+)/);
+      if (match) {
+        const dayIndex = parseInt(match[1]);
+        // Map day index to week number (assuming 7 days per week)
+        const weekNumber = Math.floor(dayIndex / 7) + 1;
+        // Create a key for the 90-day view
+        const category = actions[0]?.category || 'business';
+        const weekCategoryKey = `week-${weekNumber}-${category}`;
+        
+        // Add actions to the weeklyActionItems
+        actions.forEach(action => {
+          if (!newWeeklyActionItems[weekCategoryKey]) {
+            newWeeklyActionItems[weekCategoryKey] = [];
+          }
+          newWeeklyActionItems[weekCategoryKey].push(action);
+        });
+        
+        // Also update the weeklyActions for backward compatibility
+        const actionTitles = actions.map(action => action.title);
+        setWeeklyActions(prev => ({
+          ...prev,
+          [weekCategoryKey]: actionTitles
+        }));
+      }
+    });
+    
+    setWeeklyActionItems(newWeeklyActionItems);
+  }, [slotActions]);
 
   // Default action items that match the screenshot
   const defaultActions: ActionItem[] = [
@@ -603,25 +640,26 @@ const Calendar: React.FC = () => {
                            e.stopPropagation();
                             e.currentTarget.classList.remove('drop-highlight');
                             if (draggedAction) {
-                              // Get the week number and category
-                              const week = index + 1; // Week 1-12
-                              const category = category;
-                              
                               // Create a unique key for this week-category combination
-                              const weekCategoryKey = `week-${week}-${category}`;
+                              const weekCategoryKey = `week-${index + 1}-${category}`;
                               
-                              // Update the weeklyActions state
-                              setWeeklyActions(prev => {
-                                const currentActions = prev[weekCategoryKey] || [];
-                                // Only add if not already in the list
-                                if (!currentActions.includes(draggedAction.title)) {
-                                  return {
-                                    ...prev,
-                                    [weekCategoryKey]: [...currentActions, draggedAction.title]
-                                  };
-                                }
-                                return prev;
-                              });
+                              // Update both weeklyActions and weeklyActionItems
+                              const currentActions = weeklyActions[weekCategoryKey] || [];
+                              const currentActionItems = weeklyActionItems[weekCategoryKey] || [];
+                              
+                              // Only add if not already in the list
+                              if (!currentActions.includes(draggedAction.title)) {
+                                setWeeklyActions(prev => ({
+                                  ...prev,
+                                  [weekCategoryKey]: [...currentActions, draggedAction.title]
+                                }));
+                                
+                                setWeeklyActionItems(prev => ({
+                                  ...prev,
+                                  [weekCategoryKey]: [...currentActionItems, draggedAction]
+                                }));
+                              }
+                              
                               setDraggedAction(null);
                             }
                           }}
@@ -629,9 +667,48 @@ const Calendar: React.FC = () => {
                           {weeklyActions[`week-${index + 1}-${category}`] && 
                            weeklyActions[`week-${index + 1}-${category}`].length > 0 ? (
                             <div className="p-1 space-y-1 max-h-full overflow-y-auto">
-                              {weeklyActions[`week-${index + 1}-${category}`].map((actionTitle, idx) => (
+                              {weeklyActionItems[`week-${index + 1}-${category}`] ? 
+                               weeklyActionItems[`week-${index + 1}-${category}`].map((action, idx) => (
                                 <div 
-                                  key={`${actionTitle}-${idx}`}
+                                  key={`${action.id}-${idx}`}
+                                  className={`p-1 text-xs font-medium rounded ${
+                                    category === 'business' ? 'bg-blue-100 text-blue-700' : 
+                                    category === 'body' ? 'bg-green-100 text-green-700' : 
+                                    'bg-purple-100 text-purple-700'
+                                  } flex justify-between items-center`}
+                                >
+                                  <span>{action.title}</span>
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setWeeklyActions(prev => {
+                                        const currentActions = [...(prev[`week-${index + 1}-${category}`] || [])];
+                                        const newActions = currentActions.filter(a => a !== action.title);
+                                        return {
+                                          ...prev,
+                                          [`week-${index + 1}-${category}`]: newActions
+                                        };
+                                      });
+                                      
+                                      setWeeklyActionItems(prev => {
+                                        const currentItems = [...(prev[`week-${index + 1}-${category}`] || [])];
+                                        const newItems = currentItems.filter(a => a.id !== action.id);
+                                        return {
+                                          ...prev,
+                                          [`week-${index + 1}-${category}`]: newItems
+                                        };
+                                      });
+                                    }}
+                                    className="ml-1 text-gray-400 hover:text-red-500 text-xs"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              )) : 
+                              // Fallback to using just the titles if we don't have the full action items
+                              weeklyActions[`week-${index + 1}-${category}`].map((actionTitle, idx) => (
+                                <div 
+                                  key={`title-${actionTitle}-${idx}`}
                                   className={`p-1 text-xs font-medium rounded ${
                                     category === 'business' ? 'bg-blue-100 text-blue-700' : 
                                     category === 'body' ? 'bg-green-100 text-green-700' : 
