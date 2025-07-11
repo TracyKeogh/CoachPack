@@ -15,8 +15,8 @@ import {
   X,
   ArrowRight,
   ArrowLeft,
-  ChevronRight,
-} from 'lucide-react';
+  Clock
+import MilestonesSection from './MilestonesSection';
 
 type GoalTimeframe = 'annual' | '90day' | 'weekly';
 
@@ -786,7 +786,7 @@ const GoalSetting: React.FC = () => {
                   </p>
                 </div>
               )}
-              
+
               {/* Milestones (for 90-day goals) */}
               {timeframe === '90day' && (
                 <div className="mt-6">
@@ -797,112 +797,20 @@ const GoalSetting: React.FC = () => {
                     </h3>
 
                     {/* Milestones List */}
-                    <div className="bg-white rounded-xl p-4 border border-slate-200 mb-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-medium text-slate-700">Key Checkpoints</h4>
-                        <button
-                          onClick={() => addMilestone(timeframe, goal.id)}
-                          className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </button>
-                      </div>
-                      
-                      <div className="space-y-3">
-                        {goal.milestones?.map((milestone) => (
-                          <div key={milestone.id} className="flex items-start group">
-                            {editingMilestone && 
-                             editingMilestone.goalId === goal.id && 
-                             editingMilestone.milestoneId === milestone.id ? (
-                              <div className="flex-1 space-y-2">
-                                <input
-                                  type="text"
-                                  value={newMilestoneTitle}
-                                  onChange={(e) => setNewMilestoneTitle(e.target.value)}
-                                  className="w-full p-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                  placeholder="Milestone title"
-                                />
-                                <div className="flex items-center space-x-2">
-                                  <input
-                                    type="date"
-                                    value={newMilestoneDueDate}
-                                    onChange={(e) => setNewMilestoneDueDate(e.target.value)}
-                                    className="p-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                  />
-                                  <div className="flex space-x-1">
-                                    <button
-                                      onClick={saveMilestone}
-                                      className="p-1 text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors"
-                                    >
-                                      <Check className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                      onClick={cancelEditMilestone}
-                                      className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
-                                    >
-                                      <X className="w-4 h-4" />
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            ) : (
-                              <>
-                                <div className="flex-1 flex items-start space-x-3">
-                                  <div className="w-2 h-2 bg-amber-500 rounded-full mt-2 flex-shrink-0"></div>
-                                  <div>
-                                    <div className={`font-medium ${milestone.completed ? 'text-slate-500 line-through' : 'text-slate-700'}`}>
-                                      {milestone.title}
-                                    </div>
-                                    <div className="text-xs text-slate-500">
-                                      ({new Date(milestone.dueDate).toLocaleDateString()})
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                  <button
-                                    onClick={() => toggleMilestoneCompletion(timeframe, goal.id, milestone.id)}
-                                    className={`w-5 h-5 rounded-full border flex items-center justify-center ${
-                                      milestone.completed 
-                                        ? 'bg-green-500 border-green-500 text-white' 
-                                        : 'border-slate-300 bg-white'
-                                    }`}
-                                  >
-                                    {milestone.completed && <Check className="w-3 h-3" />}
-                                  </button>
-                                  <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button
-                                      onClick={() => startEditingMilestone(timeframe, goal.id, milestone.id)}
-                                      className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                                    >
-                                      <Edit3 className="w-3 h-3" />
-                                    </button>
-                                    <button
-                                      onClick={() => removeMilestone(timeframe, goal.id, milestone.id)}
-                                      className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                                    >
-                                      <X className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        ))}
-                        
-                        {(!goal.milestones || goal.milestones.length === 0) && (
-                          <div className="text-center py-4 text-slate-500 border border-dashed border-slate-300 rounded-lg">
-                            <p>No milestones yet</p>
-                            <button
-                              onClick={() => addMilestone(timeframe, goal.id)}
-                              className="mt-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
-                            >
-                              + Add your first milestone
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                  <div className="mt-6 border-t border-slate-200 pt-6"></div>
+                  
+                  <MilestonesSection 
+                    milestones={goal.milestones || []}
+                    onAddMilestone={() => addMilestone(timeframe, goal.id)}
+                    onEditMilestone={(milestoneId, title, dueDate) => {
+                      setNewMilestoneTitle(title);
+                      setNewMilestoneDueDate(dueDate);
+                      setEditingMilestone({timeframe, goalId: goal.id, milestoneId});
+                      saveMilestone();
+                    }}
+                    onToggleMilestone={(milestoneId) => toggleMilestoneCompletion(timeframe, goal.id, milestoneId)}
+                    onRemoveMilestone={(milestoneId) => removeMilestone(timeframe, goal.id, milestoneId)}
+                  />
                   
                   <div className="mt-4">
                     <div className="flex items-center space-x-2 mb-2">
@@ -1038,7 +946,7 @@ const GoalSetting: React.FC = () => {
                     {goal.milestones && goal.milestones.length > 0 && (
                       <div className="mt-3 border-t border-slate-100 pt-3">
                         <h4 className="text-sm font-medium text-slate-700 mb-2 flex items-center">
-                          <div className="w-2 h-2 bg-amber-500 rounded-full mr-1"></div> Milestones
+                          <Trophy className="w-3.5 h-3.5 text-amber-500 mr-1" /> Milestones
                         </h4>
                         <div className="space-y-2">
                           {goal.milestones.map(milestone => (
