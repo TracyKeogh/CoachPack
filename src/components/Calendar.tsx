@@ -1,21 +1,145 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Clock, Eye, Target, Heart, Briefcase, User, X } from 'lucide-react';
-import { useCalendarData, Event, ActionPoolItem } from '../hooks/useCalendarData';
+import { useCalendarData, ActionPoolItem } from '../hooks/useCalendarData';
+import { useGoalSettingData } from '../hooks/useGoalSettingData';
+import { STORAGE_KEY as GOALS_STORAGE_KEY } from '../hooks/useGoalSettingData';
 
-interface CalendarProps {}
+interface ActionItem {
+  id: string;
+  title: string;
+  duration: number;
+  frequency: 'daily' | 'weekly' | '3x-week';
+  category: 'business' | 'body' | 'balance' | 'personal';
+}
 
-const Calendar: React.FC<CalendarProps> = () => {
-  const { data: calendarData, addEvent, updateEvent, removeEvent } = useCalendarData();
+const Calendar: React.FC = () => {
+  const { data: goalsData } = useGoalSettingData();
+  const [currentView, setCurrentView] = useState<'daily' | 'weekly' | '90-day' | 'yearly'>('weekly');
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [currentView, setCurrentView] = useState<'weekly' | '90day'>('weekly');
+  const [showVisionOverlay, setShowVisionOverlay] = useState(false);
   const [slotActions, setSlotActions] = useState<Record<string, ActionPoolItem[]>>({});
+  const [showAddEventForm, setShowAddEventForm] = useState(false);
+  const [draggedAction, setDraggedAction] = useState<ActionItem | null>(null);
   const [weeklyActions, setWeeklyActions] = useState<Record<string, string[]>>({});
   const [weeklyActionItems, setWeeklyActionItems] = useState<Record<string, ActionPoolItem[]>>({});
-  const [draggedAction, setDraggedAction] = useState<ActionPoolItem | null>(null);
-  const [showAddActionModal, setShowAddActionModal] = useState(false);
+  const [newEvent, setNewEvent] = useState({
+    title: '',
+    date: '',
+    time: '',
+    duration: 60,
+    category: 'business' as const
+  });
 
-  // Sample action pool data
-  const actionPool: ActionPoolItem[] = [
+  const { data: calendarData, addEvent, updateEvent, removeEvent, refreshActionPool } = useCalendarData();
+  
+  // Refresh action pool when goals data changes
+  useEffect(() => {
+    if (goalsData && Object.keys(goalsData.categoryGoals || {}).length > 0) {
+      console.log("Refreshing action pool with goals data:", goalsData);
+      refreshActionPool();
+    }
+  }, [goalsData, refreshActionPool]);
+  
+  // Sync weekly actions with 90-day view
+  useEffect(() => {
+    // Convert slotActions to weeklyActionItems for 90-day view
+    if (Object.keys(slotActions).length > 0) {
+      console.log("Converting slotActions to weeklyActionItems:", slotActions);
+      const newWeeklyActionItems: Record<string, ActionPoolItem[]> = {};
+      const newWeeklyActions: Record<string, string[]> = {};
+    
+      Object.entries(slotActions).forEach(([slotKey, actions]) => {
+        // Extract day and slot from the key (format: "day-{dayIndex}-{slot}")
+        const match = slotKey.match(/day-(\d+)-(.+)/);
+        if (match) {
+          const dayIndex = parseInt(match[1]);
+          // Map day index to week number (assuming 7 days per week)
+          const weekNumber = Math.floor(dayIndex / 7) + 1;
+          
+          actions.forEach(action => {
+            console.log(`Processing action for week ${weekNumber}, category ${action.category}:`, action);
+            // Create a key for the 90-day view
+            const category = action.category;
+            const weekCategoryKey = `week-${weekNumber}-${category}`;
+            
+            // Add actions to the weeklyActionItems
+            if (!newWeeklyActionItems[weekCategoryKey]) {
+              newWeeklyActionItems[weekCategoryKey] = [];
+            }
+            
+            // Check if action already exists to avoid duplicates
+            if (!newWeeklyActionItems[weekCategoryKey].some(a => a.id === action.id)) {
+              newWeeklyActionItems[weekCategoryKey].push(action);
+            }
+            
+            // Also update the weeklyActions for backward compatibility
+            if (!newWeeklyActions[weekCategoryKey]) {
+              newWeeklyActions[weekCategoryKey] = [];
+            }
+            
+            // Check if title already exists to avoid duplicates
+            const title = action.title || action.name || 'Action';
+            if (!newWeeklyActions[weekCategoryKey].includes(title)) {
+              newWeeklyActions[weekCategoryKey].push(title);
+            }
+          });
+        }
+      });
+    
+      console.log("New weeklyActionItems:", newWeeklyActionItems);
+      console.log("New weeklyActions:", newWeeklyActions);
+      setWeeklyActionItems(newWeeklyActionItems);
+      setWeeklyActions(newWeeklyActions);
+    }
+  }, [slotActions]);
+
+  // Sync 90-day view actions with weekly view
+  useEffect(() => {
+    if (Object.keys(weeklyActionItems).length > 0 && Object.keys(slotActions).length === 0) {
+      console.log("Converting weeklyActionItems to slotActions:", weeklyActionItems);
+      const newSlotActions: Record<string, ActionPoolItem[]> = {};
+      
+      Object.entries(weeklyActionItems).forEach(([weekCategoryKey, actions]) => {
+        // Extract week number and category from the key (format: "week-{weekNumber}-{category}")
+        const match = weekCategoryKey.match(/week-(\d+)-(.+)/);
+        if (match) {
+          const weekNumber = parseInt(match[1]);
+          const category = match[2];
+          
+          console.log(`Processing week ${weekNumber}, category ${category} with ${actions.length} actions`);
+          
+          // Calculate day index range for this week
+          const startDayIndex = (weekNumber - 1) * 7;
+          
+          // Assign actions to a default slot (e.g., Morning) for each day in the week
+          const defaultSlot = 'Morning';
+          
+          actions.forEach(action => {
+            // Assign to the first day of the week for simplicity
+            const slotKey = `day-${startDayIndex}-${defaultSlot}`;
+            
+            if (!newSlotActions[slotKey]) {
+              newSlotActions[slotKey] = [];
+            }
+            
+            // Check if action already exists to avoid duplicates
+            if (!newSlotActions[slotKey].some(a => a.id === action.id)) {
+              newSlotActions[slotKey].push(action);
+            }
+          });
+        }
+      });
+      
+      // Only update if we have new actions to add
+      if (Object.keys(newSlotActions).length > 0 && Object.keys(slotActions).length === 0) {
+        console.log("Setting new slotActions:", newSlotActions);
+        setSlotActions(newSlotActions);
+      }
+    }
+  }, [weeklyActionItems]);
+
+  // Default action items that match the screenshot
+  const defaultActions: ActionItem[] = [
     { id: '1', title: 'Morning Workout', duration: 60, frequency: 'daily', category: 'body' },
     { id: '2', title: 'Team Meeting', duration: 90, frequency: 'weekly', category: 'business' },
     { id: '3', title: 'Meal Prep', duration: 120, frequency: 'weekly', category: 'body' },
@@ -25,156 +149,14 @@ const Calendar: React.FC<CalendarProps> = () => {
     { id: '7', title: 'Meditation', duration: 20, frequency: 'daily', category: 'balance' }
   ];
 
-  // Sync weekly actions with 90-day view
-  useEffect(() => {
-    if (Object.keys(slotActions).length > 0) {
-      const newWeeklyActions: Record<string, string[]> = { ...weeklyActions };
-      const newWeeklyActionItems: Record<string, ActionPoolItem[]> = { ...weeklyActionItems };
-      
-      Object.entries(slotActions).forEach(([slotKey, actions]) => {
-        // Extract day index and time slot from the key (e.g., "day-0-Morning")
-        const [_, dayIndexStr, timeSlot] = slotKey.split('-');
-        const dayIndex = parseInt(dayIndexStr);
-        
-        // Calculate week number (0-indexed)
-        const weekNumber = Math.floor(dayIndex / 7);
-        
-        // Map time slot to category
-        const category = timeSlot.toLowerCase();
-        
-        // Create a key for the week and category
-        const weekCategoryKey = `week-${weekNumber}-${category}`;
-        
-        // Initialize arrays if they don't exist
-        if (!newWeeklyActions[weekCategoryKey]) newWeeklyActions[weekCategoryKey] = [];
-        if (!newWeeklyActionItems[weekCategoryKey]) newWeeklyActionItems[weekCategoryKey] = [];
-        
-        // Clear existing actions for this slot to avoid duplicates
-        newWeeklyActions[weekCategoryKey] = [];
-        newWeeklyActionItems[weekCategoryKey] = [];
-        
-        // Add actions to both arrays
-        actions.forEach(action => {
-          newWeeklyActions[weekCategoryKey].push(action.title);
-          // Check if action already exists to avoid duplicates
-          if (!newWeeklyActionItems[weekCategoryKey].some(a => a.id === action.id)) {
-            newWeeklyActionItems[weekCategoryKey].push(action);
-          }
-        });
-      });
-      
-      setWeeklyActions(newWeeklyActions);
-      setWeeklyActionItems(newWeeklyActionItems);
-    }
-  }, [slotActions]);
+  // Use calendar data action pool if available, otherwise use defaults
+  const actionPool = calendarData && calendarData.actionPool && calendarData.actionPool.length > 0 
+    ? calendarData.actionPool 
+    : defaultActions.map(action => ({
+        ...action,
+        name: action.title // Ensure name property exists for compatibility
+      }));
 
-  // Sync 90-day view actions with weekly view
-  useEffect(() => {
-    if (Object.keys(weeklyActionItems).length > 0) {
-      const newSlotActions: Record<string, ActionPoolItem[]> = { ...slotActions };
-      
-      Object.entries(weeklyActionItems).forEach(([weekCategoryKey, actions]) => {
-        // Extract week number and category from the key (e.g., "week-0-morning")
-        const [_, weekNumberStr, category] = weekCategoryKey.split('-');
-        const weekNumber = parseInt(weekNumberStr);
-        
-        // Calculate day indices for this week (0-6 for each day of the week)
-        const startDayIndex = weekNumber * 7;
-        const endDayIndex = startDayIndex + 6;
-        
-        // Map category to time slot
-        const timeSlot = category.charAt(0).toUpperCase() + category.slice(1); // Capitalize first letter
-        
-        // For simplicity, add actions to the first day of the week
-        const slotKey = `day-${startDayIndex}-${timeSlot}`;
-        
-        // Initialize array if it doesn't exist
-        if (!newSlotActions[slotKey]) newSlotActions[slotKey] = [];
-        
-        // Clear existing actions for this slot to avoid duplicates
-        newSlotActions[slotKey] = [];
-        
-        // Add actions
-        actions.forEach(action => {
-          // Check if action already exists to avoid duplicates
-          if (!newSlotActions[slotKey].some(a => a.id === action.id)) {
-            newSlotActions[slotKey].push(action);
-          }
-        });
-      });
-      
-      setSlotActions(newSlotActions);
-    }
-  }, [weeklyActionItems]);
-
-  // Generate dates for the current week
-  const getWeekDates = useCallback(() => {
-    const dates = [];
-    const startOfWeek = new Date(currentDate);
-    startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
-    
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(startOfWeek);
-      date.setDate(startOfWeek.getDate() + i);
-      dates.push(date);
-    }
-    
-    return dates;
-  }, [currentDate]);
-
-  // Format date for display
-  const formatDate = (date: Date) => {
-    const today = new Date();
-    const isToday = date.toDateString() === today.toDateString();
-    
-    if (isToday) {
-      return 'Today';
-    }
-    
-    const day = date.getDate();
-    return `${day.getDate()} ${day.toLocaleString('default', { month: 'short' })}`;
-  };
-
-  // Generate a unique key for a day and time slot
-  const generateSlotKey = (dayIndex: number, slot: string) => {
-    return `day-${dayIndex}-${slot}`;
-  };
-
-  // Generate a unique key for a week and category
-  const generateWeekCategoryKey = (weekIndex: number, category: string) => {
-    return `week-${weekIndex}-${category}`;
-  };
-
-  // Remove an action from a slot in the weekly view
-  const removeActionFromSlot = (slotKey: string, actionId: string) => {
-    setSlotActions(prev => {
-      const newSlotActions = { ...prev };
-      if (newSlotActions[slotKey]) {
-        newSlotActions[slotKey] = newSlotActions[slotKey].filter(a => a.id !== actionId);
-      }
-      return newSlotActions;
-    });
-  };
-
-  // Remove an action from a week/category in the 90-day view
-  const removeActionFromWeekCategory = (weekCategoryKey: string, actionId: string) => {
-    setWeeklyActionItems(prev => {
-      const newWeeklyActionItems = { ...prev };
-      if (newWeeklyActionItems[weekCategoryKey]) {
-        newWeeklyActionItems[weekCategoryKey] = newWeeklyActionItems[weekCategoryKey].filter(a => a.id !== actionId);
-      }
-      return newWeeklyActionItems;
-    });
-    
-    setWeeklyActions(prev => {
-      const newWeeklyActions = { ...prev };
-      // Since we don't have a direct mapping from actionId to title,
-      // we'll rely on the weeklyActionItems update above to handle this
-      return newWeeklyActions;
-    });
-  };
-
-  // Get category color
   const getCategoryColor = (category: string) => {
     switch (category) {
       case 'business': return 'bg-blue-100 text-blue-800 border-blue-200';
@@ -185,7 +167,6 @@ const Calendar: React.FC<CalendarProps> = () => {
     }
   };
 
-  // Get category icon
   const getCategoryIcon = (category: string) => {
     switch (category) {
       case 'business': return <Briefcase className="w-4 h-4" />;
@@ -196,10 +177,179 @@ const Calendar: React.FC<CalendarProps> = () => {
     }
   };
 
-  // Render weekly view
+  const getFrequencyText = (frequency: string) => {
+    switch (frequency) {
+      case 'daily': return 'daily';
+      case 'weekly': return 'weekly';
+      case '3x-week': return '3x_week';
+      default: return frequency;
+    }
+  };
+
+  const handleAddEvent = () => {
+    if (newEvent.title && newEvent.date) {
+      const event: CalendarEvent = {
+        id: Date.now().toString(),
+        title: newEvent.title,
+        date: newEvent.date,
+        time: newEvent.time,
+        duration: newEvent.duration,
+        category: newEvent.category
+      };
+      addEvent(event);
+      setNewEvent({ title: '', date: '', time: '', duration: 60, category: 'business' });
+      setShowAddEventForm(false);
+    }
+  };
+
+  const renderDailyView = () => {
+    const hours = Array.from({ length: 24 }, (_, i) => i);
+    const currentDateStr = currentDate.toISOString().split('T')[0];
+    const dayEvents = calendarData?.events?.filter(event => event.date === currentDateStr) || [];
+
+    return (
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200">
+        <div className="p-6 border-b border-slate-200">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-slate-900">
+              {currentDate.toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })}
+            </h2>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setCurrentDate(new Date(currentDate.getTime() - 24 * 60 * 60 * 1000))}
+                className="p-2 hover:bg-slate-100 rounded-lg"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => setCurrentDate(new Date())}
+                className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
+              >
+                Today
+              </button>
+              <button
+                onClick={() => setCurrentDate(new Date(currentDate.getTime() + 24 * 60 * 60 * 1000))}
+                className="p-2 hover:bg-slate-100 rounded-lg"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex">
+          <div className="flex-1 p-6">
+            <div className="space-y-1">
+              {hours.map(hour => (
+                <div key={hour} className="flex items-start border-b border-slate-100 py-2">
+                  <div className="w-16 text-sm text-slate-500 font-medium">
+                    {hour.toString().padStart(2, '0')}:00
+                  </div>
+                  <div className="flex-1 min-h-[40px] relative">
+                    {dayEvents
+                      .filter(event => event.time && parseInt(event.time.split(':')[0]) === hour)
+                      .map(event => (
+                        <div
+                          key={event.id}
+                          className={`absolute left-0 right-0 p-2 rounded-lg border ${getCategoryColor(event.category)} text-sm`}
+                        >
+                          <div className="flex items-center space-x-2">
+                            {getCategoryIcon(event.category)}
+                            <span className="font-medium">{event.title}</span>
+                            {event.duration && (
+                              <span className="text-xs opacity-75">
+                                <Clock className="w-3 h-3 inline mr-1" />
+                                {event.duration}m
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <div className="w-80 border-l border-slate-200 p-6">
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">Daily Reflection</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  What went well today?
+                </label>
+                <textarea
+                  className="w-full p-3 border border-slate-200 rounded-lg resize-none"
+                  rows={3}
+                  placeholder="Reflect on your wins..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  What could be improved?
+                </label>
+                <textarea
+                  className="w-full p-3 border border-slate-200 rounded-lg resize-none"
+                  rows={3}
+                  placeholder="Areas for growth..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Tomorrow's priority
+                </label>
+                <input
+                  type="text"
+                  className="w-full p-3 border border-slate-200 rounded-lg"
+                  placeholder="Most important task..."
+                />
+              </div>
+              <div className="text-center py-6">
+                <p className="text-slate-500">No actions available</p>
+                <p className="text-xs text-slate-500">Add goals to see actions here</p>
+                <button
+                  onClick={refreshActionPool}
+                  className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm"
+                >
+                  Refresh Actions
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderWeeklyView = () => {
-    const weekDates = getWeekDates();
+    const startOfWeek = new Date(currentDate);
+    startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
+    
+    // Generate a unique key for each day-slot combination
+    const generateSlotKey = (dayIndex: number, slot: string) => `day-${dayIndex}-${slot}`;
+    
+    const weekDays = Array.from({ length: 7 }, (_, i) => {
+      const day = new Date(startOfWeek);
+      day.setDate(startOfWeek.getDate() + i);
+      return day;
+    });
+
     const timeSlots = ['Morning', 'Afternoon', 'Evening'];
+
+    // Sample events for demonstration
+    const sampleEvents = [
+      { id: '1', title: 'Morning Workout', day: 0, slot: 'Morning', duration: 60, category: 'body' },
+      { id: '2', title: 'Team Meeting', day: 1, slot: 'Morning', duration: 90, category: 'business' },
+      { id: '3', title: 'Meal Prep', day: 2, slot: 'Morning', duration: 120, category: 'body' },
+      { id: '4', title: 'Reading Time', day: 2, slot: 'Afternoon', duration: 45, category: 'personal' },
+      { id: '5', title: 'Reading Time', day: 3, slot: 'Afternoon', duration: 45, category: 'personal' },
+      { id: '6', title: 'Project Work', day: 4, slot: 'Morning', duration: 180, category: 'business' }
+    ];
 
     return (
       <div className="flex space-x-6">
@@ -207,25 +357,19 @@ const Calendar: React.FC<CalendarProps> = () => {
         <div className="w-80 bg-white rounded-lg shadow-sm border border-slate-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-slate-900">Action Pool</h3>
-            <button 
-              onClick={() => setShowAddActionModal(true)}
-              className="p-2 hover:bg-slate-100 rounded-lg"
-            >
+            <button className="p-2 hover:bg-slate-100 rounded-lg">
               <Plus className="w-4 h-4" />
             </button>
           </div>
           
           <div className="space-y-3">
-            <div className="flex-1 space-y-2">
-              {actionPool.map(action => (
+            {actionPool.length > 0 ? (
+              actionPool.map(action => (
                 <div
                   key={action.id}
                   className={`p-3 rounded-lg border cursor-move ${getCategoryColor(action.category)}`}
                   draggable
-                  onDragStart={(e) => {
-                    e.stopPropagation();
-                    setDraggedAction(action);
-                  }}
+                  onDragStart={() => setDraggedAction(action)}
                   onDragEnd={() => setDraggedAction(null)}
                 >
                   <div className="flex items-center space-x-2 mb-1">
@@ -234,11 +378,22 @@ const Calendar: React.FC<CalendarProps> = () => {
                   </div>
                   <div className="flex items-center space-x-2 text-xs opacity-75">
                     <Clock className="w-3 h-3" />
-                    <span>{action.duration}m • {action.frequency}</span>
+                    <span>{action.duration}m • {getFrequencyText(action.frequency)}</span>
                   </div>
                 </div>
-              ))}
-            </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-slate-500">
+                <CalendarIcon className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No actions available</p>
+                <button
+                  onClick={refreshActionPool}
+                  className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm"
+                >
+                  Refresh Actions
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -249,8 +404,8 @@ const Calendar: React.FC<CalendarProps> = () => {
               <div>
                 <h2 className="text-2xl font-bold text-slate-900">Weekly Planning</h2>
                 <p className="text-slate-600">
-                  {weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {
-                    weekDates[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                  {startOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {
+                    new Date(startOfWeek.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                   }
                 </p>
               </div>
@@ -298,91 +453,141 @@ const Calendar: React.FC<CalendarProps> = () => {
               </div>
 
               {/* Days */}
-              {weekDates.map((day, dayIndex) => {
-                const isToday = day.toDateString() === new Date().toDateString();
-                
-                return (
-                  <div key={dayIndex} className="space-y-4">
-                    <div className="text-center">
-                      <div className="text-sm font-medium text-slate-600">
-                        {day.toLocaleDateString('en-US', { weekday: 'long' })}
-                      </div>
-                      <div className={`text-lg font-bold mt-1 ${
-                        isToday ? 'text-blue-600' : 'text-slate-900'
-                      }`}>
-                        {day.getDate()}
+              {weekDays.map((day, dayIndex) => (
+                <div key={dayIndex} className="space-y-4">
+                  <div className="text-center">
+                    <div className="text-sm font-medium text-slate-600">
+                      {day.toLocaleDateString('en-US', { weekday: 'long' })}
+                    </div>
+                    <div className={`text-lg font-bold mt-1 ${
+                      day.toDateString() === new Date().toDateString() 
+                        ? 'text-blue-600' 
+                        : 'text-slate-900'
+                    }`}>
+                      {day.getDate()}
+                    </div>
+                  </div>
+                  
+                  {timeSlots.map(slot => (
+                    <div key={slot} className="h-32 border border-slate-200 rounded-lg p-2 relative">
+                      {sampleEvents
+                        .filter(event => event.day === dayIndex && event.slot === slot) 
+                        .map((event, eventIndex) => (
+                          <div
+                            key={`${event.id}-${eventIndex}`}
+                            className={`p-2 rounded-lg border text-xs action-item ${getCategoryColor(event.category)}`}
+                          >
+                            <div className="font-medium">{event.title}</div>
+                            <div className="flex items-center space-x-1 mt-1 opacity-75">
+                              <Clock className="w-3 h-3" />
+                              <span>{event.duration}m</span>
+                            </div>
+                          </div>
+                        ))}
+                      
+                      {/* Display actions dropped into this slot */}
+                      {slotActions[generateSlotKey(dayIndex, slot)]?.map((action, index) => (
+                        <div
+                          key={`${action.id}-${index}`}
+                          className={`p-2 rounded-lg border text-xs mb-1 action-item ${getCategoryColor(action.category)}`}
+                        >
+                          <div className="font-medium">{action.title}</div>
+                          <div className="flex items-center space-x-1 mt-1 opacity-75 z-20">
+                            <Clock className="w-3 h-3" />
+                            <span>{action.duration}m</span>
+                            <button 
+                              onClick={() => {
+                                const slotKey = generateSlotKey(dayIndex, slot);
+                                setSlotActions(prev => ({
+                                  ...prev,
+                                  [slotKey]: prev[slotKey].filter(a => a.id !== action.id)
+                                }));
+                                
+                                // Also remove from 90-day view
+                                const weekNumber = Math.floor(dayIndex / 7) + 1;
+                                const weekCategoryKey = `week-${weekNumber}-${action.category}`;
+                                
+                                setWeeklyActionItems(prev => {
+                                  const currentItems = [...(prev[weekCategoryKey] || [])];
+                                  return {
+                                    ...prev,
+                                    [weekCategoryKey]: currentItems.filter(a => a.id !== action.id)
+                                  };
+                                });
+                                
+                                setWeeklyActions(prev => {
+                                  const currentActions = [...(prev[weekCategoryKey] || [])];
+                                  return {
+                                    ...prev,
+                                    [weekCategoryKey]: currentActions.filter(a => a !== action.title)
+                                  };
+                                });
+                              }}
+                              className="ml-1 text-gray-400 hover:text-red-500 action-remove"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      <div
+                        className="time-slot absolute inset-0 flex items-center justify-center text-slate-400 text-xs"
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (draggedAction) {
+                            e.currentTarget.classList.add('drop-highlight');
+                          }
+                        }}
+                        onDragLeave={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          e.currentTarget.classList.remove('drop-highlight');
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const element = e.currentTarget;
+                          element.classList.remove('drop-highlight');
+                          if (draggedAction) {
+                            const slotKey = generateSlotKey(dayIndex, slot);
+                            const newAction = { ...draggedAction, id: `${draggedAction.id}-${Date.now()}` };
+                            const newSlotActions = {
+                              ...prev,
+                              [slotKey]: [...(prev[slotKey] || []), newAction]
+                            };
+                            setSlotActions(newSlotActions);
+                            
+                            // Also update 90-day view
+                            const weekNumber = Math.floor(dayIndex / 7) + 1;
+                            const weekCategoryKey = `week-${weekNumber}-${draggedAction.category}`;
+                            
+                            setWeeklyActionItems(prev => ({
+                              ...prev,
+                              [weekCategoryKey]: [...(prev[weekCategoryKey] || []), newAction]
+                            }));
+                            
+                            setWeeklyActions(prev => ({
+                              ...prev,
+                              [weekCategoryKey]: [...(prev[weekCategoryKey] || []), newAction.title || newAction.name || 'Action']
+                            }));
+                            
+                            setDraggedAction(null);
+                          }
+                        }}
+                      >
+                       {(!sampleEvents.some(event => event.day === dayIndex && event.slot === slot) &&
+                         (!slotActions[generateSlotKey(dayIndex, slot)] || slotActions[generateSlotKey(dayIndex, slot)]?.length === 0)) ? (
+                         <div className="text-slate-400 text-xs">
+                           Drop actions here
+                         </div>
+                       ) : null}
                       </div>
                     </div>
-                    
-                    {timeSlots.map(slot => {
-                      const slotKey = generateSlotKey(dayIndex, slot);
-                      
-                      return (
-                        <div
-                          key={`${dayIndex}-${slot}`}
-                          className={`time-slot min-h-24 p-2 border border-slate-200 rounded-lg ${
-                            isToday ? 'bg-purple-50' : 'bg-white'
-                          }`}
-                          onDragOver={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            if (draggedAction) {
-                              e.currentTarget.classList.add('drop-highlight');
-                            }
-                          }}
-                          onDragLeave={(e) => {
-                            e.stopPropagation();
-                            e.currentTarget.classList.remove('drop-highlight');
-                          }}
-                          onDrop={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            e.currentTarget.classList.remove('drop-highlight');
-                            if (draggedAction) {
-                              const slotKey = generateSlotKey(dayIndex, slot);
-                              const newAction = { 
-                                ...draggedAction, 
-                                id: `${draggedAction.id}-${Date.now()}` 
-                              };
-                              
-                              setSlotActions(prev => ({
-                                ...prev,
-                                [slotKey]: [...(prev[slotKey] || []), newAction]
-                              }));
-                              setDraggedAction(null);
-                            }
-                          }}
-                        >
-                          {slotActions[slotKey] && slotActions[slotKey].length > 0 ? (
-                            <div className="space-y-1">
-                              {slotActions[slotKey].map((action, index) => (
-                                <div
-                                  key={`${action.id}-${index}`}
-                                  className={`p-2 rounded text-xs ${getCategoryColor(action.category)} relative group`}
-                                >
-                                  <div className="flex items-center justify-between">
-                                    <span>{action.title}</span>
-                                    <button
-                                      onClick={() => removeActionFromSlot(slotKey, action.id)}
-                                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 rounded-full transition-opacity"
-                                    >
-                                      <X className="w-3 h-3 text-red-500" />
-                                    </button>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="text-slate-400 text-xs text-center">
-                              Drop actions here
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
+                  ))}
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -390,157 +595,509 @@ const Calendar: React.FC<CalendarProps> = () => {
     );
   };
 
-  // Render 90-day view
   const render90DayView = () => {
-    const weeks = Array.from({ length: 12 }, (_, i) => i);
+    const weeks = Array.from({ length: 12 }, (_, i) => i + 1);
     const categories = ['business', 'body', 'balance'];
     
     return (
-      <div className="flex space-x-6">
-        {/* Action Pool Sidebar */}
-        <div className="w-80 bg-white rounded-lg shadow-sm border border-slate-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-slate-900">Action Pool</h3>
-            <button 
-              onClick={() => setShowAddActionModal(true)}
-              className="p-2 hover:bg-slate-100 rounded-lg"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
-          </div>
-          
-          <div className="space-y-3">
-            <div className="flex-1 space-y-2">
-              {actionPool.map(action => (
-                <div
-                  key={action.id}
-                  className={`p-3 rounded-lg border cursor-move ${getCategoryColor(action.category)}`}
-                  draggable
-                  onDragStart={(e) => {
-                    e.stopPropagation();
-                    setDraggedAction(action);
-                  }}
-                  onDragEnd={() => setDraggedAction(null)}
-                >
-                  <div className="flex items-center space-x-2 mb-1">
-                    {getCategoryIcon(action.category)}
-                    <span className="font-medium text-sm">{action.title}</span>
-                  </div>
-                  <div className="flex items-center space-x-2 text-xs opacity-75">
-                    <Clock className="w-3 h-3" />
-                    <span>{action.duration}m • {action.frequency}</span>
-                  </div>
-                </div>
-              ))}
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200">
+        <div className="p-6 border-b border-slate-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900">90-Day Action Focus</h2>
+              <p className="text-slate-600">12 Week Year Action Focus</p>
             </div>
+            <button
+              onClick={() => setShowVisionOverlay(true)}
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              <Eye className="w-4 h-4" />
+              <span>Show Vision</span>
+            </button>
           </div>
         </div>
 
-        {/* 90-Day Calendar */}
-        <div className="flex-1 bg-white rounded-lg shadow-sm border border-slate-200">
-          <div className="p-6 border-b border-slate-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-slate-900">90-Day Action Focus</h2>
-                <p className="text-slate-600">12 Week Year Action Focus</p>
+        <div className="p-6">
+          <div className="grid grid-cols-4 gap-6">
+            {/* Categories sidebar */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-slate-900 mb-4">Action Pool</h3>
+              <div className="space-y-2">
+                {categories.map(category => (
+                  <div key={category} className="p-4 border border-slate-200 rounded-lg">
+                    <h4 className="font-medium text-slate-900 mb-2 capitalize">{category === 'business' ? 'Business' : category === 'body' ? 'Body' : 'Balance'}</h4>
+                    <div className="space-y-2">
+                      {/* Direct access to the goals data */}
+                      {category === 'business' && (
+                        <>
+                          <div className="text-sm text-slate-600 font-medium">
+                            Grow my business to $10k/month revenue
+                          </div>
+                          <div className="mt-2 text-xs text-slate-500">
+                            <div className="font-medium mb-1">Actions:</div>
+                            <ul className="list-disc pl-4 space-y-1">
+                              {actionPool
+                                .filter(action => action.category === 'business')
+                                .map((action, idx) => (
+                                  <li 
+                                    key={idx}
+                                    draggable
+                                    onDragStart={() => setDraggedAction(action)}
+                                    className="cursor-move hover:text-blue-600"
+                                  >
+                                    {action.title}
+                                  </li>
+                                ))}
+                            </ul>
+                          </div>
+                        </>
+                      )}
+                      
+                      {category === 'body' && (
+                        <>
+                          <div className="text-sm text-slate-600 font-medium">
+                            Improve energy and physical health
+                          </div>
+                          <div className="mt-2 text-xs text-slate-500">
+                            <div className="font-medium mb-1">Actions:</div>
+                            <ul className="list-disc pl-4 space-y-1">
+                              {actionPool
+                                .filter(action => action.category === 'body')
+                                .map((action, idx) => (
+                                  <li 
+                                    key={idx}
+                                    draggable
+                                    onDragStart={() => setDraggedAction(action)}
+                                    className="cursor-move hover:text-green-600"
+                                  >
+                                    {action.title}
+                                  </li>
+                                ))}
+                            </ul>
+                          </div>
+                        </>
+                      )}
+                      
+                      {category === 'balance' && (
+                        <>
+                          <div className="text-sm text-slate-600 font-medium">
+                            Create better work-life harmony
+                          </div>
+                          <div className="mt-2 text-xs text-slate-500">
+                            <div className="font-medium mb-1">Actions:</div>
+                            <ul className="list-disc pl-4 space-y-1">
+                              {actionPool
+                                .filter(action => action.category === 'balance')
+                                .map((action, idx) => (
+                                  <li 
+                                    key={idx}
+                                    draggable
+                                    onDragStart={() => setDraggedAction(action)}
+                                    className="cursor-move hover:text-purple-600"
+                                  >
+                                    {action.title}
+                                  </li>
+                                ))}
+                            </ul>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 12-week timeline */}
+            <div className="col-span-3">
+              <div className="grid grid-cols-4 gap-4">
+                {weeks.map((week, index) => (
+                  <div 
+                    key={week} 
+                    className="border border-slate-200 rounded-lg p-4"
+                  >
+                    <div className="text-center mb-3">
+                      <div className="text-sm font-medium text-slate-600">Week</div>
+                      <div className="text-xl font-bold text-slate-900">{week}</div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      {categories.map((category) => {
+                        const weekCategoryKey = `week-${index + 1}-${category}`;
+                        return (
+                          <div 
+                            key={category} 
+                            className={`h-12 rounded border-2 border-dashed ${
+                              category === 'business' ? 'border-blue-200 bg-blue-50' : 
+                              category === 'body' ? 'border-green-200 bg-green-50' : 
+                              'border-purple-200 bg-purple-50'
+                            } flex items-center justify-center`}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              if (draggedAction) {
+                                e.currentTarget.classList.add('drop-highlight');
+                              }
+                            }}
+                            onDragLeave={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              e.currentTarget.classList.remove('drop-highlight');
+                            }}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              const element = e.currentTarget;
+                              element.classList.remove('drop-highlight');
+                              if (draggedAction && weekCategoryKey) {
+                                // Update both weeklyActions and weeklyActionItems
+                                const currentActions = weeklyActions[weekCategoryKey] || [];
+                                const currentActionItems = weeklyActionItems[weekCategoryKey] || [];
+                                
+                                // Only add if not already in the list
+                                if (!currentActions.includes(draggedAction.title)) {
+                                  // Create a unique ID for this instance of the action
+                                  const actionWithUniqueId = {
+                                    ...draggedAction,
+                                    id: `${draggedAction.id}-${Date.now()}`
+                                  };
+                                  
+                                  setWeeklyActions(prev => ({
+                                    ...prev,
+                                    [weekCategoryKey]: [...currentActions, draggedAction.title || draggedAction.name || 'Action']
+                                  }));
+                                  
+                                  setWeeklyActionItems(prev => ({
+                                    ...prev,
+                                    [weekCategoryKey]: [...currentActionItems, draggedAction]
+                                  }));
+                                }
+                                
+                                setDraggedAction(null);
+                                
+                                // Also update slotActions for weekly view
+                                // Calculate day index range for this week
+                                const weekNumber = index + 1;
+                                const startDayIndex = (weekNumber - 1) * 7;
+                                // Assign to Morning slot by default
+                                const slotKey = `day-${startDayIndex}-Morning`;
+                                
+                                setSlotActions(prev => ({
+                                  ...prev,
+                                  [slotKey]: [...(prev[slotKey] || []), { 
+                                    ...draggedAction, 
+                                    id: `${draggedAction.id}-${Date.now()}`
+                                  }]
+                                }));
+                              }
+                            }}
+                          >
+                            {weeklyActions[`week-${index + 1}-${category}`] && 
+                             weeklyActions[`week-${index + 1}-${category}`].length > 0 ? (
+                              <div className="p-1 space-y-1 max-h-full overflow-y-auto">
+                                {weeklyActionItems[`week-${index + 1}-${category}`] ? 
+                                 weeklyActionItems[`week-${index + 1}-${category}`].map((action, idx) => (
+                                  <div 
+                                    key={`${action.id || action.title}-${idx}`}
+                                    className={`p-1 text-xs font-medium rounded ${
+                                      category === 'business' ? 'bg-blue-100 text-blue-700' : 
+                                      category === 'body' ? 'bg-green-100 text-green-700' : 
+                                      'bg-purple-100 text-purple-700'
+                                    } flex justify-between items-center`}
+                                  >
+                                    <span>{action.title}</span>
+                                    <button 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setWeeklyActions(prev => {
+                                          const weekCategoryKey = `week-${index + 1}-${category}`;
+                                          const currentActions = [...(prev[weekCategoryKey] || [])];
+                                          const newActions = currentActions.filter(a => a !== action.title);
+                                          return {
+                                            ...prev,
+                                            [weekCategoryKey]: newActions
+                                          };
+                                        });
+                                        
+                                        setWeeklyActionItems(prev => {
+                                          const weekCategoryKey = `week-${index + 1}-${category}`;
+                                          const currentItems = [...(prev[weekCategoryKey] || [])];
+                                          const newItems = currentItems.filter(a => a.id !== action.id);
+                                          
+                                          // Also remove from slotActions if present
+                                          Object.entries(slotActions).forEach(([slotKey, slotActionsList]) => {
+                                            if (slotActionsList.some(slotAction => slotAction.id === action.id)) {
+                                              setSlotActions(prev => ({
+                                                ...prev,
+                                                [slotKey]: prev[slotKey].filter(a => a.id !== action.id)
+                                              }));
+                                            }
+                                          });
+                                          
+                                          return {
+                                            ...prev,
+                                            [weekCategoryKey]: newItems
+                                          };
+                                        });
+                                      }}
+                                      className="ml-1 text-gray-400 hover:text-red-500 text-xs"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                )) : 
+                                // Fallback to using just the titles if we don't have the full action items
+                                weeklyActions[`week-${index + 1}-${category}`].map((actionTitle, idx) => (
+                                  <div 
+                                    key={`title-${actionTitle}-${idx}`}
+                                    className={`p-1 text-xs font-medium rounded ${
+                                      category === 'business' ? 'bg-blue-100 text-blue-700' : 
+                                      category === 'body' ? 'bg-green-100 text-green-700' : 
+                                      'bg-purple-100 text-purple-700'
+                                    } flex justify-between items-center`}
+                                    draggable
+                                    onDragStart={() => setDraggedAction({
+                                      id: `title-${actionTitle}-${idx}`,
+                                      title: actionTitle,
+                                      category: category as 'business' | 'body' | 'balance' | 'personal',
+                                      duration: 60,
+                                      frequency: 'weekly'
+                                    })}
+                                  >
+                                    <span>{actionTitle}</span>
+                                    <button 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setWeeklyActions(prev => {
+                                          const weekCategoryKey = `week-${index + 1}-${category}`;
+                                          const currentActions = [...(prev[weekCategoryKey] || [])];
+                                          const newActions = currentActions.filter(a => a !== actionTitle);
+                                          return {
+                                            ...prev,
+                                            [weekCategoryKey]: newActions
+                                          };
+                                        });
+                                        
+                                        // Also remove from slotActions if present
+                                        const weekNumber = index + 1;
+                                        Object.entries(slotActions).forEach(([slotKey, slotActionsList]) => {
+                                          const match = slotKey.match(/day-(\d+)-(.+)/);
+                                          if (match) {
+                                            const dayIndex = parseInt(match[1]);
+                                            const slotWeekNumber = Math.floor(dayIndex / 7) + 1;
+                                            
+                                            if (slotWeekNumber === weekNumber) {
+                                              const actionsToRemove = slotActionsList.filter(
+                                                a => a.title === actionTitle && a.category === category
+                                              );
+                                              
+                                              if (actionsToRemove.length > 0) {
+                                                setSlotActions(prev => ({
+                                                  ...prev,
+                                                  [slotKey]: prev[slotKey].filter(a => !actionsToRemove.some(r => r.id === a.id))
+                                                }));
+                                              }
+                                            }
+                                          }
+                                        });
+                                      }}
+                                      className="ml-1 text-gray-400 hover:text-red-500 text-xs"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-slate-400">Drop action here</span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    );
+  };
 
-          <div className="p-6">
-            <div className="grid grid-cols-4 gap-4">
-              {weeks.map((weekIndex) => (
-                <div key={weekIndex} className="border border-slate-200 rounded-lg p-4">
-                  <div className="text-center mb-3">
-                    <div className="text-sm font-medium text-slate-600">Week</div>
-                    <div className="text-xl font-bold text-slate-900">{weekIndex + 1}</div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    {categories.map((category) => {
-                      const weekCategoryKey = generateWeekCategoryKey(weekIndex, category);
-                      
-                      return (
-                        <div
-                          key={`${weekIndex}-${category}`}
-                          className="min-h-24 p-2 border border-slate-200 rounded-lg bg-white"
-                          onDragOver={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            if (draggedAction) {
-                              e.currentTarget.classList.add('drop-highlight');
-                            }
-                          }}
-                          onDragLeave={(e) => {
-                            e.stopPropagation();
-                            e.currentTarget.classList.remove('drop-highlight');
-                          }}
-                          onDrop={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            e.currentTarget.classList.remove('drop-highlight');
-                            if (draggedAction) {
-                              const weekCategoryKey = generateWeekCategoryKey(weekIndex, category);
-                              const newAction = { 
-                                ...draggedAction, 
-                                id: `${draggedAction.id}-${Date.now()}` 
-                              };
-                              
-                              // Update weeklyActionItems
-                              setWeeklyActionItems(prev => {
-                                const newItems = { ...prev };
-                                if (!newItems[weekCategoryKey]) {
-                                  newItems[weekCategoryKey] = [];
-                                }
-                                newItems[weekCategoryKey] = [...newItems[weekCategoryKey], newAction];
-                                return newItems;
-                              });
-                              
-                              // Update weeklyActions for backward compatibility
-                              setWeeklyActions(prev => {
-                                const newActions = { ...prev };
-                                if (!newActions[weekCategoryKey]) {
-                                  newActions[weekCategoryKey] = [];
-                                }
-                                newActions[weekCategoryKey] = [...newActions[weekCategoryKey], newAction.title];
-                                return newActions;
-                              });
-                              
-                              setDraggedAction(null);
-                            }
-                          }}
-                        >
-                          {weeklyActionItems[weekCategoryKey] && weeklyActionItems[weekCategoryKey].length > 0 ? (
-                            <div className="space-y-1">
-                              {weeklyActionItems[weekCategoryKey].map((action, index) => (
-                                <div
-                                  key={`${action.id}-${index}`}
-                                  className={`p-2 rounded text-xs ${getCategoryColor(action.category)} relative group`}
-                                >
-                                  <div className="flex items-center justify-between">
-                                    <span>{action.title}</span>
-                                    <button
-                                      onClick={() => removeActionFromWeekCategory(weekCategoryKey, action.id)}
-                                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 rounded-full transition-opacity"
-                                    >
-                                      <X className="w-3 h-3 text-red-500" />
-                                    </button>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="text-slate-400 text-xs text-center">
-                              Drop actions here
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+  const renderYearlyView = () => {
+    const months = [
+      'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
+      'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'
+    ];
+    const days = Array.from({ length: 31 }, (_, i) => i + 1);
+
+    return (
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+        {/* Header */}
+        <div className="bg-blue-600 text-white p-8 text-center">
+          <h1 className="text-4xl font-bold">THE BIG A## CALENDAR 2025</h1>
+        </div>
+
+        {/* Calendar Grid */}
+        <div className="p-6">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr>
+                <th className="w-16"></th>
+                {days.map(day => (
+                  <th key={day} className="text-center p-2 text-blue-600 font-semibold border-b border-blue-200">
+                    {day}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {months.map((month, monthIndex) => (
+                <tr key={month}>
+                  <td className="text-blue-600 font-semibold p-3 border-r border-blue-200 text-center">
+                    {month}
+                  </td>
+                  {days.map(day => (
+                    <td key={day} className="border border-blue-100 h-8 w-8 p-1">
+                      <div className="w-full h-full bg-blue-50 hover:bg-blue-100 cursor-pointer rounded-sm"></div>
+                    </td>
+                  ))}
+                </tr>
               ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
+  const renderAddEventForm = () => {
+    if (!showAddEventForm) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 w-96">
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">Add Event</h3>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Title</label>
+              <input
+                type="text"
+                value={newEvent.title}
+                onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+                className="w-full p-2 border border-slate-200 rounded-lg"
+                placeholder="Event title"
+              />
             </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Date</label>
+              <input
+                type="date"
+                value={newEvent.date}
+                onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
+                className="w-full p-2 border border-slate-200 rounded-lg"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Time</label>
+              <input
+                type="time"
+                value={newEvent.time}
+                onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
+                className="w-full p-2 border border-slate-200 rounded-lg"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Duration (minutes)</label>
+              <input
+                type="number"
+                value={newEvent.duration}
+                onChange={(e) => setNewEvent({ ...newEvent, duration: parseInt(e.target.value) })}
+                className="w-full p-2 border border-slate-200 rounded-lg"
+                min="15"
+                step="15"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
+              <select
+                value={newEvent.category}
+                onChange={(e) => setNewEvent({ ...newEvent, category: e.target.value as any })}
+                className="w-full p-2 border border-slate-200 rounded-lg"
+              >
+                <option value="business">Business</option>
+                <option value="body">Body</option>
+                <option value="balance">Balance</option>
+                <option value="personal">Personal</option>
+              </select>
+            </div>
+          </div>
+          
+          <div className="flex justify-end space-x-3 mt-6">
+            <button
+              onClick={() => setShowAddEventForm(false)}
+              className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleAddEvent}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Add Event
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderVisionOverlay = () => {
+    if (!showVisionOverlay) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-8 max-w-4xl w-full max-h-[80vh] overflow-y-auto">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-2xl font-bold text-slate-900">Your Vision</h3>
+            <button
+              onClick={() => setShowVisionOverlay(false)}
+              className="text-slate-400 hover:text-slate-600"
+            >
+              ×
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-blue-50 p-6 rounded-lg">
+              <h4 className="text-lg font-semibold text-blue-900 mb-3">Values</h4>
+              <p className="text-blue-700">Your core values guide every decision and action.</p>
+            </div>
+            
+            <div className="bg-green-50 p-6 rounded-lg">
+              <h4 className="text-lg font-semibold text-green-900 mb-3">Vision Board</h4>
+              <p className="text-green-700">Visual representation of your ideal future.</p>
+            </div>
+            
+            <div className="bg-purple-50 p-6 rounded-lg">
+              <h4 className="text-lg font-semibold text-purple-900 mb-3">Wheel of Life</h4>
+              <p className="text-purple-700">Balance across all areas of your life.</p>
+            </div>
+          </div>
+          
+          <div className="mt-8 p-6 bg-slate-50 rounded-lg">
+            <h4 className="text-lg font-semibold text-slate-900 mb-3">How This Connects</h4>
+            <p className="text-slate-700">
+              Your calendar is where your vision becomes reality. Each scheduled action should align with your values, 
+              move you toward your vision, and maintain balance across all life areas. Use this view to ensure your 
+              daily schedule reflects your bigger purpose.
+            </p>
           </div>
         </div>
       </div>
@@ -548,21 +1105,34 @@ const Calendar: React.FC<CalendarProps> = () => {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <style jsx>{`
         .drop-highlight {
-          background-color: rgba(124, 58, 237, 0.1);
-          border-color: rgba(124, 58, 237, 0.5);
-          box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.2);
+          box-shadow: inset 0 0 0 3px rgba(79, 70, 229, 0.8) !important;
+          background-color: rgba(79, 70, 229, 0.3) !important; 
+          z-index: 5 !important;
           pointer-events: none;
+        }
+        
+        .h-32 {
+          min-height: 8rem;
+          position: relative;
         }
         
         .time-slot {
           position: relative;
           z-index: 1;
         }
+        
+        .action-item {
+          position: relative;
+          z-index: 2;
+        }
+        
+        .action-remove {
+          z-index: 3;
+        }
       `}</style>
-      
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -570,17 +1140,17 @@ const Calendar: React.FC<CalendarProps> = () => {
           <p className="text-slate-600">Transform your vision into daily action</p>
         </div>
         <button
-          onClick={() => setShowAddActionModal(true)}
+          onClick={() => setShowAddEventForm(true)}
           className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
         >
           <Plus className="w-4 h-4" />
-          <span>Add Action</span>
+          <span>Add Event</span>
         </button>
       </div>
 
       {/* View Selector */}
       <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-1 flex space-x-1 max-w-md">
-        {(['weekly', '90day'] as const).map((view) => (
+        {(['daily', 'weekly', '90-day', 'yearly'] as const).map((view) => (
           <button
             key={view}
             onClick={() => setCurrentView(view)}
@@ -590,16 +1160,24 @@ const Calendar: React.FC<CalendarProps> = () => {
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
-            {view === '90day' ? '90-Day' : 'Weekly'}
+            {view === '90-day' ? '90-Day' : view.charAt(0).toUpperCase() + view.slice(1)}
           </button>
         ))}
       </div>
 
       {/* Calendar Content */}
       <div>
+        {currentView === 'daily' && renderDailyView()}
         {currentView === 'weekly' && renderWeeklyView()}
-        {currentView === '90day' && render90DayView()}
+        {currentView === '90-day' && render90DayView()}
+        {currentView === 'yearly' && renderYearlyView()}
       </div>
+
+      {/* Add Event Form */}
+      {renderAddEventForm()}
+      
+      {/* Vision Overlay */}
+      {renderVisionOverlay()}
     </div>
   );
 };
