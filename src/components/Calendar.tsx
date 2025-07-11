@@ -44,6 +44,7 @@ const Calendar: React.FC = () => {
   useEffect(() => {
     // Convert slotActions to weeklyActionItems for 90-day view
     if (Object.keys(slotActions).length > 0) {
+      console.log("Converting slotActions to weeklyActionItems:", slotActions);
       const newWeeklyActionItems: Record<string, ActionPoolItem[]> = {};
       const newWeeklyActions: Record<string, string[]> = {};
     
@@ -56,6 +57,7 @@ const Calendar: React.FC = () => {
           const weekNumber = Math.floor(dayIndex / 7) + 1;
           
           actions.forEach(action => {
+            console.log(`Processing action for week ${weekNumber}, category ${action.category}:`, action);
             // Create a key for the 90-day view
             const category = action.category;
             const weekCategoryKey = `week-${weekNumber}-${category}`;
@@ -64,17 +66,28 @@ const Calendar: React.FC = () => {
             if (!newWeeklyActionItems[weekCategoryKey]) {
               newWeeklyActionItems[weekCategoryKey] = [];
             }
-            newWeeklyActionItems[weekCategoryKey].push(action);
+            
+            // Check if action already exists to avoid duplicates
+            if (!newWeeklyActionItems[weekCategoryKey].some(a => a.id === action.id)) {
+              newWeeklyActionItems[weekCategoryKey].push(action);
+            }
             
             // Also update the weeklyActions for backward compatibility
             if (!newWeeklyActions[weekCategoryKey]) {
               newWeeklyActions[weekCategoryKey] = [];
             }
-            newWeeklyActions[weekCategoryKey].push(action.title);
+            
+            // Check if title already exists to avoid duplicates
+            const title = action.title || action.name || 'Action';
+            if (!newWeeklyActions[weekCategoryKey].includes(title)) {
+              newWeeklyActions[weekCategoryKey].push(title);
+            }
           });
         }
       });
     
+      console.log("New weeklyActionItems:", newWeeklyActionItems);
+      console.log("New weeklyActions:", newWeeklyActions);
       setWeeklyActionItems(newWeeklyActionItems);
       setWeeklyActions(newWeeklyActions);
     }
@@ -83,6 +96,7 @@ const Calendar: React.FC = () => {
   // Sync 90-day view actions with weekly view
   useEffect(() => {
     if (Object.keys(weeklyActionItems).length > 0 && Object.keys(slotActions).length === 0) {
+      console.log("Converting weeklyActionItems to slotActions:", weeklyActionItems);
       const newSlotActions: Record<string, ActionPoolItem[]> = {};
       
       Object.entries(weeklyActionItems).forEach(([weekCategoryKey, actions]) => {
@@ -91,6 +105,8 @@ const Calendar: React.FC = () => {
         if (match) {
           const weekNumber = parseInt(match[1]);
           const category = match[2];
+          
+          console.log(`Processing week ${weekNumber}, category ${category} with ${actions.length} actions`);
           
           // Calculate day index range for this week
           const startDayIndex = (weekNumber - 1) * 7;
@@ -115,7 +131,8 @@ const Calendar: React.FC = () => {
       });
       
       // Only update if we have new actions to add
-      if (Object.keys(newSlotActions).length > 0) {
+      if (Object.keys(newSlotActions).length > 0 && Object.keys(slotActions).length === 0) {
+        console.log("Setting new slotActions:", newSlotActions);
         setSlotActions(newSlotActions);
       }
     }
@@ -135,7 +152,10 @@ const Calendar: React.FC = () => {
   // Use calendar data action pool if available, otherwise use defaults
   const actionPool = calendarData && calendarData.actionPool && calendarData.actionPool.length > 0 
     ? calendarData.actionPool 
-    : defaultActions;
+    : defaultActions.map(action => ({
+        ...action,
+        name: action.title // Ensure name property exists for compatibility
+      }));
 
   const getCategoryColor = (category: string) => {
     switch (category) {
@@ -452,10 +472,10 @@ const Calendar: React.FC = () => {
                     <div key={slot} className="h-32 border border-slate-200 rounded-lg p-2 relative">
                       {sampleEvents
                         .filter(event => event.day === dayIndex && event.slot === slot) 
-                        .map(event => (
+                        .map((event, eventIndex) => (
                           <div
-                            key={event.id}
-                            className={`p-2 rounded-lg border text-xs ${getCategoryColor(event.category)}`}
+                            key={`${event.id}-${eventIndex}`}
+                            className={`p-2 rounded-lg border text-xs action-item ${getCategoryColor(event.category)}`}
                           >
                             <div className="font-medium">{event.title}</div>
                             <div className="flex items-center space-x-1 mt-1 opacity-75">
@@ -468,8 +488,8 @@ const Calendar: React.FC = () => {
                       {/* Display actions dropped into this slot */}
                       {slotActions[generateSlotKey(dayIndex, slot)]?.map((action, index) => (
                         <div
-                          key={action.id}
-                          className={`p-2 rounded-lg border text-xs mb-1 ${getCategoryColor(action.category)}`}
+                          key={`${action.id}-${index}`}
+                          className={`p-2 rounded-lg border text-xs mb-1 action-item ${getCategoryColor(action.category)}`}
                         >
                           <div className="font-medium">{action.title}</div>
                           <div className="flex items-center space-x-1 mt-1 opacity-75 z-20">
@@ -480,10 +500,30 @@ const Calendar: React.FC = () => {
                                 const slotKey = generateSlotKey(dayIndex, slot);
                                 setSlotActions(prev => ({
                                   ...prev,
-                                  [slotKey]: prev[slotKey].filter((a, i) => a.id !== action.id)
+                                  [slotKey]: prev[slotKey].filter(a => a.id !== action.id)
                                 }));
+                                
+                                // Also remove from 90-day view
+                                const weekNumber = Math.floor(dayIndex / 7) + 1;
+                                const weekCategoryKey = `week-${weekNumber}-${action.category}`;
+                                
+                                setWeeklyActionItems(prev => {
+                                  const currentItems = [...(prev[weekCategoryKey] || [])];
+                                  return {
+                                    ...prev,
+                                    [weekCategoryKey]: currentItems.filter(a => a.id !== action.id)
+                                  };
+                                });
+                                
+                                setWeeklyActions(prev => {
+                                  const currentActions = [...(prev[weekCategoryKey] || [])];
+                                  return {
+                                    ...prev,
+                                    [weekCategoryKey]: currentActions.filter(a => a !== action.title)
+                                  };
+                                });
                               }}
-                              className="ml-1 text-gray-400 hover:text-red-500 z-30"
+                              className="ml-1 text-gray-400 hover:text-red-500 action-remove"
                             >
                               <X className="w-3 h-3" />
                             </button>
@@ -492,10 +532,13 @@ const Calendar: React.FC = () => {
                       ))}
                       
                       <div
+                        className="time-slot absolute inset-0 flex items-center justify-center text-slate-400 text-xs"
                         onDragOver={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          e.currentTarget.classList.add('drop-highlight');
+                          if (draggedAction) {
+                            e.currentTarget.classList.add('drop-highlight');
+                          }
                         }}
                         onDragLeave={(e) => {
                           e.preventDefault();
@@ -505,17 +548,34 @@ const Calendar: React.FC = () => {
                         onDrop={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          e.currentTarget.classList.remove('drop-highlight');
+                          const element = e.currentTarget;
+                          element.classList.remove('drop-highlight');
                           if (draggedAction) {
                             const slotKey = generateSlotKey(dayIndex, slot);
-                            setSlotActions(prev => ({
+                            const newAction = { ...draggedAction, id: `${draggedAction.id}-${Date.now()}` };
+                            const newSlotActions = {
                               ...prev,
-                              [slotKey]: [...(prev[slotKey] || []), { ...draggedAction, id: `${draggedAction.id}-${Date.now()}` }]
+                              [slotKey]: [...(prev[slotKey] || []), newAction]
+                            };
+                            setSlotActions(newSlotActions);
+                            
+                            // Also update 90-day view
+                            const weekNumber = Math.floor(dayIndex / 7) + 1;
+                            const weekCategoryKey = `week-${weekNumber}-${draggedAction.category}`;
+                            
+                            setWeeklyActionItems(prev => ({
+                              ...prev,
+                              [weekCategoryKey]: [...(prev[weekCategoryKey] || []), newAction]
                             }));
+                            
+                            setWeeklyActions(prev => ({
+                              ...prev,
+                              [weekCategoryKey]: [...(prev[weekCategoryKey] || []), newAction.title || newAction.name || 'Action']
+                            }));
+                            
                             setDraggedAction(null);
                           }
                         }}
-                       className="absolute inset-0 flex items-center justify-center text-slate-400 text-xs"
                       >
                        {(!sampleEvents.some(event => event.day === dayIndex && event.slot === slot) &&
                          (!slotActions[generateSlotKey(dayIndex, slot)] || slotActions[generateSlotKey(dayIndex, slot)]?.length === 0)) ? (
@@ -674,22 +734,22 @@ const Calendar: React.FC = () => {
                             } flex items-center justify-center`}
                             onDragOver={(e) => {
                               e.preventDefault();
-                             e.stopPropagation();
-                              e.currentTarget.classList.add('drop-highlight');
+                              e.stopPropagation();
+                              if (draggedAction) {
+                                e.currentTarget.classList.add('drop-highlight');
+                              }
                             }}
                             onDragLeave={(e) => {
-                             e.preventDefault();
-                             e.stopPropagation();
+                              e.preventDefault();
+                              e.stopPropagation();
                               e.currentTarget.classList.remove('drop-highlight');
                             }}
                             onDrop={(e) => {
                               e.preventDefault();
-                             e.stopPropagation();
-                              e.currentTarget.classList.remove('drop-highlight');
+                              e.stopPropagation();
+                              const element = e.currentTarget;
+                              element.classList.remove('drop-highlight');
                               if (draggedAction && weekCategoryKey) {
-                                // Create a unique key for this week-category combination
-                                // const weekCategoryKey = `week-${index + 1}-${category}`;
-                                
                                 // Update both weeklyActions and weeklyActionItems
                                 const currentActions = weeklyActions[weekCategoryKey] || [];
                                 const currentActionItems = weeklyActionItems[weekCategoryKey] || [];
@@ -704,7 +764,7 @@ const Calendar: React.FC = () => {
                                   
                                   setWeeklyActions(prev => ({
                                     ...prev,
-                                    [weekCategoryKey]: [...currentActions, draggedAction.title]
+                                    [weekCategoryKey]: [...currentActions, draggedAction.title || draggedAction.name || 'Action']
                                   }));
                                   
                                   setWeeklyActionItems(prev => ({
@@ -714,6 +774,21 @@ const Calendar: React.FC = () => {
                                 }
                                 
                                 setDraggedAction(null);
+                                
+                                // Also update slotActions for weekly view
+                                // Calculate day index range for this week
+                                const weekNumber = index + 1;
+                                const startDayIndex = (weekNumber - 1) * 7;
+                                // Assign to Morning slot by default
+                                const slotKey = `day-${startDayIndex}-Morning`;
+                                
+                                setSlotActions(prev => ({
+                                  ...prev,
+                                  [slotKey]: [...(prev[slotKey] || []), { 
+                                    ...draggedAction, 
+                                    id: `${draggedAction.id}-${Date.now()}`
+                                  }]
+                                }));
                               }
                             }}
                           >
@@ -723,7 +798,7 @@ const Calendar: React.FC = () => {
                                 {weeklyActionItems[`week-${index + 1}-${category}`] ? 
                                  weeklyActionItems[`week-${index + 1}-${category}`].map((action, idx) => (
                                   <div 
-                                    key={`${action.id}-${idx}`}
+                                    key={`${action.id || action.title}-${idx}`}
                                     className={`p-1 text-xs font-medium rounded ${
                                       category === 'business' ? 'bg-blue-100 text-blue-700' : 
                                       category === 'body' ? 'bg-green-100 text-green-700' : 
@@ -767,7 +842,7 @@ const Calendar: React.FC = () => {
                                       }}
                                       className="ml-1 text-gray-400 hover:text-red-500 text-xs"
                                     >
-                                      ×
+                                      <X className="w-3 h-3" />
                                     </button>
                                   </div>
                                 )) : 
@@ -780,6 +855,14 @@ const Calendar: React.FC = () => {
                                       category === 'body' ? 'bg-green-100 text-green-700' : 
                                       'bg-purple-100 text-purple-700'
                                     } flex justify-between items-center`}
+                                    draggable
+                                    onDragStart={() => setDraggedAction({
+                                      id: `title-${actionTitle}-${idx}`,
+                                      title: actionTitle,
+                                      category: category as 'business' | 'body' | 'balance' | 'personal',
+                                      duration: 60,
+                                      frequency: 'weekly'
+                                    })}
                                   >
                                     <span>{actionTitle}</span>
                                     <button 
@@ -820,7 +903,7 @@ const Calendar: React.FC = () => {
                                       }}
                                       className="ml-1 text-gray-400 hover:text-red-500 text-xs"
                                     >
-                                      ×
+                                      <X className="w-3 h-3" />
                                     </button>
                                   </div>
                                 ))}
@@ -1027,13 +1110,27 @@ const Calendar: React.FC = () => {
         .drop-highlight {
           box-shadow: inset 0 0 0 3px rgba(79, 70, 229, 0.8) !important;
           background-color: rgba(79, 70, 229, 0.3) !important; 
-          z-index: 10 !important;
+          z-index: 5 !important;
           pointer-events: none;
         }
         
         .h-32 {
           min-height: 8rem;
           position: relative;
+        }
+        
+        .time-slot {
+          position: relative;
+          z-index: 1;
+        }
+        
+        .action-item {
+          position: relative;
+          z-index: 2;
+        }
+        
+        .action-remove {
+          z-index: 3;
         }
       `}</style>
       {/* Header */}
