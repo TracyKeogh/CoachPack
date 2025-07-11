@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { GoalSettingData, defaultGoalSettingData, AnnualSnapshot, CategoryGoal, getTwelveWeeksFromNow, ActionItem, Milestone } from '../types/goals';
 
-const STORAGE_KEY = 'coach-pack-goal-setting';
+export const STORAGE_KEY = 'coach-pack-goal-setting';
 
 // Deep merge function to ensure all nested properties exist
 const deepMerge = (target: any, source: any): any => {
