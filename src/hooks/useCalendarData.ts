@@ -78,7 +78,8 @@ export const useCalendarData = () => {
   // Load goals data into action pool
   const loadGoalsIntoActionPool = useCallback(() => {
     try {
-      const storedGoalsData = localStorage.getItem(GOALS_STORAGE_KEY);
+      // Use the correct storage key for goal setting data
+      const storedGoalsData = localStorage.getItem('coach-pack-goal-setting');
       
       // Initialize with some default actions if no goals data found
       const actionPool: ActionPoolItem[] = [
@@ -143,18 +144,21 @@ export const useCalendarData = () => {
       // Add goals data if available
       if (storedGoalsData) {
         console.log("Found goals data in localStorage:", storedGoalsData);
-        const parsedGoalsData = JSON.parse(storedGoalsData);
+        const parsedGoalsData = JSON.parse(storedGoalsData) || {};
         
         // Extract actions from goals if they exist
         console.log("Parsed goals data:", parsedGoalsData);
         
-        // Check for the new format (categoryGoals with business, body, balance)
-        if (parsedGoalsData.categoryGoals && typeof parsedGoalsData.categoryGoals === 'object') {
+        // Check for the format in GoalSetting.tsx
+        if (parsedGoalsData.categoryGoals) {
           try {
             Object.entries(parsedGoalsData.categoryGoals).forEach(([category, goalData]) => {
               console.log(`Processing category: ${category}`, goalData);
               
-              if (!goalData) return;
+              if (!goalData) {
+                console.log(`No goal data for category: ${category}`);
+                return;
+              }
               
               // Map goal category to calendar category
               const calendarCategory = 
@@ -162,36 +166,60 @@ export const useCalendarData = () => {
                 category === 'body' ? 'body' : 
                 category === 'balance' ? 'balance' : 'personal';
               
-              // Check if actionItems exists (new format) or actions (old format)
-              const actions = goalData.actionItems || goalData.actions || [];
+              // Get actions from the goal data
+              let actions = [];
               
-              if (Array.isArray(actions)) {
+              // Try different possible formats
+              if (Array.isArray(goalData.actionItems)) {
+                console.log(`Found actionItems array for ${category}:`, goalData.actionItems);
+                actions = goalData.actionItems;
+              } else if (Array.isArray(goalData.actions)) {
+                console.log(`Found actions array for ${category}:`, goalData.actions);
+                actions = goalData.actions;
+              } else if (typeof goalData === 'object' && goalData !== null) {
+                // Try to find any array property that might contain actions
+                for (const key in goalData) {
+                  if (Array.isArray(goalData[key]) && key.toLowerCase().includes('action')) {
+                    console.log(`Found possible actions in ${key}:`, goalData[key]);
+                    actions = goalData[key];
+                    break;
+                  }
+                }
+              }
+              
+              if (actions && actions.length > 0) {
+                console.log(`Processing ${actions.length} actions for ${category}`);
                 actions.forEach((action, index) => {
-                  console.log(`Processing action:`, action);
+                  console.log(`Processing action ${index}:`, action);
                   
                   // Handle different action formats
                   let actionTitle = '';
                   let actionFrequency: 'daily' | 'weekly' | '3x-week' = 'weekly';
                   
                   if (typeof action === 'string') {
+                    console.log(`Action is string: ${action}`);
                     actionTitle = action;
                   } else if (action && typeof action === 'object') {
                     // New format with title property
                     if (action.title) {
+                      console.log(`Action has title: ${action.title}`);
                       actionTitle = action.title;
                     } 
                     // Old format with text property
                     else if (action.text) {
+                      console.log(`Action has text: ${action.text}`);
                       actionTitle = action.text;
                     }
                     
                     // Get frequency if available
                     if (action.frequency) {
+                      console.log(`Action has frequency: ${action.frequency}`);
                       actionFrequency = action.frequency as 'daily' | 'weekly' | '3x-week';
                     }
                   }
                   
                   if (actionTitle) {
+                    console.log(`Adding action to pool: ${actionTitle}`);
                     // Create action pool item
                     actionPool.push({
                       id: `${category}-action-${index}`,
@@ -199,15 +227,19 @@ export const useCalendarData = () => {
                       duration: 60, // Default 60 minutes
                       category: calendarCategory as 'business' | 'body' | 'balance' | 'personal',
                       frequency: actionFrequency,
-                      relatedGoal: goalData.title || goalData.goal || 'Goal'
+                      relatedGoal: goalData.title || goalData.goal || (typeof goalData === 'string' ? goalData : 'Goal')
                     });
                   }
                 });
+              } else {
+                console.log(`No actions found for category: ${category}`);
               }
             });
           } catch (err) {
             console.error("Error processing goals data:", err);
           }
+        } else {
+          console.log("No categoryGoals found in parsed data:", parsedGoalsData);
         }
       }
       
@@ -216,6 +248,8 @@ export const useCalendarData = () => {
         ...prev,
         actionPool
       }));
+      
+      console.log("Final action pool:", actionPool);
     } catch (error) {
       console.error('Failed to load goals into action pool:', error);
     }
