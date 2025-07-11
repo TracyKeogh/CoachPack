@@ -413,9 +413,11 @@ const Calendar: React.FC = () => {
                           if (draggedAction) {
                             e.currentTarget.classList.add('drop-highlight');
                           }
+                         return false;
                         }}
                         onDragLeave={(e) => {
                           e.currentTarget.classList.remove('drop-highlight');
+                         return false;
                         }}
                         onDrop={(e) => {
                           e.preventDefault();
@@ -428,6 +430,7 @@ const Calendar: React.FC = () => {
                             }));
                            setDraggedAction(null); // Reset dragged action after drop
                           }
+                         return false;
                         }}
                        className="absolute inset-0 flex items-center justify-center text-slate-400 text-xs"
                       >
@@ -587,10 +590,12 @@ const Calendar: React.FC = () => {
                           onDragOver={(e) => {
                             e.preventDefault();
                             e.currentTarget.classList.add('drop-highlight');
+                           return false;
                             return false;
                           }}
                           onDragLeave={(e) => {
                             e.currentTarget.classList.remove('drop-highlight');
+                           return false;
                             return false;
                           }}
                           onDrop={(e) => {
@@ -617,6 +622,7 @@ const Calendar: React.FC = () => {
                                 return prev;
                               });
                             }
+                           return false;
                             return false;
                           }}
                         >
@@ -851,9 +857,9 @@ const Calendar: React.FC = () => {
     <div className="space-y-6">
       <style jsx>{`
         .drop-highlight {
-         box-shadow: inset 0 0 0 3px rgba(79, 70, 229, 0.8) !important;
-         background-color: rgba(79, 70, 229, 0.3) !important;
-         z-index: 10 !important;
+          box-shadow: inset 0 0 0 3px rgba(79, 70, 229, 0.8) !important;
+          background-color: rgba(79, 70, 229, 0.3) !important;
+          z-index: 10 !important;
         }
       `}</style>
       {/* Header */}
