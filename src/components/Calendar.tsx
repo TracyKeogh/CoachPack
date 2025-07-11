@@ -16,6 +16,7 @@ const Calendar: React.FC = () => {
   const [currentView, setCurrentView] = useState<'daily' | 'weekly' | '90-day' | 'yearly'>('weekly');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showVisionOverlay, setShowVisionOverlay] = useState(false);
+  const [slotActions, setSlotActions] = useState<Record<string, ActionItem[]>>({});
   const [showAddEventForm, setShowAddEventForm] = useState(false);
   const [draggedAction, setDraggedAction] = useState<ActionItem | null>(null);
   const [weeklyActions, setWeeklyActions] = useState<Record<string, string[]>>({});
@@ -226,6 +227,9 @@ const Calendar: React.FC = () => {
     const startOfWeek = new Date(currentDate);
     startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
     
+    // Generate a unique key for each day-slot combination
+    const generateSlotKey = (dayIndex: number, slot: string) => `day-${dayIndex}-${slot}`;
+    
     const weekDays = Array.from({ length: 7 }, (_, i) => {
       const day = new Date(startOfWeek);
       day.setDate(startOfWeek.getDate() + i);
@@ -362,7 +366,7 @@ const Calendar: React.FC = () => {
                   {timeSlots.map(slot => (
                     <div key={slot} className="h-32 border border-slate-200 rounded-lg p-2 relative">
                       {sampleEvents
-                        .filter(event => event.day === dayIndex && event.slot === slot)
+                        .filter(event => event.day === dayIndex && event.slot === slot) 
                         .map(event => (
                           <div
                             key={event.id}
@@ -375,11 +379,52 @@ const Calendar: React.FC = () => {
                             </div>
                           </div>
                         ))}
-                      {!sampleEvents.some(event => event.day === dayIndex && event.slot === slot) && (
+                      
+                      {/* Display actions dropped into this slot */}
+                      {slotActions[generateSlotKey(dayIndex, slot)]?.map((action, index) => (
+                        <div
+                          key={`${action.id}-${index}`}
+                          className={`p-2 rounded-lg border text-xs mb-1 ${getCategoryColor(action.category)}`}
+                        >
+                          <div className="font-medium">{action.title}</div>
+                          <div className="flex items-center space-x-1 mt-1 opacity-75">
+                            <Clock className="w-3 h-3" />
+                            <span>{action.duration}m</span>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      <div
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          if (draggedAction) {
+                            e.currentTarget.classList.add('bg-opacity-70');
+                          }
+                        }}
+                        onDragLeave={(e) => {
+                          e.currentTarget.classList.remove('bg-opacity-70');
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          e.currentTarget.classList.remove('bg-opacity-70');
+                          if (draggedAction) {
+                            const slotKey = generateSlotKey(dayIndex, slot);
+                            setSlotActions(prev => ({
+                              ...prev,
+                              [slotKey]: [...(prev[slotKey] || []), draggedAction]
+                            }));
+                          }
+                        }}
+                        className={`absolute inset-0 flex items-center justify-center text-slate-400 text-xs ${
+                          !sampleEvents.some(event => event.day === dayIndex && event.slot === slot) &&
+                          (!slotActions[generateSlotKey(dayIndex, slot)] || slotActions[generateSlotKey(dayIndex, slot)].length === 0) 
+                            ? 'visible' : 'invisible'
+                        }`}
+                      >
                         <div className="absolute inset-0 flex items-center justify-center text-slate-400 text-xs">
                           Drop actions here
                         </div>
-                      )}
+                      </div>
                     </div>
                   ))}
                 </div>
