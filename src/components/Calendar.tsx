@@ -154,9 +154,6 @@ const Calendar: React.FC = () => {
     setCurrentDate(new Date());
   };
 
-    setCurrentYear(prev => prev + 1);
-  };
-
   return (
     <div className="space-y-8">
       {/* Header */}
