@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   ChevronLeft, 
   ChevronRight, 
-  Calendar,
+  Calendar as CalendarIcon,
   Plus,
   Clock, 
   ArrowLeft,
