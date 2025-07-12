@@ -91,6 +91,9 @@ const Calendar: React.FC = () => {
   // Get all days of the current week
   const daysOfWeek = getDaysOfWeek(firstDayOfWeek);
 
+  // Generate 90-day view data
+  const { monthGroups, milestones } = generate90DayView();
+
   // Navigate to previous week
   const goToPreviousWeek = () => {
     const newDate = new Date(currentDate);
