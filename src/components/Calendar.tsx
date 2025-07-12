@@ -36,6 +36,7 @@ const Calendar: React.FC = () => {
   const [showDayView, setShowDayView] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showNotes, setShowNotes] = useState(false);
+  const [draggedEvent, setDraggedEvent] = useState<Event | null>(null);
   const [showActionPool, setShowActionPool] = useState(true);
   const [draggedAction, setDraggedAction] = useState<ActionPoolItem | null>(null);
   const [hoveredTimeSlot, setHoveredTimeSlot] = useState<string | null>(null);
@@ -155,6 +156,55 @@ const Calendar: React.FC = () => {
     setHoveredTimeSlot(null);
   };
 
+  // Handle drag start for events in day view
+  const handleEventDragStart = (e: React.DragEvent, event: Event) => {
+    e.dataTransfer.setData('text/plain', event.id);
+    setDraggedEvent(event);
+    console.log('Started dragging event:', event.title);
+  };
+
+  // Handle drag over for time slots in day view
+  const handleDayViewDragOver = (e: React.DragEvent, timeSlot: string) => {
+    e.preventDefault();
+    setHoveredTimeSlot(`${selectedDate?.toISOString()}-${timeSlot}`);
+  };
+
+  // Handle drag leave for time slots in day view
+  const handleDayViewDragLeave = () => {
+    setHoveredTimeSlot(null);
+  };
+
+  // Handle drop for time slots in day view
+  const handleDayViewDrop = (e: React.DragEvent, timeSlot: string) => {
+    e.preventDefault();
+    const eventId = e.dataTransfer.getData('text/plain');
+    
+    if (!eventId || !draggedEvent || !selectedDate) return;
+    
+    // Create a new Date object for the event start time
+    const [hours, minutes] = timeSlot.split(':').map(Number);
+    const eventStart = new Date(selectedDate);
+    eventStart.setHours(hours, minutes, 0, 0);
+    
+    // Calculate event end time based on original duration
+    const originalDuration = draggedEvent.end.getTime() - draggedEvent.start.getTime();
+    const eventEnd = new Date(eventStart.getTime() + originalDuration);
+    
+    console.log('Moving event:', draggedEvent.title);
+    console.log('New start time:', eventStart.toLocaleString());
+    console.log('New end time:', eventEnd.toLocaleString());
+    
+    // Update the event
+    updateEvent(eventId, {
+      start: eventStart,
+      end: eventEnd
+    });
+    
+    // Reset state
+    setDraggedEvent(null);
+    setHoveredTimeSlot(null);
+  };
+
   // Generate time slots for day view
   const generateTimeSlots = () => {
     const slots = [];
@@ -259,9 +309,9 @@ const Calendar: React.FC = () => {
                   <div 
                     key={timeSlot}
                     className={`flex items-start ${isHalfHour ? 'opacity-70' : ''}`}
-                    onDragOver={(e) => handleDragOver(e, timeSlot, selectedDate)}
-                    onDragLeave={handleDragLeave}
-                    onDrop={(e) => handleDrop(e, timeSlot, selectedDate)}
+                    onDragOver={(e) => handleDayViewDragOver(e, timeSlot)}
+                    onDragLeave={handleDayViewDragLeave}
+                    onDrop={(e) => handleDayViewDrop(e, timeSlot)}
                   >
                     <div className="w-16 text-right pr-4 text-sm font-medium text-slate-500 pt-2">
                       {timeSlot}
@@ -270,16 +320,18 @@ const Calendar: React.FC = () => {
                     <div 
                       className={`flex-1 min-h-16 border border-slate-200 rounded-lg p-2 transition-all ${
                         hoveredTimeSlot === `${selectedDate.toISOString()}-${timeSlot}` 
-                          ? 'bg-blue-100 ring-2 ring-blue-500' 
+                          ? '!bg-blue-100 !ring-2 !ring-blue-500' 
                           : 'hover:bg-blue-50'
                       }`}
                     >
                       {events.length > 0 ? (
                         <div className="space-y-2">
                           {events.map((event) => (
-                            <div 
+                            <div
                               key={event.id}
-                              className={`p-2 rounded-lg ${getCategoryColor(event.category)} flex items-start justify-between`}
+                              className={`p-2 rounded-lg ${getCategoryColor(event.category)} flex items-start justify-between cursor-move`}
+                              draggable
+                              onDragStart={(e) => handleEventDragStart(e, event)}
                             >
                               <div>
                                 <div className="font-medium">{event.title}</div>
@@ -290,12 +342,12 @@ const Calendar: React.FC = () => {
                               <div className="flex items-center space-x-1">
                                 <button 
                                   onClick={() => removeEvent(event.id)}
-                                  className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                                  className="p-1 text-slate-400 !hover:text-red-500 !hover:bg-red-50 rounded transition-colors"
                                 >
                                   <Trash2 className="w-3 h-3" />
                                 </button>
                                 <button 
-                                  className="p-1 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded transition-colors"
+                                  className="p-1 text-slate-400 !hover:text-blue-500 !hover:bg-blue-50 rounded transition-colors"
                                 >
                                   <Edit3 className="w-3 h-3" />
                                 </button>
@@ -305,7 +357,7 @@ const Calendar: React.FC = () => {
                         </div>
                       ) : (
                         <div className="h-full flex items-center justify-center text-slate-400 text-sm">
-                          Drop actions here
+                          Drop actions or events here
                         </div>
                       )}
                     </div>
