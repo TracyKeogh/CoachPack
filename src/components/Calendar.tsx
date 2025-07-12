@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Flag, StickyNote } from 'lucide-react';
 import { useCalendarData } from '../hooks/useCalendarData';
-import { useGoalsData } from '../hooks/useGoalsData';
+import { useGoalsData } from '../hooks/useGoalsData'; 
 import NotesPanel from './NotesPanel';
 
 interface Event {
@@ -70,10 +70,10 @@ const Calendar: React.FC = () => {
   const [showNotes, setShowNotes] = useState(false);
   const [viewMode, setViewMode] = useState<'week' | '90day'>('week');
   const data = useCalendarData();
-  const { data: goalsData } = useGoalsData();
+  const { data: goalsData } = useGoalsData(); 
 
-  // Helper function to get milestones with due dates
-  const getMilestoneDates = () => {
+  // Memoized helper function to get milestones with due dates
+  const getMilestoneDates = useMemo(() => {
     const milestones: Array<{ date: Date; title: string; category: string }> = [];
     
     console.log('Goals data for milestone extraction:', goalsData);
@@ -133,12 +133,12 @@ const Calendar: React.FC = () => {
     }
     
     console.log(`Total milestones found: ${milestones.length}`, milestones);
-    return milestones;
-  };
+    return milestones; 
+  }, [goalsData]);
 
   // Generate 90-day view data
-  const generate90DayView = () => {
-    const milestones = getMilestoneDates();
+  const generate90DayView = useMemo(() => {
+    const milestones = getMilestoneDates;
     const today = new Date();
     const endDate = new Date(today.getTime() + 90 * 24 * 60 * 60 * 1000);
     
@@ -193,10 +193,7 @@ const Calendar: React.FC = () => {
     }
     
     return { milestones, monthGroups };
-  };
-
-  // Call generate90DayView to get milestones and monthGroups
-  const { milestones, monthGroups } = generate90DayView();
+  }, [getMilestoneDates]);
 
   // Helper function to get events for a specific date
   const getEventsForDate = (date: Date) => {
@@ -214,7 +211,7 @@ const Calendar: React.FC = () => {
   };
 
   const getMilestonesForDate = (date: Date) => {
-    return milestones.filter(milestone => 
+    return generate90DayView.milestones.filter(milestone => 
       milestone.date.toDateString() === date.toDateString()
     );
   };
@@ -364,16 +361,16 @@ const Calendar: React.FC = () => {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold text-slate-800">90-Day Milestone View</h2>
               <div className="text-sm text-slate-500">
-                Found: {milestones.length} milestones
+                Found: {generate90DayView.milestones.length} milestones
               </div>
             </div>
             
             {/* Upcoming Milestones Summary */}
             <div className="bg-slate-50 rounded-lg p-4 mb-6">
               <h3 className="font-medium text-slate-800 mb-3">Upcoming Milestones</h3>
-              {milestones.length > 0 ? (
+              {generate90DayView.milestones.length > 0 ? (
                 <div className="space-y-2">
-                  {milestones.slice(0, 5).map((milestone, index) => (
+                  {generate90DayView.milestones.slice(0, 5).map((milestone, index) => (
                     <div key={index} className="flex items-center justify-between">
                       <span className="text-sm text-slate-700">{milestone.title}</span>
                       <div className="flex items-center space-x-2">
@@ -386,9 +383,9 @@ const Calendar: React.FC = () => {
                       </div>
                     </div>
                   ))}
-                  {milestones.length > 5 && (
+                  {generate90DayView.milestones.length > 5 && (
                     <div className="text-xs text-slate-500 text-center">
-                      +{milestones.length - 5} more milestones
+                      +{generate90DayView.milestones.length - 5} more milestones
                     </div>
                   )}
                 </div>
@@ -404,7 +401,7 @@ const Calendar: React.FC = () => {
 
           {/* Monthly Calendar Grid */}
           <div className="space-y-8">
-            {monthGroups.map((monthGroup, monthIndex) => (
+            {generate90DayView.monthGroups.map((monthGroup, monthIndex) => (
               <div key={`${monthGroup.month}-${monthGroup.year}`}>
                 <div className="bg-slate-800 text-white px-4 py-2 rounded-t-lg">
                   <h3 className="font-semibold">{monthGroup.month} {monthGroup.year}</h3>
