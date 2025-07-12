@@ -14,7 +14,8 @@ import {
   Flag,
   Target,
   CheckCircle2,
-  CalendarDays
+  CalendarDays,
+  Grid
 } from 'lucide-react';
 import { useCalendarData, Event, ActionPoolItem } from '../hooks/useCalendarData';
 import { useGoalSettingData } from '../hooks/useGoalSettingData';
