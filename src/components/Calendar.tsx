@@ -3,7 +3,8 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Calendar as CalendarIcon,
-  Plus, 
+  Plus,
+  Calendar as CalendarIcon,
   Clock, 
   ArrowLeft,
   X,
@@ -13,7 +14,8 @@ import {
   Edit3,
   Flag,
   Target,
-  CheckCircle2
+  CheckCircle2,
+  CalendarDays
 } from 'lucide-react';
 import { useCalendarData, Event, ActionPoolItem } from '../hooks/useCalendarData';
 import { useGoalSettingData } from '../hooks/useGoalSettingData';
@@ -40,7 +42,7 @@ const Calendar: React.FC = () => {
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showDayView, setShowDayView] = useState(false);
-  const [viewMode, setViewMode] = useState<'week' | '90day'>('week');
+  const [viewMode, setViewMode] = useState<'week' | '90day' | 'year'>('week');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showNotes, setShowNotes] = useState(false);
   const [draggedEvent, setDraggedEvent] = useState<Event | null>(null);
@@ -105,6 +107,20 @@ const Calendar: React.FC = () => {
     setCurrentDate(newDate);
   };
 
+  // Navigate to previous year
+  const goToPreviousYear = () => {
+    const newDate = new Date(currentDate);
+    newDate.setFullYear(currentDate.getFullYear() - 1);
+    setCurrentDate(newDate);
+  };
+
+  // Navigate to next year
+  const goToNextYear = () => {
+    const newDate = new Date(currentDate);
+    newDate.setFullYear(currentDate.getFullYear() + 1);
+    setCurrentDate(newDate);
+  };
+
   // Navigate to today
   const goToToday = () => {
     setCurrentDate(new Date());
@@ -114,7 +130,7 @@ const Calendar: React.FC = () => {
   const openDayView = (date: Date) => {
     console.log('Opening day view for:', formatDate(date));
     setSelectedDate(date);
-    if (viewMode === 'week') {
+    if (viewMode === 'week' || viewMode === 'year') {
       setShowDayView(true);
     } else {
       // When in 90-day view, switch to week view and then show day view
@@ -235,29 +251,21 @@ const Calendar: React.FC = () => {
   }, [goalsData]);
 
   // 90-Day View Modal Component
-  const generate90DayView = () => {
+  // Helper function to get month groups for 90-day view
+  const getMonthGroups = () => {
     const today = new Date();
     const startDate = new Date(today);
     const endDate = new Date(today);
     endDate.setDate(today.getDate() + 90);
     
-    const milestones = getMilestoneDates();
-    console.log("Milestones in 90-Day View:", milestones);
-    
     // Generate array of dates for 90 days
-    const generateDates = () => {
-      const dates = [];
-      const currentDate = new Date(startDate);
-      
-      while (currentDate <= endDate) {
-        dates.push(new Date(currentDate));
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-      
-      return dates;
-    };
+    const dates = [];
+    const currentDate = new Date(startDate);
     
-    const dates = generateDates();
+    while (currentDate <= endDate) {
+      dates.push(new Date(currentDate));
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
     
     // Group dates by month
     const monthGroups: Record<string, Date[]> = {};
@@ -268,8 +276,8 @@ const Calendar: React.FC = () => {
       }
       monthGroups[monthKey].push(date);
     });
-
-    return { monthGroups, milestones };
+    
+    return monthGroups;
   };
 
   // Generate 90-day view data
@@ -561,13 +569,34 @@ const Calendar: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center space-x-3">
-          <button
-            onClick={() => setViewMode(viewMode === 'week' ? '90day' : 'week')}
-            className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
-          >
-            <Flag className="w-4 h-4" />
-            <span>{viewMode === 'week' ? '90-Day View' : 'Week View'}</span>
-          </button>
+          <div className="flex items-center space-x-1 bg-slate-100 rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('week')}
+              className={`flex items-center space-x-2 px-3 py-1.5 rounded-md transition-colors ${
+                viewMode === 'week' 
+                  ? 'bg-white text-purple-600 shadow-sm' 
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <CalendarIcon className="w-4 h-4" />
+              <span>Week</span>
+            </button>
+            <button
+              onClick={() => setViewMode('90day')}
+              className={`flex items-center space-x-2 px-3 py-1.5 rounded-md transition-colors ${
+                viewMode === '90day' 
+                  ? 'bg-white text-purple-600 shadow-sm' 
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Flag className="w-4 h-4" />
+              <span>90-Day</span>
+            </button>
+            <button
+              onClick={() => setViewMode('year')}
+              className={`flex items-center space-x-2 px-3 py-1.5 rounded-md transition-colors ${
+                viewMode === 'year' 
+                  ? 'bg-white text-purple-600 shadow-sm' 
           <button
             onClick={() => setShowNotes(!showNotes)}
             className="flex items-center space-x-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
@@ -839,13 +868,6 @@ const Calendar: React.FC = () => {
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-semibold text-slate-900">90-Day Milestone View</h3>
-            <button
-              onClick={() => setViewMode('week')}
-              className="flex items-center space-x-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Back to Week</span>
-            </button>
           </div>
           
           {/* Milestones Summary */}
@@ -913,7 +935,7 @@ const Calendar: React.FC = () => {
           </div>
           
           {/* Calendar Grid */}
-          {Object.entries(monthGroups).map(([monthKey, dates]) => {
+          {Object.entries(getMonthGroups()).map(([monthKey, dates]) => {
             const firstDate = dates[0];
             const monthName = firstDate.toLocaleString('default', { month: 'long' });
             const year = firstDate.getFullYear();
@@ -1014,6 +1036,140 @@ const Calendar: React.FC = () => {
         </div>
       )}
 
+      {/* Year View */}
+      {viewMode === 'year' && (
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={goToPreviousYear}
+                className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <h2 className="text-2xl font-bold text-slate-900">
+                {currentDate.getFullYear()}
+              </h2>
+              <button
+                onClick={goToNextYear}
+                className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={goToToday}
+                className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors"
+              >
+                Today
+              </button>
+            </div>
+          </div>
+          
+          {/* Big A## Calendar */}
+          <div className="border-4 border-blue-700 rounded-lg overflow-hidden">
+            {/* Calendar Title */}
+            <div className="bg-blue-700 text-white p-4 text-center">
+              <h3 className="text-3xl font-bold tracking-wider">THE BIG CALENDAR {currentDate.getFullYear()}</h3>
+            </div>
+            
+            {/* Calendar Grid */}
+            <div className="grid grid-cols-4 gap-px bg-slate-300">
+              {Array.from({ length: 12 }, (_, monthIndex) => {
+                const monthDate = new Date(currentDate.getFullYear(), monthIndex, 1);
+                const monthName = monthDate.toLocaleString('default', { month: 'long' });
+                const daysInMonth = new Date(currentDate.getFullYear(), monthIndex + 1, 0).getDate();
+                const firstDayOfMonth = new Date(currentDate.getFullYear(), monthIndex, 1).getDay();
+                
+                return (
+                  <div key={monthIndex} className="bg-white">
+                    {/* Month Header */}
+                    <div className="bg-blue-100 p-2 text-center border-b border-slate-300">
+                      <h4 className="font-bold text-blue-800">{monthName}</h4>
+                    </div>
+                    
+                    {/* Days Grid */}
+                    <div className="grid grid-cols-7 text-xs">
+                      {/* Day Headers */}
+                      {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+                        <div key={i} className="p-1 text-center font-semibold text-slate-600">
+                          {day}
+                        </div>
+                      ))}
+                      
+                      {/* Empty cells for days before the first of the month */}
+                      {Array.from({ length: firstDayOfMonth }, (_, i) => (
+                        <div key={`empty-${i}`} className="p-1 text-center"></div>
+                      ))}
+                      
+                      {/* Date cells */}
+                      {Array.from({ length: daysInMonth }, (_, i) => {
+                        const day = i + 1;
+                        const date = new Date(currentDate.getFullYear(), monthIndex, day);
+                        const isToday = date.toDateString() === new Date().toDateString();
+                        const hasEvents = getEventsForDay(date).length > 0;
+                        const hasMilestones = getMilestoneDates().some(
+                          m => m.date.toDateString() === date.toDateString()
+                        );
+                        
+                        // Alternate column background for better readability
+                        const isAlternateColumn = (firstDayOfMonth + i) % 7 === 0 || (firstDayOfMonth + i) % 7 === 6;
+                        
+                        return (
+                          <div 
+                            key={day}
+                            className={`p-1 text-center border-t border-slate-200 ${
+                              isAlternateColumn ? 'bg-blue-50' : ''
+                            } ${isToday ? 'bg-purple-100 font-bold' : ''} 
+                            hover:bg-blue-100 cursor-pointer transition-colors`}
+                            onClick={() => {
+                              setSelectedDate(date);
+                              setShowDayView(true);
+                              setViewMode('week');
+                            }}
+                          >
+                            <div className="relative">
+                              <span className={isToday ? 'text-purple-700' : ''}>{day}</span>
+                              {(hasEvents || hasMilestones) && (
+                                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 flex space-x-0.5">
+                                  {hasEvents && (
+                                    <div className="w-1 h-1 bg-blue-500 rounded-full"></div>
+                                  )}
+                                  {hasMilestones && (
+                                    <div className="w-1 h-1 bg-orange-500 rounded-full"></div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          
+          {/* Legend */}
+          <div className="mt-4 flex items-center justify-center space-x-6 text-sm">
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+              <span className="text-slate-700">Events</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+              <span className="text-slate-700">Milestones</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-purple-100 rounded-full border border-purple-500"></div>
+              <span className="text-slate-700">Today</span>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Action Pool */}
       {showActionPool && (
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
