@@ -2,17 +2,21 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   ChevronLeft, 
   ChevronRight, 
+  Calendar as CalendarIcon,
   Plus, 
   Clock, 
-  Calendar as CalendarIcon,
   ArrowLeft,
   X,
   Filter,
   MoreHorizontal,
   Trash2,
-  Edit3
+  Edit3,
+  Flag,
+  Target,
+  CheckCircle2
 } from 'lucide-react';
 import { useCalendarData, Event, ActionPoolItem } from '../hooks/useCalendarData';
+import { useGoalSettingData } from '../hooks/useGoalSettingData';
 import NotesPanel from './NotesPanel';
 
 const Calendar: React.FC = () => {
@@ -32,8 +36,11 @@ const Calendar: React.FC = () => {
     saveData
   } = useCalendarData();
 
+  const { data: goalsData } = useGoalSettingData();
+
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showDayView, setShowDayView] = useState(false);
+  const [show90DayView, setShow90DayView] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showNotes, setShowNotes] = useState(false);
   const [draggedEvent, setDraggedEvent] = useState<Event | null>(null);
@@ -205,6 +212,34 @@ const Calendar: React.FC = () => {
     setHoveredTimeSlot(null);
   };
 
+  // Generate milestone dates from goals data
+  const getMilestoneDates = useCallback(() => {
+    const milestones: {
+      date: Date;
+      title: string;
+      category: 'business' | 'body' | 'balance';
+      completed: boolean;
+    }[] = [];
+    
+    // Extract milestones from goals data
+    Object.entries(goalsData.categoryGoals).forEach(([category, goal]) => {
+      if (goal && goal.milestones && Array.isArray(goal.milestones)) {
+        goal.milestones.forEach(milestone => {
+          if (milestone.title && milestone.dueDate) {
+            milestones.push({
+              date: new Date(milestone.dueDate),
+              title: milestone.title,
+              category: category as 'business' | 'body' | 'balance',
+              completed: milestone.completed || false
+            });
+          }
+        });
+      }
+    });
+    
+    return milestones;
+  }, [goalsData]);
+
   // Generate time slots for day view
   const generateTimeSlots = () => {
     const slots = [];
@@ -237,6 +272,259 @@ const Calendar: React.FC = () => {
         eventStart.getFullYear() === day.getFullYear()
       );
     });
+  };
+
+  // 90-Day View Modal Component
+  const NinetyDayViewModal: React.FC = () => {
+    const today = new Date();
+    const startDate = new Date(today);
+    const endDate = new Date(today);
+    endDate.setDate(today.getDate() + 90);
+    
+    const milestones = getMilestoneDates();
+    
+    // Generate array of dates for 90 days
+    const generateDates = () => {
+      const dates = [];
+      const currentDate = new Date(startDate);
+      
+      while (currentDate <= endDate) {
+        dates.push(new Date(currentDate));
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      
+      return dates;
+    };
+    
+    const dates = generateDates();
+    
+    // Group dates by month
+    const monthGroups: Record<string, Date[]> = {};
+    dates.forEach(date => {
+      const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
+      if (!monthGroups[monthKey]) {
+        monthGroups[monthKey] = [];
+      }
+      monthGroups[monthKey].push(date);
+    });
+    
+    // Get milestones for a specific date
+    const getMilestonesForDate = (date: Date) => {
+      return milestones.filter(milestone => 
+        milestone.date.getDate() === date.getDate() &&
+        milestone.date.getMonth() === date.getMonth() &&
+        milestone.date.getFullYear() === date.getFullYear()
+      );
+    };
+    
+    // Get events for a specific date
+    const getEventsForDate = (date: Date) => {
+      return getEventsForDay(date);
+    };
+    
+    // Get category color
+    const getCategoryColor = (category: string): string => {
+      switch (category) {
+        case 'business':
+          return 'bg-purple-100 text-purple-800 border-purple-200';
+        case 'body':
+          return 'bg-green-100 text-green-800 border-green-200';
+        case 'balance':
+          return 'bg-blue-100 text-blue-800 border-blue-200';
+        default:
+          return 'bg-slate-100 text-slate-800 border-slate-200';
+      }
+    };
+    
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-6 text-white">
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => setShow90DayView(false)}
+                className="flex items-center space-x-2 text-white hover:text-white/80 transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                <span>Back to Week</span>
+              </button>
+              
+              <h2 className="text-xl font-bold">90-Day Milestone View</h2>
+              
+              <button
+                onClick={() => setShow90DayView(false)}
+                className="text-white/80 hover:text-white p-1 rounded-full hover:bg-white/10 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+          
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="space-y-8">
+              {/* Milestones Summary */}
+              <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                <h3 className="text-lg font-semibold text-slate-900 mb-4">Upcoming Milestones</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {milestones.length > 0 ? (
+                    milestones
+                      .sort((a, b) => a.date.getTime() - b.date.getTime())
+                      .slice(0, 6)
+                      .map((milestone, index) => (
+                        <div 
+                          key={index}
+                          className={`p-3 rounded-lg border ${
+                            milestone.completed 
+                              ? 'bg-green-50 border-green-200' 
+                              : 'bg-white border-slate-200'
+                          }`}
+                        >
+                          <div className="flex items-start space-x-3">
+                            <div className={`p-2 rounded-full ${
+                              getCategoryColor(milestone.category).split(' ')[0]
+                            }`}>
+                              {milestone.category === 'business' ? (
+                                <Target className="w-4 h-4 text-purple-600" />
+                              ) : milestone.category === 'body' ? (
+                                <Target className="w-4 h-4 text-green-600" />
+                              ) : (
+                                <Target className="w-4 h-4 text-blue-600" />
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <div className="font-medium text-slate-900">{milestone.title}</div>
+                              <div className="text-sm text-slate-500">
+                                {milestone.date.toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric'
+                                })}
+                              </div>
+                              <div className="mt-1">
+                                <span className={`text-xs px-2 py-0.5 rounded-full ${getCategoryColor(milestone.category)}`}>
+                                  {milestone.category}
+                                </span>
+                              </div>
+                            </div>
+                            {milestone.completed && (
+                              <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                            )}
+                          </div>
+                        </div>
+                      ))
+                  ) : (
+                    <div className="col-span-3 text-center py-6 text-slate-500">
+                      <Flag className="w-10 h-10 mx-auto mb-2 text-slate-300" />
+                      <p>No milestones found</p>
+                      <p className="text-sm mt-1">Add milestones in the Goals section</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Calendar Grid */}
+              {Object.entries(monthGroups).map(([monthKey, dates]) => {
+                const firstDate = dates[0];
+                const monthName = firstDate.toLocaleString('default', { month: 'long' });
+                const year = firstDate.getFullYear();
+                
+                return (
+                  <div key={monthKey} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div className="bg-slate-800 text-white p-4">
+                      <h3 className="text-lg font-semibold">{monthName} {year}</h3>
+                    </div>
+                    
+                    <div className="p-4">
+                      {/* Day headers */}
+                      <div className="grid grid-cols-7 gap-2 mb-2">
+                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                          <div key={day} className="text-center font-semibold text-slate-600 py-2">
+                            {day}
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {/* Calendar grid */}
+                      <div className="grid grid-cols-7 gap-2">
+                        {/* Empty cells for days before the first of the month */}
+                        {Array.from({ length: dates[0].getDay() }, (_, i) => (
+                          <div key={`empty-start-${i}`} className="min-h-24 p-2 bg-slate-50 rounded-lg"></div>
+                        ))}
+                        
+                        {/* Actual date cells */}
+                        {dates.map((date, i) => {
+                          const isToday = date.toDateString() === new Date().toDateString();
+                          const dateEvents = getEventsForDate(date);
+                          const dateMilestones = getMilestonesForDate(date);
+                          
+                          return (
+                            <div 
+                              key={i}
+                              className={`min-h-24 p-2 rounded-lg border ${
+                                isToday 
+                                  ? 'bg-purple-50 border-purple-200' 
+                                  : 'bg-white border-slate-200'
+                              } hover:shadow-md transition-all cursor-pointer !hover:bg-blue-200 !hover:ring-2 !hover:ring-blue-500`}
+                              onClick={() => {
+                                console.log(`Clicked on date: ${date.toDateString()}`);
+                                setSelectedDate(date);
+                                setShowDayView(true);
+                                setShow90DayView(false);
+                              }}
+                            >
+                              <div className={`text-right font-medium ${
+                                isToday ? 'text-purple-600' : 'text-slate-700'
+                              }`}>
+                                {date.getDate()}
+                              </div>
+                              
+                              {/* Milestones */}
+                              {dateMilestones.length > 0 && (
+                                <div className="mt-1 space-y-1">
+                                  {dateMilestones.map((milestone, idx) => (
+                                    <div 
+                                      key={idx}
+                                      className={`px-2 py-1 rounded text-xs ${getCategoryColor(milestone.category)} flex items-center space-x-1`}
+                                    >
+                                      <Flag className="w-3 h-3 flex-shrink-0" />
+                                      <span className="truncate">{milestone.title}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              
+                              {/* Events */}
+                              {dateEvents.length > 0 && (
+                                <div className="mt-1 space-y-1">
+                                  {dateEvents.slice(0, 2).map(event => (
+                                    <div 
+                                      key={event.id}
+                                      className={`px-2 py-1 rounded text-xs ${getCategoryColor(event.category)}`}
+                                    >
+                                      {event.title}
+                                    </div>
+                                  ))}
+                                  {dateEvents.length > 2 && (
+                                    <div className="text-xs text-slate-500 text-center">
+                                      +{dateEvents.length - 2} more
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   // Get category color
@@ -393,13 +681,22 @@ const Calendar: React.FC = () => {
           <p className="text-slate-600 mt-2">
             Schedule time for what matters most
           </p>
-          {lastSaved && (
-            <p className="text-sm text-green-600 mt-1">
-              ✓ Last saved: {lastSaved.toLocaleTimeString()}
-            </p>
-          )}
+          <div className="flex items-center space-x-2 mt-1">
+            {lastSaved && (
+              <p className="text-sm text-green-600">
+                ✓ Last saved: {lastSaved.toLocaleTimeString()}
+              </p>
+            )}
+          </div>
         </div>
         <div className="flex items-center space-x-3">
+          <button
+            onClick={() => setShow90DayView(true)}
+            className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+          >
+            <Flag className="w-4 h-4" />
+            <span>90-Day View</span>
+          </button>
           <button
             onClick={() => setShowNotes(!showNotes)}
             className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
@@ -751,6 +1048,9 @@ const Calendar: React.FC = () => {
 
       {/* Day View Modal */}
       {showDayView && <DayViewModal />}
+      
+      {/* 90-Day View Modal */}
+      {show90DayView && <NinetyDayViewModal />}
     </div>
   );
 };
