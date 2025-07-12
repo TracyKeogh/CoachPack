@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
-  ChevronLeft, 
-  ChevronRight, 
+  ChevronLeft,
+  ChevronRight,
   Calendar as CalendarIcon,
   Plus,
   Clock, 
@@ -562,8 +562,6 @@ const Calendar: React.FC = () => {
           </div>
         </div>
       )}
-
-      {/* Removed Year View */}
 
       {/* Action Pool Sidebar */}
       {showActionPool && (
