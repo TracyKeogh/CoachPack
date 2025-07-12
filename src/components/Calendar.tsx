@@ -91,9 +91,6 @@ const Calendar: React.FC = () => {
   // Get all days of the current week
   const daysOfWeek = getDaysOfWeek(firstDayOfWeek);
 
-  // Generate 90-day view data
-  const { monthGroups, milestones } = generate90DayView();
-
   // Navigate to previous week
   const goToPreviousWeek = () => {
     const newDate = new Date(currentDate);
@@ -130,95 +127,6 @@ const Calendar: React.FC = () => {
   const closeDayView = () => {
     setShowDayView(false);
     setSelectedDate(null);
-  };
-
-  // Handle drag start for action pool items
-  const handleDragStart = (e: React.DragEvent, action: ActionPoolItem) => {
-    e.dataTransfer.setData('text/plain', action.id);
-    setDraggedAction(action);
-  };
-
-  // Handle drag over for time slots
-  const handleDragOver = (e: React.DragEvent, timeSlot: string, day: Date) => {
-    e.preventDefault();
-    setHoveredTimeSlot(`${day.toISOString()}-${timeSlot}`);
-  };
-
-  // Handle drag leave for time slots
-  const handleDragLeave = () => {
-    setHoveredTimeSlot(null);
-  };
-
-  // Handle drop for time slots
-  const handleDrop = (e: React.DragEvent, timeSlot: string, day: Date) => {
-    e.preventDefault();
-    const actionId = e.dataTransfer.getData('text/plain');
-    
-    if (!actionId || !draggedAction) return;
-    
-    // Create a new Date object for the event start time
-    const [hours, minutes] = timeSlot.split(':').map(Number);
-    const eventStart = new Date(day);
-    eventStart.setHours(hours, minutes, 0, 0);
-    
-    console.log('Scheduling action:', draggedAction.title);
-    console.log('Start time:', eventStart.toLocaleString());
-    
-    // Schedule the action
-    scheduleActionFromPool(actionId, eventStart);
-    
-    // Reset state
-    setDraggedAction(null);
-    setHoveredTimeSlot(null);
-  };
-
-  // Handle drag start for events in day view
-  const handleEventDragStart = (e: React.DragEvent, event: Event) => {
-    e.dataTransfer.setData('text/plain', event.id);
-    setDraggedEvent(event);
-    console.log('Started dragging event:', event.title);
-  };
-
-  // Handle drag over for time slots in day view
-  const handleDayViewDragOver = (e: React.DragEvent, timeSlot: string) => {
-    e.preventDefault();
-    setHoveredTimeSlot(`${selectedDate?.toISOString()}-${timeSlot}`);
-  };
-
-  // Handle drag leave for time slots in day view
-  const handleDayViewDragLeave = () => {
-    setHoveredTimeSlot(null);
-  };
-
-  // Handle drop for time slots in day view
-  const handleDayViewDrop = (e: React.DragEvent, timeSlot: string) => {
-    e.preventDefault();
-    const eventId = e.dataTransfer.getData('text/plain');
-    
-    if (!eventId || !draggedEvent || !selectedDate) return;
-    
-    // Create a new Date object for the event start time
-    const [hours, minutes] = timeSlot.split(':').map(Number);
-    const eventStart = new Date(selectedDate);
-    eventStart.setHours(hours, minutes, 0, 0);
-    
-    // Calculate event end time based on original duration
-    const originalDuration = draggedEvent.end.getTime() - draggedEvent.start.getTime();
-    const eventEnd = new Date(eventStart.getTime() + originalDuration);
-    
-    console.log('Moving event:', draggedEvent.title);
-    console.log('New start time:', eventStart.toLocaleString());
-    console.log('New end time:', eventEnd.toLocaleString());
-    
-    // Update the event
-    updateEvent(eventId, {
-      start: eventStart,
-      end: eventEnd
-    });
-    
-    // Reset state
-    setDraggedEvent(null);
-    setHoveredTimeSlot(null);
   };
 
   // Generate milestone dates from goals data
@@ -326,40 +234,6 @@ const Calendar: React.FC = () => {
     return milestones;
   }, [goalsData]);
 
-  // Generate time slots for day view
-  const generateTimeSlots = () => {
-    const slots = [];
-    for (let hour = 6; hour < 22; hour++) {
-      slots.push(`${hour}:00`);
-      slots.push(`${hour}:30`);
-    }
-    return slots;
-  };
-
-  // Get events for a specific time slot
-  const getEventsForTimeSlot = (day: Date, timeSlot: string): Event[] => {
-    if (!selectedDate) return [];
-    
-    const [hours, minutes] = timeSlot.split(':').map(Number);
-    const slotStart = new Date(day);
-    slotStart.setHours(hours, minutes, 0, 0);
-    
-    const slotEnd = new Date(slotStart);
-    slotEnd.setMinutes(slotStart.getMinutes() + 30);
-    
-    return data.events.filter(event => {
-      const eventStart = new Date(event.start);
-      const eventEnd = new Date(event.end);
-      
-      return (
-        eventStart < slotEnd && eventEnd > slotStart &&
-        eventStart.getDate() === day.getDate() &&
-        eventStart.getMonth() === day.getMonth() &&
-        eventStart.getFullYear() === day.getFullYear()
-      );
-    });
-  };
-
   // 90-Day View Modal Component
   const generate90DayView = () => {
     const today = new Date();
@@ -396,6 +270,132 @@ const Calendar: React.FC = () => {
     });
 
     return { monthGroups, milestones };
+  };
+
+  // Generate 90-day view data
+  const { monthGroups, milestones } = generate90DayView();
+
+  // Handle drag start for action pool items
+  const handleDragStart = (e: React.DragEvent, action: ActionPoolItem) => {
+    e.dataTransfer.setData('text/plain', action.id);
+    setDraggedAction(action);
+  };
+
+  // Handle drag over for time slots
+  const handleDragOver = (e: React.DragEvent, timeSlot: string, day: Date) => {
+    e.preventDefault();
+    setHoveredTimeSlot(`${day.toISOString()}-${timeSlot}`);
+  };
+
+  // Handle drag leave for time slots
+  const handleDragLeave = () => {
+    setHoveredTimeSlot(null);
+  };
+
+  // Handle drop for time slots
+  const handleDrop = (e: React.DragEvent, timeSlot: string, day: Date) => {
+    e.preventDefault();
+    const actionId = e.dataTransfer.getData('text/plain');
+    
+    if (!actionId || !draggedAction) return;
+    
+    // Create a new Date object for the event start time
+    const [hours, minutes] = timeSlot.split(':').map(Number);
+    const eventStart = new Date(day);
+    eventStart.setHours(hours, minutes, 0, 0);
+    
+    console.log('Scheduling action:', draggedAction.title);
+    console.log('Start time:', eventStart.toLocaleString());
+    
+    // Schedule the action
+    scheduleActionFromPool(actionId, eventStart);
+    
+    // Reset state
+    setDraggedAction(null);
+    setHoveredTimeSlot(null);
+  };
+
+  // Handle drag start for events in day view
+  const handleEventDragStart = (e: React.DragEvent, event: Event) => {
+    e.dataTransfer.setData('text/plain', event.id);
+    setDraggedEvent(event);
+    console.log('Started dragging event:', event.title);
+  };
+
+  // Handle drag over for time slots in day view
+  const handleDayViewDragOver = (e: React.DragEvent, timeSlot: string) => {
+    e.preventDefault();
+    setHoveredTimeSlot(`${selectedDate?.toISOString()}-${timeSlot}`);
+  };
+
+  // Handle drag leave for time slots in day view
+  const handleDayViewDragLeave = () => {
+    setHoveredTimeSlot(null);
+  };
+
+  // Handle drop for time slots in day view
+  const handleDayViewDrop = (e: React.DragEvent, timeSlot: string) => {
+    e.preventDefault();
+    const eventId = e.dataTransfer.getData('text/plain');
+    
+    if (!eventId || !draggedEvent || !selectedDate) return;
+    
+    // Create a new Date object for the event start time
+    const [hours, minutes] = timeSlot.split(':').map(Number);
+    const eventStart = new Date(selectedDate);
+    eventStart.setHours(hours, minutes, 0, 0);
+    
+    // Calculate event end time based on original duration
+    const originalDuration = draggedEvent.end.getTime() - draggedEvent.start.getTime();
+    const eventEnd = new Date(eventStart.getTime() + originalDuration);
+    
+    console.log('Moving event:', draggedEvent.title);
+    console.log('New start time:', eventStart.toLocaleString());
+    console.log('New end time:', eventEnd.toLocaleString());
+    
+    // Update the event
+    updateEvent(eventId, {
+      start: eventStart,
+      end: eventEnd
+    });
+    
+    // Reset state
+    setDraggedEvent(null);
+    setHoveredTimeSlot(null);
+  };
+
+  // Generate time slots for day view
+  const generateTimeSlots = () => {
+    const slots = [];
+    for (let hour = 6; hour < 22; hour++) {
+      slots.push(`${hour}:00`);
+      slots.push(`${hour}:30`);
+    }
+    return slots;
+  };
+
+  // Get events for a specific time slot
+  const getEventsForTimeSlot = (day: Date, timeSlot: string): Event[] => {
+    if (!selectedDate) return [];
+    
+    const [hours, minutes] = timeSlot.split(':').map(Number);
+    const slotStart = new Date(day);
+    slotStart.setHours(hours, minutes, 0, 0);
+    
+    const slotEnd = new Date(slotStart);
+    slotEnd.setMinutes(slotStart.getMinutes() + 30);
+    
+    return data.events.filter(event => {
+      const eventStart = new Date(event.start);
+      const eventEnd = new Date(event.end);
+      
+      return (
+        eventStart < slotEnd && eventEnd > slotStart &&
+        eventStart.getDate() === day.getDate() &&
+        eventStart.getMonth() === day.getMonth() &&
+        eventStart.getFullYear() === day.getFullYear()
+      );
+    });
   };
 
   // Get category color
