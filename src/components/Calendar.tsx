@@ -876,7 +876,7 @@ const Calendar: React.FC = () => {
                     <h2 className="text-2xl font-bold text-slate-900">Daily Focus</h2>
                     <p className="text-slate-600">
                       {selectedDay.toLocaleDateString('en-US', { 
-                        weekday: 'long', 
+                        weekday: 'long',
                         month: 'long', 
                         day: 'numeric', 
                         year: 'numeric' 
