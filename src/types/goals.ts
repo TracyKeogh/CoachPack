@@ -45,6 +45,40 @@ export const getTwelveWeeksFromNow = (): string => {
   return date.toISOString().split('T')[0]; // Return YYYY-MM-DD format
 };
 
+// Helper function to get the Monday of the current week
+export const getCurrentWeekMonday = (): string => {
+  const today = new Date();
+  const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // If Sunday, go back 6 days
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - daysToSubtract);
+  return monday.toISOString().split('T')[0]; // Return YYYY-MM-DD format
+};
+
+// Helper function to get quarter start and end dates
+export const getQuarterDates = (date: Date = new Date()): { start: string; end: string } => {
+  const year = date.getFullYear();
+  const month = date.getMonth(); // 0-based month
+  
+  // Determine which quarter we're in
+  const quarter = Math.floor(month / 3);
+  
+  // Calculate start and end months for the quarter
+  const startMonth = quarter * 3;
+  const endMonth = startMonth + 2;
+  
+  // Create start date (first day of first month in quarter)
+  const startDate = new Date(year, startMonth, 1);
+  
+  // Create end date (last day of last month in quarter)
+  const endDate = new Date(year, endMonth + 1, 0); // Day 0 of next month = last day of current month
+  
+  return {
+    start: startDate.toISOString().split('T')[0],
+    end: endDate.toISOString().split('T')[0]
+  };
+};
+
 // Helper function to get milestone due dates (evenly spaced)
 export const getMilestoneDueDates = (startDate: string, endDate: string, count: number): string[] => {
   const start = new Date(startDate);
