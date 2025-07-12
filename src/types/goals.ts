@@ -45,16 +45,6 @@ export const getTwelveWeeksFromNow = (): string => {
   return date.toISOString().split('T')[0]; // Return YYYY-MM-DD format
 };
 
-// Helper function to get the Monday of the current week
-export const getCurrentWeekMonday = (): string => {
-  const today = new Date();
-  const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
-  const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // If Sunday, go back 6 days, otherwise go back to Monday
-  const monday = new Date(today);
-  monday.setDate(today.getDate() - daysToSubtract);
-  return monday.toISOString().split('T')[0]; // Return YYYY-MM-DD format
-};
-
 // Helper function to get milestone due dates (evenly spaced)
 export const getMilestoneDueDates = (startDate: string, endDate: string, count: number): string[] => {
   const start = new Date(startDate);
@@ -81,28 +71,6 @@ export const defaultGoalSettingData: GoalSettingData = {
     mantra: ''
   },
   categoryGoals: {},
-  lastUpdated: new Date().toISOString()
-};
-
-// Default goals data structure for use in other components
-export const defaultGoalsData = {
-  yearlyGoals: [],
-  twelveWeekGoals: [],
-  weeklyGoals: [],
-  category_goals: {
-    business: {
-      goals: [],
-      milestones: []
-    },
-    body: {
-      goals: [],
-      milestones: []
-    },
-    balance: {
-      goals: [],
-      milestones: []
-    }
-  },
   lastUpdated: new Date().toISOString()
 };
 
