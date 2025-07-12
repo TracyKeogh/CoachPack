@@ -221,21 +221,80 @@ const Calendar: React.FC = () => {
       completed: boolean;
     }[] = [];
     
-    // Extract milestones from goals data
-    Object.entries(goalsData.categoryGoals).forEach(([category, goal]) => {
-      if (goal && goal.milestones && Array.isArray(goal.milestones)) {
-        goal.milestones.forEach(milestone => {
-          if (milestone.title && milestone.dueDate) {
-            milestones.push({
-              date: new Date(milestone.dueDate),
-              title: milestone.title,
-              category: category as 'business' | 'body' | 'balance',
-              completed: milestone.completed || false
+    // Extract milestones from goals data - handle different possible structures
+    try {
+      console.log("Extracting milestones from goals data:", goalsData);
+      
+      // Check if categoryGoals exists and has entries
+      if (goalsData && goalsData.categoryGoals) {
+        Object.entries(goalsData.categoryGoals).forEach(([category, goal]) => {
+          console.log(`Processing category: ${category}`, goal);
+          
+          if (!goal) {
+            console.log(`No goal data for category: ${category}`);
+            return;
+          }
+          
+          // Check for milestones array
+          if (goal.milestones && Array.isArray(goal.milestones)) {
+            console.log(`Found milestones for ${category}:`, goal.milestones);
+            
+            goal.milestones.forEach(milestone => {
+              if (milestone.title || milestone.dueDate) {
+                console.log(`Adding milestone: ${milestone.title || 'Untitled'}`);
+                milestones.push({
+                  date: new Date(milestone.dueDate || new Date()),
+                  title: milestone.title || 'Untitled Milestone',
+                  category: category as 'business' | 'body' | 'balance',
+                  completed: milestone.completed || false
+                });
+              }
             });
+          } else {
+            console.log(`No milestones array found for ${category}`);
           }
         });
+      } else {
+        console.log("No categoryGoals found in goalsData:", goalsData);
       }
-    });
+      
+      // If we still have no milestones, check for alternative data structures
+      if (milestones.length === 0) {
+        console.log("No milestones found in standard structure, checking alternatives");
+        
+        // Check if there's a direct milestones array
+        if (goalsData.milestones && Array.isArray(goalsData.milestones)) {
+          goalsData.milestones.forEach(milestone => {
+            milestones.push({
+              date: new Date(milestone.dueDate || new Date()),
+              title: milestone.title || 'Untitled',
+              category: milestone.category || 'balance',
+              completed: milestone.completed || false
+            });
+          });
+        }
+        
+        // Check for goals with embedded milestones
+        if (Array.isArray(goalsData.goals)) {
+          goalsData.goals.forEach(goal => {
+            if (goal.milestones && Array.isArray(goal.milestones)) {
+              goal.milestones.forEach(milestone => {
+                milestones.push({
+                  date: new Date(milestone.dueDate || new Date()),
+                  title: milestone.title || 'Untitled',
+                  category: goal.category || 'balance',
+                  completed: milestone.completed || false
+                });
+              });
+            }
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error extracting milestones:", error);
+    }
+    
+    console.log("Final milestones extracted:", milestones);
     
     return milestones;
   }, [goalsData]);
@@ -282,6 +341,7 @@ const Calendar: React.FC = () => {
     endDate.setDate(today.getDate() + 90);
     
     const milestones = getMilestoneDates();
+    console.log("Milestones in 90-Day View:", milestones);
     
     // Generate array of dates for 90 days
     const generateDates = () => {
@@ -367,7 +427,12 @@ const Calendar: React.FC = () => {
               {/* Milestones Summary */}
               <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
                 <h3 className="text-lg font-semibold text-slate-900 mb-4">Upcoming Milestones</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 relative">
+                  {/* Debug info for development */}
+                  <div className="absolute top-0 right-0 text-xs text-slate-400">
+                    Found: {milestones.length} milestones
+                  </div>
+                  
                   {milestones.length > 0 ? (
                     milestones
                       .sort((a, b) => a.date.getTime() - b.date.getTime())
@@ -702,7 +767,7 @@ const Calendar: React.FC = () => {
             className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
           >
             <Filter className="w-4 h-4" />
-            <span>Filter</span>
+            <span>Notes</span>
           </button>
           <button
             onClick={saveData}
@@ -804,7 +869,7 @@ const Calendar: React.FC = () => {
                     isToday ? 'bg-purple-100' : ''
                   }`}
                   onClick={() => {
-                    console.log(`Clicked on day header: ${day.toDateString()}`);
+                    console.log(`Clicked on day header: ${day.toDateString()} - Opening day view`);
                     openDayView(day);
                   }}
                 >
@@ -820,7 +885,7 @@ const Calendar: React.FC = () => {
                 <div 
                   className="p-3 rounded-lg border border-slate-200 hover:shadow-sm transition-all cursor-pointer !hover:bg-blue-200 !hover:ring-2 !hover:ring-blue-500"
                   onClick={() => {
-                    console.log(`Clicked on morning slot: ${day.toDateString()}`);
+                    console.log(`Clicked on morning slot: ${day.toDateString()} - Opening day view`);
                     openDayView(day);
                   }}
                   onDragOver={(e) => handleDragOver(e, '9:00', day)}
@@ -869,7 +934,7 @@ const Calendar: React.FC = () => {
                 <div 
                   className="p-3 rounded-lg border border-slate-200 hover:shadow-sm transition-all cursor-pointer !hover:bg-blue-200 !hover:ring-2 !hover:ring-blue-500"
                   onClick={() => {
-                    console.log(`Clicked on afternoon slot: ${day.toDateString()}`);
+                    console.log(`Clicked on afternoon slot: ${day.toDateString()} - Opening day view`);
                     openDayView(day);
                   }}
                   onDragOver={(e) => handleDragOver(e, '14:00', day)}
@@ -918,7 +983,7 @@ const Calendar: React.FC = () => {
                 <div 
                   className="p-3 rounded-lg border border-slate-200 hover:shadow-sm transition-all cursor-pointer !hover:bg-blue-200 !hover:ring-2 !hover:ring-blue-500"
                   onClick={() => {
-                    console.log(`Clicked on evening slot: ${day.toDateString()}`);
+                    console.log(`Clicked on evening slot: ${day.toDateString()} - Opening day view`);
                     openDayView(day);
                   }}
                   onDragOver={(e) => handleDragOver(e, '19:00', day)}
