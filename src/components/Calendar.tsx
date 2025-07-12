@@ -4,7 +4,6 @@ import {
   ChevronRight, 
   Calendar as CalendarIcon,
   Plus,
-  Calendar as CalendarIcon,
   Clock, 
   ArrowLeft,
   X,
