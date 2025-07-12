@@ -295,7 +295,7 @@ const Calendar: React.FC = () => {
             </button>
             
             <h2 className="text-lg font-semibold text-slate-800">
-              {weekDays.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              {weekDays[0].toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
             </h2>
             
             <button
