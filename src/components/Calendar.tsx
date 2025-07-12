@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Flag, StickyNote } from 'lucide-react';
 import { useCalendarData } from '../hooks/useCalendarData';
 import { useGoalsData } from '../hooks/useGoalsData'; 
-import { useMemo } from 'react';
 import NotesPanel from './NotesPanel';
 
 interface Event {
@@ -71,13 +70,13 @@ const Calendar: React.FC = () => {
   const [showNotes, setShowNotes] = useState(false);
   const [viewMode, setViewMode] = useState<'week' | '90day'>('week');
   const data = useCalendarData();
-  const { data: goalsData } = useGoalsData();
+  const { data: goalsData = { category_goals: { business: { goals: [] }, body: { goals: [] }, balance: { goals: [] } } } } = useGoalsData();
 
   // Memoized helper function to get milestones with due dates
   const getMilestoneDates = useMemo(() => {
     const milestones: Array<{ date: Date; title: string; category: string }> = [];
     
-    console.log('Goals data for milestone extraction:', goalsData);
+    console.log('Extracting milestones from goalsData:', goalsData);
     
     if (goalsData?.category_goals) {
       Object.entries(goalsData.category_goals).forEach(([category, categoryData]: [string, any]) => {
