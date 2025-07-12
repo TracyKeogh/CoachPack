@@ -74,6 +74,28 @@ export const defaultGoalSettingData: GoalSettingData = {
   lastUpdated: new Date().toISOString()
 };
 
+// Default goals data structure for use in other components
+export const defaultGoalsData = {
+  yearlyGoals: [],
+  twelveWeekGoals: [],
+  weeklyGoals: [],
+  category_goals: {
+    business: {
+      goals: [],
+      milestones: []
+    },
+    body: {
+      goals: [],
+      milestones: []
+    },
+    balance: {
+      goals: [],
+      milestones: []
+    }
+  },
+  lastUpdated: new Date().toISOString()
+};
+
 // Category definitions with their related wheel areas
 export const GOAL_CATEGORIES = {
   business: {
