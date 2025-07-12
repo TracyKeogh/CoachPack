@@ -841,6 +841,11 @@ const Calendar: React.FC = () => {
       {/* 90-Day View */}
       {viewMode === '90day' && (
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+          {(() => {
+            const { monthGroups, milestones } = generate90DayView();
+            
+            return (
+              <>
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-semibold text-slate-900">90-Day Milestone View</h3>
             <button
@@ -1013,6 +1018,9 @@ const Calendar: React.FC = () => {
               </div>
             );
           })}
+              </>
+            );
+          })()}
         </div>
       )}
 
