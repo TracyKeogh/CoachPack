@@ -48,6 +48,149 @@ const Calendar: React.FC = () => {
   const [draggedAction, setDraggedAction] = useState<ActionPoolItem | null>(null);
   const [hoveredTimeSlot, setHoveredTimeSlot] = useState<string | null>(null);
 
+  // Generate milestone dates from goals data
+  const getMilestoneDates = useCallback(() => {
+    console.log("Getting milestone dates from goals data:", goalsData);
+    
+    let milestones: {
+      date: Date;
+      title: string;
+      category: 'business' | 'body' | 'balance';
+      completed: boolean;
+    }[] = [];
+    
+    // Direct approach to find milestones in the structure shown in the screenshot
+    if (goalsData && typeof goalsData === 'object') {
+      // First, try the structure from GoalSetting.tsx
+      if (goalsData.categoryGoals) {
+        console.log("Found categoryGoals structure");
+        
+        Object.entries(goalsData.categoryGoals).forEach(([category, goalData]) => {
+          console.log(`Examining category: ${category}`, goalData);
+          
+          // Skip if no goal data
+          if (!goalData) return;
+          
+          // Try to access milestones directly
+          if (Array.isArray(goalData.milestones)) {
+            console.log(`Found milestones array in ${category}:`, goalData.milestones);
+            
+            goalData.milestones.forEach((milestone: any) => {
+              if (milestone && (milestone.title || milestone.dueDate)) {
+                console.log(`Adding milestone: ${milestone.title || 'Untitled'}`);
+                milestones.push({
+                  date: new Date(milestone.dueDate || new Date()),
+                  title: milestone.title || 'Untitled Milestone',
+                  category: category as 'business' | 'body' | 'balance',
+                  completed: !!milestone.completed
+                });
+              }
+            });
+          }
+        });
+      }
+    }
+    
+    // If no milestones found yet, try the structure from the screenshot
+    if (milestones.length === 0) {
+      console.log("No milestones found in standard structure, trying alternative approach");
+      
+      // Try to access the structure shown in the screenshot
+      const categories = ['business', 'body', 'balance'];
+      
+      categories.forEach(category => {
+        // Try to find the category in the goals data
+        const categoryData = goalsData[category];
+        if (categoryData) {
+          console.log(`Found category data for ${category}:`, categoryData);
+          
+          // Look for milestones
+          if (Array.isArray(categoryData.milestones)) {
+            console.log(`Found milestones in ${category}:`, categoryData.milestones);
+            
+            categoryData.milestones.forEach((milestone: any) => {
+              milestones.push({
+                date: new Date(milestone.dueDate || milestone.targetDate || new Date()),
+                title: milestone.title || 'Untitled',
+                category: category as 'business' | 'body' | 'balance',
+                completed: !!milestone.completed
+              });
+            });
+          }
+        }
+      });
+    }
+    
+    // Hardcoded test milestones if none found
+    if (milestones.length === 0) {
+      console.log("No milestones found in any structure, adding test milestones");
+      
+      // Add some test milestones for demonstration
+      const today = new Date();
+      const nextWeek = new Date(today);
+      nextWeek.setDate(today.getDate() + 7);
+      
+      const twoWeeksLater = new Date(today);
+      twoWeeksLater.setDate(today.getDate() + 14);
+      
+      milestones.push({
+        date: nextWeek,
+        title: "Implement no-work weekends",
+        category: 'balance',
+        completed: false
+      });
+      
+      milestones.push({
+        date: twoWeeksLater,
+        title: "Plan quarterly weekend getaway",
+        category: 'balance',
+        completed: false
+      });
+    }
+    
+    console.log("Final milestones extracted:", milestones);
+    
+    return milestones;
+  }, [goalsData]);
+
+  // Generate 90-day view data
+  const generate90DayView = () => {
+    const today = new Date();
+    const startDate = new Date(today);
+    const endDate = new Date(today);
+    endDate.setDate(today.getDate() + 90);
+    
+    const milestones = getMilestoneDates();
+    console.log("Milestones in 90-Day View:", milestones);
+    
+    // Generate array of dates for 90 days
+    const generateDates = () => {
+      const dates = [];
+      const currentDate = new Date(startDate);
+      
+      while (currentDate <= endDate) {
+        dates.push(new Date(currentDate));
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      
+      return dates;
+    };
+    
+    const dates = generateDates();
+    
+    // Group dates by month
+    const monthGroups: Record<string, Date[]> = {};
+    dates.forEach(date => {
+      const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
+      if (!monthGroups[monthKey]) {
+        monthGroups[monthKey] = [];
+      }
+      monthGroups[monthKey].push(date);
+    });
+
+    return { monthGroups, milestones };
+  };
+
   // Get the first day of the current week (Sunday)
   const getFirstDayOfWeek = useCallback((date: Date): Date => {
     const day = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
@@ -221,111 +364,6 @@ const Calendar: React.FC = () => {
     setHoveredTimeSlot(null);
   };
 
-  // Generate milestone dates from goals data
-  const getMilestoneDates = useCallback(() => {
-    console.log("Getting milestone dates from goals data:", goalsData);
-    
-    let milestones: {
-      date: Date;
-      title: string;
-      category: 'business' | 'body' | 'balance';
-      completed: boolean;
-    }[] = [];
-    
-    // Direct approach to find milestones in the structure shown in the screenshot
-    if (goalsData && typeof goalsData === 'object') {
-      // First, try the structure from GoalSetting.tsx
-      if (goalsData.categoryGoals) {
-        console.log("Found categoryGoals structure");
-        
-        Object.entries(goalsData.categoryGoals).forEach(([category, goalData]) => {
-          console.log(`Examining category: ${category}`, goalData);
-          
-          // Skip if no goal data
-          if (!goalData) return;
-          
-          // Try to access milestones directly
-          if (Array.isArray(goalData.milestones)) {
-            console.log(`Found milestones array in ${category}:`, goalData.milestones);
-            
-            goalData.milestones.forEach((milestone: any) => {
-              if (milestone && (milestone.title || milestone.dueDate)) {
-                console.log(`Adding milestone: ${milestone.title || 'Untitled'}`);
-                milestones.push({
-                  date: new Date(milestone.dueDate || new Date()),
-                  title: milestone.title || 'Untitled Milestone',
-                  category: category as 'business' | 'body' | 'balance',
-                  completed: !!milestone.completed
-                });
-              }
-            });
-          }
-        });
-      }
-    }
-    
-    // If no milestones found yet, try the structure from the screenshot
-    if (milestones.length === 0) {
-      console.log("No milestones found in standard structure, trying alternative approach");
-      
-      // Try to access the structure shown in the screenshot
-      const categories = ['business', 'body', 'balance'];
-      
-      categories.forEach(category => {
-        // Try to find the category in the goals data
-        const categoryData = goalsData[category];
-        if (categoryData) {
-          console.log(`Found category data for ${category}:`, categoryData);
-          
-          // Look for milestones
-          if (Array.isArray(categoryData.milestones)) {
-            console.log(`Found milestones in ${category}:`, categoryData.milestones);
-            
-            categoryData.milestones.forEach((milestone: any) => {
-              milestones.push({
-                date: new Date(milestone.dueDate || milestone.targetDate || new Date()),
-                title: milestone.title || 'Untitled',
-                category: category as 'business' | 'body' | 'balance',
-                completed: !!milestone.completed
-              });
-            });
-          }
-        }
-      });
-    }
-    
-    // Hardcoded test milestones if none found
-    if (milestones.length === 0) {
-      console.log("No milestones found in any structure, adding test milestones");
-      
-      // Add some test milestones for demonstration
-      const today = new Date();
-      const nextWeek = new Date(today);
-      nextWeek.setDate(today.getDate() + 7);
-      
-      const twoWeeksLater = new Date(today);
-      twoWeeksLater.setDate(today.getDate() + 14);
-      
-      milestones.push({
-        date: nextWeek,
-        title: "Implement no-work weekends",
-        category: 'balance',
-        completed: false
-      });
-      
-      milestones.push({
-        date: twoWeeksLater,
-        title: "Plan quarterly weekend getaway",
-        category: 'balance',
-        completed: false
-      });
-    }
-    
-    console.log("Final milestones extracted:", milestones);
-    
-    return milestones;
-  }, [goalsData]);
-
   // Generate time slots for day view
   const generateTimeSlots = () => {
     const slots = [];
@@ -358,44 +396,6 @@ const Calendar: React.FC = () => {
         eventStart.getFullYear() === day.getFullYear()
       );
     });
-  };
-
-  // 90-Day View Modal Component
-  const generate90DayView = () => {
-    const today = new Date();
-    const startDate = new Date(today);
-    const endDate = new Date(today);
-    endDate.setDate(today.getDate() + 90);
-    
-    const milestones = getMilestoneDates();
-    console.log("Milestones in 90-Day View:", milestones);
-    
-    // Generate array of dates for 90 days
-    const generateDates = () => {
-      const dates = [];
-      const currentDate = new Date(startDate);
-      
-      while (currentDate <= endDate) {
-        dates.push(new Date(currentDate));
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-      
-      return dates;
-    };
-    
-    const dates = generateDates();
-    
-    // Group dates by month
-    const monthGroups: Record<string, Date[]> = {};
-    dates.forEach(date => {
-      const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
-      if (!monthGroups[monthKey]) {
-        monthGroups[monthKey] = [];
-      }
-      monthGroups[monthKey].push(date);
-    });
-
-    return { monthGroups, milestones };
   };
 
   // Get category color
