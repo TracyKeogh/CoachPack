@@ -23,7 +23,7 @@ import NotesPanel from './NotesPanel';
 
 const Calendar: React.FC = () => {
   // State variables
-  const [viewMode, setViewMode] = useState<'week' | '90day'>('week');
+  const [viewMode, setViewMode] = useState<'week' | '90day' | 'year'>('week');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showDayView, setShowDayView] = useState(false);
@@ -154,6 +154,55 @@ const Calendar: React.FC = () => {
   const goToToday = () => {
     setCurrentDate(new Date());
   };
+  
+  // Year view navigation
+  const goToPreviousYear = () => {
+    const newDate = new Date(currentDate);
+    newDate.setFullYear(currentDate.getFullYear() - 1);
+    setCurrentDate(newDate);
+  };
+
+  const goToNextYear = () => {
+    const newDate = new Date(currentDate);
+    newDate.setFullYear(currentDate.getFullYear() + 1);
+    setCurrentDate(newDate);
+  };
+
+  // Generate year view data
+  const generateYearView = () => {
+    const year = currentDate.getFullYear();
+    const months = [];
+    
+    for (let month = 0; month < 12; month++) {
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+      const daysInMonth = lastDay.getDate();
+      const firstDayOfWeek = firstDay.getDay();
+      
+      const days = [];
+      
+      // Add empty days for the start of the month
+      for (let i = 0; i < firstDayOfWeek; i++) {
+        days.push({ date: null });
+      }
+      
+      // Add all days of the month
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month, day);
+        days.push({ date });
+      }
+      
+      months.push({
+        name: new Date(year, month, 1).toLocaleDateString('en-US', { month: 'long' }),
+        year,
+        days
+      });
+    }
+    
+    return months;
+  };
+  
+  const yearMonths = generateYearView();
 
   return (
     <div className="space-y-8">
@@ -191,6 +240,16 @@ const Calendar: React.FC = () => {
                 }`}
                 >
                   90-Day
+                </button>
+              <button
+                onClick={() => setViewMode('year')}
+                className={`px-3 py-1 rounded-lg text-sm font-medium ${
+                  viewMode === 'year' 
+                    ? 'bg-white text-purple-600 shadow-sm' 
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                >
+                  Year
                 </button>
             </div>
           </div>
@@ -609,6 +668,121 @@ const Calendar: React.FC = () => {
                 ))
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Year View */}
+      {viewMode === 'year' && (
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={goToPreviousYear}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <button
+                onClick={goToNextYear}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+              <h2 className="text-2xl font-bold text-blue-700">
+                THE BIG CALENDAR {currentDate.getFullYear()}
+              </h2>
+              <button
+                onClick={goToToday}
+                className="px-3 py-1 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors text-sm"
+              >
+                Today
+              </button>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => setViewMode('week')}
+                className="flex items-center space-x-2 px-3 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back to Week</span>
+              </button>
+            </div>
+          </div>
+          
+          {/* Year Calendar Grid */}
+          <div className="grid grid-cols-3 md:grid-cols-4 gap-6">
+            {yearMonths.map((month, monthIndex) => (
+              <div key={monthIndex} className="space-y-2">
+                <h3 className="font-semibold text-slate-900 text-center">
+                  {month.name}
+                </h3>
+                <div className="grid grid-cols-7 gap-1">
+                  {/* Day headers */}
+                  {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
+                    <div key={day} className="text-center text-xs font-medium text-slate-500 p-1">
+                      {day}
+                    </div>
+                  ))}
+                  
+                  {/* Calendar days */}
+                  {month.days.map((day, dayIndex) => {
+                    const isToday = day.date && day.date.toDateString() === new Date().toDateString();
+                    const isWeekend = day.date && [0, 6].includes(day.date.getDay());
+                    
+                    // Check if there are events or milestones for this day
+                    const hasEvents = day.date && data.events.some(event => 
+                        event.start.getFullYear() === day.date.getFullYear() && 
+                        event.start.getMonth() === day.date.getMonth() && 
+                        event.start.getDate() === day.date.getDate()
+                    );
+                    
+                    const hasMilestones = day.date && milestones && milestones.some(milestone => 
+                      milestone.date.getFullYear() === day.date.getFullYear() && 
+                      milestone.date.getMonth() === day.date.getMonth() && 
+                      milestone.date.getDate() === day.date.getDate()
+                    );
+                    
+                    return (
+                      <div 
+                        key={dayIndex}
+                        className={`p-1 min-h-6 text-center border border-slate-100 ${
+                          !day.date ? 'bg-slate-50/50' : 
+                          isToday ? 'bg-purple-100 font-bold' : 
+                          isWeekend ? 'bg-blue-50' : 'bg-white'
+                        } ${
+                          day.date ? 'hover:bg-slate-100 cursor-pointer' : ''
+                        }`}
+                        onClick={() => { 
+                          if (day.date) {
+                            setCurrentDate(day.date);
+                            setSelectedDate(day.date);
+                            setViewMode('week');
+                          }
+                        }}
+                      >
+                        <div className={`text-xs ${isToday ? 'text-purple-700' : 'text-slate-700'}`}>
+                          {day.date ? day.date.getDate() : ''}
+                        </div>
+                        
+                        {/* Event and milestone indicators */}
+                        {(hasEvents || hasMilestones) && (
+                          <div className="flex items-center justify-center space-x-1 mt-0.5">
+                            {hasEvents && (
+                              <div className="w-1 h-1 rounded-full bg-blue-500" title="Has events" />
+                            )}
+                            {hasMilestones && (
+                              <div className="w-1 h-1 rounded-full bg-orange-500" />
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
