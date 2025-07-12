@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { GoalsData, defaultGoalsData, YearlyGoal, TwelveWeekGoal, WeeklyGoal, WeeklyAction, getCurrentWeekMonday, getTwelveWeekEndDate, getQuarterDates } from '../types/goals';
+import { GoalsData, defaultGoalSettingData, YearlyGoal, TwelveWeekGoal, WeeklyGoal, WeeklyAction, getCurrentWeekMonday, getTwelveWeekEndDate, getQuarterDates } from '../types/goals';
 
 const STORAGE_KEY = 'coach-pack-goals';
 
 export const useGoalsData = () => {
-  const [data, setData] = useState<GoalsData>(defaultGoalsData);
+  const [data, setData] = useState<GoalsData>(defaultGoalSettingData);
   const [isLoaded, setIsLoaded] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
@@ -19,7 +19,7 @@ export const useGoalsData = () => {
       }
     } catch (error) {
       console.error('Failed to load goals data:', error);
-      setData(defaultGoalsData);
+      setData(defaultGoalSettingData);
     }
     setIsLoaded(true);
   }, []);
@@ -309,7 +309,7 @@ export const useGoalsData = () => {
   }, []);
 
   const clearAllData = useCallback(() => {
-    setData(defaultGoalsData);
+    setData(defaultGoalSettingData);
     localStorage.removeItem(STORAGE_KEY);
   }, []);
 
