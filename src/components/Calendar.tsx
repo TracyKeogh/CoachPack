@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Flag, StickyNote } from 'lucide-react';
 import { useCalendarData } from '../hooks/useCalendarData';
 import { useGoalsData } from '../hooks/useGoalsData';
@@ -69,11 +70,11 @@ const Calendar: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showNotes, setShowNotes] = useState(false);
   const [viewMode, setViewMode] = useState<'week' | '90day'>('week');
-  const { data } = useCalendarData();
+  const calendarData = useCalendarData();
   const { data: goalsData } = useGoalsData();
 
   // Helper function to get milestones with due dates
-  const getMilestoneDates = () => {
+  const getMilestoneDates = useCallback(() => {
     const milestones: Array<{ date: Date; title: string; category: string }> = [];
     
     console.log('Goals data for milestone extraction:', goalsData);
@@ -82,27 +83,21 @@ const Calendar: React.FC = () => {
       Object.entries(goalsData.categoryGoals).forEach(([category, categoryData]: [string, any]) => {
         console.log(`Processing category: ${category}`, categoryData);
         
-        if (categoryData?.goals) {
-          categoryData.goals.forEach((goal: any) => {
-            console.log(`Processing goal:`, goal);
+        if (categoryData?.milestones && Array.isArray(categoryData.milestones)) {
+          categoryData.milestones.forEach((milestone: any) => {
+            console.log(`Processing milestone:`, milestone);
             
-            if (goal?.milestones && Array.isArray(goal.milestones)) {
-              goal.milestones.forEach((milestone: any) => {
-                console.log(`Processing milestone:`, milestone);
-                
-                const dueDate = milestone.dueDate || milestone.targetDate || milestone.date;
-                if (dueDate) {
-                  const date = new Date(dueDate);
-                  if (!isNaN(date.getTime())) {
-                    milestones.push({
-                      date,
-                      title: milestone.title || milestone.name || 'Untitled Milestone',
-                      category
-                    });
-                    console.log(`Added milestone: ${milestone.title} on ${date.toDateString()}`);
-                  }
-                }
-              });
+            const dueDate = milestone.dueDate || milestone.targetDate || milestone.date;
+            if (dueDate) {
+              const date = new Date(dueDate);
+              if (!isNaN(date.getTime())) {
+                milestones.push({
+                  date,
+                  title: milestone.title || milestone.name || 'Untitled Milestone',
+                  category
+                });
+                console.log(`Added milestone: ${milestone.title} on ${date.toDateString()}`);
+              }
             }
           });
         }
@@ -134,10 +129,10 @@ const Calendar: React.FC = () => {
     
     console.log(`Total milestones found: ${milestones.length}`, milestones);
     return milestones;
-  };
+  }, [goalsData]);
 
   // Generate 90-day view data
-  const generate90DayView = () => {
+  const generate90DayView = useCallback(() => {
     const milestones = getMilestoneDates();
     const today = new Date();
     const endDate = new Date(today.getTime() + 90 * 24 * 60 * 60 * 1000);
@@ -193,33 +188,25 @@ const Calendar: React.FC = () => {
     }
     
     return { milestones, monthGroups };
-  };
+  }, [getMilestoneDates]);
 
   // Call generate90DayView to get milestones and monthGroups
-  const { milestones, monthGroups } = generate90DayView();
+  const { milestones, monthGroups } = useMemo(() => generate90DayView(), [generate90DayView]);
 
-  // Helper function to get events for a specific date
-  const getEventsForDate = (date: Date) => {
-    return data.events.filter(event => {
+  const getEventsForDay = useCallback((date: Date) => {
+    return calendarData.events.filter(event => {
       const eventDate = new Date(event.start);
       return eventDate.toDateString() === date.toDateString();
     });
-  };
+  }, [calendarData.events]);
 
-  const getEventsForDay = (date: Date) => {
-    return data.events.filter(event => {
-      const eventDate = new Date(event.start);
-      return eventDate.toDateString() === date.toDateString();
-    });
-  };
-
-  const getMilestonesForDate = (date: Date) => {
+  const getMilestonesForDate = useCallback((date: Date) => {
     return milestones.filter(milestone => 
       milestone.date.toDateString() === date.toDateString()
     );
-  };
+  }, [milestones]);
 
-  const getCategoryColor = (category: string) => {
+  const getCategoryColor = useCallback((category: string) => {
     const colors = {
       work: 'bg-blue-100 text-blue-800',
       personal: 'bg-green-100 text-green-800',
@@ -230,9 +217,9 @@ const Calendar: React.FC = () => {
       other: 'bg-gray-100 text-gray-800'
     };
     return colors[category as keyof typeof colors] || colors.other;
-  };
+  }, []);
 
-  const getWeekDays = () => {
+  const getWeekDays = useCallback(() => {
     const startOfWeek = new Date(currentDate);
     const day = startOfWeek.getDay();
     const diff = startOfWeek.getDate() - day;
@@ -245,15 +232,15 @@ const Calendar: React.FC = () => {
       days.push(date);
     }
     return days;
-  };
+  }, [currentDate]);
 
-  const navigateWeek = (direction: 'prev' | 'next') => {
+  const navigateWeek = useCallback((direction: 'prev' | 'next') => {
     const newDate = new Date(currentDate);
     newDate.setDate(currentDate.getDate() + (direction === 'next' ? 7 : -7));
     setCurrentDate(newDate);
-  };
+  }, [currentDate]);
 
-  const handleDateClick = (date: Date) => {
+  const handleDateClick = useCallback((date: Date) => {
     if (viewMode === '90day') {
       // Switch to week view and show day view for the selected date
       setViewMode('week');
@@ -262,9 +249,9 @@ const Calendar: React.FC = () => {
     } else {
       setSelectedDate(date);
     }
-  };
+  }, [viewMode]);
 
-  const weekDays = getWeekDays();
+  const weekDays = useMemo(() => getWeekDays(), [getWeekDays]);
 
   return (
     <div className="space-y-6">
@@ -455,7 +442,7 @@ const Calendar: React.FC = () => {
                                 
                                 {/* Events */}
                                 <div className="space-y-1 mt-1">
-                                  {getEventsForDate(date).slice(0, 2).map(event => (
+                                  {getEventsForDay(date).slice(0, 2).map(event => (
                                     <div 
                                       key={event.id}
                                       className={`px-2 py-1 rounded text-xs ${getCategoryColor(event.category)}`}
@@ -463,9 +450,9 @@ const Calendar: React.FC = () => {
                                       {event.title}
                                     </div>
                                   ))}
-                                  {getEventsForDate(date).length > 2 && (
+                                  {getEventsForDay(date).length > 2 && (
                                     <div className="text-xs text-slate-500 text-center">
-                                      +{getEventsForDate(date).length - 2} more
+                                      +{getEventsForDay(date).length - 2} more
                                     </div>
                                   )}
                                 </div>
