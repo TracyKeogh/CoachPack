@@ -1,4 +1,3 @@
-import React, { useState, useMemo } from 'react';
 import React, { useState, useMemo, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Flag, StickyNote } from 'lucide-react';
 import { useCalendarData } from '../hooks/useCalendarData';
