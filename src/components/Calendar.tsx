@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Flag, StickyNote } from 'lucide-react';
 import { useCalendarData } from '../hooks/useCalendarData';
 import { useGoalsData } from '../hooks/useGoalsData'; 
+import { useMemo } from 'react';
 import NotesPanel from './NotesPanel';
 
 interface Event {
@@ -70,7 +71,7 @@ const Calendar: React.FC = () => {
   const [showNotes, setShowNotes] = useState(false);
   const [viewMode, setViewMode] = useState<'week' | '90day'>('week');
   const data = useCalendarData();
-  const { data: goalsData } = useGoalsData(); 
+  const { data: goalsData } = useGoalsData();
 
   // Memoized helper function to get milestones with due dates
   const getMilestoneDates = useMemo(() => {
