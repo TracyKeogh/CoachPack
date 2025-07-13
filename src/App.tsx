@@ -5,7 +5,7 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 
 // Auth Components
 import LoginPage from './components/auth/LoginPage';
-import SignupPage from './components/auth/SignupPage';
+import SignupPage from './components/SignupPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import AuthProvider from './AuthProvider';
 
