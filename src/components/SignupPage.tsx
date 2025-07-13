@@ -128,8 +128,8 @@ const SignupPage: React.FC = () => {
                     errors.name ? 'border-red-300' : 'border-slate-300'
                   }`}
                   placeholder="Enter your full name"
-                  disabled={isLoading || showSuccess}
                   disabled={isLoading}
+                />
               </div>
               {errors.name && (
                 <p className="mt-1 text-sm text-red-600">{errors.name}</p>
@@ -151,8 +151,8 @@ const SignupPage: React.FC = () => {
                     errors.email ? 'border-red-300' : 'border-slate-300'
                   }`}
                   placeholder="Enter your email"
-                  disabled={isLoading || showSuccess}
                   disabled={isLoading}
+                />
               </div>
               {errors.email && (
                 <p className="mt-1 text-sm text-red-600">{errors.email}</p>
@@ -174,9 +174,9 @@ const SignupPage: React.FC = () => {
                     errors.password ? 'border-red-300' : 'border-slate-300'
                   }`}
                   placeholder="Create a password (min 8 characters)"
-                  disabled={isLoading || showSuccess}
-                />
                   disabled={isLoading}
+                />
+                <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
@@ -205,8 +205,8 @@ const SignupPage: React.FC = () => {
                     errors.confirmPassword ? 'border-red-300' : 'border-slate-300'
                   }`}
                   placeholder="Confirm your password"
-                  disabled={isLoading || showSuccess}
                   disabled={isLoading}
+                />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
