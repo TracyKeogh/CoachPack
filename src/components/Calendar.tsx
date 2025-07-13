@@ -1,21 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
-ChevronLeft, 
-ChevronRight, 
-Calendar as CalendarIcon,
-  Plus, 
-  Plus,
+  ChevronLeft, 
+  ChevronRight, 
   Calendar as CalendarIcon,
-Clock, 
-ArrowLeft,
-X,
-Filter,
-MoreHorizontal,
-Trash2,
-Edit3,
-Flag,
-Target,
-  CheckCircle2
+  Plus, 
+  Clock, 
+  ArrowLeft,
+  X,
+  Filter,
+  MoreHorizontal,
+  Trash2,
+  Edit3,
+  Flag,
+  Target,
   CheckCircle2,
   CalendarDays
 } from 'lucide-react';
