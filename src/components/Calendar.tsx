@@ -955,6 +955,10 @@ const Calendar: React.FC = () => {
                       const dateMilestones = milestones.filter(
                         m => m.date.toDateString() === date.toDateString()
                       );
+                      
+                      // Calculate week number for this date
+                      const startOfYear = new Date(date.getFullYear(), 0, 1);
+                      const weekNumber = Math.ceil((((date.getTime() - startOfYear.getTime()) / 86400000) + startOfYear.getDay() + 1) / 7);
 
                       return (
                         <div 
@@ -963,17 +967,25 @@ const Calendar: React.FC = () => {
                             isToday 
                               ? 'bg-purple-50 border-purple-200' 
                               : 'bg-white border-slate-200'
-                          } hover:shadow-md transition-all cursor-pointer hover:bg-blue-200 hover:ring-2 hover:ring-blue-500`}
-                          onClick={() => {
-                            console.log(`Clicked on date: ${date.toDateString()}`);
-                            setCurrentDate(date);
-                            setViewMode('week');
-                          }}
+                          } hover:shadow-md transition-all`}
                         >
-                          <div className={`text-right font-medium ${
-                            isToday ? 'text-purple-600' : 'text-slate-700'
-                          }`}>
-                            {date.getDate()}
+                          <div className="flex justify-between items-start">
+                            <div className={`text-sm font-medium ${
+                              isToday ? 'text-purple-600' : 'text-slate-700'
+                            }`}>
+                              {date.getDate()}
+                            </div>
+                            <button
+                              onClick={() => {
+                                console.log(`Switching to week ${weekNumber} view for ${date.toDateString()}`);
+                                setCurrentDate(date);
+                                setViewMode('week');
+                              }}
+                              className="text-xs text-slate-400 hover:text-purple-600 hover:bg-purple-50 px-1 py-0.5 rounded transition-colors"
+                              title={`Go to Week ${weekNumber}`}
+                            >
+                              W{weekNumber}
+                            </button>
                           </div>
 
                           {/* Milestones */}
@@ -982,7 +994,12 @@ const Calendar: React.FC = () => {
                               {dateMilestones.map((milestone, idx) => (
                                 <div 
                                   key={idx}
-                                  className={`px-2 py-1 rounded text-xs ${getCategoryColor(milestone.category)} flex items-center space-x-1`}
+                                  className={`px-2 py-1 rounded text-xs ${getCategoryColor(milestone.category)} flex items-center space-x-1 cursor-pointer hover:opacity-80 transition-opacity`}
+                                  onClick={() => {
+                                    // Show milestone details in a simple alert for now
+                                    alert(`Milestone: ${milestone.title}\nCategory: ${milestone.category}\nDue: ${milestone.date.toLocaleDateString()}\nCompleted: ${milestone.completed ? 'Yes' : 'No'}`);
+                                  }}
+                                  title="Click to view milestone details"
                                 >
                                   <Flag className="w-3 h-3 flex-shrink-0" />
                                   <span className="truncate">{milestone.title}</span>
