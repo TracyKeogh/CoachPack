@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { STRIPE_PRODUCTS } from '../stripe-config';
 
 // Validate environment variables
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -19,23 +20,38 @@ export const useStripe = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // For demo purposes, we'll simulate a successful checkout
-  const createCheckoutSession = useCallback(async (productId: string) => {
+  const createCheckoutSession = useCallback(async (productId: string): Promise<{ sessionId: string; url: string } | null> => {
     setLoading(true);
     setError(null);
 
     try {
-      // In a real app, you would call your Supabase Edge Function here
-      // to create a Stripe checkout session
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Return mock data
-      return {
-        sessionId: 'mock_session_id',
-        url: '/checkout?productId=' + productId
-      };
+      const product = STRIPE_PRODUCTS.find(p => p.id === productId);
+      if (!product) {
+        throw new Error('Product not found');
+      }
+
+      // Call the Supabase Edge Function to create a checkout session
+      const response = await fetch(`${supabaseUrl}/functions/v1/stripe-checkout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseAnonKey}`
+        },
+        body: JSON.stringify({
+          price_id: product.priceId,
+          mode: product.mode,
+          success_url: `${window.location.origin}/success`,
+          cancel_url: `${window.location.origin}/cancel`
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create checkout session');
+      }
+
+      const data = await response.json();
+      return data;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
       setError(errorMessage);
@@ -53,12 +69,38 @@ export const useStripe = () => {
     }
   }, [createCheckoutSession]);
 
-  const hasValidAccess = useCallback(async (): Promise<boolean> => {
-    // In a real app, you would check if the user has an active subscription
-    // or a recent one-time purchase
-    
-    // For demo purposes, we'll return true
-    return true;
+  const hasValidAccess = useCallback(async (): Promise<boolean> => {    
+    try {
+      // Check if the user has an active subscription or valid access
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('subscription_status, subscription_expires_at')
+        .single();
+      
+      if (error) {
+        console.error('Error checking subscription status:', error);
+        return false;
+      }
+      
+      if (!data) return false;
+      
+      // Check if user has a valid subscription
+      if (data.subscription_status === 'pro' || data.subscription_status === 'lifetime') {
+        // For lifetime subscriptions, check if it's still valid
+        if (data.subscription_status === 'lifetime' && data.subscription_expires_at) {
+          const expiresAt = new Date(data.subscription_expires_at);
+          if (expiresAt < new Date()) {
+            return false;
+          }
+        }
+        return true;
+      }
+      
+      return false;
+    } catch (err) {
+      console.error('Error checking access:', err);
+      return false;
+    }
   }, []);
 
   return {
