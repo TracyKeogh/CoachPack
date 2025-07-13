@@ -615,15 +615,22 @@ Schedule time for what matters most
               className={`flex items-center space-x-2 px-3 py-1.5 rounded-md transition-colors ${
                 viewMode === 'year' 
                   ? 'bg-white text-purple-600 shadow-sm' 
-         <button
-           onClick={() => setShowNotes(!showNotes)}
-           className="flex items-center space-x-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-         >
-           <Filter className="w-4 h-4" />
-           <span>Notes</span>
-         </button>
-       </div>
-     </div>
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <CalendarDays className="w-4 h-4" />
+              <span>Year</span>
+            </button>
+          </div>
+          <button
+            onClick={() => setShowNotes(!showNotes)}
+            className="flex items-center space-x-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            <Filter className="w-4 h-4" />
+            <span>Notes</span>
+          </button>
+        </div>
+      </div>
 
      {/* Calendar Navigation */}
      {viewMode === 'week' && (
