@@ -21,7 +21,6 @@ import { useCalendarData, Event, ActionPoolItem } from '../hooks/useCalendarData
 import { useGoalSettingData } from '../hooks/useGoalSettingData';
 import { useNotes } from '../hooks/useNotes';
 import NotesPanel from './NotesPanel';
-import YearlyBigCalendar from './YearlyBigCalendar';
 
 const Calendar: React.FC = () => {
   // State variables
