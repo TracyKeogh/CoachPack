@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { X, Mail, Lock, User, Eye, EyeOff, Check, AlertCircle, Target, Sparkles, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, Check, AlertCircle, Target, Sparkles, ArrowLeft } from 'lucide-react';
 
 const SignupPage: React.FC = () => {
   const navigate = useNavigate();
@@ -14,7 +14,6 @@ const SignupPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Get product ID from query params if available
@@ -161,6 +160,7 @@ const SignupPage: React.FC = () => {
                       errors.name ? 'border-red-300' : 'border-slate-300'
                     }`}
                     placeholder="Enter your full name"
+                    disabled={isLoading}
                   />
                 </div>
                 {errors.name && (
