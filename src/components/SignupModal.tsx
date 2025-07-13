@@ -1,23 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { X, Mail, ArrowRight, Shield, CheckCircle2, Sparkles, User, Lock, Eye, EyeOff, CreditCard, Loader2 } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
-import { useRevenueCat } from '../RevenueCatProvider';
-import { PurchasesPackage } from '@revenuecat/purchases-js';
-import { useStripe } from '../hooks/useStripe';
-import { STRIPE_PRODUCTS } from '../stripe-config';
+import React, { useState } from 'react';
+import { X, Mail, Lock, User, Eye, EyeOff, Check, AlertCircle } from 'lucide-react';
 
 interface SignupModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (user: any) => void;
-  selectedPlan: 'complete' | 'monthly' | null;
+  selectedPlan?: string;
 }
 
-const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSuccess, selectedPlan }) => {
-  const { signUp, signIn, loading: authLoading, error: authError, clearError, hasActiveSubscription } = useAuth();
-  const { offerings, purchasePackage, isLoading: rcLoading, error: rcError } = useRevenueCat();
-  const { redirectToCheckout, loading: stripeLoading } = useStripe();
-  const [mode, setMode] = useState<'signup' | 'signin'>('signup');
+const SignupModal: React.FC<SignupModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  onSuccess, 
+  selectedPlan = 'complete' 
+}) => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -26,383 +22,254 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSuccess, s
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const planDetails = {
-    complete: {
-      name: 'Complete Toolkit',
-      price: '$49',
-      period: 'one-time',
-      description: 'Full access to all self-coaching tools for 30 days',
-      packageId: 'complete_toolkit' // This should match your Stripe product ID
-    },
-    monthly: {
-      name: 'Ongoing Tracking',
-      price: '$19',
-      period: 'month',
-      description: 'Continuous access with ongoing tracking',
-      packageId: 'monthly_pro' // This should match your RevenueCat package identifier
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = 'Name is required';
     }
-  };
 
-  const currentPlan = selectedPlan ? planDetails[selectedPlan] : planDetails.complete;
-
-  // Combine errors from auth, RevenueCat, and Stripe
-  useEffect(() => {
-    setError(authError || rcError || null);
-  }, [authError, rcError]);
-
-  // Find the package from offerings for RevenueCat
-  const getPackageForPlan = (): PurchasesPackage | null => {
-    if (!offerings || !selectedPlan || selectedPlan !== 'monthly') return null;
-    
-    for (const offering of offerings) {
-      const packages = offering.availablePackages;
-      const targetPackage = packages.find(pkg => pkg.identifier === currentPlan.packageId);
-      if (targetPackage) return targetPackage;
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email';
     }
-    
-    return null;
+
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters';
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    clearError();
-    setError(null);
-    setIsProcessing(true);
+    
+    if (!validateForm()) return;
+
+    setIsLoading(true);
 
     try {
-      if (mode === 'signup') {
-        // Validation for signup
-        if (!formData.name.trim()) {
-          setError('Name is required');
-          setIsProcessing(false);
-          return;
-        }
-        if (formData.password !== formData.confirmPassword) {
-          setError('Passwords do not match');
-          setIsProcessing(false);
-          return;
-        }
-        if (formData.password.length < 6) {
-          setError('Password must be at least 6 characters');
-          setIsProcessing(false);
-          return;
-        }
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Create user object
+      const user = {
+        id: Date.now().toString(),
+        name: formData.name,
+        email: formData.email,
+        plan: selectedPlan,
+        createdAt: new Date().toISOString()
+      };
 
-        // Sign up the user
-        await signUp(formData.email, formData.password, formData.name);
-        
-        // Handle payment based on selected plan
-        if (selectedPlan) {
-          await handlePayment();
-        } else {
-          onSuccess({ email: formData.email, name: formData.name });
-        }
-      } else {
-        // Sign in
-        await signIn(formData.email, formData.password);
-        
-        // Check if user already has subscription
-        if (hasActiveSubscription()) {
-          onSuccess({ email: formData.email });
-        } else if (selectedPlan) {
-          // User signed in but needs to purchase
-          await handlePayment();
-        } else {
-          onSuccess({ email: formData.email });
-        }
-      }
-    } catch (err) {
-      // Error is handled by the auth hook
+      // Call success handler
+      onSuccess(user);
+    } catch (error) {
+      setErrors({ general: 'Something went wrong. Please try again.' });
     } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handlePayment = async () => {
-    if (!selectedPlan) return;
-
-    try {
-      if (selectedPlan === 'monthly') {
-        // RevenueCat subscription
-        const packageToPurchase = getPackageForPlan();
-        
-        if (!packageToPurchase) {
-          setError('Selected plan is not available. Please try again.');
-          return;
-        }
-
-        const { userCancelled } = await purchasePackage(packageToPurchase);
-        
-        if (!userCancelled) {
-          // Purchase successful
-          onSuccess({ 
-            email: formData.email, 
-            name: formData.name,
-            subscriptionType: 'monthly'
-          });
-        }
-      } else {
-        // Stripe one-time payment
-        const stripeProduct = STRIPE_PRODUCTS.find(p => p.id === currentPlan.packageId) || STRIPE_PRODUCTS[0];
-        
-        await redirectToCheckout({
-          priceId: stripeProduct.priceId,
-          mode: 'payment',
-          successUrl: `${window.location.origin}/success`,
-          cancelUrl: `${window.location.origin}/cancel`,
-        });
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Payment processing failed. Please try again.');
+      setIsLoading(false);
     }
   };
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    if (error) setError(null);
-    if (authError) clearError();
-  };
-
-  const switchMode = () => {
-    setMode(mode === 'signup' ? 'signin' : 'signup');
-    clearError();
-    setError(null);
-    setFormData({ name: '', email: '', password: '', confirmPassword: '' });
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
   };
 
   if (!isOpen) return null;
 
-  const loading = authLoading || rcLoading || stripeLoading || isProcessing;
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full relative overflow-hidden">
-        {/* Header with gradient */}
-        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-6 text-white relative">
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 p-2 text-white/80 hover:text-white bg-white/20 rounded-full transition-colors"
-            disabled={loading}
-          >
-            <X className="w-5 h-5" />
-          </button>
-          
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-              <Sparkles className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold">
-                {mode === 'signup' ? 'Get Complete Access' : 'Welcome Back'}
-              </h3>
-              <p className="text-purple-100 text-sm">
-                {mode === 'signup' ? currentPlan.description : 'Sign in to continue your journey'}
-              </p>
-            </div>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl max-w-md w-full relative shadow-2xl">
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors"
+          disabled={isLoading}
+        >
+          <X className="w-6 h-6" />
+        </button>
+
+        {/* Header */}
+        <div className="p-8 pb-0">
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">
+              Get Full Access
+            </h2>
+            <p className="text-slate-600">
+              Join Coach Pack and start your self-coaching journey
+            </p>
           </div>
 
-          {/* Plan details for signup */}
-          {mode === 'signup' && selectedPlan && (
-            <div className="bg-white/10 rounded-lg p-3 border border-white/20">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-semibold">{currentPlan.name}</div>
-                  <div className="text-purple-100 text-sm">{currentPlan.description}</div>
-                </div>
-                <div className="text-right">
-                  <div className="text-xl font-bold">{currentPlan.price}</div>
-                  <div className="text-purple-200 text-sm">/{currentPlan.period}</div>
-                </div>
+          {/* Plan Info */}
+          <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-purple-900">Complete Toolkit</h3>
+                <p className="text-sm text-purple-600">All tools and assessments</p>
+              </div>
+              <div className="text-right">
+                <div className="text-2xl font-bold text-purple-900">$50</div>
+                <div className="text-sm text-purple-600">one-time</div>
               </div>
             </div>
-          )}
+          </div>
         </div>
 
-        {/* Content */}
-        <div className="p-6">
-          <div className="mb-6">
-            <h4 className="text-lg font-semibold text-slate-900 mb-3">
-              {mode === 'signup' ? 'Create your account' : 'Sign in to your account'}
-            </h4>
-            
-            {mode === 'signup' && selectedPlan && (
-              <div className="space-y-3 mb-6">
-                <div className="flex items-center space-x-3">
-                  <CheckCircle2 className="w-5 h-5 text-green-500" />
-                  <span className="text-slate-700">Complete self-coaching toolkit</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <CheckCircle2 className="w-5 h-5 text-green-500" />
-                  <span className="text-slate-700">Progress tracking & analytics</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <CheckCircle2 className="w-5 h-5 text-green-500" />
-                  <span className="text-slate-700">Data sync across devices</span>
-                </div>
-              </div>
-            )}
-          </div>
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-8 pt-0">
+          {errors.general && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
+              <AlertCircle className="w-4 h-4 text-red-500" />
+              <span className="text-sm text-red-600">{errors.general}</span>
+            </div>
+          )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {mode === 'signup' && (
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-2">
-                  Full Name
-                </label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-                  <input
-                    type="text"
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="Enter your full name"
-                    required
-                    disabled={loading}
-                  />
-                </div>
-              </div>
-            )}
-
+          <div className="space-y-4">
+            {/* Name Field */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Full Name
+              </label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    errors.name ? 'border-red-300' : 'border-slate-300'
+                  }`}
+                  placeholder="Enter your full name"
+                  disabled={isLoading}
+                />
+              </div>
+              {errors.name && (
+                <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+              )}
+            </div>
+
+            {/* Email Field */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
                 Email Address
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <input
                   type="email"
-                  id="email"
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  placeholder="Enter your email address"
-                  required
-                  disabled={loading}
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    errors.email ? 'border-red-300' : 'border-slate-300'
+                  }`}
+                  placeholder="Enter your email"
+                  disabled={isLoading}
                 />
               </div>
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+              )}
             </div>
 
+            {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
                 Password
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  id="password"
                   value={formData.password}
                   onChange={(e) => handleInputChange('password', e.target.value)}
-                  className="w-full pl-10 pr-12 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  placeholder={mode === 'signup' ? 'Create a password (min 6 characters)' : 'Enter your password'}
-                  required
-                  minLength={6}
-                  disabled={loading}
+                  className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    errors.password ? 'border-red-300' : 'border-slate-300'
+                  }`}
+                  placeholder="Create a password"
+                  disabled={isLoading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                  disabled={loading}
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
-            </div>
-
-            {mode === 'signup' && (
-              <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-700 mb-2">
-                  Confirm Password
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-                  <input
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    id="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                    className="w-full pl-10 pr-12 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="Confirm your password"
-                    required
-                    disabled={loading}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                    disabled={loading}
-                  >
-                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-                {formData.confirmPassword && formData.password !== formData.confirmPassword && (
-                  <p className="text-red-600 text-sm mt-1">Passwords do not match</p>
-                )}
-              </div>
-            )}
-
-            {error && (
-              <div className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg p-3">
-                {error}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading || (mode === 'signup' && formData.password !== formData.confirmPassword)}
-              className="w-full flex items-center justify-center space-x-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold"
-            >
-              {loading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <>
-                  {selectedPlan && mode === 'signup' ? (
-                    <>
-                      <CreditCard className="w-5 h-5" />
-                      <span>Create Account & Purchase</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>{mode === 'signup' ? 'Create Account' : 'Sign In'}</span>
-                      <ArrowRight className="w-5 h-5" />
-                    </>
-                  )}
-                </>
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-600">{errors.password}</p>
               )}
-            </button>
-          </form>
+            </div>
 
-          {/* Switch between signup and signin */}
-          <div className="mt-6 text-center">
-            <button
-              onClick={switchMode}
-              className="text-purple-600 hover:text-purple-700 font-medium"
-              disabled={loading}
-            >
-              {mode === 'signup' 
-                ? 'Already have an account? Sign in' 
-                : 'Need an account? Sign up'
-              }
-            </button>
-          </div>
-
-          {/* Privacy notice */}
-          <div className="mt-4 p-3 bg-slate-50 rounded-lg">
-            <div className="flex items-start space-x-2">
-              <Shield className="w-4 h-4 text-slate-500 mt-0.5 flex-shrink-0" />
-              <div className="text-xs text-slate-600">
-                <p className="font-medium mb-1">Secure & Private</p>
-                <p>Your data is encrypted and secure. We never share your personal information. Cancel anytime.</p>
+            {/* Confirm Password Field */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Confirm Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={formData.confirmPassword}
+                  onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                  className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    errors.confirmPassword ? 'border-red-300' : 'border-slate-300'
+                  }`}
+                  placeholder="Confirm your password"
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                >
+                  {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
               </div>
+              {errors.confirmPassword && (
+                <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
+              )}
             </div>
           </div>
-        </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full mt-6 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? (
+              <div className="flex items-center justify-center space-x-2">
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Creating Account...</span>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center space-x-2">
+                <Check className="w-5 h-5" />
+                <span>Create Account - $50</span>
+              </div>
+            )}
+          </button>
+
+          {/* Terms */}
+          <p className="mt-4 text-xs text-slate-500 text-center">
+            By creating an account, you agree to our Terms of Service and Privacy Policy
+          </p>
+        </form>
       </div>
     </div>
   );
