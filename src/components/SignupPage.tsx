@@ -128,7 +128,7 @@ const SignupPage: React.FC = () => {
                     errors.name ? 'border-red-300' : 'border-slate-300'
                   }`}
                   placeholder="Enter your full name"
-                  disabled={isLoading}
+                  disabled={isLoading || showSuccess}
                 />
               </div>
               {errors.name && (
