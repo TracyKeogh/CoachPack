@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { X, Mail, Lock, User, Eye, EyeOff, Check, AlertCircle, Target, Sparkles, ArrowLeft } from 'lucide-react';
 
 const SignupPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -14,7 +15,10 @@ const SignupPage: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [showSuccess, setShowSuccess] = useState(false);
+  
+  // Get product ID from query params if available
+  const queryParams = new URLSearchParams(location.search);
+  const productId = queryParams.get('productId') || 'complete-toolkit';
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -51,20 +55,13 @@ const SignupPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Show success message
-      setShowSuccess(true);
-      
-      // Redirect to homepage after a delay
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 2000);
+      // Instead of simulating API call, redirect to checkout
+      navigate(`/checkout?productId=${productId}&email=${encodeURIComponent(formData.email)}`);
     } catch (error) {
       setErrors({ general: 'Something went wrong. Please try again.' });
-    } finally {
       setIsLoading(false);
+    } finally {
+      // Don't set loading to false here as we're redirecting
     }
   };
 
@@ -106,17 +103,6 @@ const SignupPage: React.FC = () => {
           </Link>
         </div>
 
-        {/* Success Message */}
-        {showSuccess && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 flex items-start space-x-3">
-            <Check className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-            <div>
-              <h3 className="font-semibold text-green-800">Account created successfully!</h3>
-              <p className="text-green-700 text-sm">Redirecting you to the dashboard...</p>
-            </div>
-          </div>
-        )}
-
         {/* Signup Form */}
         <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -143,7 +129,7 @@ const SignupPage: React.FC = () => {
                   }`}
                   placeholder="Enter your full name"
                   disabled={isLoading || showSuccess}
-                />
+                  disabled={isLoading}
               </div>
               {errors.name && (
                 <p className="mt-1 text-sm text-red-600">{errors.name}</p>
@@ -166,7 +152,7 @@ const SignupPage: React.FC = () => {
                   }`}
                   placeholder="Enter your email"
                   disabled={isLoading || showSuccess}
-                />
+                  disabled={isLoading}
               </div>
               {errors.email && (
                 <p className="mt-1 text-sm text-red-600">{errors.email}</p>
@@ -190,11 +176,11 @@ const SignupPage: React.FC = () => {
                   placeholder="Create a password (min 8 characters)"
                   disabled={isLoading || showSuccess}
                 />
-                <button
+                  disabled={isLoading}
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                  disabled={isLoading || showSuccess}
+                  disabled={isLoading}
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -220,12 +206,12 @@ const SignupPage: React.FC = () => {
                   }`}
                   placeholder="Confirm your password"
                   disabled={isLoading || showSuccess}
-                />
+                  disabled={isLoading}
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                  disabled={isLoading || showSuccess}
+                  disabled={isLoading}
                 >
                   {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -237,7 +223,7 @@ const SignupPage: React.FC = () => {
 
             <button
               type="submit"
-              disabled={isLoading || showSuccess}
+              disabled={isLoading}
               className="w-full px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
@@ -246,7 +232,7 @@ const SignupPage: React.FC = () => {
                   <span>Creating Account...</span>
                 </div>
               ) : (
-                <span>Create Account</span>
+                <span>Continue to Payment</span>
               )}
             </button>
           </form>
@@ -263,7 +249,7 @@ const SignupPage: React.FC = () => {
 
         {/* Terms */}
         <div className="mt-6 text-center text-sm text-slate-500">
-          By creating an account, you agree to our Terms of Service and Privacy Policy
+          By continuing, you agree to our Terms of Service and Privacy Policy
         </div>
       </div>
     </div>

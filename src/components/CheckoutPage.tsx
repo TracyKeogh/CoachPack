@@ -19,7 +19,11 @@ interface CheckoutFormProps {
   onSuccess: () => void;
 }
 
-const CheckoutForm: React.FC<CheckoutFormProps> = ({ productId, email, onSuccess }) => {
+const CheckoutForm: React.FC<CheckoutFormProps> = ({ 
+  productId, 
+  email, 
+  onSuccess 
+}) => {
   const stripe = useStripe();
   const elements = useElements();
   const [error, setError] = useState<string | null>(null);

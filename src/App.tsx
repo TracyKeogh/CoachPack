@@ -7,6 +7,9 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 import LoginPage from './components/auth/LoginPage';
 import SignupPage from './components/SignupPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import CheckoutPage from './components/CheckoutPage';
+import SuccessPage from './components/SuccessPage';
+import CancelPage from './components/CancelPage';
 import AuthProvider from './AuthProvider';
 
 // Main App Components
@@ -80,6 +83,9 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/success" element={<SuccessPage />} />
+          <Route path="/cancel" element={<CancelPage />} />
           
           {/* Free Assessment Route */}
           <Route 
