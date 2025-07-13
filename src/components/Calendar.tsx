@@ -50,7 +50,7 @@ const Calendar: React.FC = () => {
 
   // Get the first day of the current week (Sunday)
   const getFirstDayOfWeek = useCallback((date: Date): Date => {
-    const day = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const day = date.getDay();
     const diff = date.getDate() - day;
     return new Date(date.getFullYear(), date.getMonth(), diff);
   }, []);
@@ -117,7 +117,6 @@ const Calendar: React.FC = () => {
     if (viewMode === 'week') {
       setShowDayView(true);
     } else {
-      // When in 90-day view, switch to week view and then show day view
       setViewMode('week');
       setShowDayView(true);
     }
@@ -140,19 +139,15 @@ const Calendar: React.FC = () => {
       completed: boolean;
     }[] = [];
 
-    // Direct approach to find milestones in the structure shown in the screenshot
     if (goalsData && typeof goalsData === 'object') {
-      // First, try the structure from GoalSetting.tsx
       if (goalsData.categoryGoals) {
         console.log("Found categoryGoals structure");
 
         Object.entries(goalsData.categoryGoals).forEach(([category, goalData]) => {
           console.log(`Examining category: ${category}`, goalData);
 
-          // Skip if no goal data
           if (!goalData) return;
 
-          // Try to access milestones directly
           if (Array.isArray(goalData.milestones)) {
             console.log(`Found milestones array in ${category}:`, goalData.milestones);
 
@@ -172,20 +167,16 @@ const Calendar: React.FC = () => {
       }
     }
 
-    // If no milestones found yet, try the structure from the screenshot
     if (milestones.length === 0) {
       console.log("No milestones found in standard structure, trying alternative approach");
 
-      // Try to access the structure shown in the screenshot
       const categories = ['business', 'body', 'balance'];
 
       categories.forEach(category => {
-        // Try to find the category in the goals data
         const categoryData = goalsData[category];
         if (categoryData) {
           console.log(`Found category data for ${category}:`, categoryData);
 
-          // Look for milestones
           if (Array.isArray(categoryData.milestones)) {
             console.log(`Found milestones in ${category}:`, categoryData.milestones);
 
@@ -202,11 +193,9 @@ const Calendar: React.FC = () => {
       });
     }
 
-    // Hardcoded test milestones if none found
     if (milestones.length === 0) {
       console.log("No milestones found in any structure, adding test milestones");
 
-      // Add some test milestones for demonstration
       const today = new Date();
       const nextWeek = new Date(today);
       nextWeek.setDate(today.getDate() + 7);
@@ -230,7 +219,6 @@ const Calendar: React.FC = () => {
     }
 
     console.log("Final milestones extracted:", milestones);
-
     return milestones;
   }, [goalsData]);
 
@@ -244,7 +232,6 @@ const Calendar: React.FC = () => {
     const milestones = getMilestoneDates();
     console.log("Milestones in 90-Day View:", milestones);
 
-    // Generate array of dates for 90 days
     const generateDates = () => {
       const dates = [];
       const currentDate = new Date(startDate);
@@ -259,7 +246,6 @@ const Calendar: React.FC = () => {
 
     const dates = generateDates();
 
-    // Group dates by month
     const monthGroups: Record<string, Date[]> = {};
     dates.forEach(date => {
       const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
@@ -299,7 +285,6 @@ const Calendar: React.FC = () => {
 
     if (!actionId || !draggedAction) return;
 
-    // Create a new Date object for the event start time
     const [hours, minutes] = timeSlot.split(':').map(Number);
     const eventStart = new Date(day);
     eventStart.setHours(hours, minutes, 0, 0);
@@ -307,10 +292,8 @@ const Calendar: React.FC = () => {
     console.log('Scheduling action:', draggedAction.title);
     console.log('Start time:', eventStart.toLocaleString());
 
-    // Schedule the action
     scheduleActionFromPool(actionId, eventStart);
 
-    // Reset state
     setDraggedAction(null);
     setHoveredTimeSlot(null);
   };
@@ -340,12 +323,10 @@ const Calendar: React.FC = () => {
 
     if (!eventId || !draggedEvent || !selectedDate) return;
 
-    // Create a new Date object for the event start time
     const [hours, minutes] = timeSlot.split(':').map(Number);
     const eventStart = new Date(selectedDate);
     eventStart.setHours(hours, minutes, 0, 0);
 
-    // Calculate event end time based on original duration
     const originalDuration = draggedEvent.end.getTime() - draggedEvent.start.getTime();
     const eventEnd = new Date(eventStart.getTime() + originalDuration);
 
@@ -353,13 +334,11 @@ const Calendar: React.FC = () => {
     console.log('New start time:', eventStart.toLocaleString());
     console.log('New end time:', eventEnd.toLocaleString());
 
-    // Update the event
     updateEvent(eventId, {
       start: eventStart,
       end: eventEnd
     });
 
-    // Reset state
     setDraggedEvent(null);
     setHoveredTimeSlot(null);
   };
@@ -435,7 +414,6 @@ const Calendar: React.FC = () => {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-          {/* Header */}
           <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-6 text-white">
             <div className="flex items-center justify-between">
               <button
@@ -457,7 +435,6 @@ const Calendar: React.FC = () => {
             </div>
           </div>
 
-          {/* Time Slots */}
           <div className="flex-1 overflow-y-auto p-6">
             <div className="space-y-2">
               {timeSlots.map((timeSlot) => {
@@ -607,137 +584,132 @@ const Calendar: React.FC = () => {
         </div>
       </div>
 
-      {/* Calendar Navigation */}
+      {/* Week View */}
       {viewMode === 'week' && (
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={goToPreviousWeek}
-              className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <h2 className="text-xl font-semibold text-slate-900">
-              Week {firstDayOfWeek.getDate()} of {firstDayOfWeek.toLocaleString('default', { month: 'long' })} {firstDayOfWeek.getFullYear()}
-            </h2>
-            <button
-              onClick={goToNextWeek}
-              className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={goToToday}
-              className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors"
-            >
-              Today
-            </button>
-            <button
-              onClick={() => setShowActionPool(!showActionPool)}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                showActionPool 
-                  ? 'bg-purple-100 text-purple-700 border border-purple-200' 
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
-            >
-              {showActionPool ? 'Hide Action Pool' : 'Show Action Pool'}
-            </button>
-          </div>
-        </div>
-
-        {/* Week Selector */}
-        <div className="flex items-center space-x-2 mb-6 overflow-x-auto pb-2">
-          {Array.from({ length: 12 }, (_, i) => i + 1).map((weekNum) => {
-            const isCurrentWeek = weekNum === Math.ceil((currentDate.getDate() + firstDayOfWeek.getDay()) / 7);
-
-            return (
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-4">
               <button
-                key={weekNum}
-                className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                  isCurrentWeek 
-                    ? 'bg-purple-600 text-white' 
+                onClick={goToPreviousWeek}
+                className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <h2 className="text-xl font-semibold text-slate-900">
+                Week {firstDayOfWeek.getDate()} of {firstDayOfWeek.toLocaleString('default', { month: 'long' })} {firstDayOfWeek.getFullYear()}
+              </h2>
+              <button
+                onClick={goToNextWeek}
+                className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={goToToday}
+                className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors"
+              >
+                Today
+              </button>
+              <button
+                onClick={() => setShowActionPool(!showActionPool)}
+                className={`px-4 py-2 rounded-lg transition-colors ${
+                  showActionPool 
+                    ? 'bg-purple-100 text-purple-700 border border-purple-200' 
                     : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
-                Week {weekNum}
+                {showActionPool ? 'Hide Action Pool' : 'Show Action Pool'}
               </button>
-            );
-          })}
-        </div>
+            </div>
+          </div>
 
-        {/* Simplified Calendar Grid - 7 Columns */}
-        <div className="grid grid-cols-7 gap-4">
-          {/* Day Columns */}
-          {daysOfWeek.map((day, dayIndex) => {
-            const isToday = day.toDateString() === new Date().toDateString();
-            const dayEvents = getEventsForDay(day);
+          <div className="flex items-center space-x-2 mb-6 overflow-x-auto pb-2">
+            {Array.from({ length: 12 }, (_, i) => i + 1).map((weekNum) => {
+              const isCurrentWeek = weekNum === Math.ceil((currentDate.getDate() + firstDayOfWeek.getDay()) / 7);
 
-            return (
-              <div key={dayIndex} className="space-y-3">
-                {/* Day Header */}
-                <div 
-                  className={`text-center p-3 rounded-lg cursor-pointer hover:bg-blue-200 hover:ring-2 hover:ring-blue-500 transition-all ${
-                    isToday ? 'bg-purple-100' : 'bg-slate-50'
+              return (
+                <button
+                  key={weekNum}
+                  className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                    isCurrentWeek 
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
-                  onClick={() => {
-                    console.log(`Clicked on day: ${day.toDateString()} - Opening day view`);
-                    openDayView(day);
-                  }}
                 >
-                  <div className="font-medium text-slate-900">
-                    {day.toLocaleString('default', { weekday: 'short' })}
-                  </div>
-                  <div className={`text-lg font-bold ${isToday ? 'text-purple-600' : 'text-slate-700'}`}>
-                    {day.getDate()}
-                  </div>
-                </div>
+                  Week {weekNum}
+                </button>
+              );
+            })}
+          </div>
 
-                {/* Day Content - Drop Zone for Actions */}
-                <div 
-                  className="min-h-48 p-3 rounded-lg border-2 border-dashed border-slate-200 hover:border-blue-300 transition-all"
-                  onDragOver={(e) => handleDragOver(e, '9:00', day)}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, '9:00', day)}
-                >
-                  {dayEvents.length > 0 ? (
-                    <div className="space-y-2">
-                      {dayEvents.map(event => (
-                        <div 
-                          key={event.id}
-                          className={`p-2 rounded-lg ${getCategoryColor(event.category)} cursor-pointer hover:opacity-80 transition-opacity`}
-                          onClick={() => {
-                            console.log(`Clicked on event: ${event.title}`);
-                            openDayView(day);
-                          }}
-                        >
-                          <div className="font-medium text-xs">{event.title}</div>
-                          <div className="text-xs opacity-75 flex items-center space-x-1 mt-1">
-                            <Clock className="w-3 h-3" />
-                            <span>
-                              {formatTime(new Date(event.start))}
-                            </span>
+          <div className="grid grid-cols-7 gap-4">
+            {daysOfWeek.map((day, dayIndex) => {
+              const isToday = day.toDateString() === new Date().toDateString();
+              const dayEvents = getEventsForDay(day);
+
+              return (
+                <div key={dayIndex} className="space-y-3">
+                  <div 
+                    className={`text-center p-3 rounded-lg cursor-pointer hover:bg-blue-200 hover:ring-2 hover:ring-blue-500 transition-all ${
+                      isToday ? 'bg-purple-100' : 'bg-slate-50'
+                    }`}
+                    onClick={() => {
+                      console.log(`Clicked on day: ${day.toDateString()} - Opening day view`);
+                      openDayView(day);
+                    }}
+                  >
+                    <div className="font-medium text-slate-900">
+                      {day.toLocaleString('default', { weekday: 'short' })}
+                    </div>
+                    <div className={`text-lg font-bold ${isToday ? 'text-purple-600' : 'text-slate-700'}`}>
+                      {day.getDate()}
+                    </div>
+                  </div>
+
+                  <div 
+                    className="min-h-48 p-3 rounded-lg border-2 border-dashed border-slate-200 hover:border-blue-300 transition-all"
+                    onDragOver={(e) => handleDragOver(e, '9:00', day)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, '9:00', day)}
+                  >
+                    {dayEvents.length > 0 ? (
+                      <div className="space-y-2">
+                        {dayEvents.map(event => (
+                          <div 
+                            key={event.id}
+                            className={`p-2 rounded-lg ${getCategoryColor(event.category)} cursor-pointer hover:opacity-80 transition-opacity`}
+                            onClick={() => {
+                              console.log(`Clicked on event: ${event.title}`);
+                              openDayView(day);
+                            }}
+                          >
+                            <div className="font-medium text-xs">{event.title}</div>
+                            <div className="text-xs opacity-75 flex items-center space-x-1 mt-1">
+                              <Clock className="w-3 h-3" />
+                              <span>
+                                {formatTime(new Date(event.start))}
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="h-full flex items-center justify-center text-slate-400 text-sm">
-                      Drop actions here
-                    </div>
-                  )}
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="h-full flex items-center justify-center text-slate-400 text-sm">
+                        Drop actions here
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
-      {/* Action Pool - Below Calendar */}
+      {/* Action Pool - Only show in week view */}
       {showActionPool && viewMode === 'week' && (
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
           <div className="flex items-center justify-between mb-4">
@@ -805,3 +777,377 @@ const Calendar: React.FC = () => {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* 90-Day View */}
+      {viewMode === '90day' && (
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-semibold text-slate-900">90-Day Milestone View</h3>
+          </div>
+
+          <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 mb-8">
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">Upcoming Milestones</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 relative">
+              <div className="absolute top-0 right-0 text-xs text-slate-400">
+                Found: {milestones.length} milestones (Debug)
+              </div>
+
+              {milestones.length > 0 ? (
+                milestones
+                  .sort((a, b) => a.date.getTime() - b.date.getTime())
+                  .slice(0, 6)
+                  .map((milestone, index) => (
+                    <div 
+                      key={index}
+                      className={`p-3 rounded-lg border ${
+                        milestone.completed 
+                          ? 'bg-green-50 border-green-200' 
+                          : 'bg-white border-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-start space-x-3">
+                        <div className={`p-2 rounded-full ${
+                          getCategoryColor(milestone.category).split(' ')[0]
+                        }`}>
+                          {milestone.category === 'business' ? (
+                            <Target className="w-4 h-4 text-purple-600" />
+                          ) : milestone.category === 'body' ? (
+                            <Target className="w-4 h-4 text-green-600" />
+                          ) : (
+                            <Target className="w-4 h-4 text-blue-600" />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-medium text-slate-900">{milestone.title}</div>
+                          <div className="text-sm text-slate-500">
+                            {milestone.date.toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric'
+                            })}
+                          </div>
+                          <div className="mt-1">
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${getCategoryColor(milestone.category)}`}>
+                              {milestone.category}
+                            </span>
+                          </div>
+                        </div>
+                        {milestone.completed && (
+                          <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                        )}
+                      </div>
+                    </div>
+                  ))
+              ) : (
+                <div className="col-span-3 text-center py-6 text-slate-500">
+                  <Flag className="w-10 h-10 mx-auto mb-2 text-slate-300" />
+                  <p>No milestones found</p>
+                  <p className="text-sm mt-1">Add milestones in the Goals section or check console for debugging info</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {Object.entries(monthGroups).map(([monthKey, dates]) => {
+            const firstDate = dates[0];
+            const monthName = firstDate.toLocaleString('default', { month: 'long' });
+            const year = firstDate.getFullYear();
+
+            return (
+              <div key={monthKey} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6">
+                <div className="bg-slate-800 text-white p-4">
+                  <h3 className="text-lg font-semibold">{monthName} {year}</h3>
+                </div>
+
+                <div className="p-4">
+                  <div className="grid grid-cols-8 gap-2">
+                    <div className="text-center text-xs font-medium text-slate-500 py-2">
+                      Week
+                    </div>
+                    
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                      <div key={day} className="text-center font-semibold text-slate-600 py-2">
+                        {day}
+                      </div>
+                    ))}
+
+                    {(() => {
+                      const weeks = [];
+                      let currentWeek = [];
+                      
+                      const emptyDays = Array.from({ length: dates[0].getDay() }, () => null);
+                      currentWeek = [...emptyDays];
+                      
+                      dates.forEach(date => {
+                        currentWeek.push(date);
+                        if (currentWeek.length === 7) {
+                          weeks.push([...currentWeek]);
+                          currentWeek = [];
+                        }
+                      });
+                      
+                      if (currentWeek.length > 0) {
+                        while (currentWeek.length < 7) {
+                          currentWeek.push(null);
+                        }
+                        weeks.push(currentWeek);
+                      }
+                      
+                      return weeks.map((week, weekIndex) => {
+                        const goalWeekNumber = weekIndex + 1;
+                        const firstDateInWeek = week.find(date => date !== null);
+                        
+                        return [
+                          <div 
+                            key={`week-${weekIndex}`}
+                            className="flex items-center justify-center min-h-24"
+                          >
+                            {firstDateInWeek && (
+                              <button
+                                onClick={() => {
+                                  console.log(`Switching to goal week ${goalWeekNumber} view`);
+                                  setCurrentDate(firstDateInWeek);
+                                  setViewMode('week');
+                                }}
+                                className="px-2 py-1 text-sm font-medium text-slate-600 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors"
+                                title={`Go to Week ${goalWeekNumber} of your 90-day goal period`}
+                              >
+                                {goalWeekNumber}
+                              </button>
+                            )}
+                          </div>,
+                          
+                          ...week.map((date, dayIndex) => {
+                            if (!date) {
+                              return (
+                                <div key={`empty-${weekIndex}-${dayIndex}`} className="min-h-24 p-2 bg-slate-50 rounded-lg"></div>
+                              );
+                            }
+                            
+                            const isToday = date.toDateString() === new Date().toDateString();
+                            const dateEvents = getEventsForDay(date);
+                            const dateMilestones = milestones.filter(
+                              m => m.date.toDateString() === date.toDateString()
+                            );
+
+                            return (
+                              <div 
+                                key={`date-${weekIndex}-${dayIndex}`}
+                                className={`min-h-24 p-2 rounded-lg border ${
+                                  isToday 
+                                    ? 'bg-purple-50 border-purple-200' 
+                                    : 'bg-white border-slate-200'
+                                } hover:shadow-md transition-all`}
+                              >
+                                <div className={`text-sm font-medium mb-1 ${
+                                  isToday ? 'text-purple-600' : 'text-slate-700'
+                                }`}>
+                                  {date.getDate()}
+                                </div>
+
+                                {dateMilestones.length > 0 && (
+                                  <div className="space-y-1">
+                                    {dateMilestones.map((milestone, idx) => (
+                                      <div 
+                                        key={idx}
+                                        className={`px-2 py-1 rounded text-xs ${getCategoryColor(milestone.category)} flex items-center space-x-1 cursor-pointer hover:opacity-80 transition-opacity`}
+                                        onClick={() => {
+                                          alert(`Milestone: ${milestone.title}\nCategory: ${milestone.category}\nDue: ${milestone.date.toLocaleDateString()}\nCompleted: ${milestone.completed ? 'Yes' : 'No'}`);
+                                        }}
+                                        title="Click to view milestone details"
+                                      >
+                                        <Flag className="w-3 h-3 flex-shrink-0" />
+                                        <span className="truncate">{milestone.title}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {dateEvents.length > 0 && (
+                                  <div className="mt-1 space-y-1">
+                                    {dateEvents.slice(0, 2).map(event => (
+                                      <div 
+                                        key={event.id}
+                                        className={`px-2 py-1 rounded text-xs ${getCategoryColor(event.category)}`}
+                                      >
+                                        {event.title}
+                                      </div>
+                                    ))}
+                                    {dateEvents.length > 2 && (
+                                      <div className="text-xs text-slate-500 text-center">
+                                        +{dateEvents.length - 2} more
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })
+                        ];
+                      }).flat();
+                    })()}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Year View */}
+      {viewMode === 'year' && (
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-3">
+              <h2 className="text-2xl font-bold text-blue-600">
+                THE BIG ASS CALENDAR {currentDate.getFullYear()}
+              </h2>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => {
+                  const newDate = new Date(currentDate);
+                  newDate.setFullYear(currentDate.getFullYear() - 1);
+                  setCurrentDate(newDate);
+                }}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => {
+                  const newDate = new Date(currentDate);
+                  newDate.setFullYear(currentDate.getFullYear() + 1);
+                  setCurrentDate(newDate);
+                }}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          <div className="text-center mb-8 p-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200">
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">Think Big. Plan Bigger.</h3>
+            <p className="text-slate-600">Your entire year laid out. Every month, every milestone, every opportunity to make it count.</p>
+          </div>
+
+          <div className="grid grid-cols-3 md:grid-cols-4 gap-6">
+            {Array.from({ length: 12 }, (_, monthIndex) => {
+              const monthDate = new Date(currentDate.getFullYear(), monthIndex, 1);
+              const monthName = monthDate.toLocaleDateString('en-US', { month: 'long' });
+              const daysInMonth = new Date(currentDate.getFullYear(), monthIndex + 1, 0).getDate();
+              const firstDayOfWeek = monthDate.getDay();
+              
+              return (
+                <div key={monthIndex} className="bg-blue-50 rounded-xl p-4 border border-blue-200 hover:shadow-lg transition-all">
+                  <h3 className="font-bold text-blue-800 text-center mb-3 text-lg">
+                    {monthName.toUpperCase()}
+                  </h3>
+                  
+                  <div className="grid grid-cols-7 gap-1">
+                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
+                      <div key={day} className="text-center text-xs font-medium text-blue-600 p-1">
+                        {day}
+                      </div>
+                    ))}
+                    
+                    {Array.from({ length: firstDayOfWeek }, (_, i) => (
+                      <div key={`empty-${i}`} className="h-6"></div>
+                    ))}
+                    
+                    {Array.from({ length: daysInMonth }, (_, dayIndex) => {
+                      const day = dayIndex + 1;
+                      const date = new Date(currentDate.getFullYear(), monthIndex, day);
+                      const isToday = date.toDateString() === new Date().toDateString();
+                      
+                      const hasMilestone = milestones.some(milestone => 
+                        milestone.date.getFullYear() === date.getFullYear() &&
+                        milestone.date.getMonth() === date.getMonth() &&
+                        milestone.date.getDate() === date.getDate()
+                      );
+                      
+                      return (
+                        <div 
+                          key={day}
+                          className={`h-6 text-center text-xs font-medium rounded cursor-pointer transition-all ${
+                            isToday 
+                              ? 'bg-purple-500 text-white font-bold' 
+                              : hasMilestone
+                              ? 'bg-orange-400 text-white'
+                              : 'text-blue-700 hover:bg-blue-200'
+                          }`}
+                          onClick={() => {
+                            setCurrentDate(date);
+                            setViewMode('week');
+                          }}
+                          title={hasMilestone ? 'Has milestones' : `Go to ${monthName} ${day}`}
+                        >
+                          {day}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  {(() => {
+                    const monthMilestones = milestones.filter(milestone => 
+                      milestone.date.getFullYear() === currentDate.getFullYear() &&
+                      milestone.date.getMonth() === monthIndex
+                    );
+                    
+                    return monthMilestones.length > 0 && (
+                      <div className="mt-2 text-center">
+                        <span className="text-xs px-2 py-1 bg-orange-100 text-orange-600 rounded-full">
+                          {monthMilestones.length} milestone{monthMilestones.length > 1 ? 's' : ''}
+                        </span>
+                      </div>
+                    );
+                  })()}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="text-center p-6 bg-gradient-to-br from-purple-100 to-purple-200 rounded-xl">
+              <div className="text-3xl font-bold text-purple-700">{milestones.length}</div>
+              <div className="text-sm text-purple-600 font-medium">Total Milestones</div>
+            </div>
+            
+            <div className="text-center p-6 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl">
+              <div className="text-3xl font-bold text-blue-700">
+                {Math.round((milestones.filter(m => m.completed).length / Math.max(milestones.length, 1)) * 100)}%
+              </div>
+              <div className="text-sm text-blue-600 font-medium">Completed</div>
+            </div>
+            
+            <div className="text-center p-6 bg-gradient-to-br from-green-100 to-green-200 rounded-xl">
+              <div className="text-3xl font-bold text-green-700">
+                {Math.ceil((new Date(currentDate.getFullYear(), 11, 31).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))}
+              </div>
+              <div className="text-sm text-green-600 font-medium">Days Left</div>
+            </div>
+          </div>
+
+          <div className="mt-8 text-center p-8 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl text-white">
+            <h3 className="text-2xl font-bold mb-2">This Is Your Year</h3>
+            <p className="mb-4 opacity-90">Every square represents a day. Every milestone represents progress. Make them count.</p>
+            <button
+              onClick={() => setViewMode('90day')}
+              className="px-6 py-3 bg-white text-purple-600 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+            >
+              Start Planning Your Next 90 Days
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Day View Modal */}
+      {showDayView && <DayViewModal />}
+    </div>
+  );
+};
+
+export default Calendar;
