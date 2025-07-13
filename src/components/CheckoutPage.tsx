@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import {
@@ -13,11 +13,12 @@ import {
   ArrowLeft, 
   AlertCircle,
   Target,
-  Sparkles 
+  Sparkles,
+  RefreshCw
 } from 'lucide-react';
 
-// Initialize Stripe with your live key
-const stripePromise = loadStripe('pk_live_51ReyfrGR1TepVbUM24taZ0yF9YCkw0ZMnu8alTlMZAGlJMfhnyQ75aZVRJaCmUv4M2ANee5TqIJMchu0y9Jk1B5400bWH0RZUD');
+// Initialize Stripe with a test publishable key
+const stripePromise = loadStripe('pk_test_51ReyfrGR1TepVbUM24taZ0yF9YCkw0ZMnu8alTlMZAGlJMfhnyQ75aZVRJaCmUv4M2ANee5TqIJMchu0y9Jk1B5400bWH0RZUD');
 
 const CheckoutForm: React.FC = () => {
   const stripe = useStripe();
@@ -27,10 +28,18 @@ const CheckoutForm: React.FC = () => {
   
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
+  const [stripeReady, setStripeReady] = useState(false);
   const [customerInfo, setCustomerInfo] = useState({
     name: searchParams.get('name') || '',
     email: searchParams.get('email') || ''
   });
+
+  // Check if Stripe is loaded
+  useEffect(() => {
+    if (stripe) {
+      setStripeReady(true);
+    }
+  }, [stripe]);
 
   const productInfo = {
     name: 'Complete Toolkit',
@@ -95,9 +104,11 @@ const CheckoutForm: React.FC = () => {
         '::placeholder': {
           color: '#aab7c4',
         },
+        iconColor: '#666EE8',
       },
       invalid: {
         color: '#9e2146',
+        iconColor: '#fa755a',
       },
     },
     hidePostalCode: true,
@@ -151,6 +162,26 @@ const CheckoutForm: React.FC = () => {
               </div>
             )}
 
+            {!stripeReady && (
+              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="flex items-center space-x-2 mb-2">
+                  <div className="w-5 h-5 border-2 border-yellow-600 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-sm font-medium text-yellow-700">Loading payment system...</span>
+                </div>
+                <p className="text-xs text-yellow-600">
+                  If this takes too long, please refresh the page.
+                </p>
+                <button 
+                  type="button"
+                  onClick={() => window.location.reload()}
+                  className="mt-2 flex items-center space-x-1 text-xs text-yellow-700 hover:text-yellow-800"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  <span>Refresh</span>
+                </button>
+              </div>
+            )}
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -187,6 +218,9 @@ const CheckoutForm: React.FC = () => {
                 <div className="border border-slate-300 rounded-lg p-4 bg-white focus-within:ring-2 focus-within:ring-purple-500 focus-within:border-transparent">
                   <CardElement options={cardElementOptions} />
                 </div>
+                <p className="mt-1 text-xs text-slate-500">
+                  For testing, use card number: 4242 4242 4242 4242, any future date, any CVC
+                </p>
               </div>
             </div>
 
@@ -211,7 +245,7 @@ const CheckoutForm: React.FC = () => {
 
             <button
               type="submit"
-              disabled={!stripe || isLoading}
+              disabled={!stripe || isLoading || !stripeReady}
               className="w-full mt-6 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
@@ -228,7 +262,7 @@ const CheckoutForm: React.FC = () => {
             </button>
 
             <p className="mt-4 text-xs text-slate-500 text-center">
-              ⚠️ LIVE MODE: Real payments will be processed
+              ⚠️ TEST MODE: No real payments will be processed
             </p>
           </form>
         </div>
