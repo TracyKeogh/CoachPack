@@ -1034,7 +1034,7 @@ const Calendar: React.FC = () => {
             <p className="text-slate-600">Your entire year laid out. Every month, every milestone, every opportunity to make it count.</p>
           </div>
 
-          <div className="grid grid-cols-3 md:grid-cols-4 gap-6">
+          <div className="space-y-4">
             {Array.from({ length: 12 }, (_, monthIndex) => {
               const monthDate = new Date(currentDate.getFullYear(), monthIndex, 1);
               const monthName = monthDate.toLocaleDateString('en-US', { month: 'long' });
@@ -1042,69 +1042,155 @@ const Calendar: React.FC = () => {
               const firstDayOfWeek = monthDate.getDay();
               
               return (
-                <div key={monthIndex} className="bg-blue-50 rounded-xl p-4 border border-blue-200 hover:shadow-lg transition-all">
-                  <h3 className="font-bold text-blue-800 text-center mb-3 text-lg">
-                    {monthName.toUpperCase()}
-                  </h3>
+                <div key={monthIndex} className="bg-blue-50 rounded-xl p-6 border border-blue-200 hover:shadow-lg transition-all">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-bold text-blue-800 text-xl">
+                      {monthName.toUpperCase()} {currentDate.getFullYear()}
+                    </h3>
+                    
+                    {(() => {
+                      const monthMilestones = milestones.filter(milestone => 
+                        milestone.date.getFullYear() === currentDate.getFullYear() &&
+                        milestone.date.getMonth() === monthIndex
+                      );
+                      
+                      return monthMilestones.length > 0 && (
+                        <span className="text-sm px-3 py-1 bg-orange-100 text-orange-600 rounded-full font-medium">
+                          {monthMilestones.length} milestone{monthMilestones.length > 1 ? 's' : ''}
+                        </span>
+                      );
+                    })()}
+                  </div>
                   
-                  <div className="grid grid-cols-7 gap-1">
-                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
-                      <div key={day} className="text-center text-xs font-medium text-blue-600 p-1">
-                        {day}
+                  {/* Calendar grid for this month - wider and more spaced */}
+                  <div className="grid grid-cols-7 gap-3">
+                    {/* Day headers */}
+                    {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(day => (
+                      <div key={day} className="text-center text-sm font-semibold text-blue-700 py-2 bg-blue-100 rounded-lg">
+                        {day.slice(0, 3)}
                       </div>
                     ))}
                     
+                    {/* Empty cells for days before the first of the month */}
                     {Array.from({ length: firstDayOfWeek }, (_, i) => (
-                      <div key={`empty-${i}`} className="h-6"></div>
+                      <div key={`empty-${i}`} className="h-12 bg-slate-100 rounded-lg opacity-50"></div>
                     ))}
                     
+                    {/* Days of the month */}
                     {Array.from({ length: daysInMonth }, (_, dayIndex) => {
                       const day = dayIndex + 1;
                       const date = new Date(currentDate.getFullYear(), monthIndex, day);
                       const isToday = date.toDateString() === new Date().toDateString();
                       
+                      // Check for milestones on this day
                       const hasMilestone = milestones.some(milestone => 
                         milestone.date.getFullYear() === date.getFullYear() &&
                         milestone.date.getMonth() === date.getMonth() &&
                         milestone.date.getDate() === date.getDate()
                       );
+
+                      // Check for events on this day
+                      const dayEvents = getEventsForDay(date);
+                      const hasEvents = dayEvents.length > 0;
                       
                       return (
                         <div 
                           key={day}
-                          className={`h-6 text-center text-xs font-medium rounded cursor-pointer transition-all ${
+                          className={`h-12 text-center flex items-center justify-center text-sm font-medium rounded-lg cursor-pointer transition-all border-2 ${
                             isToday 
-                              ? 'bg-purple-500 text-white font-bold' 
+                              ? 'bg-purple-500 text-white font-bold border-purple-600 shadow-lg scale-105' 
                               : hasMilestone
-                              ? 'bg-orange-400 text-white'
-                              : 'text-blue-700 hover:bg-blue-200'
-                          }`}
+                              ? 'bg-orange-400 text-white border-orange-500 hover:bg-orange-500'
+                              : hasEvents
+                              ? 'bg-green-300 text-green-800 border-green-400 hover:bg-green-400'
+                              : 'bg-white text-blue-700 border-blue-200 hover:bg-blue-100 hover:border-blue-300'
+                          } hover:shadow-md hover:scale-102`}
                           onClick={() => {
                             setCurrentDate(date);
                             setViewMode('week');
                           }}
-                          title={hasMilestone ? 'Has milestones' : `Go to ${monthName} ${day}`}
+                          title={
+                            isToday ? `Today - ${monthName} ${day}` :
+                            hasMilestone ? `Has milestones - ${monthName} ${day}` : 
+                            hasEvents ? `Has ${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''} - ${monthName} ${day}` :
+                            `Go to ${monthName} ${day}`
+                          }
                         >
-                          {day}
+                          <span className="relative">
+                            {day}
+                            {/* Small indicator dots for content */}
+                            {(hasMilestone || hasEvents) && (
+                              <div className="absolute -top-1 -right-1 flex space-x-0.5">
+                                {hasMilestone && (
+                                  <div className="w-2 h-2 bg-orange-600 rounded-full"></div>
+                                )}
+                                {hasEvents && (
+                                  <div className="w-2 h-2 bg-green-600 rounded-full"></div>
+                                )}
+                              </div>
+                            )}
+                          </span>
                         </div>
                       );
                     })}
                   </div>
                   
-                  {(() => {
-                    const monthMilestones = milestones.filter(milestone => 
-                      milestone.date.getFullYear() === currentDate.getFullYear() &&
-                      milestone.date.getMonth() === monthIndex
-                    );
-                    
-                    return monthMilestones.length > 0 && (
-                      <div className="mt-2 text-center">
-                        <span className="text-xs px-2 py-1 bg-orange-100 text-orange-600 rounded-full">
-                          {monthMilestones.length} milestone{monthMilestones.length > 1 ? 's' : ''}
+                  {/* Month summary - space for future interactive features */}
+                  <div className="mt-4 p-3 bg-white rounded-lg border border-blue-200">
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center space-x-4">
+                        <span className="text-slate-600">
+                          Total Days: <span className="font-semibold text-slate-900">{daysInMonth}</span>
                         </span>
+                        {(() => {
+                          const monthEvents = Array.from({ length: daysInMonth }, (_, i) => {
+                            const date = new Date(currentDate.getFullYear(), monthIndex, i + 1);
+                            return getEventsForDay(date);
+                          }).flat();
+                          
+                          return monthEvents.length > 0 && (
+                            <span className="text-green-600">
+                              Events: <span className="font-semibold">{monthEvents.length}</span>
+                            </span>
+                          );
+                        })()}
+                        {(() => {
+                          const monthMilestones = milestones.filter(milestone => 
+                            milestone.date.getFullYear() === currentDate.getFullYear() &&
+                            milestone.date.getMonth() === monthIndex
+                          );
+                          
+                          return monthMilestones.length > 0 && (
+                            <span className="text-orange-600">
+                              Milestones: <span className="font-semibold">{monthMilestones.length}</span>
+                            </span>
+                          );
+                        })()}
                       </div>
-                    );
-                  })()}
+                      
+                      {/* Interactive placeholder - ready for future features */}
+                      <div className="flex items-center space-x-2">
+                        <button 
+                          className="text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded hover:bg-slate-200 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            console.log(`Future feature: Expand ${monthName} details`);
+                          }}
+                        >
+                          Details
+                        </button>
+                        <button 
+                          className="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            console.log(`Future feature: Quick add to ${monthName}`);
+                          }}
+                        >
+                          Quick Add
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               );
             })}
