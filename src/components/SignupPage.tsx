@@ -150,7 +150,6 @@ const SignupPage: React.FC = () => {
                   className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
                     errors.email ? 'border-red-300' : 'border-slate-300'
                   }`}
-                  placeholder="Enter your email"
                   disabled={isLoading}
                 />
               </div>
