@@ -974,11 +974,9 @@ const Calendar: React.FC = () => {
                       }
                       
                       return weeks.map((week, weekIndex) => {
-                        // Calculate week number based on first actual date in the week
+                        // Calculate goal-setting week number (1-13 for 90 days)
+                        const goalWeekNumber = weekIndex + 1;
                         const firstDateInWeek = week.find(date => date !== null);
-                        const weekNumber = firstDateInWeek ? 
-                          Math.ceil((((firstDateInWeek.getTime() - new Date(firstDateInWeek.getFullYear(), 0, 1).getTime()) / 86400000) + new Date(firstDateInWeek.getFullYear(), 0, 1).getDay() + 1) / 7) 
-                          : null;
                         
                         return [
                           // Week number cell
@@ -986,17 +984,17 @@ const Calendar: React.FC = () => {
                             key={`week-${weekIndex}`}
                             className="flex items-center justify-center min-h-24"
                           >
-                            {weekNumber && (
+                            {firstDateInWeek && (
                               <button
                                 onClick={() => {
-                                  console.log(`Switching to week ${weekNumber} view`);
+                                  console.log(`Switching to goal week ${goalWeekNumber} view`);
                                   setCurrentDate(firstDateInWeek);
                                   setViewMode('week');
                                 }}
                                 className="px-2 py-1 text-sm font-medium text-slate-600 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors"
-                                title={`Go to Week ${weekNumber}`}
+                                title={`Go to Week ${goalWeekNumber} of your 90-day goal period`}
                               >
-                                {weekNumber}
+                                {goalWeekNumber}
                               </button>
                             )}
                           </div>,
