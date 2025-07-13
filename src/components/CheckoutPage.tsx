@@ -1,27 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import {
-  Elements, 
-  CardElement, 
-  useStripe, 
-  useElements,
-  CardElementProps
+  Elements,
+  CardElement,
+  useStripe,
+  useElements
 } from '@stripe/react-stripe-js';
 import { 
   CreditCard, 
   Lock, 
   ArrowLeft, 
-  Check,
   AlertCircle,
   Target,
   Sparkles 
 } from 'lucide-react';
 
-// Initialize Stripe
-// Use a test publishable key if environment variable is not set
-const stripeKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_TYooMQauvdEDq54NiTphI7jx';
-const stripePromise = loadStripe(stripeKey);
+// Initialize Stripe with your live key
+const stripePromise = loadStripe('pk_live_51ReyfrGR1TepVbUM24taZ0yF9YCkw0ZMnu8alTlMZAGlJMfhnyQ75aZVRJaCmUv4M2ANee5TqIJMchu0y9Jk1B5400bWH0RZUD');
 
 const CheckoutForm: React.FC = () => {
   const stripe = useStripe();
@@ -30,19 +26,11 @@ const CheckoutForm: React.FC = () => {
   const [searchParams] = useSearchParams();
   
   const [isLoading, setIsLoading] = useState(false);
-  const [stripeReady, setStripeReady] = useState(false);
   const [error, setError] = useState<string>('');
   const [customerInfo, setCustomerInfo] = useState({
     name: searchParams.get('name') || '',
     email: searchParams.get('email') || ''
   });
-
-  // Check if Stripe is loaded
-  useEffect(() => {
-    if (stripe) {
-      setStripeReady(true);
-    }
-  }, [stripe]);
 
   const productInfo = {
     name: 'Complete Toolkit',
@@ -70,9 +58,6 @@ const CheckoutForm: React.FC = () => {
     }
 
     try {
-      // In a real app, you would create a payment intent on your backend
-      // For now, we'll simulate a successful payment
-      
       const { error: stripeError, paymentMethod } = await stripe.createPaymentMethod({
         type: 'card',
         card: cardElement,
@@ -88,7 +73,7 @@ const CheckoutForm: React.FC = () => {
         return;
       }
 
-      // Simulate successful payment
+      // For demo purposes, simulate successful payment
       console.log('Payment method created:', paymentMethod);
       
       // Redirect to success page
@@ -100,61 +85,26 @@ const CheckoutForm: React.FC = () => {
     }
   };
 
-  const cardElementOptions: CardElementProps['options'] = {
+  const cardElementOptions = {
     style: {
       base: {
         fontSize: '16px',
         color: '#424770',
-        fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+        fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
         fontSmoothing: 'antialiased',
         '::placeholder': {
           color: '#aab7c4',
         },
-        iconColor: '#666EE8'
       },
       invalid: {
         color: '#9e2146',
-        iconColor: '#fa755a'
-      }
+      },
     },
-    hidePostalCode: true
+    hidePostalCode: true,
   };
-
-  // Handle card element change
-  const handleCardChange = (event: any) => {
-    if (event.error) {
-      setError(event.error.message);
-    } else {
-      setError('');
-    }
-  };
-
-  if (!stripeReady) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-50 flex items-center justify-center">
-        <div className="bg-white rounded-2xl p-8 shadow-lg max-w-md w-full text-center">
-          <div className="w-12 h-12 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <h2 className="text-xl font-semibold text-slate-900 mb-2">Loading payment system...</h2>
-          <p className="text-slate-600">Please wait while we initialize Stripe.</p>
-          {error && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-600 text-sm">{error}</p>
-              <button 
-                onClick={() => window.location.reload()}
-                className="mt-2 text-purple-600 hover:text-purple-700 font-medium text-sm"
-              >
-                Refresh page
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-50">
-      {/* Header */}
       <div className="bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
@@ -180,10 +130,8 @@ const CheckoutForm: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="flex items-center justify-center py-12 px-6">
         <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200">
-          {/* Header */}
           <div className="p-8 pb-0">
             <div className="text-center mb-6">
               <h1 className="text-3xl font-bold text-slate-900 mb-2">
@@ -195,7 +143,6 @@ const CheckoutForm: React.FC = () => {
             </div>
           </div>
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="p-8 pt-0">
             {error && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
@@ -205,7 +152,6 @@ const CheckoutForm: React.FC = () => {
             )}
 
             <div className="space-y-4">
-              {/* Name Field */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
                   Name on Card
@@ -220,7 +166,6 @@ const CheckoutForm: React.FC = () => {
                 />
               </div>
 
-              {/* Email Field */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
                   Email
@@ -235,22 +180,16 @@ const CheckoutForm: React.FC = () => {
                 />
               </div>
 
-              {/* Card Element */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
                   Card Details
                 </label>
                 <div className="border border-slate-300 rounded-lg p-4 bg-white focus-within:ring-2 focus-within:ring-purple-500 focus-within:border-transparent">
-                  <CardElement 
-                    options={cardElementOptions} 
-                    onChange={handleCardChange}
-                    className="py-2"
-                  />
+                  <CardElement options={cardElementOptions} />
                 </div>
               </div>
             </div>
 
-            {/* Order Summary */}
             <div className="mt-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
               <div className="flex items-center justify-between">
                 <div>
@@ -265,13 +204,11 @@ const CheckoutForm: React.FC = () => {
               </div>
             </div>
 
-            {/* Security Notice */}
             <div className="mt-4 flex items-center justify-center space-x-2 text-sm text-slate-500">
               <Lock className="w-4 h-4" />
               <span>Your payment is secure and encrypted</span>
             </div>
 
-            {/* Submit Button */}
             <button
               type="submit"
               disabled={!stripe || isLoading}
@@ -290,9 +227,8 @@ const CheckoutForm: React.FC = () => {
               )}
             </button>
 
-            {/* Test Card Notice */}
             <p className="mt-4 text-xs text-slate-500 text-center">
-              Test with card number: 4242 4242 4242 4242
+              ⚠️ LIVE MODE: Real payments will be processed
             </p>
           </form>
         </div>
