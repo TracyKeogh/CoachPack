@@ -2,7 +2,8 @@ import React from 'react';
 import { 
   BarChart3, 
   Heart, 
-  ImageIcon, 
+  ImageIcon,
+  Download,
   Target, 
   Calendar as CalendarIcon,
   Home,
@@ -33,6 +34,7 @@ const Navigation: React.FC<NavigationProps> = ({
     { id: 'vision', label: 'Vision Board', icon: ImageIcon, color: 'text-teal-600' },
     { id: 'goals', label: 'Goals', icon: Target, color: 'text-orange-500' },
     { id: 'calendar', label: 'Calendar', icon: CalendarIcon, color: 'text-indigo-600' },
+    { id: 'templates', label: 'Templates', icon: Download, color: 'text-purple-500' },
   ];
 
   return (

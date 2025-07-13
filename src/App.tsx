@@ -22,10 +22,11 @@ import VisionBoard from './components/VisionBoard';
 import GoalSetting from './components/GoalSetting';
 import Calendar from './components/Calendar';
 import LandingPage from './components/LandingPage';
+import CommunityTemplates from './components/CommunityTemplates';
 import FreeWheelAssessment from './components/FreeWheelAssessment';
 import PricingPage from './components/PricingPage';
 
-export type ViewType = 'landing' | 'free-wheel' | 'dashboard' | 'wheel' | 'values' | 'vision' | 'goals' | 'calendar';
+export type ViewType = 'landing' | 'free-wheel' | 'dashboard' | 'wheel' | 'values' | 'vision' | 'goals' | 'calendar' | 'templates';
 
 function AppContent() {
   const [isNavigationCollapsed, setIsNavigationCollapsed] = React.useState(false);
@@ -64,6 +65,7 @@ function AppContent() {
                 <Route path="/vision" element={<VisionBoard />} />
                 <Route path="/goals" element={<GoalSetting />} />
                 <Route path="/calendar" element={<Calendar />} />
+                <Route path="/templates" element={<CommunityTemplates />} />
               </Routes>
             </div>
           </main>

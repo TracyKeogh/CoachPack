@@ -6,6 +6,7 @@ import {
   Target,
   Calendar as CalendarIcon,
   ArrowRight,
+  Download,
   Sparkles,
   CheckCircle2,
   Clock,

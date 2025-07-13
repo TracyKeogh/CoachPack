@@ -1,11 +1,17 @@
 import React, { useState } from 'react';
 import { 
   ArrowRight,
+  Share2,
+  Eye,
+  Download,
 } from 'lucide-react';
 import { Plus, Target, Edit3, X, Check, Flag, Calendar, Pencil, ArrowLeft, Save, Heart, Lightbulb, Sparkles, CalendarIcon } from 'lucide-react';
 import MilestonesSection from './MilestonesSection';
 import { getTwelveWeeksFromNow } from '../types/goals';
 import { useValuesData } from '../hooks/useValuesData';
+import { useTemplates } from '../hooks/useTemplates';
+import { Link } from 'react-router-dom';
+import { v4 as uuidv4 } from 'uuid';
 
 interface Goal {
   id: string;
@@ -17,6 +23,7 @@ interface Goal {
   connectedValues: string[];
   targetDate: string;
   progress: number;
+  isShared?: boolean;
 }
 
 interface Milestone {
@@ -182,6 +189,7 @@ const GoalSetting: React.FC = () => {
   const [editingGoal, setEditingGoal] = useState<string | null>(null);
   const [newGoal, setNewGoal] = useState<Partial<Goal>>({});
   const { valuesData } = useValuesData();
+  const { shareTemplate, userSharedCount } = useTemplates();
 
   const currentCategory = categories[currentCategoryIndex];
 
@@ -327,6 +335,9 @@ const GoalSetting: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 capitalize">
             {currentCategory} Goals & Action Plan
+            <span className="ml-2 text-sm font-normal text-gray-500">
+              Share your goals as templates for others to use
+            </span>
           </h1>
           <p className="text-gray-600 mt-1">
             Step {currentCategoryIndex + 1} of {categories.length}
@@ -334,6 +345,14 @@ const GoalSetting: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-4">
+          <Link
+            to="/templates"
+            className="flex items-center space-x-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            <span>Browse Templates</span>
+          </Link>
+          
           <button
             onClick={() => setCurrentStep('annual')}
             className="text-gray-600 hover:text-gray-800 transition-colors"
@@ -361,6 +380,24 @@ const GoalSetting: React.FC = () => {
             >
               <ArrowRight className="w-4 h-4" />
             </button>
+          </div>
+        </div>
+        
+        <div className="mt-4 flex items-center justify-center space-x-4">
+          <Link
+            to="/templates"
+            className="flex items-center space-x-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors"
+          >
+            <Eye className="w-4 h-4" />
+            <span>Browse Community Templates</span>
+            <span className="px-2 py-0.5 bg-purple-200 text-purple-800 rounded-full text-xs">
+              New
+            </span>
+          </Link>
+          
+          <div className="text-sm text-gray-500 flex items-center space-x-1">
+            <Share2 className="w-4 h-4" />
+            <span>You've shared {userSharedCount} template{userSharedCount !== 1 ? 's' : ''}</span>
           </div>
         </div>
       </div>
@@ -487,7 +524,15 @@ const GoalSetting: React.FC = () => {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-2">
-                          <h4 className="font-medium text-gray-900">{goal.title}</h4>
+                          <h4 className="font-medium text-gray-900 flex items-center">
+                            {goal.title}
+                            {goal.isShared && (
+                              <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs flex items-center">
+                                <Share2 className="w-3 h-3 mr-1" />
+                                Shared
+                              </span>
+                            )}
+                          </h4>
                           <div className="flex items-center space-x-1">
                             <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-medium flex items-center">
                               <Flag className="w-3 h-3 mr-1" />
@@ -530,7 +575,22 @@ const GoalSetting: React.FC = () => {
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-2 ml-4">
+                      <div className="flex items-center gap-2 ml-4 space-x-1">
+                        <div className="flex items-center">
+                          <span className="text-xs text-gray-500 mr-2">Share</span>
+                          <button
+                            onClick={() => handleShareGoal(goal.id, !goal.isShared)}
+                            className={`relative w-10 h-5 transition-colors duration-200 ease-linear rounded-full ${
+                              goal.isShared ? 'bg-green-500' : 'bg-gray-300'
+                            }`}
+                          >
+                            <span
+                              className={`absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform duration-200 ease-linear transform ${
+                                goal.isShared ? 'translate-x-5' : 'translate-x-0'
+                              }`}
+                            />
+                          </button>
+                        </div>
                         <button
                           onClick={() => setEditingGoal(editingGoal === goal.id ? null : goal.id)}
                           className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
@@ -547,7 +607,20 @@ const GoalSetting: React.FC = () => {
                     </div>
 
                     {editingGoal === goal.id && (
-                      <div className="mt-4 pt-4 border-t border-gray-200">
+                      <div className="mt-4 pt-4 border-t border-gray-200 space-y-4">
+                        {goal.isShared && (
+                          <div className="bg-green-50 rounded-lg p-3 border border-green-200">
+                            <div className="flex items-center mb-2">
+                              <Share2 className="w-5 h-5 text-green-600 mr-2" />
+                              <h3 className="font-semibold text-green-800">This goal is shared as a template</h3>
+                            </div>
+                            <p className="text-sm text-green-700">
+                              Your goal structure is available for others to use as a template.
+                              All personal information is removed before sharing.
+                            </p>
+                          </div>
+                        )}
+                        
                         <div className="bg-amber-50 rounded-lg p-3 mb-4 border border-amber-200">
                           <div className="flex items-center mb-2">
                             <Flag className="w-5 h-5 text-amber-600 mr-2" />
