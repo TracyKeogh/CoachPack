@@ -1,278 +1,252 @@
 import React, { useState } from 'react';
-import { X, Mail, Lock, User, Eye, EyeOff, Check, AlertCircle } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowRight, BarChart3, Heart, ImageIcon, Target, Calendar, CheckCircle2, Sparkles } from 'lucide-react';
+import SignupModal from './SignupModal';
+import DemoVideo from './DemoVideo';
+import { ViewType } from '../App';
 
-interface SignupModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSuccess: (user: any) => void;
-  selectedPlan?: string;
+interface LandingPageProps {
+  onNavigate: (view: ViewType) => void;
 }
 
-const SignupModal: React.FC<SignupModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  onSuccess, 
-  selectedPlan = 'complete' 
-}) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
-  });
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
+  const navigate = useNavigate();
+  const [showSignupModal, setShowSignupModal] = useState(false);
 
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
-    }
-
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email';
-    }
-
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  const handleSignupSuccess = (user: any) => {
+    setShowSignupModal(false);
+    navigate('/dashboard');
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateForm()) return;
-
-    setIsLoading(true);
-
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Create user object
-      const user = {
-        id: Date.now().toString(),
-        name: formData.name,
-        email: formData.email,
-        plan: selectedPlan,
-        createdAt: new Date().toISOString()
-      };
-
-      // Call success handler
-      onSuccess(user);
-    } catch (error) {
-      setErrors({ general: 'Something went wrong. Please try again.' });
-    } finally {
-      setIsLoading(false);
+  const features = [
+    {
+      icon: <BarChart3 className="w-6 h-6 text-purple-600" />,
+      title: 'Wheel of Life',
+      description: 'Assess your satisfaction across 8 key life areas to identify where to focus your energy.'
+    },
+    {
+      icon: <Heart className="w-6 h-6 text-red-500" />,
+      title: 'Values Clarity',
+      description: 'Discover your core values through a guided process that reveals what truly matters to you.'
+    },
+    {
+      icon: <ImageIcon className="w-6 h-6 text-teal-600" />,
+      title: 'Vision Board',
+      description: 'Create visual representations of your goals across four key life quadrants.'
+    },
+    {
+      icon: <Target className="w-6 h-6 text-orange-500" />,
+      title: 'Goal Setting',
+      description: 'Transform your vision into actionable 12-week goals with milestones and weekly actions.'
+    },
+    {
+      icon: <Calendar className="w-6 h-6 text-indigo-600" />,
+      title: 'Action Calendar',
+      description: 'Schedule your actions to ensure you make time for what matters most.'
     }
-  };
-
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
-    }
-  };
-
-  if (!isOpen) return null;
+  ];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full relative shadow-2xl">
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors"
-          disabled={isLoading}
-        >
-          <X className="w-6 h-6" />
-        </button>
-
-        {/* Header */}
-        <div className="p-8 pb-0">
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-slate-900 mb-2">
-              Get Full Access
-            </h2>
-            <p className="text-slate-600">
-              Join Coach Pack and start your self-coaching journey
-            </p>
-          </div>
-
-          {/* Plan Info */}
-          <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 mb-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-purple-900">Complete Toolkit</h3>
-                <p className="text-sm text-purple-600">All tools and assessments</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6 py-24">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="text-center lg:text-left">
+              <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mb-6">
+                Bring Clarity to Chaos
+              </h1>
+              <p className="text-xl text-slate-600 mb-8">
+                Coach Pack helps you build a vision for your life that connects your daily actions to your deepest values.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                <button
+                  onClick={() => setShowSignupModal(true)}
+                  className="px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold"
+                >
+                  Get Full Access - $50
+                </button>
+                <Link
+                  to="/free-wheel"
+                  className="px-8 py-3 bg-white text-purple-600 rounded-lg hover:bg-slate-50 transition-colors font-semibold border border-purple-200"
+                >
+                  Try Free Assessment
+                </Link>
               </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold text-purple-900">$50</div>
-                <div className="text-sm text-purple-600">one-time</div>
-              </div>
+              <p className="text-sm text-slate-500 mt-3">
+                One-time payment • 30 days full access • No subscription
+              </p>
+            </div>
+            <div className="relative">
+              <DemoVideo autoPlay={true} />
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-8 pt-0">
-          {errors.general && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
-              <AlertCircle className="w-4 h-4 text-red-500" />
-              <span className="text-sm text-red-600">{errors.general}</span>
-            </div>
-          )}
-
-          <div className="space-y-4">
-            {/* Name Field */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Full Name
-              </label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                    errors.name ? 'border-red-300' : 'border-slate-300'
-                  }`}
-                  placeholder="Enter your full name"
-                  disabled={isLoading}
-                />
-              </div>
-              {errors.name && (
-                <p className="mt-1 text-sm text-red-600">{errors.name}</p>
-              )}
-            </div>
-
-            {/* Email Field */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                    errors.email ? 'border-red-300' : 'border-slate-300'
-                  }`}
-                  placeholder="Enter your email"
-                  disabled={isLoading}
-                />
-              </div>
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
-              )}
-            </div>
-
-            {/* Password Field */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={formData.password}
-                  onChange={(e) => handleInputChange('password', e.target.value)}
-                  className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                    errors.password ? 'border-red-300' : 'border-slate-300'
-                  }`}
-                  placeholder="Create a password"
-                  disabled={isLoading}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-              {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password}</p>
-              )}
-            </div>
-
-            {/* Confirm Password Field */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Confirm Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <input
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  value={formData.confirmPassword}
-                  onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                  className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                    errors.confirmPassword ? 'border-red-300' : 'border-slate-300'
-                  }`}
-                  placeholder="Confirm your password"
-                  disabled={isLoading}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                >
-                  {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-              {errors.confirmPassword && (
-                <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
-              )}
-            </div>
+      {/* Features Section */}
+      <div className="bg-white py-24">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-slate-900 mb-4">
+              A Complete Self-Coaching System
+            </h2>
+            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
+              Five powerful tools that work together to transform abstract concepts into concrete actions.
+            </p>
           </div>
 
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full mt-6 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? (
-              <div className="flex items-center justify-center space-x-2">
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span>Creating Account...</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {features.map((feature, index) => (
+              <div 
+                key={index} 
+                className="bg-slate-50 rounded-xl p-6 border border-slate-200 hover:shadow-md transition-all duration-300"
+              >
+                <div className="w-12 h-12 bg-white rounded-lg shadow-sm flex items-center justify-center mb-4">
+                  {feature.icon}
+                </div>
+                <h3 className="text-xl font-semibold text-slate-900 mb-2">{feature.title}</h3>
+                <p className="text-slate-600">{feature.description}</p>
               </div>
-            ) : (
-              <div className="flex items-center justify-center space-x-2">
-                <Check className="w-5 h-5" />
-                <span>Create Account - $50</span>
-              </div>
-            )}
-          </button>
-
-          {/* Terms */}
-          <p className="mt-4 text-xs text-slate-500 text-center">
-            By creating an account, you agree to our Terms of Service and Privacy Policy
-          </p>
-        </form>
+            ))}
+          </div>
+        </div>
       </div>
+
+      {/* How It Works Section */}
+      <div className="py-24">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-slate-900 mb-4">
+              How Coach Pack Works
+            </h2>
+            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
+              A structured journey from self-awareness to daily action
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl font-bold text-purple-600">1</span>
+              </div>
+              <h3 className="text-xl font-semibold text-slate-900 mb-2">Assess & Discover</h3>
+              <p className="text-slate-600">
+                Complete your Wheel of Life assessment and clarify your core values
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl font-bold text-purple-600">2</span>
+              </div>
+              <h3 className="text-xl font-semibold text-slate-900 mb-2">Envision & Plan</h3>
+              <p className="text-slate-600">
+                Create your vision board and set 12-week goals with milestones
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl font-bold text-purple-600">3</span>
+              </div>
+              <h3 className="text-xl font-semibold text-slate-900 mb-2">Act & Track</h3>
+              <p className="text-slate-600">
+                Schedule weekly actions and track your progress toward your goals
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Testimonials Section */}
+      <div className="bg-white py-24">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-slate-900 mb-4">
+              What Our Users Say
+            </h2>
+            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
+              Join thousands who have transformed their lives with Coach Pack
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              {
+                quote: "Coach Pack helped me connect my daily actions to my bigger vision. For the first time, I feel like I'm making progress on what truly matters.",
+                author: "Sarah J.",
+                role: "Entrepreneur"
+              },
+              {
+                quote: "The Wheel of Life assessment was eye-opening. I realized I was neglecting key areas of my life, and now I have a plan to create better balance.",
+                author: "Michael T.",
+                role: "Marketing Director"
+              },
+              {
+                quote: "I've tried many productivity apps, but Coach Pack is different. It's not just about getting things done—it's about getting the right things done.",
+                author: "Elena R.",
+                role: "Healthcare Professional"
+              }
+            ].map((testimonial, index) => (
+              <div 
+                key={index} 
+                className="bg-slate-50 rounded-xl p-6 border border-slate-200"
+              >
+                <div className="mb-4">
+                  {Array(5).fill(0).map((_, i) => (
+                    <span key={i} className="text-yellow-400">★</span>
+                  ))}
+                </div>
+                <p className="text-slate-700 mb-4 italic">"{testimonial.quote}"</p>
+                <div>
+                  <p className="font-semibold text-slate-900">{testimonial.author}</p>
+                  <p className="text-sm text-slate-500">{testimonial.role}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* CTA Section */}
+      <div className="py-24 bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
+        <div className="max-w-7xl mx-auto px-6 text-center">
+          <div className="max-w-3xl mx-auto">
+            <h2 className="text-3xl font-bold mb-6">
+              Ready to Transform Your Life?
+            </h2>
+            <p className="text-xl text-purple-100 mb-8">
+              Get the complete self-coaching toolkit for just $50 with 30 days of full access.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={() => setShowSignupModal(true)}
+                className="px-8 py-3 bg-white text-purple-600 rounded-lg hover:bg-slate-50 transition-colors font-semibold"
+              >
+                Get Full Access - $50
+              </button>
+              <Link
+                to="/free-wheel"
+                className="px-8 py-3 bg-purple-700 text-white rounded-lg hover:bg-purple-800 transition-colors border border-purple-500"
+              >
+                Try Free Assessment
+              </Link>
+            </div>
+            <p className="text-sm text-purple-200 mt-3">
+              One-time payment • 30 days full access • No subscription
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Signup Modal */}
+      <SignupModal
+        isOpen={showSignupModal}
+        onClose={() => setShowSignupModal(false)}
+        onSuccess={handleSignupSuccess}
+        selectedPlan="complete"
+      />
     </div>
   );
 };
 
-export default SignupModal;
+export default LandingPage;
