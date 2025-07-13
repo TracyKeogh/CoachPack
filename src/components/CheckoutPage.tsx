@@ -149,29 +149,29 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
       <div>
         <label htmlFor="card" className="block text-sm font-medium text-slate-700 mb-2">
           Card Details
+        </label>
           <div className="p-3 border border-slate-300 rounded-lg focus-within:ring-2 focus-within:ring-purple-500 focus-within:border-transparent bg-white">
-        <div className="p-3 border border-slate-300 rounded-lg focus-within:ring-2 focus-within:ring-purple-500 focus-within:border-transparent">
-          <CardElement
-            id="card"
-            options={{
-              style: {
+            <CardElement
+              id="card"
+              options={{
+                style: {
+                  base: {
                     fontSize: '16px', 
                     color: '#424770', 
                     fontFamily: 'Arial, sans-serif',
-                  color: '#424770',
-                  '::placeholder': {
-                    color: '#aab7c4',
+                    '::placeholder': {
+                      color: '#aab7c4',
+                    },
                     iconColor: '#6772e5',
                   },
+                  invalid: {
+                    color: '#9e2146',
+                  },
                 },
-                invalid: {
-                  color: '#9e2146',
-                },
-              },
-            }}
-            onChange={(e) => setCardComplete(e.complete)}
-          />
-        </div>
+              }}
+              onChange={(e) => setCardComplete(e.complete)}
+            />
+          </div>
       </div>
 
       {error && (
