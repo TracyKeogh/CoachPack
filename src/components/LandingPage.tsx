@@ -1,262 +1,278 @@
-import React, { useState, useEffect } from 'react';
-import { Play, Pause, RotateCcw, Volume2, VolumeX } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Mail, Lock, User, Eye, EyeOff, Check, AlertCircle } from 'lucide-react';
 
-interface SnappyDemoVideoProps {
-  autoPlay?: boolean;
-  onComplete?: () => void;
+interface SignupModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: (user: any) => void;
+  selectedPlan?: string;
 }
 
-const SnappyDemoVideo: React.FC<SnappyDemoVideoProps> = ({ 
-  autoPlay = false, 
-  onComplete 
+const SignupModal: React.FC<SignupModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  onSuccess, 
+  selectedPlan = 'complete' 
 }) => {
-  const [isPlaying, setIsPlaying] = useState(autoPlay);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [progress, setProgress] = useState(0);
-  const [isMuted, setIsMuted] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Demo steps/scenes
-  const demoSteps = [
-    {
-      title: "Step 1: Wheel of Life Assessment",
-      description: "Rate your satisfaction across 8 life areas",
-      duration: 3000,
-      visual: "wheel"
-    },
-    {
-      title: "Step 2: Values Clarification", 
-      description: "Identify what matters most to you",
-      duration: 3000,
-      visual: "values"
-    },
-    {
-      title: "Step 3: Goal Setting",
-      description: "Set 12-week goals based on your priorities", 
-      duration: 3000,
-      visual: "goals"
-    },
-    {
-      title: "Step 4: Action Planning",
-      description: "Break goals into weekly actions",
-      duration: 3000,
-      visual: "actions"
-    },
-    {
-      title: "Step 5: Calendar Integration",
-      description: "Schedule time for what matters most",
-      duration: 3000,
-      visual: "calendar"
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = 'Name is required';
     }
-  ];
 
-  const totalDuration = demoSteps.reduce((sum, step) => sum + step.duration, 0);
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email';
+    }
 
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters';
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    if (isPlaying) {
-      interval = setInterval(() => {
-        setProgress(prev => {
-          const newProgress = prev + (100 / (totalDuration / 50));
-          
-          if (newProgress >= 100) {
-            setIsPlaying(false);
-            setCurrentStep(0);
-            if (onComplete) onComplete();
-            return 0;
-          }
-          
-          // Calculate current step based on progress
-          let accumulatedTime = 0;
-          for (let i = 0; i < demoSteps.length; i++) {
-            accumulatedTime += demoSteps[i].duration;
-            if ((newProgress / 100) * totalDuration <= accumulatedTime) {
-              setCurrentStep(i);
-              break;
-            }
-          }
-          
-          return newProgress;
-        });
-      }, 50);
-    }
+    if (!validateForm()) return;
 
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isPlaying, totalDuration, onComplete]);
+    setIsLoading(true);
 
-  const handlePlayPause = () => {
-    setIsPlaying(!isPlaying);
-  };
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Create user object
+      const user = {
+        id: Date.now().toString(),
+        name: formData.name,
+        email: formData.email,
+        plan: selectedPlan,
+        createdAt: new Date().toISOString()
+      };
 
-  const handleRestart = () => {
-    setIsPlaying(false);
-    setProgress(0);
-    setCurrentStep(0);
-  };
-
-  const renderVisual = (visual: string) => {
-    switch (visual) {
-      case 'wheel':
-        return (
-          <div className="flex items-center justify-center h-full">
-            <div className="relative w-48 h-48">
-              <div className="absolute inset-0 rounded-full border-8 border-purple-200"></div>
-              <div className="absolute inset-4 rounded-full border-4 border-purple-400"></div>
-              <div className="absolute inset-8 rounded-full border-2 border-purple-600"></div>
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-purple-600 rounded-full"></div>
-              {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => (
-                <div
-                  key={i}
-                  className="absolute w-0.5 h-20 bg-purple-300 origin-bottom"
-                  style={{
-                    top: '50%',
-                    left: '50%',
-                    transform: `translate(-50%, -100%) rotate(${angle}deg)`
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        );
-      
-      case 'values':
-        return (
-          <div className="flex items-center justify-center h-full">
-            <div className="grid grid-cols-2 gap-4">
-              {['Family', 'Career', 'Health', 'Growth'].map((value, i) => (
-                <div key={i} className="bg-red-100 border border-red-300 rounded-lg p-4 text-center">
-                  <div className="text-red-600 font-semibold">{value}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      
-      case 'goals':
-        return (
-          <div className="flex items-center justify-center h-full">
-            <div className="space-y-3 w-full max-w-sm">
-              {[1, 2, 3].map((goal, i) => (
-                <div key={i} className="bg-orange-100 border border-orange-300 rounded-lg p-3">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                    <div className="text-orange-700 font-medium">12-Week Goal {goal}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      
-      case 'actions':
-        return (
-          <div className="flex items-center justify-center h-full">
-            <div className="space-y-2 w-full max-w-sm">
-              {[1, 2, 3, 4].map((action, i) => (
-                <div key={i} className="bg-blue-100 border border-blue-300 rounded-lg p-2 flex items-center space-x-2">
-                  <input type="checkbox" className="rounded" defaultChecked={i < 2} />
-                  <span className="text-blue-700 text-sm">Weekly Action {action}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      
-      case 'calendar':
-        return (
-          <div className="flex items-center justify-center h-full">
-            <div className="grid grid-cols-7 gap-1">
-              {Array.from({ length: 21 }, (_, i) => (
-                <div 
-                  key={i} 
-                  className={`w-8 h-8 border rounded text-xs flex items-center justify-center ${
-                    i % 7 === 0 || i % 7 === 6 ? 'bg-slate-100' :
-                    i === 8 || i === 15 ? 'bg-green-200 border-green-400' :
-                    'bg-white border-slate-200'
-                  }`}
-                >
-                  {i + 1}
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      
-      default:
-        return null;
+      // Call success handler
+      onSuccess(user);
+    } catch (error) {
+      setErrors({ general: 'Something went wrong. Please try again.' });
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  if (!isOpen) return null;
 
   return (
-    <div className="bg-slate-100 rounded-2xl overflow-hidden border border-slate-200">
-      {/* Video Area */}
-      <div className="relative bg-white aspect-video">
-        <div className="absolute inset-0 p-8">
-          {renderVisual(demoSteps[currentStep]?.visual)}
-        </div>
-        
-        {/* Play overlay when paused */}
-        {!isPlaying && progress === 0 && (
-          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <button
-              onClick={handlePlayPause}
-              className="w-20 h-20 bg-white bg-opacity-90 rounded-full flex items-center justify-center hover:bg-opacity-100 transition-all"
-            >
-              <Play className="w-8 h-8 text-slate-700 ml-1" />
-            </button>
-          </div>
-        )}
-        
-        {/* Current step info */}
-        <div className="absolute bottom-4 left-4 right-4 bg-black bg-opacity-75 text-white rounded-lg p-3">
-          <div className="font-semibold">{demoSteps[currentStep]?.title}</div>
-          <div className="text-sm opacity-90">{demoSteps[currentStep]?.description}</div>
-        </div>
-      </div>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl max-w-md w-full relative shadow-2xl">
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors"
+          disabled={isLoading}
+        >
+          <X className="w-6 h-6" />
+        </button>
 
-      {/* Controls */}
-      <div className="p-4 bg-slate-50 border-t border-slate-200">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={handlePlayPause}
-              className="w-10 h-10 bg-purple-600 text-white rounded-full flex items-center justify-center hover:bg-purple-700 transition-colors"
-            >
-              {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
-            </button>
-            
-            <button
-              onClick={handleRestart}
-              className="w-10 h-10 bg-slate-300 text-slate-600 rounded-full flex items-center justify-center hover:bg-slate-400 transition-colors"
-            >
-              <RotateCcw className="w-5 h-5" />
-            </button>
-            
-            <button
-              onClick={() => setIsMuted(!isMuted)}
-              className="w-10 h-10 bg-slate-300 text-slate-600 rounded-full flex items-center justify-center hover:bg-slate-400 transition-colors"
-            >
-              {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-            </button>
+        {/* Header */}
+        <div className="p-8 pb-0">
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">
+              Get Full Access
+            </h2>
+            <p className="text-slate-600">
+              Join Coach Pack and start your self-coaching journey
+            </p>
           </div>
-          
-          <div className="text-sm text-slate-600">
-            Step {currentStep + 1} of {demoSteps.length}
+
+          {/* Plan Info */}
+          <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-purple-900">Complete Toolkit</h3>
+                <p className="text-sm text-purple-600">All tools and assessments</p>
+              </div>
+              <div className="text-right">
+                <div className="text-2xl font-bold text-purple-900">$50</div>
+                <div className="text-sm text-purple-600">one-time</div>
+              </div>
+            </div>
           </div>
         </div>
-        
-        {/* Progress Bar */}
-        <div className="w-full bg-slate-200 rounded-full h-2">
-          <div 
-            className="bg-purple-600 h-2 rounded-full transition-all duration-75"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-8 pt-0">
+          {errors.general && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
+              <AlertCircle className="w-4 h-4 text-red-500" />
+              <span className="text-sm text-red-600">{errors.general}</span>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            {/* Name Field */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Full Name
+              </label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    errors.name ? 'border-red-300' : 'border-slate-300'
+                  }`}
+                  placeholder="Enter your full name"
+                  disabled={isLoading}
+                />
+              </div>
+              {errors.name && (
+                <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+              )}
+            </div>
+
+            {/* Email Field */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Email Address
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    errors.email ? 'border-red-300' : 'border-slate-300'
+                  }`}
+                  placeholder="Enter your email"
+                  disabled={isLoading}
+                />
+              </div>
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+              )}
+            </div>
+
+            {/* Password Field */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={formData.password}
+                  onChange={(e) => handleInputChange('password', e.target.value)}
+                  className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    errors.password ? 'border-red-300' : 'border-slate-300'
+                  }`}
+                  placeholder="Create a password"
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+              )}
+            </div>
+
+            {/* Confirm Password Field */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Confirm Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={formData.confirmPassword}
+                  onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                  className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                    errors.confirmPassword ? 'border-red-300' : 'border-slate-300'
+                  }`}
+                  placeholder="Confirm your password"
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                >
+                  {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+              {errors.confirmPassword && (
+                <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full mt-6 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? (
+              <div className="flex items-center justify-center space-x-2">
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Creating Account...</span>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center space-x-2">
+                <Check className="w-5 h-5" />
+                <span>Create Account - $50</span>
+              </div>
+            )}
+          </button>
+
+          {/* Terms */}
+          <p className="mt-4 text-xs text-slate-500 text-center">
+            By creating an account, you agree to our Terms of Service and Privacy Policy
+          </p>
+        </form>
       </div>
     </div>
   );
 };
 
-export default SnappyDemoVideo;
+export default SignupModal;
