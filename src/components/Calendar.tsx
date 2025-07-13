@@ -761,4 +761,4 @@ const Calendar: React.FC = () => {
                 <div className="flex items-start justify-between">
                   <div className="flex items-start space-x-2">
                     <div className="w-6 h-6 rounded-full flex items-center justify-center text-sm">
-                      {getCategoryIcon(action.category)}
+                      <span>{getCategoryIcon(action.category)}</span>
