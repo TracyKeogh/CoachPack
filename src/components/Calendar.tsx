@@ -952,8 +952,6 @@ return (
 {/* Actual date cells */}
 {dates.map((date, i) => {
 const isToday = date.toDateString() === new Date().toDateString();
-                      const dateEvents = getEventsForDate(date);
-                      const dateMilestones = getMilestonesForDate(date);
                       const dateEvents = getEventsForDay(date);
                       const dateMilestones = milestones.filter(
                         m => m.date.toDateString() === date.toDateString()
