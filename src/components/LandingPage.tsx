@@ -1,539 +1,262 @@
-import React, { useState } from 'react';
-import { 
-  Target, 
-  Sparkles, 
-  ArrowRight, 
-  BarChart3, 
-  Heart, 
-  ImageIcon, 
-  Calendar,
-  Star,
-  TrendingUp,
-  Play,
-  X,
-  Check,
-  Zap,
-  Crown,
-  Users,
-  Mail,
-  Shield
-} from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
-import SnappyDemoVideo from './SnappyDemoVideo';
-import WheelSignupModal from './WheelSignupModal';
-import SignupModal from './SignupModal';
+import React, { useState, useEffect } from 'react';
+import { Play, Pause, RotateCcw, Volume2, VolumeX } from 'lucide-react';
 
-interface LandingPageProps {
-  onNavigate?: (view: string) => void;
+interface SnappyDemoVideoProps {
+  autoPlay?: boolean;
+  onComplete?: () => void;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
-  const navigate = useNavigate();
-  const [showVideoDemo, setShowVideoDemo] = useState(false);
-  const [showWheelSignup, setShowWheelSignup] = useState(false);
-  const [showSignupModal, setShowSignupModal] = useState(false);
+const SnappyDemoVideo: React.FC<SnappyDemoVideoProps> = ({ 
+  autoPlay = false, 
+  onComplete 
+}) => {
+  const [isPlaying, setIsPlaying] = useState(autoPlay);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const [isMuted, setIsMuted] = useState(false);
 
-  const handleWheelSignupSuccess = (email: string) => {
-    setShowWheelSignup(false);
-    // Navigate to free wheel assessment
-    if (onNavigate) {
-      onNavigate('free-wheel');
-    } else {
-      navigate('/free-wheel');
-    }
-  };
-
-  const handleSignupSuccess = (user: any) => {
-    setShowSignupModal(false);
-    navigate('/dashboard');
-  };
-
-  const features = [
+  // Demo steps/scenes
+  const demoSteps = [
     {
-      icon: BarChart3,
-      title: 'Wheel of Life Assessment',
-      description: 'Rate your satisfaction across 8 life areas to see where you stand'
+      title: "Step 1: Wheel of Life Assessment",
+      description: "Rate your satisfaction across 8 life areas",
+      duration: 3000,
+      visual: "wheel"
     },
     {
-      icon: Heart,
-      title: 'Values Clarification',
-      description: 'Identify what matters most to you through guided exercises'
+      title: "Step 2: Values Clarification", 
+      description: "Identify what matters most to you",
+      duration: 3000,
+      visual: "values"
     },
     {
-      icon: ImageIcon,
-      title: 'Vision Board Creation',
-      description: 'Create visual representations of your goals and aspirations'
+      title: "Step 3: Goal Setting",
+      description: "Set 12-week goals based on your priorities", 
+      duration: 3000,
+      visual: "goals"
     },
     {
-      icon: Target,
-      title: '12-Week Goal Framework',
-      description: 'Break down what you want into manageable quarterly steps'
+      title: "Step 4: Action Planning",
+      description: "Break goals into weekly actions",
+      duration: 3000,
+      visual: "actions"
     },
     {
-      icon: Calendar,
-      title: 'Action Calendar',
-      description: 'Schedule time for what matters and track your follow-through'
-    },
-    {
-      icon: TrendingUp,
-      title: 'Progress Dashboard',
-      description: 'See your patterns and progress over time'
+      title: "Step 5: Calendar Integration",
+      description: "Schedule time for what matters most",
+      duration: 3000,
+      visual: "calendar"
     }
   ];
 
-  const howItWorksSteps = [
-    {
-      number: 1,
-      title: 'Think',
-      subtitle: 'Rate where you are across different life areas to get a clear picture of your current situation.',
-      icon: BarChart3,
-      color: 'from-purple-500 to-purple-600',
-      bgColor: 'bg-purple-50',
-      borderColor: 'border-purple-200',
-      iconColor: 'text-purple-600'
-    },
-    {
-      number: 2,
-      title: 'Plan',
-      subtitle: 'Identify your core values and what you want your life to look like.',
-      icon: Heart,
-      color: 'from-red-500 to-red-600',
-      bgColor: 'bg-red-50',
-      borderColor: 'border-red-200',
-      iconColor: 'text-red-600'
-    },
-    {
-      number: 3,
-      title: 'Do',
-      subtitle: 'Create visual reminders of your goals and schedule time for what matters most.',
-      icon: Target,
-      color: 'from-orange-500 to-orange-600',
-      bgColor: 'bg-orange-50',
-      borderColor: 'border-orange-200',
-      iconColor: 'text-orange-600'
+  const totalDuration = demoSteps.reduce((sum, step) => sum + step.duration, 0);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (isPlaying) {
+      interval = setInterval(() => {
+        setProgress(prev => {
+          const newProgress = prev + (100 / (totalDuration / 50));
+          
+          if (newProgress >= 100) {
+            setIsPlaying(false);
+            setCurrentStep(0);
+            if (onComplete) onComplete();
+            return 0;
+          }
+          
+          // Calculate current step based on progress
+          let accumulatedTime = 0;
+          for (let i = 0; i < demoSteps.length; i++) {
+            accumulatedTime += demoSteps[i].duration;
+            if ((newProgress / 100) * totalDuration <= accumulatedTime) {
+              setCurrentStep(i);
+              break;
+            }
+          }
+          
+          return newProgress;
+        });
+      }, 50);
     }
-  ];
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isPlaying, totalDuration, onComplete]);
+
+  const handlePlayPause = () => {
+    setIsPlaying(!isPlaying);
+  };
+
+  const handleRestart = () => {
+    setIsPlaying(false);
+    setProgress(0);
+    setCurrentStep(0);
+  };
+
+  const renderVisual = (visual: string) => {
+    switch (visual) {
+      case 'wheel':
+        return (
+          <div className="flex items-center justify-center h-full">
+            <div className="relative w-48 h-48">
+              <div className="absolute inset-0 rounded-full border-8 border-purple-200"></div>
+              <div className="absolute inset-4 rounded-full border-4 border-purple-400"></div>
+              <div className="absolute inset-8 rounded-full border-2 border-purple-600"></div>
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-purple-600 rounded-full"></div>
+              {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => (
+                <div
+                  key={i}
+                  className="absolute w-0.5 h-20 bg-purple-300 origin-bottom"
+                  style={{
+                    top: '50%',
+                    left: '50%',
+                    transform: `translate(-50%, -100%) rotate(${angle}deg)`
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        );
+      
+      case 'values':
+        return (
+          <div className="flex items-center justify-center h-full">
+            <div className="grid grid-cols-2 gap-4">
+              {['Family', 'Career', 'Health', 'Growth'].map((value, i) => (
+                <div key={i} className="bg-red-100 border border-red-300 rounded-lg p-4 text-center">
+                  <div className="text-red-600 font-semibold">{value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      
+      case 'goals':
+        return (
+          <div className="flex items-center justify-center h-full">
+            <div className="space-y-3 w-full max-w-sm">
+              {[1, 2, 3].map((goal, i) => (
+                <div key={i} className="bg-orange-100 border border-orange-300 rounded-lg p-3">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                    <div className="text-orange-700 font-medium">12-Week Goal {goal}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      
+      case 'actions':
+        return (
+          <div className="flex items-center justify-center h-full">
+            <div className="space-y-2 w-full max-w-sm">
+              {[1, 2, 3, 4].map((action, i) => (
+                <div key={i} className="bg-blue-100 border border-blue-300 rounded-lg p-2 flex items-center space-x-2">
+                  <input type="checkbox" className="rounded" defaultChecked={i < 2} />
+                  <span className="text-blue-700 text-sm">Weekly Action {action}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      
+      case 'calendar':
+        return (
+          <div className="flex items-center justify-center h-full">
+            <div className="grid grid-cols-7 gap-1">
+              {Array.from({ length: 21 }, (_, i) => (
+                <div 
+                  key={i} 
+                  className={`w-8 h-8 border rounded text-xs flex items-center justify-center ${
+                    i % 7 === 0 || i % 7 === 6 ? 'bg-slate-100' :
+                    i === 8 || i === 15 ? 'bg-green-200 border-green-400' :
+                    'bg-white border-slate-200'
+                  }`}
+                >
+                  {i + 1}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      
+      default:
+        return null;
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Navigation */}
-      <nav className="fixed top-0 w-full bg-white/95 backdrop-blur-sm border-b border-slate-200 z-50">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-3">
-              <div className="relative">
-                <Target className="w-8 h-8 text-purple-600" />
-                <Sparkles className="w-4 h-4 text-orange-400 absolute -top-1 -right-1" />
-              </div>
-              <div>
-                <span className="text-2xl font-bold text-slate-900">Coach Pack</span>
-                <div className="text-xs text-slate-600">Self-Coaching Toolkit</div>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-6">
-              <a href="#features" className="text-slate-600 hover:text-slate-900 transition-colors">Features</a>
-              <a href="#how-it-works" className="text-slate-600 hover:text-slate-900 transition-colors">How It Works</a>
-              <button 
-                onClick={() => setShowVideoDemo(true)}
-                className="flex items-center space-x-2 text-slate-600 hover:text-slate-900 transition-colors"
-              >
-                <Play className="w-4 h-4" />
-                <span>Demo</span>
-              </button>
-              <Link 
-                to="/pricing" 
-                className="text-slate-600 hover:text-slate-900 transition-colors"
-              >
-                How It Works
-              </Link>
-              <button 
-                onClick={() => setShowSignupModal(true)}
-                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
-              >
-                Pricing
-              </button>
-              <button 
-                onClick={() => setShowWheelSignup(true)}
-                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
-              >
-                Try Free Assessment
-              </button>
-            </div>
-          </div>
+    <div className="bg-slate-100 rounded-2xl overflow-hidden border border-slate-200">
+      {/* Video Area */}
+      <div className="relative bg-white aspect-video">
+        <div className="absolute inset-0 p-8">
+          {renderVisual(demoSteps[currentStep]?.visual)}
         </div>
-      </nav>
-
-      {/* Hero Section */}
-      <section className="pt-24 pb-20 bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-50">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center space-y-8">
-            <div className="space-y-6">
-              <div className="inline-flex items-center space-x-2 bg-purple-100 text-purple-800 px-4 py-2 rounded-full text-sm font-medium">
-                <Sparkles className="w-4 h-4" />
-                <span>Proven Self-Coaching Tools</span>
-              </div>
-              
-              <h1 className="text-5xl lg:text-7xl font-bold text-slate-900 leading-tight">
-                Get Clarity on
-                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">
-                  Where You Stand
-                </span>
-              </h1>
-              
-              <p className="text-xl text-slate-600 leading-relaxed max-w-3xl mx-auto">
-                A collection of proven assessment and planning tools in one place. 
-                See where your energy goes, clarify what matters, and make intentional choices about your time and focus.
-              </p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button 
-                onClick={() => setShowSignupModal(true)}
-                className="flex items-center justify-center space-x-2 px-8 py-4 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl"
-              >
-                <span>Get Full Access - $50</span>
-                <ArrowRight className="w-5 h-5" />
-              </button>
-              <button 
-                onClick={() => setShowVideoDemo(true)}
-                className="flex items-center justify-center space-x-2 px-8 py-4 bg-white text-slate-700 rounded-xl hover:bg-slate-50 transition-colors font-semibold text-lg border border-slate-200"
-              >
-                <Play className="w-5 h-5" />
-                <span>Watch Demo</span>
-              </button>
-            </div>
-
-            {/* Social Proof */}
-            <div className="flex items-center justify-center space-x-8 pt-8">
-              <div className="flex items-center space-x-2">
-                <div className="flex -space-x-2">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="w-8 h-8 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full border-2 border-white" />
-                  ))}
-                </div>
-                <span className="text-sm text-slate-600">1,000+ people using these tools</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
-                ))}
-                <span className="text-sm text-slate-600 ml-2">4.9/5 rating</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Interactive Demo Section */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-slate-900 mb-4">
-              See Coach Pack in Action
-            </h2>
-            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
-              Watch how these tools help you get clarity on your priorities and create actionable plans for change.
-            </p>
-          </div>
-
-          <div className="max-w-5xl mx-auto">
-            <SnappyDemoVideo 
-              autoPlay={false}
-              onComplete={() => {
-                // Optional: Show CTA after demo completes
-              }}
-            />
-          </div>
-
-          <div className="text-center mt-8">
-            <button 
-              onClick={() => setShowWheelSignup(true)}
-              className="px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold"
-            >
-              Try It Yourself - Free Assessment
-            </button>
-            <p className="text-slate-500 text-sm mt-2">No sign up required • Takes 5 minutes</p>
-          </div>
-        </div>
-      </section>
-
-      {/* Free Assessment CTA Section */}
-      <section className="py-16 bg-gradient-to-r from-purple-600 to-indigo-600">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
-            <div className="flex items-center justify-center space-x-3 mb-6">
-              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-                <BarChart3 className="w-8 h-8 text-white" />
-              </div>
-              <div className="text-left">
-                <h2 className="text-3xl font-bold text-white">See Where You Stand</h2>
-                <p className="text-purple-100 text-lg">Free assessment • Takes 5 minutes • Instant results</p>
-              </div>
-            </div>
-            
-            <p className="text-xl text-white/90 mb-8 leading-relaxed">
-              Rate your satisfaction across 8 life areas. Get a clear picture of where you are and where you might want to focus your energy.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <button 
-                onClick={() => setShowSignupModal(true)}
-                className="flex items-center space-x-2 px-8 py-4 bg-white text-purple-600 rounded-xl hover:bg-slate-50 transition-colors font-semibold text-lg shadow-lg"
-              >
-                <Mail className="w-5 h-5" />
-                <span>Get Full Access - $50</span>
-                <ArrowRight className="w-5 h-5" />
-              </button>
-              
-              <div className="flex items-center space-x-2 text-purple-200 text-sm">
-                <Shield className="w-4 h-4" />
-                <span>No spam, just your results</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Video Demo Modal */}
-      {showVideoDemo && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-6xl w-full relative">
+        
+        {/* Play overlay when paused */}
+        {!isPlaying && progress === 0 && (
+          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
             <button
-              onClick={() => setShowVideoDemo(false)}
-              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 bg-white rounded-full shadow-lg z-10"
+              onClick={handlePlayPause}
+              className="w-20 h-20 bg-white bg-opacity-90 rounded-full flex items-center justify-center hover:bg-opacity-100 transition-all"
             >
-              <X className="w-6 h-6" />
+              <Play className="w-8 h-8 text-slate-700 ml-1" />
+            </button>
+          </div>
+        )}
+        
+        {/* Current step info */}
+        <div className="absolute bottom-4 left-4 right-4 bg-black bg-opacity-75 text-white rounded-lg p-3">
+          <div className="font-semibold">{demoSteps[currentStep]?.title}</div>
+          <div className="text-sm opacity-90">{demoSteps[currentStep]?.description}</div>
+        </div>
+      </div>
+
+      {/* Controls */}
+      <div className="p-4 bg-slate-50 border-t border-slate-200">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={handlePlayPause}
+              className="w-10 h-10 bg-purple-600 text-white rounded-full flex items-center justify-center hover:bg-purple-700 transition-colors"
+            >
+              {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
             </button>
             
-            <div className="p-8">
-              <div className="text-center mb-6">
-                <h3 className="text-3xl font-bold text-slate-900 mb-2">See Coach Pack in Action</h3>
-                <p className="text-slate-600">Watch how these tools help you get clarity on your priorities</p>
-              </div>
-              
-              <SnappyDemoVideo 
-                autoPlay={true}
-                onComplete={() => {
-                  // Optional: Auto-close or show CTA after video completes
-                }}
-              />
-              
-              <div className="mt-6 text-center">
-                <button 
-                  onClick={() => {
-                    setShowVideoDemo(false);
-                    setShowWheelSignup(true);
-                  }}
-                  className="px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold"
-                >
-                  Try Free Assessment
-                </button>
-                <p className="text-slate-500 text-sm mt-2">No sign up required • Instant access</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Wheel Signup Modal */}
-      <WheelSignupModal
-        isOpen={showWheelSignup}
-        onClose={() => setShowWheelSignup(false)}
-        onSuccess={handleWheelSignupSuccess}
-      />
-      
-      {/* Signup Modal */}
-      <SignupModal
-        isOpen={showSignupModal}
-        onClose={() => setShowSignupModal(false)}
-        onSuccess={handleSignupSuccess}
-        selectedPlan="complete"
-      />
-
-      {/* How It Works Section */}
-      <section id="how-it-works" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-slate-900 mb-4">
-              Think → Plan → Do
-            </h2>
-            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
-              Three simple steps to get clarity on where you are and where you want to focus your energy.
-            </p>
-          </div>
-
-          {/* Steps in clean horizontal layout */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {howItWorksSteps.map((step, index) => {
-              const Icon = step.icon;
-              return (
-                <div
-                  key={index}
-                  className="relative group"
-                >
-                  {/* Step Card */}
-                  <div className={`${step.bgColor} ${step.borderColor} border rounded-2xl p-8 h-full transition-all duration-300 group-hover:shadow-lg group-hover:-translate-y-1`}>
-                    {/* Step Number */}
-                    <div className={`w-12 h-12 mx-auto mb-4 rounded-full bg-gradient-to-r ${step.color} flex items-center justify-center shadow-lg`}>
-                      <span className="text-xl font-bold text-white">{step.number}</span>
-                    </div>
-
-                    {/* Icon */}
-                    <div className="text-center mb-4">
-                      <Icon className={`w-8 h-8 mx-auto ${step.iconColor}`} />
-                    </div>
-                    
-                    {/* Content */}
-                    <div className="text-center">
-                      <h3 className="text-2xl font-bold text-slate-900 mb-3">{step.title}</h3>
-                      <p className="text-slate-600 leading-relaxed">{step.subtitle}</p>
-                    </div>
-                  </div>
-
-                  {/* Connector Arrow (except for last item) */}
-                  {index < howItWorksSteps.length - 1 && (
-                    <div className="hidden md:block absolute top-1/2 -right-4 transform -translate-y-1/2 z-10">
-                      <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md border border-slate-200">
-                        <ArrowRight className="w-4 h-4 text-slate-400" />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Process Flow Summary */}
-          <div className="mt-16 bg-gradient-to-r from-slate-50 to-purple-50 rounded-2xl p-8 border border-slate-200">
-            <div className="text-center">
-              <h3 className="text-2xl font-bold text-slate-900 mb-4">
-                From Assessment to Action
-              </h3>
-              <p className="text-lg text-slate-600 mb-6 max-w-3xl mx-auto">
-                These aren't magic solutions - they're proven frameworks that help you see patterns, 
-                clarify priorities, and make more intentional choices about where to spend your time and energy.
-              </p>
-              
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <button 
-                  onClick={() => setShowSignupModal(true)}
-                  className="px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold"
-                >
-                  Get Full Access - $50
-                </button>
-                <Link
-                  to="/pricing"
-                  className="px-8 py-3 bg-white text-slate-700 rounded-lg hover:bg-slate-50 transition-colors font-semibold border border-slate-200"
-                >
-                  View Pricing
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section id="features" className="py-20 bg-slate-50">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-slate-900 mb-4">
-              Proven Tools in One Place
-            </h2>
-            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
-              Assessment and planning tools that coaches and consultants have used for decades, 
-              now organized in a simple digital format.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => {
-              const Icon = feature.icon;
-              return (
-                <div
-                  key={index}
-                  className="bg-white rounded-2xl p-6 border border-slate-200 hover:border-purple-300 hover:shadow-lg transition-all duration-300"
-                >
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 flex items-center justify-center mb-4">
-                    <Icon className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-slate-900 mb-2">{feature.title}</h3>
-                  <p className="text-slate-600 text-sm">{feature.description}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-purple-600 to-indigo-600">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <h2 className="text-4xl font-bold text-white mb-6">
-            Ready to Get Some Clarity?
-          </h2>
-          <p className="text-xl text-purple-100 mb-8">
-            Start with a simple assessment to see where you stand across different life areas
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button 
-              onClick={() => setShowSignupModal(true)}
-              className="px-8 py-4 bg-white text-purple-600 rounded-xl hover:bg-slate-50 transition-colors font-semibold text-lg shadow-lg"
+            <button
+              onClick={handleRestart}
+              className="w-10 h-10 bg-slate-300 text-slate-600 rounded-full flex items-center justify-center hover:bg-slate-400 transition-colors"
             >
-              Get Full Access - $50
+              <RotateCcw className="w-5 h-5" />
             </button>
-            <Link
-              to="/pricing"
-              className="px-8 py-4 bg-purple-700 text-white rounded-xl hover:bg-purple-800 transition-colors font-semibold text-lg border border-purple-500"
-            >
-              View All Tools
-            </Link>
-          </div>
-
-          <div className="mt-6 text-purple-200 text-sm">
-            Free assessment • No sign up required
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-slate-900 text-white py-12">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center space-x-3 mb-4 md:mb-0">
-              <div className="relative">
-                <Target className="w-8 h-8 text-purple-400" />
-                <Sparkles className="w-4 h-4 text-orange-400 absolute -top-1 -right-1" />
-              </div>
-              <div>
-                <span className="text-xl font-bold">Coach Pack</span>
-                <div className="text-xs text-slate-400">Self-Coaching Toolkit</div>
-              </div>
-            </div>
             
-            <div className="text-slate-400 text-sm">
-              © 2025 Coach Pack. All rights reserved.
-            </div>
+            <button
+              onClick={() => setIsMuted(!isMuted)}
+              className="w-10 h-10 bg-slate-300 text-slate-600 rounded-full flex items-center justify-center hover:bg-slate-400 transition-colors"
+            >
+              {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+            </button>
           </div>
           
-          {/* Built with Bolt badge */}
-          <div className="mt-8 flex justify-center">
-            <a 
-              href="https://stackblitz.com/bolt" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="flex items-center space-x-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors text-sm"
-            >
-              <Zap className="w-4 h-4 text-yellow-400" />
-              <span className="text-white font-medium">Built with Bolt</span>
-            </a>
+          <div className="text-sm text-slate-600">
+            Step {currentStep + 1} of {demoSteps.length}
           </div>
         </div>
-      </footer>
+        
+        {/* Progress Bar */}
+        <div className="w-full bg-slate-200 rounded-full h-2">
+          <div 
+            className="bg-purple-600 h-2 rounded-full transition-all duration-75"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      </div>
     </div>
   );
 };
 
-export default LandingPage;
+export default SnappyDemoVideo;
