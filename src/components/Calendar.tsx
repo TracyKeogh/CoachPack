@@ -41,7 +41,6 @@ const { data: goalsData } = useGoalSettingData();
 
 const [currentDate, setCurrentDate] = useState(new Date());
 const [showDayView, setShowDayView] = useState(false);
-  const [viewMode, setViewMode] = useState<'week' | '90day'>('week');
   const [viewMode, setViewMode] = useState<'week' | '90day' | 'year'>('week');
 const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 const [showNotes, setShowNotes] = useState(false);
