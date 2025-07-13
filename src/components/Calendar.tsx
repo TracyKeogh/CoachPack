@@ -570,8 +570,7 @@ className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate
 </button>
 <button
 onClick={() => setShowNotes(!showNotes)}
-            className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
-            className="flex items-center space-x-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
 >
 <Filter className="w-4 h-4" />
 <span>Notes</span>
@@ -1105,3 +1104,5 @@ Refresh from Goals
 </div>
 );
 };
+
+export default Calendar;
