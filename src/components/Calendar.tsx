@@ -40,7 +40,7 @@ const Calendar: React.FC = () => {
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showDayView, setShowDayView] = useState(false);
-  const [viewMode, setViewMode] = useState<'week' | '90day'>('week');
+  const [viewMode, setViewMode] = useState<'week' | '90day' | 'year'>('week');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showNotes, setShowNotes] = useState(false);
   const [draggedEvent, setDraggedEvent] = useState<Event | null>(null);
@@ -562,25 +562,26 @@ const Calendar: React.FC = () => {
         </div>
         <div className="flex items-center space-x-3">
           <button
-            onClick={() => setViewMode(viewMode === 'week' ? '90day' : 'week')}
+            onClick={() => {
+              if (viewMode === 'week') setViewMode('90day');
+              else if (viewMode === '90day') setViewMode('year');
+              else setViewMode('week');
+            }}
             className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
           >
             <Flag className="w-4 h-4" />
-            <span>{viewMode === 'week' ? '90-Day View' : 'Week View'}</span>
-          </button>
-          <button
-            onClick={() => setShowNotes(!showNotes)}
-            className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
-          >
-            <Filter className="w-4 h-4" />
-            <span>Notes</span>
+            <span>
+              {viewMode === 'week' ? '90-Day View' : 
+               viewMode === '90day' ? 'Year View' : 
+               'Week View'}
+            </span>
           </button>
           <button
             onClick={goToToday}
             className="flex items-center space-x-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
           >
             <CalendarIcon className="w-4 h-4" />
-            <span>Today</span>
+            <span>Weekly View</span>
           </button>
         </div>
       </div>
@@ -1024,15 +1025,174 @@ const Calendar: React.FC = () => {
         </div>
       )}
 
-      {/* Action Pool */}
-      {/* Moved above calendar - no longer here */}
-
-      {/* Notes Panel */}
-      {showNotes && (
+      {/* Year View - "The Big Ass Calendar" */}
+      {viewMode === 'year' && (
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-          <NotesPanel feature="calendar" />
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => setViewMode('90day')}
+                className="flex items-center space-x-2 px-3 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back to 90-Day</span>
+              </button>
+              <h2 className="text-2xl font-bold text-blue-600">
+                THE BIG ASS CALENDAR {currentDate.getFullYear()}
+              </h2>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => {
+                  const newDate = new Date(currentDate);
+                  newDate.setFullYear(currentDate.getFullYear() - 1);
+                  setCurrentDate(newDate);
+                }}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => {
+                  const newDate = new Date(currentDate);
+                  newDate.setFullYear(currentDate.getFullYear() + 1);
+                  setCurrentDate(newDate);
+                }}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Inspirational Quote */}
+          <div className="text-center mb-8 p-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200">
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">Think Big. Plan Bigger.</h3>
+            <p className="text-slate-600">Your entire year laid out. Every month, every milestone, every opportunity to make it count.</p>
+          </div>
+
+          {/* Big Year Calendar Grid */}
+          <div className="grid grid-cols-3 md:grid-cols-4 gap-6">
+            {Array.from({ length: 12 }, (_, monthIndex) => {
+              const monthDate = new Date(currentDate.getFullYear(), monthIndex, 1);
+              const monthName = monthDate.toLocaleDateString('en-US', { month: 'long' });
+              const daysInMonth = new Date(currentDate.getFullYear(), monthIndex + 1, 0).getDate();
+              const firstDayOfWeek = monthDate.getDay();
+              
+              return (
+                <div key={monthIndex} className="bg-blue-50 rounded-xl p-4 border border-blue-200 hover:shadow-lg transition-all">
+                  <h3 className="font-bold text-blue-800 text-center mb-3 text-lg">
+                    {monthName.toUpperCase()}
+                  </h3>
+                  
+                  {/* Mini calendar grid */}
+                  <div className="grid grid-cols-7 gap-1">
+                    {/* Day headers */}
+                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
+                      <div key={day} className="text-center text-xs font-medium text-blue-600 p-1">
+                        {day}
+                      </div>
+                    ))}
+                    
+                    {/* Empty cells for days before the first of the month */}
+                    {Array.from({ length: firstDayOfWeek }, (_, i) => (
+                      <div key={`empty-${i}`} className="h-6"></div>
+                    ))}
+                    
+                    {/* Days of the month */}
+                    {Array.from({ length: daysInMonth }, (_, dayIndex) => {
+                      const day = dayIndex + 1;
+                      const date = new Date(currentDate.getFullYear(), monthIndex, day);
+                      const isToday = date.toDateString() === new Date().toDateString();
+                      
+                      // Check for milestones on this day
+                      const hasMilestone = milestones.some(milestone => 
+                        milestone.date.getFullYear() === date.getFullYear() &&
+                        milestone.date.getMonth() === date.getMonth() &&
+                        milestone.date.getDate() === date.getDate()
+                      );
+                      
+                      return (
+                        <div 
+                          key={day}
+                          className={`h-6 text-center text-xs font-medium rounded cursor-pointer transition-all ${
+                            isToday 
+                              ? 'bg-purple-500 text-white font-bold' 
+                              : hasMilestone
+                              ? 'bg-orange-400 text-white'
+                              : 'text-blue-700 hover:bg-blue-200'
+                          }`}
+                          onClick={() => {
+                            setCurrentDate(date);
+                            setViewMode('week');
+                          }}
+                          title={hasMilestone ? 'Has milestones' : `Go to ${monthName} ${day}`}
+                        >
+                          {day}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  {/* Milestone count for this month */}
+                  {(() => {
+                    const monthMilestones = milestones.filter(milestone => 
+                      milestone.date.getFullYear() === currentDate.getFullYear() &&
+                      milestone.date.getMonth() === monthIndex
+                    );
+                    
+                    return monthMilestones.length > 0 && (
+                      <div className="mt-2 text-center">
+                        <span className="text-xs px-2 py-1 bg-orange-100 text-orange-600 rounded-full">
+                          {monthMilestones.length} milestone{monthMilestones.length > 1 ? 's' : ''}
+                        </span>
+                      </div>
+                    );
+                  })()}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Big Picture Stats */}
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="text-center p-6 bg-gradient-to-br from-purple-100 to-purple-200 rounded-xl">
+              <div className="text-3xl font-bold text-purple-700">{milestones.length}</div>
+              <div className="text-sm text-purple-600 font-medium">Total Milestones</div>
+            </div>
+            
+            <div className="text-center p-6 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl">
+              <div className="text-3xl font-bold text-blue-700">
+                {Math.round((milestones.filter(m => m.completed).length / Math.max(milestones.length, 1)) * 100)}%
+              </div>
+              <div className="text-sm text-blue-600 font-medium">Completed</div>
+            </div>
+            
+            <div className="text-center p-6 bg-gradient-to-br from-green-100 to-green-200 rounded-xl">
+              <div className="text-3xl font-bold text-green-700">
+                {Math.ceil((new Date(currentDate.getFullYear(), 11, 31).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))}
+              </div>
+              <div className="text-sm text-green-600 font-medium">Days Left</div>
+            </div>
+          </div>
+
+          {/* Call to Action */}
+          <div className="mt-8 text-center p-8 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl text-white">
+            <h3 className="text-2xl font-bold mb-2">This Is Your Year</h3>
+            <p className="mb-4 opacity-90">Every square represents a day. Every milestone represents progress. Make them count.</p>
+            <button
+              onClick={() => setViewMode('90day')}
+              className="px-6 py-3 bg-white text-purple-600 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+            >
+              Start Planning Your Next 90 Days
+            </button>
+          </div>
         </div>
       )}
+
+      {/* Notes Panel - Removed */}
+      {/* Notes functionality removed as requested */}
 
       {/* Day View Modal */}
       {showDayView && <DayViewModal />}
