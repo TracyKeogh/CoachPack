@@ -1,5 +1,5 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { Check, Crown, Target, Sparkles, ArrowRight } from 'lucide-react';
 import SignupModal from './SignupModal';
 
@@ -170,7 +170,7 @@ const PricingPage: React.FC = () => {
               },
               {
                 question: 'Is there a free trial?',
-                answer: 'We offer a free Wheel of Life assessment that gives you a taste of our approach. You can try it without any commitment.'
+                answer: 'We offer a <Link to="/free-wheel" className="text-purple-600 hover:text-purple-700 font-medium">free Wheel of Life assessment</Link> that gives you a taste of our approach. You can try it without any commitment.'
               },
               {
                 question: 'How is this different from other goal-setting apps?',
@@ -191,7 +191,7 @@ const PricingPage: React.FC = () => {
             ].map((faq, index) => (
               <div key={index} className="bg-white rounded-lg p-6 border border-slate-200">
                 <h4 className="font-semibold text-slate-900 mb-2">{faq.question}</h4>
-                <p className="text-slate-600">{faq.answer}</p>
+                <p className="text-slate-600" dangerouslySetInnerHTML={{ __html: faq.answer }}></p>
               </div>
             ))}
           </div>
@@ -204,7 +204,7 @@ const PricingPage: React.FC = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={() => setShowSignupModal(true)}
+              onClick={() => navigate('/signup?productId=complete-toolkit')}
               className="px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold"
             >
               Get Started Now
