@@ -479,7 +479,7 @@ onDrop={(e) => handleDayViewDrop(e, timeSlot)}
 <div 
 className={`flex-1 min-h-16 border border-slate-200 rounded-lg p-2 transition-all ${
                        hoveredTimeSlot === `${selectedDate.toISOString()}-${timeSlot}` 
-                         ? '!bg-blue-100 !ring-2 !ring-blue-500' 
+                         ? 'bg-blue-100 ring-2 ring-blue-500' 
                          : 'hover:bg-blue-50'
                      }`}
 >
@@ -501,12 +501,12 @@ onDragStart={(e) => handleEventDragStart(e, event)}
 <div className="flex items-center space-x-1">
 <button 
 onClick={() => removeEvent(event.id)}
-className="p-1 text-slate-400 !hover:text-red-500 !hover:bg-red-50 rounded transition-colors"
+className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
 >
 <Trash2 className="w-3 h-3" />
 </button>
 <button 
-className="p-1 text-slate-400 !hover:text-blue-500 !hover:bg-blue-50 rounded transition-colors"
+className="p-1 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded transition-colors"
 >
 <Edit3 className="w-3 h-3" />
 </button>
@@ -570,8 +570,7 @@ className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate
 </button>
 <button
 onClick={() => setShowNotes(!showNotes)}
-            className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
-            className="flex items-center space-x-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+className="flex items-center space-x-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
 >
 <Filter className="w-4 h-4" />
 <span>Notes</span>
@@ -691,7 +690,11 @@ openDayView(day);
 
 {/* Morning Slot - FIXED: Added cursor-pointer and hover styles */}
 <div 
-className="p-3 rounded-lg border border-slate-200 hover:shadow-sm transition-all cursor-pointer !hover:bg-blue-200 !hover:ring-2 !hover:ring-blue-500"
+className={`p-3 rounded-lg border border-slate-200 hover:shadow-sm transition-all cursor-pointer !hover:bg-blue-200 !hover:ring-2 !hover:ring-blue-500 ${
+                     hoveredTimeSlot === `${day.toISOString()}-9:00`
+                       ? 'bg-blue-100 ring-2 ring-blue-500' 
+                       : 'hover:bg-blue-50'
+                   }`}
 onClick={() => {
 console.log(`Clicked on morning slot: ${day.toDateString()} - Opening day view`);
 openDayView(day);
@@ -740,7 +743,11 @@ Drop actions here
 
 {/* Afternoon Slot - FIXED: Added cursor-pointer and hover styles */}
 <div 
-className="p-3 rounded-lg border border-slate-200 hover:shadow-sm transition-all cursor-pointer !hover:bg-blue-200 !hover:ring-2 !hover:ring-blue-500"
+className={`p-3 rounded-lg border border-slate-200 hover:shadow-sm transition-all cursor-pointer !hover:bg-blue-200 !hover:ring-2 !hover:ring-blue-500 ${
+                     hoveredTimeSlot === `${day.toISOString()}-14:00` 
+                       ? 'bg-blue-100 ring-2 ring-blue-500' 
+                       : 'hover:bg-blue-50'
+                   }`}
 onClick={() => {
 console.log(`Clicked on afternoon slot: ${day.toDateString()} - Opening day view`);
 openDayView(day);
@@ -789,7 +796,11 @@ Drop actions here
 
 {/* Evening Slot - FIXED: Added cursor-pointer and hover styles */}
 <div 
-className="p-3 rounded-lg border border-slate-200 hover:shadow-sm transition-all cursor-pointer !hover:bg-blue-200 !hover:ring-2 !hover:ring-blue-500"
+className={`p-3 rounded-lg border border-slate-200 hover:shadow-sm transition-all cursor-pointer !hover:bg-blue-200 !hover:ring-2 !hover:ring-blue-500 ${
+                     hoveredTimeSlot === `${day.toISOString()}-19:00` 
+                       ? 'bg-blue-100 ring-2 ring-blue-500' 
+                       : 'hover:bg-blue-50'
+                   }`}
 onClick={() => {
 console.log(`Clicked on evening slot: ${day.toDateString()} - Opening day view`);
 openDayView(day);
@@ -952,8 +963,6 @@ return (
 {/* Actual date cells */}
 {dates.map((date, i) => {
 const isToday = date.toDateString() === new Date().toDateString();
-                      const dateEvents = getEventsForDate(date);
-                      const dateMilestones = getMilestonesForDate(date);
                       const dateEvents = getEventsForDay(date);
                       const dateMilestones = milestones.filter(
                         m => m.date.toDateString() === date.toDateString()
@@ -966,7 +975,7 @@ className={`min-h-24 p-2 rounded-lg border ${
                            isToday 
                              ? 'bg-purple-50 border-purple-200' 
                              : 'bg-white border-slate-200'
-                         } hover:shadow-md transition-all cursor-pointer !hover:bg-blue-200 !hover:ring-2 !hover:ring-blue-500`}
+                         } hover:shadow-md transition-all cursor-pointer hover:bg-blue-200 hover:ring-2 hover:ring-blue-500`}
 onClick={() => {
 console.log(`Clicked on date: ${date.toDateString()}`);
 setSelectedDate(date);
@@ -1107,3 +1116,5 @@ Refresh from Goals
 </div>
 );
 };
+
+export default Calendar;
