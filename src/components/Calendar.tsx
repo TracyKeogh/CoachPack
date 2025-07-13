@@ -274,14 +274,7 @@ endDate.setDate(today.getDate() + 90);
       
       return dates;
     };
-    const dates = [];
-    const currentDate = new Date(startDate);
-
     const dates = generateDates();
-    while (currentDate <= endDate) {
-      dates.push(new Date(currentDate));
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
 
 // Group dates by month
 const monthGroups: Record<string, Date[]> = {};
