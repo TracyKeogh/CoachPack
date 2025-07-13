@@ -585,6 +585,77 @@ const Calendar: React.FC = () => {
         </div>
       </div>
 
+      {/* Action Pool - Above Calendar */}
+      {showActionPool && (
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-slate-900">Action Pool</h3>
+            <button
+              onClick={refreshActionPool}
+              className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm"
+            >
+              Refresh from Goals
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {data.actionPool.map((action) => (
+              <div
+                key={action.id}
+                className="p-3 rounded-lg border border-slate-200 hover:shadow-md transition-all cursor-move bg-white"
+                draggable
+                onDragStart={(e) => handleDragStart(e, action)}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start space-x-2">
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center text-sm">
+                      {getCategoryIcon(action.category)}
+                    </div>
+                    <div>
+                      <div className="font-medium text-slate-900">{action.title}</div>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <span className={`px-2 py-0.5 rounded-full text-xs ${getCategoryColor(action.category)}`}>
+                          {action.category}
+                        </span>
+                        <span className="text-xs text-slate-500">
+                          {action.duration} min
+                        </span>
+                        <span className="text-xs text-slate-500">
+                          {action.frequency === 'daily' ? 'Daily' : 
+                           action.frequency === 'weekly' ? 'Weekly' : 
+                           '3x Week'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => removeActionFromPool(action.id)}
+                    className="text-slate-400 hover:text-red-500 p-1 hover:bg-red-50 rounded transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {data.actionPool.length === 0 && (
+              <div className="col-span-3 text-center py-8 text-slate-500">
+                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Plus className="w-6 h-6 text-slate-400" />
+                </div>
+                <p className="mb-3">No actions in your pool</p>
+                <button 
+                  onClick={refreshActionPool}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+                >
+                  Refresh from Goals
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Calendar Navigation */}
       {viewMode === 'week' && (
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
@@ -647,22 +718,8 @@ const Calendar: React.FC = () => {
           })}
         </div>
 
-        {/* Calendar Grid */}
-        <div className="grid grid-cols-8 gap-4">
-          {/* Time Column */}
-          <div className="space-y-3">
-            <div className="h-12 text-center"></div>
-            <div className="p-3 rounded-lg border border-slate-200 text-center font-medium text-slate-900">
-              Morning
-            </div>
-            <div className="p-3 rounded-lg border border-slate-200 text-center font-medium text-slate-900">
-              Afternoon
-            </div>
-            <div className="p-3 rounded-lg border border-slate-200 text-center font-medium text-slate-900">
-              Evening
-            </div>
-          </div>
-
+        {/* Simplified Calendar Grid - 7 Columns */}
+        <div className="grid grid-cols-7 gap-4">
           {/* Day Columns */}
           {daysOfWeek.map((day, dayIndex) => {
             const isToday = day.toDateString() === new Date().toDateString();
@@ -672,164 +729,52 @@ const Calendar: React.FC = () => {
               <div key={dayIndex} className="space-y-3">
                 {/* Day Header */}
                 <div 
-                  className={`h-12 text-center cursor-pointer hover:bg-blue-200 hover:ring-2 hover:ring-blue-500 rounded-lg ${
-                    isToday ? 'bg-purple-100' : ''
+                  className={`text-center p-3 rounded-lg cursor-pointer hover:bg-blue-200 hover:ring-2 hover:ring-blue-500 transition-all ${
+                    isToday ? 'bg-purple-100' : 'bg-slate-50'
                   }`}
                   onClick={() => {
-                    console.log(`Clicked on day header: ${day.toDateString()} - Opening day view`);
+                    console.log(`Clicked on day: ${day.toDateString()} - Opening day view`);
                     openDayView(day);
                   }}
                 >
                   <div className="font-medium text-slate-900">
                     {day.toLocaleString('default', { weekday: 'short' })}
                   </div>
-                  <div className={`text-sm ${isToday ? 'text-purple-600 font-bold' : 'text-slate-500'}`}>
+                  <div className={`text-lg font-bold ${isToday ? 'text-purple-600' : 'text-slate-700'}`}>
                     {day.getDate()}
                   </div>
                 </div>
 
-                {/* Morning Slot */}
+                {/* Day Content - Drop Zone for Actions */}
                 <div 
-                  className="p-3 rounded-lg border border-slate-200 hover:shadow-sm transition-all cursor-pointer hover:bg-blue-200 hover:ring-2 hover:ring-blue-500"
-                  onClick={() => {
-                    console.log(`Clicked on morning slot: ${day.toDateString()} - Opening day view`);
-                    openDayView(day);
-                  }}
+                  className="min-h-48 p-3 rounded-lg border-2 border-dashed border-slate-200 hover:border-blue-300 transition-all"
                   onDragOver={(e) => handleDragOver(e, '9:00', day)}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, '9:00', day)}
                 >
-                  {dayEvents.filter(event => {
-                    const eventHour = new Date(event.start).getHours();
-                    return eventHour >= 6 && eventHour < 12;
-                  }).length > 0 ? (
-                    <div className="space-y-1">
-                      {dayEvents
-                        .filter(event => {
-                          const eventHour = new Date(event.start).getHours();
-                          return eventHour >= 6 && eventHour < 12;
-                        })
-                        .slice(0, 2)
-                        .map(event => (
-                          <div 
-                            key={event.id}
-                            className={`px-2 py-1 rounded text-xs ${getCategoryColor(event.category)}`}
-                          >
-                            {event.title}
+                  {dayEvents.length > 0 ? (
+                    <div className="space-y-2">
+                      {dayEvents.map(event => (
+                        <div 
+                          key={event.id}
+                          className={`p-2 rounded-lg ${getCategoryColor(event.category)} cursor-pointer hover:opacity-80 transition-opacity`}
+                          onClick={() => {
+                            console.log(`Clicked on event: ${event.title}`);
+                            openDayView(day);
+                          }}
+                        >
+                          <div className="font-medium text-xs">{event.title}</div>
+                          <div className="text-xs opacity-75 flex items-center space-x-1 mt-1">
+                            <Clock className="w-3 h-3" />
+                            <span>
+                              {formatTime(new Date(event.start))}
+                            </span>
                           </div>
-                        ))}
-                      {dayEvents.filter(event => {
-                        const eventHour = new Date(event.start).getHours();
-                        return eventHour >= 6 && eventHour < 12;
-                      }).length > 2 && (
-                        <div className="text-xs text-slate-500 text-center">
-                          +{dayEvents.filter(event => {
-                            const eventHour = new Date(event.start).getHours();
-                            return eventHour >= 6 && eventHour < 12;
-                          }).length - 2} more
                         </div>
-                      )}
+                      ))}
                     </div>
                   ) : (
-                    <div className="text-center text-slate-400 text-sm">
-                      Drop actions here
-                    </div>
-                  )}
-                </div>
-
-                {/* Afternoon Slot */}
-                <div 
-                  className="p-3 rounded-lg border border-slate-200 hover:shadow-sm transition-all cursor-pointer hover:bg-blue-200 hover:ring-2 hover:ring-blue-500"
-                  onClick={() => {
-                    console.log(`Clicked on afternoon slot: ${day.toDateString()} - Opening day view`);
-                    openDayView(day);
-                  }}
-                  onDragOver={(e) => handleDragOver(e, '14:00', day)}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, '14:00', day)}
-                >
-                  {dayEvents.filter(event => {
-                    const eventHour = new Date(event.start).getHours();
-                    return eventHour >= 12 && eventHour < 18;
-                  }).length > 0 ? (
-                    <div className="space-y-1">
-                      {dayEvents
-                        .filter(event => {
-                          const eventHour = new Date(event.start).getHours();
-                          return eventHour >= 12 && eventHour < 18;
-                        })
-                        .slice(0, 2)
-                        .map(event => (
-                          <div 
-                            key={event.id}
-                            className={`px-2 py-1 rounded text-xs ${getCategoryColor(event.category)}`}
-                          >
-                            {event.title}
-                          </div>
-                        ))}
-                      {dayEvents.filter(event => {
-                        const eventHour = new Date(event.start).getHours();
-                        return eventHour >= 12 && eventHour < 18;
-                      }).length > 2 && (
-                        <div className="text-xs text-slate-500 text-center">
-                          +{dayEvents.filter(event => {
-                            const eventHour = new Date(event.start).getHours();
-                            return eventHour >= 12 && eventHour < 18;
-                          }).length - 2} more
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-center text-slate-400 text-sm">
-                      Drop actions here
-                    </div>
-                  )}
-                </div>
-
-                {/* Evening Slot */}
-                <div 
-                  className="p-3 rounded-lg border border-slate-200 hover:shadow-sm transition-all cursor-pointer hover:bg-blue-200 hover:ring-2 hover:ring-blue-500"
-                  onClick={() => {
-                    console.log(`Clicked on evening slot: ${day.toDateString()} - Opening day view`);
-                    openDayView(day);
-                  }}
-                  onDragOver={(e) => handleDragOver(e, '19:00', day)}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, '19:00', day)}
-                >
-                  {dayEvents.filter(event => {
-                    const eventHour = new Date(event.start).getHours();
-                    return eventHour >= 18;
-                  }).length > 0 ? (
-                    <div className="space-y-1">
-                      {dayEvents
-                        .filter(event => {
-                          const eventHour = new Date(event.start).getHours();
-                          return eventHour >= 18;
-                        })
-                        .slice(0, 2)
-                        .map(event => (
-                          <div 
-                            key={event.id}
-                            className={`px-2 py-1 rounded text-xs ${getCategoryColor(event.category)}`}
-                          >
-                            {event.title}
-                          </div>
-                        ))}
-                      {dayEvents.filter(event => {
-                        const eventHour = new Date(event.start).getHours();
-                        return eventHour >= 18;
-                      }).length > 2 && (
-                        <div className="text-xs text-slate-500 text-center">
-                          +{dayEvents.filter(event => {
-                            const eventHour = new Date(event.start).getHours();
-                            return eventHour >= 18;
-                          }).length - 2} more
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-center text-slate-400 text-sm">
+                    <div className="h-full flex items-center justify-center text-slate-400 text-sm">
                       Drop actions here
                     </div>
                   )}
