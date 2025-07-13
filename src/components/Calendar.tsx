@@ -932,103 +932,147 @@ const Calendar: React.FC = () => {
                 </div>
 
                 <div className="p-4">
-                  {/* Day headers */}
-                  <div className="grid grid-cols-7 gap-2 mb-2">
+                  {/* Calendar grid with week numbers */}
+                  <div className="grid grid-cols-8 gap-2">
+                    {/* Week number column header */}
+                    <div className="text-center text-xs font-medium text-slate-500 py-2">
+                      Week
+                    </div>
+                    
+                    {/* Day headers */}
                     {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
                       <div key={day} className="text-center font-semibold text-slate-600 py-2">
                         {day}
                       </div>
                     ))}
-                  </div>
 
-                  {/* Calendar grid */}
-                  <div className="grid grid-cols-7 gap-2">
-                    {/* Empty cells for days before the first of the month */}
-                    {Array.from({ length: dates[0].getDay() }, (_, i) => (
-                      <div key={`empty-start-${i}`} className="min-h-24 p-2 bg-slate-50 rounded-lg"></div>
-                    ))}
-
-                    {/* Actual date cells */}
-                    {dates.map((date, i) => {
-                      const isToday = date.toDateString() === new Date().toDateString();
-                      const dateEvents = getEventsForDay(date);
-                      const dateMilestones = milestones.filter(
-                        m => m.date.toDateString() === date.toDateString()
-                      );
+                    {/* Calendar rows */}
+                    {(() => {
+                      // Group dates into weeks
+                      const weeks = [];
+                      let currentWeek = [];
                       
-                      // Calculate week number for this date
-                      const startOfYear = new Date(date.getFullYear(), 0, 1);
-                      const weekNumber = Math.ceil((((date.getTime() - startOfYear.getTime()) / 86400000) + startOfYear.getDay() + 1) / 7);
+                      // Add empty cells for days before the first of the month
+                      const emptyDays = Array.from({ length: dates[0].getDay() }, () => null);
+                      currentWeek = [...emptyDays];
+                      
+                      // Add all dates
+                      dates.forEach(date => {
+                        currentWeek.push(date);
+                        if (currentWeek.length === 7) {
+                          weeks.push([...currentWeek]);
+                          currentWeek = [];
+                        }
+                      });
+                      
+                      // Add final week if it has any days
+                      if (currentWeek.length > 0) {
+                        while (currentWeek.length < 7) {
+                          currentWeek.push(null);
+                        }
+                        weeks.push(currentWeek);
+                      }
+                      
+                      return weeks.map((week, weekIndex) => {
+                        // Calculate week number based on first actual date in the week
+                        const firstDateInWeek = week.find(date => date !== null);
+                        const weekNumber = firstDateInWeek ? 
+                          Math.ceil((((firstDateInWeek.getTime() - new Date(firstDateInWeek.getFullYear(), 0, 1).getTime()) / 86400000) + new Date(firstDateInWeek.getFullYear(), 0, 1).getDay() + 1) / 7) 
+                          : null;
+                        
+                        return [
+                          // Week number cell
+                          <div 
+                            key={`week-${weekIndex}`}
+                            className="flex items-center justify-center min-h-24"
+                          >
+                            {weekNumber && (
+                              <button
+                                onClick={() => {
+                                  console.log(`Switching to week ${weekNumber} view`);
+                                  setCurrentDate(firstDateInWeek);
+                                  setViewMode('week');
+                                }}
+                                className="px-2 py-1 text-sm font-medium text-slate-600 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors"
+                                title={`Go to Week ${weekNumber}`}
+                              >
+                                {weekNumber}
+                              </button>
+                            )}
+                          </div>,
+                          
+                          // Day cells for this week
+                          ...week.map((date, dayIndex) => {
+                            if (!date) {
+                              return (
+                                <div key={`empty-${weekIndex}-${dayIndex}`} className="min-h-24 p-2 bg-slate-50 rounded-lg"></div>
+                              );
+                            }
+                            
+                            const isToday = date.toDateString() === new Date().toDateString();
+                            const dateEvents = getEventsForDay(date);
+                            const dateMilestones = milestones.filter(
+                              m => m.date.toDateString() === date.toDateString()
+                            );
 
-                      return (
-                        <div 
-                          key={i}
-                          className={`min-h-24 p-2 rounded-lg border ${
-                            isToday 
-                              ? 'bg-purple-50 border-purple-200' 
-                              : 'bg-white border-slate-200'
-                          } hover:shadow-md transition-all`}
-                        >
-                          <div className="flex justify-between items-start">
-                            <div className={`text-sm font-medium ${
-                              isToday ? 'text-purple-600' : 'text-slate-700'
-                            }`}>
-                              {date.getDate()}
-                            </div>
-                            <button
-                              onClick={() => {
-                                console.log(`Switching to week ${weekNumber} view for ${date.toDateString()}`);
-                                setCurrentDate(date);
-                                setViewMode('week');
-                              }}
-                              className="text-xs text-slate-400 hover:text-purple-600 hover:bg-purple-50 px-1 py-0.5 rounded transition-colors"
-                              title={`Go to Week ${weekNumber}`}
-                            >
-                              W{weekNumber}
-                            </button>
-                          </div>
+                            return (
+                              <div 
+                                key={`date-${weekIndex}-${dayIndex}`}
+                                className={`min-h-24 p-2 rounded-lg border ${
+                                  isToday 
+                                    ? 'bg-purple-50 border-purple-200' 
+                                    : 'bg-white border-slate-200'
+                                } hover:shadow-md transition-all`}
+                              >
+                                <div className={`text-sm font-medium mb-1 ${
+                                  isToday ? 'text-purple-600' : 'text-slate-700'
+                                }`}>
+                                  {date.getDate()}
+                                </div>
 
-                          {/* Milestones */}
-                          {dateMilestones.length > 0 && (
-                            <div className="mt-1 space-y-1">
-                              {dateMilestones.map((milestone, idx) => (
-                                <div 
-                                  key={idx}
-                                  className={`px-2 py-1 rounded text-xs ${getCategoryColor(milestone.category)} flex items-center space-x-1 cursor-pointer hover:opacity-80 transition-opacity`}
-                                  onClick={() => {
-                                    // Show milestone details in a simple alert for now
-                                    alert(`Milestone: ${milestone.title}\nCategory: ${milestone.category}\nDue: ${milestone.date.toLocaleDateString()}\nCompleted: ${milestone.completed ? 'Yes' : 'No'}`);
-                                  }}
-                                  title="Click to view milestone details"
-                                >
-                                  <Flag className="w-3 h-3 flex-shrink-0" />
-                                  <span className="truncate">{milestone.title}</span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
+                                {/* Milestones */}
+                                {dateMilestones.length > 0 && (
+                                  <div className="space-y-1">
+                                    {dateMilestones.map((milestone, idx) => (
+                                      <div 
+                                        key={idx}
+                                        className={`px-2 py-1 rounded text-xs ${getCategoryColor(milestone.category)} flex items-center space-x-1 cursor-pointer hover:opacity-80 transition-opacity`}
+                                        onClick={() => {
+                                          alert(`Milestone: ${milestone.title}\nCategory: ${milestone.category}\nDue: ${milestone.date.toLocaleDateString()}\nCompleted: ${milestone.completed ? 'Yes' : 'No'}`);
+                                        }}
+                                        title="Click to view milestone details"
+                                      >
+                                        <Flag className="w-3 h-3 flex-shrink-0" />
+                                        <span className="truncate">{milestone.title}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
 
-                          {/* Events */}
-                          {dateEvents.length > 0 && (
-                            <div className="mt-1 space-y-1">
-                              {dateEvents.slice(0, 2).map(event => (
-                                <div 
-                                  key={event.id}
-                                  className={`px-2 py-1 rounded text-xs ${getCategoryColor(event.category)}`}
-                                >
-                                  {event.title}
-                                </div>
-                              ))}
-                              {dateEvents.length > 2 && (
-                                <div className="text-xs text-slate-500 text-center">
-                                  +{dateEvents.length - 2} more
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                                {/* Events */}
+                                {dateEvents.length > 0 && (
+                                  <div className="mt-1 space-y-1">
+                                    {dateEvents.slice(0, 2).map(event => (
+                                      <div 
+                                        key={event.id}
+                                        className={`px-2 py-1 rounded text-xs ${getCategoryColor(event.category)}`}
+                                      >
+                                        {event.title}
+                                      </div>
+                                    ))}
+                                    {dateEvents.length > 2 && (
+                                      <div className="text-xs text-slate-500 text-center">
+                                        +{dateEvents.length - 2} more
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })
+                        ];
+                      }).flat();
+                    })()}
                   </div>
                 </div>
               </div>
