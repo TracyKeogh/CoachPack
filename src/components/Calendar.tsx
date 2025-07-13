@@ -18,6 +18,7 @@ CalendarDays
 } from 'lucide-react';
 import { useCalendarData, Event, ActionPoolItem } from '../hooks/useCalendarData';
 import { useGoalSettingData } from '../hooks/useGoalSettingData';
+import { useNotes } from '../hooks/useNotes';
 import NotesPanel from './NotesPanel';
 
 const Calendar: React.FC = () => {
