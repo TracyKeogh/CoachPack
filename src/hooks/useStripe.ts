@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import { STRIPE_PRODUCTS } from '../stripe-config';
 
 // Validate environment variables
@@ -7,20 +6,24 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error("Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.");
+  console.error('Missing Supabase environment variables:', {
+    VITE_SUPABASE_URL: !!supabaseUrl,
+    VITE_SUPABASE_ANON_KEY: !!supabaseAnonKey
+  });
+  throw new Error('Supabase environment variables are not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.');
 }
-
-// Create Supabase client with validated environment variables
-const supabase = createClient(
-  supabaseUrl,
-  supabaseAnonKey
-);
 
 export const useStripe = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const createCheckoutSession = useCallback(async (productId: string): Promise<{ sessionId: string; url: string } | null> => {
+    // Validate environment variables before making the request
+    if (!supabaseUrl || !supabaseAnonKey) {
+      setError('Supabase configuration is missing. Please check your environment variables.');
+      return null;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -30,8 +33,10 @@ export const useStripe = () => {
         throw new Error('Product not found');
       }
 
+      const functionUrl = `${supabaseUrl}/functions/v1/stripe-checkout`;
+      
       // Call the Supabase Edge Function to create a checkout session
-      const response = await fetch(`${supabaseUrl}/functions/v1/stripe-checkout`, {
+      const response = await fetch(functionUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -62,6 +67,12 @@ export const useStripe = () => {
   }, []);
 
   const redirectToCheckout = useCallback(async (productId: string): Promise<void> => {
+    // Validate environment variables before proceeding
+    if (!supabaseUrl || !supabaseAnonKey) {
+      setError('Supabase configuration is missing. Please check your environment variables.');
+      return;
+    }
+
     const session = await createCheckoutSession(productId);
     
     if (session?.url) {
@@ -69,8 +80,18 @@ export const useStripe = () => {
     }
   }, [createCheckoutSession]);
 
-  const hasValidAccess = useCallback(async (): Promise<boolean> => {    
+  const hasValidAccess = useCallback(async (): Promise<boolean> => {
+    // Validate environment variables before making the request
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('Supabase configuration is missing for access check');
+      return false;
+    }
+
     try {
+      // Import and create Supabase client only when needed
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabase = createClient(supabaseUrl, supabaseAnonKey);
+      
       // Check if the user has an active subscription or valid access
       const { data, error } = await supabase
         .from('user_profiles')
