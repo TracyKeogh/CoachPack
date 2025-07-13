@@ -10,8 +10,8 @@ import {
 import { Target, Sparkles, ArrowLeft, CreditCard, Check, Lock, Shield } from 'lucide-react';
 import { STRIPE_PRODUCTS } from '../stripe-config';
 
-// Replace with your Stripe publishable key
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_your_key');
+// Initialize Stripe with publishable key
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_51OvCVnJDYwbBsAYVXVbMNVfGbkEeGVWRDMJAWXHYELCGJyzPwDztkyuHLWRXQzjBJqSXNwGzpYwGWTcFMXvjzIFw00MpzKLJDm');
 
 interface CheckoutFormProps {
   productId: string;
@@ -29,10 +29,18 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [cardComplete, setCardComplete] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [stripeError, setStripeError] = useState<string | null>(null);
   const [billingDetails, setBillingDetails] = useState({
     email: email,
     name: '',
   });
+
+  // Check if Stripe is loaded
+  useEffect(() => {
+    if (!stripe) {
+      setStripeError("Stripe hasn't loaded yet. Please refresh the page.");
+    }
+  }, [stripe]);
 
   const product = STRIPE_PRODUCTS.find(p => p.id === productId);
 
@@ -87,6 +95,21 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
     }
   };
 
+  // Display error if Stripe failed to load
+  if (stripeError) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+        <p className="text-red-600">{stripeError}</p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="mt-2 text-red-700 font-medium hover:text-red-800"
+        >
+          Refresh Page
+        </button>
+      </div>
+    );
+  }
+
   if (!product) {
     return <div>Product not found</div>;
   }
@@ -126,17 +149,19 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
       <div>
         <label htmlFor="card" className="block text-sm font-medium text-slate-700 mb-2">
           Card Details
-        </label>
+          <div className="p-3 border border-slate-300 rounded-lg focus-within:ring-2 focus-within:ring-purple-500 focus-within:border-transparent bg-white">
         <div className="p-3 border border-slate-300 rounded-lg focus-within:ring-2 focus-within:ring-purple-500 focus-within:border-transparent">
           <CardElement
             id="card"
             options={{
               style: {
-                base: {
-                  fontSize: '16px',
+                    fontSize: '16px', 
+                    color: '#424770', 
+                    fontFamily: 'Arial, sans-serif',
                   color: '#424770',
                   '::placeholder': {
                     color: '#aab7c4',
+                    iconColor: '#6772e5',
                   },
                 },
                 invalid: {
@@ -197,6 +222,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
 const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [stripeLoaded, setStripeLoaded] = useState(false);
   const [email, setEmail] = useState('');
   const [paymentCompleted, setPaymentCompleted] = useState(false);
 
@@ -211,6 +237,22 @@ const CheckoutPage: React.FC = () => {
       setEmail(emailFromParams);
     }
   }, [queryParams]);
+
+  // Check if Stripe is loaded
+  useEffect(() => {
+    const checkStripeLoaded = async () => {
+      try {
+        const stripe = await stripePromise;
+        if (stripe) {
+          setStripeLoaded(true);
+        }
+      } catch (error) {
+        console.error("Error loading Stripe:", error);
+      }
+    };
+    
+    checkStripeLoaded();
+  }, []);
 
   const handlePaymentSuccess = () => {
     setPaymentCompleted(true);
@@ -267,15 +309,24 @@ const CheckoutPage: React.FC = () => {
 
         {/* Checkout Form */}
         {!paymentCompleted && (
-          <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
-            <Elements stripe={stripePromise}>
-              <CheckoutForm 
-                productId={productId} 
-                email={email} 
-                onSuccess={handlePaymentSuccess} 
-              />
-            </Elements>
-          </div>
+          <>
+            {!stripeLoaded ? (
+              <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200 text-center">
+                <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-slate-700">Loading payment form...</p>
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
+                <Elements stripe={stripePromise}>
+                  <CheckoutForm 
+                    productId={productId} 
+                    email={email} 
+                    onSuccess={handlePaymentSuccess} 
+                  />
+                </Elements>
+              </div>
+            )}
+          </>
         )}
 
         {/* Security Notice */}
