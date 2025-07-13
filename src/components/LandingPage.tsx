@@ -21,6 +21,7 @@ import {
 import { Link, useNavigate } from 'react-router-dom';
 import SnappyDemoVideo from './SnappyDemoVideo';
 import WheelSignupModal from './WheelSignupModal';
+import SignupModal from './SignupModal';
 
 interface LandingPageProps {
   onNavigate?: (view: string) => void;
@@ -30,6 +31,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
   const navigate = useNavigate();
   const [showVideoDemo, setShowVideoDemo] = useState(false);
   const [showWheelSignup, setShowWheelSignup] = useState(false);
+  const [showSignupModal, setShowSignupModal] = useState(false);
 
   const handleWheelSignupSuccess = (email: string) => {
     setShowWheelSignup(false);
@@ -39,6 +41,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
     } else {
       navigate('/free-wheel');
     }
+  };
+
+  const handleSignupSuccess = (user: any) => {
+    setShowSignupModal(false);
+    navigate('/dashboard');
   };
 
   const features = [
@@ -138,8 +145,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
                 to="/pricing" 
                 className="text-slate-600 hover:text-slate-900 transition-colors"
               >
-                Pricing
+                How It Works
               </Link>
+              <button 
+                onClick={() => setShowSignupModal(true)}
+                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+              >
+                Pricing
+              </button>
               <button 
                 onClick={() => setShowWheelSignup(true)}
                 className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
@@ -176,10 +189,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button 
-                onClick={() => setShowWheelSignup(true)}
+                onClick={() => setShowSignupModal(true)}
                 className="flex items-center justify-center space-x-2 px-8 py-4 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl"
               >
-                <span>Start Free Assessment</span>
+                <span>Get Full Access - $50</span>
                 <ArrowRight className="w-5 h-5" />
               </button>
               <button 
@@ -265,11 +278,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <button 
-                onClick={() => setShowWheelSignup(true)}
+                onClick={() => setShowSignupModal(true)}
                 className="flex items-center space-x-2 px-8 py-4 bg-white text-purple-600 rounded-xl hover:bg-slate-50 transition-colors font-semibold text-lg shadow-lg"
               >
                 <Mail className="w-5 h-5" />
-                <span>Get My Free Assessment</span>
+                <span>Get Full Access - $50</span>
                 <ArrowRight className="w-5 h-5" />
               </button>
               
@@ -328,6 +341,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
         isOpen={showWheelSignup}
         onClose={() => setShowWheelSignup(false)}
         onSuccess={handleWheelSignupSuccess}
+      />
+      
+      {/* Signup Modal */}
+      <SignupModal
+        isOpen={showSignupModal}
+        onClose={() => setShowSignupModal(false)}
+        onSuccess={handleSignupSuccess}
+        selectedPlan="complete"
       />
 
       {/* How It Works Section */}
@@ -396,10 +417,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <button 
-                  onClick={() => setShowWheelSignup(true)}
+                  onClick={() => setShowSignupModal(true)}
                   className="px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold"
                 >
-                  Start Your Assessment
+                  Get Full Access - $50
                 </button>
                 <Link
                   to="/pricing"
@@ -458,10 +479,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate }) => {
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button 
-              onClick={() => setShowWheelSignup(true)}
+              onClick={() => setShowSignupModal(true)}
               className="px-8 py-4 bg-white text-purple-600 rounded-xl hover:bg-slate-50 transition-colors font-semibold text-lg shadow-lg"
             >
-              Start Free Assessment
+              Get Full Access - $50
             </button>
             <Link
               to="/pricing"

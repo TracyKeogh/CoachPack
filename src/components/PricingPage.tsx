@@ -1,9 +1,16 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, Crown, Target, Sparkles, ArrowRight } from 'lucide-react';
+import SignupModal from './SignupModal';
 
 const PricingPage: React.FC = () => {
   const navigate = useNavigate();
+  const [showSignupModal, setShowSignupModal] = useState(false);
+  
+  const handleSignupSuccess = (user: any) => {
+    setShowSignupModal(false);
+    navigate('/dashboard');
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50 py-12 px-6">
@@ -23,73 +30,37 @@ const PricingPage: React.FC = () => {
           <h2 className="text-4xl font-bold text-slate-900 mb-4">
             Transform Your Life with Proven Tools
           </h2>
-          <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-            Get the complete self-coaching toolkit used by thousands to clarify values, 
-            set meaningful goals, and create lasting change.
+          <p className="text-xl text-slate-600 max-w-2xl mx-auto mb-4">
+            Get the complete self-coaching toolkit for just $50 with 30 days of full access.
           </p>
+          <button
+            onClick={() => setShowSignupModal(true)}
+            className="inline-flex items-center space-x-2 px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold"
+          >
+            <span>Get Started Now</span>
+            <ArrowRight className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Pricing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl mx-auto mb-12">
+        <div className="grid grid-cols-1 gap-8 max-w-2xl mx-auto mb-12">
           {/* Free Plan */}
-          <div className="bg-white rounded-2xl p-8 border border-slate-200 hover:shadow-xl transition-all duration-300">
-            <div className="text-center mb-8">
-              <h3 className="text-2xl font-bold text-slate-900 mb-2">Free</h3>
-              <p className="text-slate-600 mb-4">Try before you commit</p>
-              <div className="flex items-baseline justify-center space-x-1">
-                <span className="text-4xl font-bold text-slate-900">$0</span>
-              </div>
-              <p className="text-sm text-slate-500 mt-2">Limited access</p>
-            </div>
-
-            <ul className="space-y-4 mb-8">
-              <li className="flex items-center space-x-3">
-                <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
-                <span className="text-slate-700">Wheel of Life Assessment</span>
-              </li>
-              <li className="flex items-center space-x-3">
-                <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
-                <span className="text-slate-700">Basic Insights</span>
-              </li>
-              <li className="flex items-center space-x-3 opacity-50">
-                <Check className="w-5 h-5 text-slate-400 flex-shrink-0" />
-                <span className="text-slate-500">Values Clarification</span>
-              </li>
-              <li className="flex items-center space-x-3 opacity-50">
-                <Check className="w-5 h-5 text-slate-400 flex-shrink-0" />
-                <span className="text-slate-500">Vision Board Creation</span>
-              </li>
-              <li className="flex items-center space-x-3 opacity-50">
-                <Check className="w-5 h-5 text-slate-400 flex-shrink-0" />
-                <span className="text-slate-500">12-Week Goal Framework</span>
-              </li>
-            </ul>
-
-            <button
-              onClick={() => navigate('/free-wheel')}
-              className="w-full py-3 rounded-lg font-semibold transition-colors bg-slate-100 text-slate-700 hover:bg-slate-200"
-            >
-              Start Free Assessment
-            </button>
-          </div>
-
-          {/* Premium Plan */}
-          <div className="bg-white rounded-2xl p-8 border-2 border-purple-500 ring-2 ring-purple-200 relative hover:shadow-xl transition-all duration-300">
+          <div className="bg-white rounded-2xl p-8 border-2 border-purple-500 ring-2 ring-purple-200 relative hover:shadow-xl transition-all duration-300 max-w-2xl mx-auto">
             <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
               <div className="bg-purple-600 text-white px-4 py-2 rounded-full text-sm font-medium flex items-center space-x-1">
                 <Crown className="w-4 h-4" />
-                <span>Most Popular</span>
+                <span>Limited Time Offer</span>
               </div>
             </div>
 
             <div className="text-center mb-8">
               <h3 className="text-2xl font-bold text-slate-900 mb-2">Complete Toolkit</h3>
-              <p className="text-slate-600 mb-4">Full access to all self-coaching tools</p>
+              <p className="text-slate-600 mb-4">Full access to all self-coaching tools for 30 days</p>
               <div className="flex items-baseline justify-center space-x-1">
-                <span className="text-4xl font-bold text-slate-900">$49</span>
+                <span className="text-4xl font-bold text-slate-900">$50</span>
                 <span className="text-slate-600">one-time</span>
               </div>
-              <p className="text-sm text-slate-500 mt-2">14 weeks of full access</p>
+              <p className="text-sm text-slate-500 mt-2">30 days of full access</p>
             </div>
 
             <ul className="space-y-4 mb-8">
@@ -128,16 +99,12 @@ const PricingPage: React.FC = () => {
             </ul>
 
             <button
-              onClick={() => navigate('/signup')}
+              onClick={() => setShowSignupModal(true)}
               className="w-full py-3 rounded-lg font-semibold transition-colors bg-purple-600 text-white hover:bg-purple-700 flex items-center justify-center space-x-2"
             >
               <span>Get Full Access</span>
               <ArrowRight className="w-5 h-5" />
             </button>
-
-            <p className="text-center text-slate-500 text-sm mt-3">
-              Coming soon - Payment processing not yet implemented
-            </p>
           </div>
         </div>
 
@@ -237,19 +204,21 @@ const PricingPage: React.FC = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={() => navigate('/free-wheel')}
-              className="px-8 py-3 bg-white text-slate-700 rounded-lg hover:bg-slate-50 transition-colors font-medium border border-slate-200"
-            >
-              Try Free Assessment
-            </button>
-            <button
-              onClick={() => navigate('/signup')}
+              onClick={() => setShowSignupModal(true)}
               className="px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold"
             >
               Get Started Now
             </button>
           </div>
         </div>
+        
+        {/* Signup Modal */}
+        <SignupModal
+          isOpen={showSignupModal}
+          onClose={() => setShowSignupModal(false)}
+          onSuccess={handleSignupSuccess}
+          selectedPlan="complete"
+        />
       </div>
     </div>
   );
