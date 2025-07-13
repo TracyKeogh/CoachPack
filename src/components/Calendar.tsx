@@ -570,18 +570,18 @@ className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate
 </button>
 <button
 onClick={() => setShowNotes(!showNotes)}
-className="flex items-center space-x-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
 >
 <Filter className="w-4 h-4" />
 <span>Notes</span>
 </button>
-          <button
-            onClick={saveData}
-            className="flex items-center space-x-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-          >
-            <CalendarIcon className="w-4 h-4" />
-            <span>Today</span>
-          </button>
+<button
+onClick={goToToday}
+className="flex items-center space-x-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+>
+<CalendarIcon className="w-4 h-4" />
+<span>Today</span>
+</button>
 </div>
 </div>
 
@@ -670,9 +670,9 @@ const dayEvents = getEventsForDay(day);
 
 return (
 <div key={dayIndex} className="space-y-3">
-{/* Day Header - FIXED: Added cursor-pointer and hover styles */}
+{/* Day Header */}
 <div 
-className={`h-12 text-center cursor-pointer !hover:bg-blue-200 !hover:ring-2 !hover:ring-blue-500 rounded-lg ${
+className={`h-12 text-center cursor-pointer hover:bg-blue-200 hover:ring-2 hover:ring-blue-500 rounded-lg ${
                    isToday ? 'bg-purple-100' : ''
                  }`}
 onClick={() => {
@@ -688,13 +688,9 @@ openDayView(day);
 </div>
 </div>
 
-{/* Morning Slot - FIXED: Added cursor-pointer and hover styles */}
+{/* Morning Slot */}
 <div 
-className={`p-3 rounded-lg border border-slate-200 hover:shadow-sm transition-all cursor-pointer !hover:bg-blue-200 !hover:ring-2 !hover:ring-blue-500 ${
-                     hoveredTimeSlot === `${day.toISOString()}-9:00`
-                       ? 'bg-blue-100 ring-2 ring-blue-500' 
-                       : 'hover:bg-blue-50'
-                   }`}
+className="p-3 rounded-lg border border-slate-200 hover:shadow-sm transition-all cursor-pointer hover:bg-blue-200 hover:ring-2 hover:ring-blue-500"
 onClick={() => {
 console.log(`Clicked on morning slot: ${day.toDateString()} - Opening day view`);
 openDayView(day);
@@ -741,13 +737,9 @@ Drop actions here
 )}
 </div>
 
-{/* Afternoon Slot - FIXED: Added cursor-pointer and hover styles */}
+{/* Afternoon Slot */}
 <div 
-className={`p-3 rounded-lg border border-slate-200 hover:shadow-sm transition-all cursor-pointer !hover:bg-blue-200 !hover:ring-2 !hover:ring-blue-500 ${
-                     hoveredTimeSlot === `${day.toISOString()}-14:00` 
-                       ? 'bg-blue-100 ring-2 ring-blue-500' 
-                       : 'hover:bg-blue-50'
-                   }`}
+className="p-3 rounded-lg border border-slate-200 hover:shadow-sm transition-all cursor-pointer hover:bg-blue-200 hover:ring-2 hover:ring-blue-500"
 onClick={() => {
 console.log(`Clicked on afternoon slot: ${day.toDateString()} - Opening day view`);
 openDayView(day);
@@ -794,13 +786,9 @@ Drop actions here
 )}
 </div>
 
-{/* Evening Slot - FIXED: Added cursor-pointer and hover styles */}
+{/* Evening Slot */}
 <div 
-className={`p-3 rounded-lg border border-slate-200 hover:shadow-sm transition-all cursor-pointer !hover:bg-blue-200 !hover:ring-2 !hover:ring-blue-500 ${
-                     hoveredTimeSlot === `${day.toISOString()}-19:00` 
-                       ? 'bg-blue-100 ring-2 ring-blue-500' 
-                       : 'hover:bg-blue-50'
-                   }`}
+className="p-3 rounded-lg border border-slate-200 hover:shadow-sm transition-all cursor-pointer hover:bg-blue-200 hover:ring-2 hover:ring-blue-500"
 onClick={() => {
 console.log(`Clicked on evening slot: ${day.toDateString()} - Opening day view`);
 openDayView(day);
@@ -963,10 +951,10 @@ return (
 {/* Actual date cells */}
 {dates.map((date, i) => {
 const isToday = date.toDateString() === new Date().toDateString();
-                      const dateEvents = getEventsForDay(date);
-                      const dateMilestones = milestones.filter(
-                        m => m.date.toDateString() === date.toDateString()
-                      );
+const dateEvents = getEventsForDay(date);
+const dateMilestones = milestones.filter(
+m => m.date.toDateString() === date.toDateString()
+);
 
 return (
 <div 
