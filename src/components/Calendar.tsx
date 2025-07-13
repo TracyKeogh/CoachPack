@@ -970,3 +970,5 @@ Save
 </div>
 ); 
 };
+
+export default Calendar;
