@@ -585,77 +585,6 @@ const Calendar: React.FC = () => {
         </div>
       </div>
 
-      {/* Action Pool - Above Calendar */}
-      {showActionPool && (
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-slate-900">Action Pool</h3>
-            <button
-              onClick={refreshActionPool}
-              className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm"
-            >
-              Refresh from Goals
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {data.actionPool.map((action) => (
-              <div
-                key={action.id}
-                className="p-3 rounded-lg border border-slate-200 hover:shadow-md transition-all cursor-move bg-white"
-                draggable
-                onDragStart={(e) => handleDragStart(e, action)}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start space-x-2">
-                    <div className="w-6 h-6 rounded-full flex items-center justify-center text-sm">
-                      {getCategoryIcon(action.category)}
-                    </div>
-                    <div>
-                      <div className="font-medium text-slate-900">{action.title}</div>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <span className={`px-2 py-0.5 rounded-full text-xs ${getCategoryColor(action.category)}`}>
-                          {action.category}
-                        </span>
-                        <span className="text-xs text-slate-500">
-                          {action.duration} min
-                        </span>
-                        <span className="text-xs text-slate-500">
-                          {action.frequency === 'daily' ? 'Daily' : 
-                           action.frequency === 'weekly' ? 'Weekly' : 
-                           '3x Week'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => removeActionFromPool(action.id)}
-                    className="text-slate-400 hover:text-red-500 p-1 hover:bg-red-50 rounded transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
-
-            {data.actionPool.length === 0 && (
-              <div className="col-span-3 text-center py-8 text-slate-500">
-                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Plus className="w-6 h-6 text-slate-400" />
-                </div>
-                <p className="mb-3">No actions in your pool</p>
-                <button 
-                  onClick={refreshActionPool}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
-                >
-                  Refresh from Goals
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* Calendar Navigation */}
       {viewMode === 'week' && (
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
@@ -783,6 +712,77 @@ const Calendar: React.FC = () => {
             );
           })}
         </div>
+        </div>
+      )}
+
+      {/* Action Pool - Below Calendar */}
+      {showActionPool && (
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-slate-900">Action Pool</h3>
+            <button
+              onClick={refreshActionPool}
+              className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm"
+            >
+              Refresh from Goals
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {data.actionPool.map((action) => (
+              <div
+                key={action.id}
+                className="p-3 rounded-lg border border-slate-200 hover:shadow-md transition-all cursor-move bg-white"
+                draggable
+                onDragStart={(e) => handleDragStart(e, action)}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start space-x-2">
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center text-sm">
+                      {getCategoryIcon(action.category)}
+                    </div>
+                    <div>
+                      <div className="font-medium text-slate-900">{action.title}</div>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <span className={`px-2 py-0.5 rounded-full text-xs ${getCategoryColor(action.category)}`}>
+                          {action.category}
+                        </span>
+                        <span className="text-xs text-slate-500">
+                          {action.duration} min
+                        </span>
+                        <span className="text-xs text-slate-500">
+                          {action.frequency === 'daily' ? 'Daily' : 
+                           action.frequency === 'weekly' ? 'Weekly' : 
+                           '3x Week'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => removeActionFromPool(action.id)}
+                    className="text-slate-400 hover:text-red-500 p-1 hover:bg-red-50 rounded transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {data.actionPool.length === 0 && (
+              <div className="col-span-3 text-center py-8 text-slate-500">
+                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Plus className="w-6 h-6 text-slate-400" />
+                </div>
+                <p className="mb-3">No actions in your pool</p>
+                <button 
+                  onClick={refreshActionPool}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+                >
+                  Refresh from Goals
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -1025,75 +1025,7 @@ const Calendar: React.FC = () => {
       )}
 
       {/* Action Pool */}
-      {showActionPool && (
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-slate-900">Action Pool</h3>
-            <button
-              onClick={refreshActionPool}
-              className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm"
-            >
-              Refresh from Goals
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {data.actionPool.map((action) => (
-              <div
-                key={action.id}
-                className="p-3 rounded-lg border border-slate-200 hover:shadow-md transition-all cursor-move bg-white"
-                draggable
-                onDragStart={(e) => handleDragStart(e, action)}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start space-x-2">
-                    <div className="w-6 h-6 rounded-full flex items-center justify-center text-sm">
-                      {getCategoryIcon(action.category)}
-                    </div>
-                    <div>
-                      <div className="font-medium text-slate-900">{action.title}</div>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <span className={`px-2 py-0.5 rounded-full text-xs ${getCategoryColor(action.category)}`}>
-                          {action.category}
-                        </span>
-                        <span className="text-xs text-slate-500">
-                          {action.duration} min
-                        </span>
-                        <span className="text-xs text-slate-500">
-                          {action.frequency === 'daily' ? 'Daily' : 
-                           action.frequency === 'weekly' ? 'Weekly' : 
-                           '3x Week'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => removeActionFromPool(action.id)}
-                    className="text-slate-400 hover:text-red-500 p-1 hover:bg-red-50 rounded transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
-
-            {data.actionPool.length === 0 && (
-              <div className="col-span-3 text-center py-8 text-slate-500">
-                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Plus className="w-6 h-6 text-slate-400" />
-                </div>
-                <p className="mb-3">No actions in your pool</p>
-                <button 
-                  onClick={refreshActionPool}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
-                >
-                  Refresh from Goals
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Moved above calendar - no longer here */}
 
       {/* Notes Panel */}
       {showNotes && (
