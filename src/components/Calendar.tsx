@@ -966,8 +966,7 @@ const Calendar: React.FC = () => {
                           } hover:shadow-md transition-all cursor-pointer hover:bg-blue-200 hover:ring-2 hover:ring-blue-500`}
                           onClick={() => {
                             console.log(`Clicked on date: ${date.toDateString()}`);
-                            setSelectedDate(date);
-                            setShowDayView(true);
+                            setCurrentDate(date);
                             setViewMode('week');
                           }}
                         >
