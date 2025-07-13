@@ -287,8 +287,6 @@ monthGroups[monthKey].push(date);
 });
 
     return { monthGroups, milestones };
-    
-    return monthGroups;
 };
 
 // Generate 90-day view data
@@ -968,7 +966,6 @@ day: 'numeric'
 
 {/* Calendar Grid */}
           {Object.entries(monthGroups).map(([monthKey, dates]) => {
-          {Object.entries(getMonthGroups()).map(([monthKey, dates]) => {
 const firstDate = dates[0];
 const monthName = firstDate.toLocaleString('default', { month: 'long' });
 const year = firstDate.getFullYear();
