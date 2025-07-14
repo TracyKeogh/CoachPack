@@ -26,6 +26,7 @@ const AdminDashboard: React.FC = () => {
   const [sortField, setSortField] = useState<keyof User>('created_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [filterPlan, setFilterPlan] = useState<string | null>(null);
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   
   const usersPerPage = 10;
 
@@ -68,6 +69,18 @@ const AdminDashboard: React.FC = () => {
     
     loadData();
   }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showFilterDropdown) {
+        setShowFilterDropdown(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showFilterDropdown]);
   
   // Handle refresh
   const handleRefresh = async () => {
@@ -258,46 +271,61 @@ const AdminDashboard: React.FC = () => {
           <div className="flex items-center space-x-2">
             <div className="relative">
               <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowFilterDropdown(!showFilterDropdown);
+                }}
                 className="flex items-center space-x-2 px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
               >
                 <Filter className="w-5 h-5 text-slate-500" />
                 <span className="text-slate-700">Filter Plan</span>
               </button>
-              <div className="absolute left-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 z-10">
-                <button
-                  onClick={() => setFilterPlan(null)}
-                  className={`flex items-center space-x-2 w-full px-4 py-2 text-left hover:bg-slate-50 transition-colors ${
-                    filterPlan === null ? 'bg-purple-50 text-purple-700' : 'text-slate-700'
-                  }`}
-                >
-                  <span>All Plans</span>
-                  {filterPlan === null && (
-                    <CheckCircle className="w-4 h-4 ml-auto text-purple-600" />
-                  )}
-                </button>
-                <button
-                  onClick={() => setFilterPlan('complete')}
-                  className={`flex items-center space-x-2 w-full px-4 py-2 text-left hover:bg-slate-50 transition-colors ${
-                    filterPlan === 'complete' ? 'bg-purple-50 text-purple-700' : 'text-slate-700'
-                  }`}
-                >
-                  <span>Complete</span>
-                  {filterPlan === 'complete' && (
-                    <CheckCircle className="w-4 h-4 ml-auto text-purple-600" />
-                  )}
-                </button>
-                <button
-                  onClick={() => setFilterPlan('free')}
-                  className={`flex items-center space-x-2 w-full px-4 py-2 text-left hover:bg-slate-50 transition-colors ${
-                    filterPlan === 'free' ? 'bg-purple-50 text-purple-700' : 'text-slate-700'
-                  }`}
-                >
-                  <span>Free</span>
-                  {filterPlan === 'free' && (
-                    <CheckCircle className="w-4 h-4 ml-auto text-purple-600" />
-                  )}
-                </button>
-              </div>
+              {showFilterDropdown && (
+                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 z-50 transform -translate-x-full">
+                  <button
+                    onClick={() => {
+                      setFilterPlan(null);
+                      setShowFilterDropdown(false);
+                    }}
+                    className={`flex items-center space-x-2 w-full px-4 py-2 text-left hover:bg-slate-50 transition-colors ${
+                      filterPlan === null ? 'bg-purple-50 text-purple-700' : 'text-slate-700'
+                    }`}
+                  >
+                    <span>All Plans</span>
+                    {filterPlan === null && (
+                      <CheckCircle className="w-4 h-4 ml-auto text-purple-600" />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setFilterPlan('complete');
+                      setShowFilterDropdown(false);
+                    }}
+                    className={`flex items-center space-x-2 w-full px-4 py-2 text-left hover:bg-slate-50 transition-colors ${
+                      filterPlan === 'complete' ? 'bg-purple-50 text-purple-700' : 'text-slate-700'
+                    }`}
+                  >
+                    <span>Complete</span>
+                    {filterPlan === 'complete' && (
+                      <CheckCircle className="w-4 h-4 ml-auto text-purple-600" />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setFilterPlan('free');
+                      setShowFilterDropdown(false);
+                    }}
+                    className={`flex items-center space-x-2 w-full px-4 py-2 text-left hover:bg-slate-50 transition-colors ${
+                      filterPlan === 'free' ? 'bg-purple-50 text-purple-700' : 'text-slate-700'
+                    }`}
+                  >
+                    <span>Free</span>
+                    {filterPlan === 'free' && (
+                      <CheckCircle className="w-4 h-4 ml-auto text-purple-600" />
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
