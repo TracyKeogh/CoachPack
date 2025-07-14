@@ -47,6 +47,32 @@ export const testConnection = async (): Promise<boolean> => {
   }
 };
 
+// Test if email service is properly configured
+export const testEmailService = async (): Promise<boolean> => {
+  try {
+    // In development mode, we'll assume email is working
+    if (import.meta.env.DEV) {
+      console.log('Email service test: Development mode detected, assuming email works');
+      return true;
+    }
+    
+    // For production, we'll check if Supabase is properly configured
+    const { data, error } = await supabase.rpc('check_email_configuration');
+    
+    if (error) {
+      console.error('Email service test failed:', error);
+      return false;
+    }
+    
+    console.log('Email service configuration check result:', data);
+    return !!data;
+  } catch (error) {
+    console.error('Exception during email service test:', error);
+    // Default to true to avoid blocking user actions if the check fails
+    return true;
+  }
+};
+
 // Database setup function (should only be run in development or by admin)
 export const setupDatabase = async (): Promise<{ success: boolean; message: string }> => {
   if (!supabaseAdmin) {

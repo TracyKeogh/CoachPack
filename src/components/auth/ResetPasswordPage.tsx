@@ -3,19 +3,9 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Lock, Eye, EyeOff, ArrowLeft, Target, Sparkles, AlertCircle, CheckCircle } from 'lucide-react';
-import { createClient } from '@supabase/supabase-js';
-
-// Validate environment variables
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error("Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.");
-}
-
-// Create Supabase client
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+import { Lock, Eye, EyeOff, ArrowLeft, Target, Sparkles, AlertCircle, CheckCircle, Info } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
+import { supabase } from '../../utils/supabase-setup';
 
 const resetPasswordSchema = z.object({
   password: z.string()
@@ -34,12 +24,14 @@ type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
 const ResetPasswordPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { updatePassword } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [token, setToken] = useState<string | null>(null);
+  const [tokenExpired, setTokenExpired] = useState(false);
 
   const { 
     register, 
@@ -57,10 +49,30 @@ const ResetPasswordPage: React.FC = () => {
   // Extract token from URL
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const accessToken = params.get('access_token');
+    const accessToken = params.get('access_token') || params.get('token');
     
     if (accessToken) {
       setToken(accessToken);
+      
+      // Validate token
+      const validateToken = async () => {
+        try {
+          // Try to get user from token
+          const { data, error } = await supabase.auth.getUser(accessToken);
+          
+          if (error || !data.user) {
+            console.error('Token validation failed:', error);
+            setTokenExpired(true);
+            setToken(null);
+          }
+        } catch (err) {
+          console.error('Error validating token:', err);
+          setTokenExpired(true);
+          setToken(null);
+        }
+      };
+      
+      validateToken();
     } else {
       setError('Invalid or missing reset token. Please request a new password reset link.');
     }
@@ -116,9 +128,7 @@ const ResetPasswordPage: React.FC = () => {
     
     try {
       // Update password using the token
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: data.password
-      });
+      const { error: updateError } = await updatePassword(data.password);
       
       if (updateError) {
         throw new Error(updateError.message);
@@ -129,7 +139,7 @@ const ResetPasswordPage: React.FC = () => {
       
       // Redirect to login after a delay
       setTimeout(() => {
-        navigate('/login');
+        navigate('/login', { state: { passwordReset: true } });
       }, 3000);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to reset password';
@@ -187,7 +197,7 @@ const ResetPasswordPage: React.FC = () => {
                 <div className="text-center mb-8">
                   <h1 className="text-2xl font-bold text-slate-900 mb-2">Reset Your Password</h1>
                   <p className="text-slate-600">
-                    Create a new password for your Coach Pack account
+                    Create a new secure password for your Coach Pack account
                   </p>
                 </div>
 
@@ -201,7 +211,7 @@ const ResetPasswordPage: React.FC = () => {
                   </div>
                 )}
 
-                {!token && (
+                {(!token || tokenExpired) && (
                   <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start space-x-3">
                     <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
                     <div>
@@ -209,7 +219,7 @@ const ResetPasswordPage: React.FC = () => {
                       <p className="text-sm text-amber-700 mt-1">
                         This password reset link is invalid or has expired. Please request a new one.
                       </p>
-                      <Link 
+                      <Link
                         to="/forgot-password"
                         className="mt-2 inline-block text-sm font-medium text-amber-800 hover:text-amber-900"
                       >
@@ -218,6 +228,18 @@ const ResetPasswordPage: React.FC = () => {
                     </div>
                   </div>
                 )}
+                
+                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-start space-x-3">
+                    <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h3 className="text-sm font-medium text-blue-800">About Password Reset</h3>
+                      <p className="text-sm text-blue-700 mt-1">
+                        This link is valid for 24 hours. If you didn't request a password reset, you can safely ignore this page.
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                   {/* Password Field */}

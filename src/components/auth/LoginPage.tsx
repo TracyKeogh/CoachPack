@@ -16,12 +16,13 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const location = useLocation();
+  const location = useLocation() as { state?: { from?: { pathname: string }, passwordReset?: boolean } };
   const { signIn, error: authError, loading: authLoading, clearError } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   
   // Get the redirect path from location state or default to dashboard
   const from = location.state?.from?.pathname || '/dashboard';
+  const passwordReset = location.state?.passwordReset || false;
 
   const { 
     register, 
@@ -84,6 +85,18 @@ const LoginPage: React.FC = () => {
               <h1 className="text-3xl font-bold text-slate-900 mb-2">Welcome Back</h1>
               <p className="text-slate-600">Sign in to continue your journey</p>
             </div>
+
+            {passwordReset && (
+              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start space-x-3">
+                <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="text-sm font-medium text-green-800">Password Reset Successful</h3>
+                  <p className="text-sm text-green-700 mt-1">
+                    Your password has been successfully reset. You can now sign in with your new password.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {authError && (
               <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-3">

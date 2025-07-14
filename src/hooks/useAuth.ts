@@ -34,11 +34,12 @@ export interface UseAuthReturn {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, name?: string) => Promise<{ user: any; error: Error | null }>;
   signOut: () => Promise<void>;
-  resetPassword: (email: string) => Promise<void>;
+  resetPassword: (email: string, redirectTo?: string) => Promise<void>;
   updatePassword: (password: string) => Promise<void>;
   clearError: () => void;
   hasAccess: () => boolean;
   isAuthenticated: boolean;
+  testEmailService: () => Promise<boolean>;
 }
 
 export const useAuth = () => {
@@ -57,7 +58,8 @@ export const useAuth = () => {
       updatePassword: async () => {},
       clearError: () => {},
       hasAccess: () => true, // Always return true to allow access
-      isAuthenticated: false
+      isAuthenticated: false,
+      testEmailService: async () => true
     };
     return mockAuth;
   }

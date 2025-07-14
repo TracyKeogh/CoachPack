@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useCallback } from 'react';
-import { supabase, testConnection, createUserProfile, checkUserProfile } from './utils/supabase-setup';
+import { supabase, testConnection, createUserProfile, checkUserProfile, testEmailService as testSupabaseEmail } from './utils/supabase-setup';
 
 // Define types for auth error handling
 interface AuthError {
@@ -21,10 +21,11 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, name?: string) => Promise<void>;
   signOut: () => Promise<void>;
-  resetPassword: (email: string) => Promise<void>;
+  resetPassword: (email: string, redirectTo?: string) => Promise<void>;
   updatePassword: (password: string) => Promise<void>;
   clearError: () => void,
-  hasAccess: () => boolean;
+  hasAccess: () => boolean,
+  testEmailService: () => Promise<boolean>;
 }
 
 export const AuthContext = createContext<AuthContextType | null>(null);
@@ -252,7 +253,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, [formatError]);
 
   // Reset password
-  const resetPassword = useCallback(async (email: string) => {
+  const resetPassword = useCallback(async (email: string, redirectTo?: string) => {
     setLoading(true);
     setError(null);
 
@@ -266,7 +267,19 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       }
       console.log('AuthProvider: Attempting to send password reset email to:', email);
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      
+      const options: { redirectTo?: string } = {};
+      
+      // Add redirectTo if provided
+      if (redirectTo) {
+        options.redirectTo = redirectTo;
+        console.log('AuthProvider: Using redirect URL:', redirectTo);
+      } else {
+        // Default redirect to reset-password page on current origin
+        options.redirectTo = `${window.location.origin}/reset-password`;
+        console.log('AuthProvider: Using default redirect URL:', options.redirectTo);
+      }
+      const { error } = await supabase.auth.resetPasswordForEmail(email, options);
       
       if (error) {
         console.error('AuthProvider: Password reset error:', error);
@@ -274,6 +287,15 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       
       console.log('AuthProvider: Password reset email sent successfully');
+      
+      // Log additional information for debugging
+      if (import.meta.env.DEV) {
+        console.log('AuthProvider: In development mode - password reset details:');
+        console.log('- Email:', email);
+        console.log('- Redirect URL:', options.redirectTo);
+        console.log('- Origin:', window.location.origin);
+        console.log('- Check Supabase logs for email delivery status');
+      }
     } catch (err) {
       console.error('AuthProvider: Password reset exception:', err);
       setError(err instanceof Error ? err.message : 'Password reset failed');
@@ -281,7 +303,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [formatError]);
+  }, [formatError, connectionTested]);
   
   // Update password
   const updatePassword = useCallback(async (password: string) => {
@@ -321,6 +343,28 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // In a production app, you would check subscription status
     return true;
   }, []);
+  
+  // Test email service
+  const testEmailService = useCallback(async (): Promise<boolean> => {
+    try {
+      // First check if we can connect to Supabase
+      if (!connectionTested) {
+        const isConnected = await testConnection();
+        if (!isConnected) {
+          console.error('AuthProvider: Cannot test email service - Supabase connection failed');
+          return false;
+        }
+      }
+      
+      // Use the utility function to test email service
+      const isWorking = await testSupabaseEmail();
+      return isWorking;
+    } catch (error) {
+      console.error('AuthProvider: Error testing email service:', error);
+      return false;
+    }
+  }, [connectionTested]);
+
 
   // Check for existing session on mount
   useEffect(() => {
@@ -414,7 +458,8 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     resetPassword,
     updatePassword,
     clearError,
-    hasAccess
+    hasAccess,
+    testEmailService
   };
 
   return (

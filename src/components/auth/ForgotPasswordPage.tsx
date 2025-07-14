@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Mail, ArrowLeft, Target, Sparkles, AlertCircle, CheckCircle } from 'lucide-react';
+import { Mail, ArrowLeft, Target, Sparkles, AlertCircle, CheckCircle, RefreshCw, Info } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 
 const forgotPasswordSchema = z.object({
@@ -14,14 +14,19 @@ type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 
 const ForgotPasswordPage: React.FC = () => {
   const navigate = useNavigate();
-  const { resetPassword, clearError } = useAuth();
+  const { resetPassword, clearError, testEmailService } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [emailSentTime, setEmailSentTime] = useState<Date | null>(null);
+  const [canResend, setCanResend] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [emailServiceStatus, setEmailServiceStatus] = useState<'unknown' | 'working' | 'not-working'>('unknown');
 
   const { 
     register, 
     handleSubmit, 
+    getValues,
     formState: { errors } 
   } = useForm<ForgotPasswordFormValues>({
     resolver: zodResolver(forgotPasswordSchema),
@@ -30,19 +35,66 @@ const ForgotPasswordPage: React.FC = () => {
     }
   });
 
+  // Enable resend button after 60 seconds
+  useEffect(() => {
+    if (emailSentTime) {
+      const timer = setTimeout(() => {
+        setCanResend(true);
+      }, 60000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [emailSentTime]);
+
+  // Test email service when component mounts
+  useEffect(() => {
+    const checkEmailService = async () => {
+      try {
+        const isWorking = await testEmailService();
+        setEmailServiceStatus(isWorking ? 'working' : 'not-working');
+      } catch (error) {
+        console.error('Error testing email service:', error);
+        setEmailServiceStatus('not-working');
+      }
+    };
+    
+    checkEmailService();
+  }, [testEmailService]);
+
   const onSubmit = async (data: ForgotPasswordFormValues) => {
     clearError();
     setError(null);
     setIsSubmitting(true);
     
     try {
-      await resetPassword(data.email);
+      await resetPassword(data.email, `${window.location.origin}/reset-password`);
+      setEmailSentTime(new Date());
+      setCanResend(false);
       setSuccess(true);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to send reset email';
       setError(errorMessage);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleResendEmail = async () => {
+    if (!canResend) return;
+    
+    setIsResending(true);
+    setError(null);
+    
+    try {
+      const email = getValues('email');
+      await resetPassword(email, `${window.location.origin}/reset-password`);
+      setEmailSentTime(new Date());
+      setCanResend(false);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to resend reset email';
+      setError(errorMessage);
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -83,13 +135,58 @@ const ForgotPasswordPage: React.FC = () => {
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <CheckCircle className="w-8 h-8 text-green-600" />
                 </div>
-                <h2 className="text-2xl font-bold text-slate-900 mb-2">Check Your Email</h2>
+                <h2 className="text-2xl font-bold text-slate-900 mb-2">Password Reset Email Sent</h2>
                 <p className="text-slate-600 mb-6">
-                  We've sent a password reset link to your email address. Please check your inbox and follow the instructions.
+                  We've sent a password reset link to your email address at {emailSentTime?.toLocaleTimeString()}.
+                  Please check your inbox and follow the instructions.
                 </p>
-                <div className="space-y-4">
-                  <p className="text-sm text-slate-500">
-                    If you don't see the email, please check your spam folder.
+                <div className="space-y-6">
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 text-left">
+                    <h3 className="font-medium text-blue-800 mb-2 flex items-center">
+                      <Info className="w-4 h-4 mr-2" />
+                      Important Information
+                    </h3>
+                    <ul className="text-sm text-blue-700 space-y-2">
+                      <li>• The email may take 2-5 minutes to arrive</li>
+                      <li>• Please check your spam/junk folder</li>
+                      <li>• The link in the email will expire after 24 hours</li>
+                    </ul>
+                  </div>
+                  
+                  <div className="text-center">
+                    <p className="text-sm text-slate-600 mb-3">Didn't receive the email?</p>
+                    <div className="space-y-3">
+                      <button
+                        onClick={handleResendEmail}
+                        disabled={!canResend || isResending}
+                        className={`flex items-center justify-center space-x-2 w-full px-4 py-2 rounded-lg transition-colors ${
+                          canResend 
+                            ? 'bg-purple-600 text-white hover:bg-purple-700' 
+                            : 'bg-slate-200 text-slate-500 cursor-not-allowed'
+                        }`}
+                      >
+                        {isResending ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                            <span>Resending...</span>
+                          </>
+                        ) : (
+                          <>
+                            <RefreshCw className="w-4 h-4" />
+                            <span>
+                              {canResend 
+                                ? 'Resend Email' 
+                                : `Resend Available in ${Math.ceil((60000 - (Date.now() - (emailSentTime?.getTime() || Date.now()))) / 1000)}s`
+                              }
+                            </span>
+                          </>
+                        )}
+                      </button>
+                      
+                      <p className="text-sm text-slate-500">
+                        Still having trouble? <a href="mailto:support@coachpack.org" className="text-purple-600 hover:text-purple-700">Contact Support</a>
+                      </p>
+                    </div>
                   </p>
                   <Link 
                     to="/login"
@@ -104,9 +201,23 @@ const ForgotPasswordPage: React.FC = () => {
                 <div className="text-center mb-8">
                   <h1 className="text-2xl font-bold text-slate-900 mb-2">Reset Your Password</h1>
                   <p className="text-slate-600">
-                    Enter your email address and we'll send you a link to reset your password
+                    Enter your email address and we'll send you a link to reset your password.
+                    The link will be valid for 24 hours.
                   </p>
                 </div>
+                
+                {emailServiceStatus === 'not-working' && (
+                  <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start space-x-3">
+                    <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h3 className="text-sm font-medium text-amber-800">Email Service Notice</h3>
+                      <p className="text-sm text-amber-700 mt-1">
+                        Our email service may be experiencing issues. If you don't receive a reset email,
+                        please contact support at <a href="mailto:support@coachpack.org" className="font-medium underline">support@coachpack.org</a>.
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {error && (
                   <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-3">
@@ -160,12 +271,23 @@ const ForgotPasswordPage: React.FC = () => {
                   <div className="text-center">
                     <Link 
                       to="/login"
-                      className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+                      className="flex items-center justify-center space-x-2 text-sm text-purple-600 hover:text-purple-700 font-medium"
                     >
+                      <ArrowLeft className="w-4 h-4" />
                       Back to Login
                     </Link>
                   </div>
                 </form>
+                
+                {/* Alternative Contact */}
+                <div className="mt-8 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                  <p className="text-sm text-slate-700 mb-2 font-medium">Need immediate assistance?</p>
+                  <p className="text-xs text-slate-600">
+                    If you're unable to reset your password through email, please contact our support team
+                    at <a href="mailto:support@coachpack.org" className="text-purple-600 hover:text-purple-700">support@coachpack.org</a> with
+                    your account email for manual verification.
+                  </p>
+                </div>
               </>
             )}
           </div>
