@@ -13,7 +13,7 @@
     "@hookform/resolvers": "^5.1.1",
     "@stripe/react-stripe-js": "^3.7.0",
     "@stripe/stripe-js": "^7.4.0",
-    "@supabase/supabase-js": "^2.50.5",
+    "@supabase/supabase-js": "^2.51.0",
     "@types/uuid": "^10.0.0",
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",

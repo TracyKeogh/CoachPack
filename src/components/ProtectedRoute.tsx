@@ -5,10 +5,14 @@ import { useAuth } from '../hooks/useAuth';
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requiresAccess?: boolean;
+  requiresAccess?: boolean;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
   children, 
+  requiresAccess = false 
+}) => {
+  const { user, loading, isAuthenticated, hasAccess } = useAuth();
   requiresAccess = false 
 }) => {
   const { user, loading, isAuthenticated, hasAccess } = useAuth();
@@ -30,6 +34,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   if (!isAuthenticated) {
     // Redirect to login page, but save the location they were trying to access
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+  
+  // Check if user has access to premium features (if required)
+  if (requiresAccess && !hasAccess()) {
+    // Redirect to pricing page
+    return <Navigate to="/pricing" state={{ from: location }} replace />;
   }
   
   // Check if user has access to premium features (if required)

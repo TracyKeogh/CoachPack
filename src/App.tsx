@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, Outlet } from 'react-router-dom';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 
@@ -28,6 +28,12 @@ import LandingPage from './components/LandingPage';
 import CommunityTemplates from './components/CommunityTemplates';
 import FreeWheelAssessment from './components/FreeWheelAssessment';
 import PricingPage from './components/PricingPage';
+
+// Import auth components
+import LoginPage from './components/auth/LoginPage';
+import SignupPage from './components/auth/SignupPage';
+import ForgotPasswordPage from './components/auth/ForgotPasswordPage';
+import ResetPasswordPage from './components/auth/ResetPasswordPage';
 
 export type ViewType = 'landing' | 'free-wheel' | 'dashboard' | 'wheel' | 'values' | 'vision' | 'goals' | 'calendar' | 'templates';
 
@@ -66,16 +72,17 @@ const NotFound = () => {
 
 function AppContent() {
   const [isNavigationCollapsed, setIsNavigationCollapsed] = React.useState(false);
+  const location = useLocation();
 
   // Auto-collapse navigation when on dashboard, expand for other views
   React.useEffect(() => {
-    const path = window.location.pathname;
+    const path = location.pathname;
     if (path === '/dashboard') {
       setIsNavigationCollapsed(true);
     } else {
       setIsNavigationCollapsed(false);
     }
-  }, []);
+  }, [location.pathname]);
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -83,8 +90,8 @@ function AppContent() {
         <Header />
         <div className="flex">
           <Navigation 
-            currentView={window.location.pathname.substring(1) as ViewType || 'dashboard'} 
-            onNavigate={(view) => window.location.href = `/${view}`}
+            currentView={location.pathname.substring(1) as ViewType || 'dashboard'} 
+            onNavigate={(view) => navigate(`/${view}`)}
             isCollapsed={isNavigationCollapsed}
             onToggleCollapse={() => setIsNavigationCollapsed(!isNavigationCollapsed)}
           />
@@ -110,6 +117,15 @@ function AppContent() {
   );
 }
 
+// Layout component for auth pages
+const AuthLayout = () => {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-50">
+      <Outlet />
+    </div>
+  );
+};
+
 function App() {
   return (
     <Router basename="/">
@@ -117,10 +133,15 @@ function App() {
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage onNavigate={(view) => window.location.href = `/${view}`} />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignupPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          
+          {/* Auth Routes with consistent layout */}
+          <Route element={<AuthLayout />}>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+          </Route>
+          
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/success" element={<SuccessPage />} />
@@ -148,7 +169,36 @@ function App() {
           />
 
           {/* Dashboard and feature routes */}
-          <Route path="/*" element={<AppContent />} />
+          <Route path="/wheel" element={
+            <ProtectedRoute>
+              <AppContent />
+            </ProtectedRoute>
+          } />
+          <Route path="/values" element={
+            <ProtectedRoute>
+              <AppContent />
+            </ProtectedRoute>
+          } />
+          <Route path="/vision" element={
+            <ProtectedRoute>
+              <AppContent />
+            </ProtectedRoute>
+          } />
+          <Route path="/goals" element={
+            <ProtectedRoute>
+              <AppContent />
+            </ProtectedRoute>
+          } />
+          <Route path="/calendar" element={
+            <ProtectedRoute>
+              <AppContent />
+            </ProtectedRoute>
+          } />
+          <Route path="/templates" element={
+            <ProtectedRoute>
+              <AppContent />
+            </ProtectedRoute>
+          } />
           
           {/* 404 Route */}
           <Route path="*" element={<NotFound />} />
