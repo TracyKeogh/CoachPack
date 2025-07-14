@@ -1,11 +1,13 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 
 // Auth Components
 import LoginPage from './components/auth/LoginPage';
-import SignupPage from './components/SignupPage';
+import SignupPage from './components/auth/SignupPage';
+import ForgotPasswordPage from './components/auth/ForgotPasswordPage';
+import ResetPasswordPage from './components/auth/ResetPasswordPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import CheckoutPage from './components/CheckoutPage';
 import SuccessPage from './components/SuccessPage';
@@ -28,6 +30,39 @@ import FreeWheelAssessment from './components/FreeWheelAssessment';
 import PricingPage from './components/PricingPage';
 
 export type ViewType = 'landing' | 'free-wheel' | 'dashboard' | 'wheel' | 'values' | 'vision' | 'goals' | 'calendar' | 'templates';
+
+// Custom component to handle 404 errors
+const NotFound = () => {
+  const location = useLocation();
+  
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50 flex items-center justify-center p-6">
+      <div className="bg-white rounded-2xl p-8 shadow-lg border border-slate-200 max-w-md w-full text-center">
+        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <span className="text-3xl text-red-600">404</span>
+        </div>
+        <h1 className="text-2xl font-bold text-slate-900 mb-2">Page Not Found</h1>
+        <p className="text-slate-600 mb-6">
+          We couldn't find the page you're looking for: <span className="font-medium">{location.pathname}</span>
+        </p>
+        <div className="space-y-3">
+          <a 
+            href="/"
+            className="block w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            Go to Home
+          </a>
+          <a 
+            href="/dashboard"
+            className="block w-full px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors"
+          >
+            Go to Dashboard
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 function AppContent() {
   const [isNavigationCollapsed, setIsNavigationCollapsed] = React.useState(false);
@@ -77,13 +112,15 @@ function AppContent() {
 
 function App() {
   return (
-    <Router>
+    <Router basename="/">
       <AuthProvider>
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage onNavigate={(view) => window.location.href = `/${view}`} />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/success" element={<SuccessPage />} />
@@ -112,6 +149,9 @@ function App() {
 
           {/* Dashboard and feature routes */}
           <Route path="/*" element={<AppContent />} />
+          
+          {/* 404 Route */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </AuthProvider>
     </Router>

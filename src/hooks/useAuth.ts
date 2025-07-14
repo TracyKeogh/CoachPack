@@ -1,27 +1,54 @@
 import { useContext } from 'react';
 import { AuthContext } from '../AuthProvider';
 
+// Define a more comprehensive return type
+export interface UseAuthReturn {
+  user: {
+    id: string;
+    email: string;
+    name?: string;
+    avatar?: string;
+  } | null;
+  loading: boolean;
+  error: string | null;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, name?: string) => Promise<{ user: any; error: Error | null }>;
+  signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  updatePassword: (password: string) => Promise<void>;
+  clearError: () => void;
+  hasAccess: () => boolean;
+  isAuthenticated: boolean;
+}
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   
   if (!context) {
     // Return a mock context with default values when real context is not available
-    return {
+    const mockAuth: UseAuthReturn = {
       user: null,
       loading: false,
       error: null,
       signIn: async () => {},
-      signUp: async () => {},
+      signUp: async () => ({ user: null, error: null }),
       signOut: async () => {},
       resetPassword: async () => {},
+      updatePassword: async () => {},
       clearError: () => {},
-      hasAccess: () => true // Always return true to allow access
+      hasAccess: () => true, // Always return true to allow access
+      isAuthenticated: false
     };
+    return mockAuth;
   }
   
-  return {
+  // Add isAuthenticated computed property
+  const isAuthenticated = !!context.user;
+  
+  const authContext: UseAuthReturn = {
     ...context,
-    // Always return true for hasAccess to bypass authentication checks
-    hasAccess: () => true
+    isAuthenticated
   };
+  
+  return authContext;
 };
