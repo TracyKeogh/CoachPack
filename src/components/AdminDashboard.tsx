@@ -314,7 +314,7 @@ const AdminDashboard: React.FC = () => {
             >
               Try Again
             </button>
-          </div>
+            <div className="absolute left-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 z-10">
         ) : isLoading ? (
           <div className="p-12 text-center">
             <div className="w-12 h-12 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
