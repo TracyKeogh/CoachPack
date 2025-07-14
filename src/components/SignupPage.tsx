@@ -1,3 +1,68 @@
+// Add this comprehensive debugging to your signup function
+async function debugLiveSignup(email, name, productId) {
+  console.log('🔴 LIVE SIGNUP DEBUG START');
+  console.log('📧 Email from form:', email);
+  console.log('👤 Name from form:', name);
+  console.log('📦 Product ID:', productId);
+  
+  // Test 1: Check Supabase client setup (import supabase first)
+  const { supabase } = await import('../lib/supabase');
+  console.log('🔧 Supabase client imported successfully');
+  
+  // Test 2: Check current auth state
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  console.log('🔐 Current auth state:', {
+    user: user ? `Authenticated as ${user.email}` : 'Anonymous',
+    error: authError
+  });
+  
+  // Test 3: Prepare the exact data for insert (matching your saveUser function)
+  const insertData = {
+    email: email,
+    name: name,
+    plan_type: productId, // This matches what your saveUser function does
+    signup_date: new Date().toISOString()
+  };
+  
+  console.log('📋 Data being inserted:', insertData);
+  
+  // Test 4: Try the insert with full error details
+  try {
+    console.log('⏳ Attempting Supabase insert...');
+    
+    const { data, error } = await supabase
+      .from('users')
+      .insert([insertData])
+      .select();
+    
+    if (error) {
+      console.error('❌ SUPABASE INSERT ERROR:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+        fullError: error
+      });
+      
+      // Check if it's actually an RLS error
+      if (error.code === '42501' || error.message.includes('row-level security')) {
+        console.log('🔐 This is confirmed as RLS policy blocking the insert');
+        console.log('💡 The manual SQL worked, so this is a code vs manual difference');
+      }
+      
+      return { success: false, error };
+    }
+    
+    console.log('✅ INSERT SUCCESS:', data);
+    return { success: true, data };
+    
+  } catch (exception) {
+    console.error('💥 EXCEPTION during insert:', exception);
+    return { success: false, error: exception };
+  }
+}
+
+// Updated SignupPage component with debugging integrated
 import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { Mail, Lock, User, Eye, EyeOff, Check, AlertCircle, Target, Sparkles, ArrowLeft } from 'lucide-react';
@@ -64,6 +129,11 @@ const SignupPage: React.FC = () => {
       console.log('SignupPage: Testing Supabase connection before saving user');
       const connectionTest = await testSupabaseConnection();
       console.log('SignupPage: Connection test result:', connectionTest);
+      
+      // 🔴 ADD DEBUG CALL HERE
+      console.log('🔴 CALLING DEBUG FUNCTION FIRST');
+      const debugResult = await debugLiveSignup(formData.email, formData.name, productId);
+      console.log('🔴 DEBUG FUNCTION RESULT:', debugResult);
       
       // Save user to Supabase
       console.log('SignupPage: Attempting to save user with data:', {
