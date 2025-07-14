@@ -314,7 +314,24 @@ const AdminDashboard: React.FC = () => {
             >
               Try Again
             </button>
-            <div className="absolute left-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 z-10">
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Users Table */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        {error ? (
+          <div className="p-6 text-center">
+            <div className="text-red-500 mb-4">{error}</div>
+            <button
+              onClick={handleRefresh}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
         ) : isLoading ? (
           <div className="p-12 text-center">
             <div className="w-12 h-12 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
