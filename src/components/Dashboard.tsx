@@ -606,13 +606,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2 text-slate-700">
-              <Eye className="w-5 h-5" />
-              <span className="font-medium">Vision</span>
-            </div>
-            <div className="text-slate-300">→</div>
-            <div className="flex items-center space-x-2 text-slate-700">
-              <Heart className="w-5 h-5" />
-              <span className="font-medium">Values</span>
             </div>
             <div className="text-slate-300">→</div>
             <div className="flex items-center space-x-2 text-slate-700">

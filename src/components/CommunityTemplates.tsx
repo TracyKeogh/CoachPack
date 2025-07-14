@@ -374,14 +374,17 @@ const CommunityTemplates: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Community Templates</h1>
-          <p className="text-slate-600 mt-2">
-            Discover and use goal templates shared by the community
-          </p>
-          {userSharedCount > 0 && (
-            <p className="text-sm text-green-600 mt-1">
-              You've shared {userSharedCount} template{userSharedCount !== 1 ? 's' : ''} with the community
-            </p>
-          )}
+         <div className="flex items-center mt-2">
+           <p className="text-slate-600">
+             Discover and use goal templates shared by the community
+           </p>
+           {userSharedCount > 0 && (
+             <p className="text-sm text-green-600 ml-4 flex items-center">
+               <Share2 className="w-4 h-4 mr-1" />
+               You've shared {userSharedCount} template{userSharedCount !== 1 ? 's' : ''}
+             </p>
+           )}
+         </div>
         </div>
         <Link
           to="/goals"

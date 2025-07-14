@@ -26,6 +26,24 @@ const Header: React.FC = () => {
               <p className="text-sm text-slate-600">Intentional Living Made Actionable</p>
             </div>
           </Link>
+          <Link 
+            to="/goals"
+            className="px-4 py-2 text-slate-600 hover:text-slate-900 transition-colors"
+          >
+            Goals
+          </Link>
+          <Link 
+            to="/templates"
+            className="px-4 py-2 text-slate-600 hover:text-slate-900 transition-colors"
+          >
+            Templates
+          </Link>
+          <Link 
+            to="/calendar"
+            className="px-4 py-2 text-slate-600 hover:text-slate-900 transition-colors"
+          >
+            Calendar
+          </Link>
           
           <div className="flex items-center space-x-4">
             <Link 
