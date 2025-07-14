@@ -307,7 +307,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signOut,
     resetPassword,
     updatePassword,
-    clearError
+    clearError,
     hasAccess
   };
 
