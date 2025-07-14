@@ -1,56 +1,41 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Target, Sparkles } from 'lucide-react';
-import { createClient } from '@supabase/supabase-js';
-
-// Validate environment variables
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error("Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.");
-}
-
-const supabase = createClient(
-  supabaseUrl,
-  supabaseAnonKey
-);
+import { useAuth } from '../../hooks/useAuth';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const { signIn, loading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      console.log('LoginPage: Attempting to sign in with email:', email);
+      const { user, error: signInError } = await signIn(email, password);
 
-      if (error) {
+      if (signInError) {
+        console.error('LoginPage: Sign in error:', signInError);
         // Provide more helpful error messages
-        if (error.message.includes('Invalid login credentials')) {
+        if (signInError.message.includes('Invalid login credentials')) {
           setError('Invalid email or password. Please check your credentials and try again.');
-        } else if (error.message.includes('Email not confirmed')) {
+        } else if (signInError.message.includes('Email not confirmed')) {
           setError('Please check your email and click the confirmation link before signing in.');
         } else {
-          setError(error.message);
+          setError(signInError.message);
         }
       } else {
+        console.log('LoginPage: Sign in successful, user:', user?.id);
         navigate('/dashboard');
       }
     } catch (err) {
+      console.error('LoginPage: Exception during sign in:', err);
       setError('An unexpected error occurred. Please try again.');
-    } finally {
-      setLoading(false);
     }
   };
 

@@ -66,11 +66,13 @@ async function debugLiveSignup(email, name, productId) {
 import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { Mail, Lock, User, Eye, EyeOff, Check, AlertCircle, Target, Sparkles, ArrowLeft } from 'lucide-react';
-import { saveUser, testSupabaseConnection } from '../lib/supabase';
+import { saveUser } from '../lib/supabase';
+import { useAuth } from '../hooks/useAuth';
   
 const SignupPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { signUp, loading: authLoading } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -116,7 +118,7 @@ const SignupPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('SignupPage: Form submitted');
+    console.log('SignupPage: Form submitted with email:', formData.email);
     
     if (!validateForm()) {
       console.log('SignupPage: Form validation failed');
@@ -126,44 +128,47 @@ const SignupPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      console.log('SignupPage: Testing Supabase connection before saving user');
-      const connectionTest = await testSupabaseConnection();
-      console.log('SignupPage: Connection test result:', connectionTest);
+      // First, create the user account with Supabase Auth
+      console.log('SignupPage: Attempting to create auth user');
+      const { user, error: authError } = await signUp(formData.email, formData.password);
       
-      // 🔴 ADD DEBUG CALL HERE
-      console.log('🔴 CALLING DEBUG FUNCTION FIRST');
-      const debugResult = await debugLiveSignup(formData.email, formData.name, productId);
-      console.log('🔴 DEBUG FUNCTION RESULT:', debugResult);
-      
-      // Save user to Supabase
-      console.log('SignupPage: Attempting to save user with data:', {
-        email: formData.email,
-        name: formData.name,
-        productId
-      });
-      
-      const { error } = await saveUser(
-        formData.email,
-        formData.name,
-        productId
-      );
-      
-      if (error) {
-        console.error('SignupPage: Error from saveUser:', error);
-        // Check for duplicate email error
-        if (error.message?.includes('duplicate key') || error.message?.includes('unique constraint')) {
-          console.log('SignupPage: Duplicate email detected');
-          setErrors({ email: 'This email is already registered' });
-          setSaveError(null);
+      if (authError) {
+        console.error('SignupPage: Auth error:', authError);
+        if (authError.message?.includes('User already registered')) {
+          setErrors({ email: 'This email is already registered. Please sign in instead.' });
         } else {
-          console.error('SignupPage: Other error from saveUser:', error.message);
-          setSaveError(`Failed to save user: ${error.message}`);
+          setSaveError(`Registration failed: ${authError.message}`);
         }
         setIsLoading(false);
         return;
       }
+      
+      console.log('SignupPage: Auth user created successfully:', user?.id);
+      
+      // Then save additional user profile data
+      try {
+        console.log('SignupPage: Attempting to save user profile data');
+        const { error: profileError } = await saveUser(
+          formData.email,
+          formData.name,
+          productId
+        );
+        
+        if (profileError) {
+          // If it's a duplicate key error, it's not critical since auth user was created
+          if (profileError.message?.includes('duplicate key') || profileError.message?.includes('unique constraint')) {
+            console.log('SignupPage: Profile already exists, continuing to checkout');
+          } else {
+            console.warn('SignupPage: Profile creation failed but auth succeeded:', profileError.message);
+            // Continue to checkout even if profile creation fails
+          }
+        }
+      } catch (profileError) {
+        console.warn('SignupPage: Profile creation error (non-critical):', profileError);
+        // Continue to checkout even if profile creation fails
+      }
 
-      console.log('SignupPage: User saved successfully, redirecting to checkout');
+      console.log('SignupPage: User registration completed, redirecting to checkout');
       // Redirect to checkout with user information
       navigate(`/checkout?productId=${productId}&email=${encodeURIComponent(formData.email)}&name=${encodeURIComponent(formData.name)}`);
     } catch (error) {
@@ -368,10 +373,10 @@ const SignupPage: React.FC = () => {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || authLoading}
               className="w-full mt-6 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? (
+              {(isLoading || authLoading) ? (
                 <div className="flex items-center justify-center space-x-2">
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   <span>Processing...</span>
