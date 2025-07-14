@@ -13,9 +13,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requiresAccess = false 
 }) => {
   const { user, loading, isAuthenticated, hasAccess } = useAuth();
-  requiresAccess = false 
-}) => {
-  const { user, loading, isAuthenticated, hasAccess } = useAuth();
   const location = useLocation();
 
   // Show loading state while checking authentication
