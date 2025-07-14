@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { Mail, Lock, User, Eye, EyeOff, Check, AlertCircle, Target, Sparkles, ArrowLeft } from 'lucide-react';
+import { saveUser } from '../lib/supabase';
   
 const SignupPage: React.FC = () => {
   const navigate = useNavigate();
@@ -14,15 +15,15 @@ const SignupPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState<Record<string, string | null>>({});
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Get product ID from query params if available
   const queryParams = new URLSearchParams(location.search);
   const productId = queryParams.get('productId') || 'complete-toolkit';
 
   const validateForm = () => {
-    const newErrors: Record<string, string> = {};
+    const newErrors: Record<string, string | null> = {};
 
     if (!formData.name.trim()) {
       newErrors.name = 'Name is required';
@@ -58,11 +59,30 @@ const SignupPage: React.FC = () => {
     setIsLoading(true);
 
     try {
+      // Save user to Supabase
+      const { error } = await saveUser(
+        formData.email,
+        formData.name,
+        productId
+      );
+      
+      if (error) {
+        // Check for duplicate email error
+        if (error.message?.includes('duplicate key') || error.message?.includes('unique constraint')) {
+          setErrors({ email: 'This email is already registered' });
+          setSaveError(null);
+        } else {
+          setSaveError(`Failed to save user: ${error.message}`);
+        }
+        setIsLoading(false);
+        return;
+      }
+
       // Redirect to checkout with user information
       navigate(`/checkout?productId=${productId}&email=${encodeURIComponent(formData.email)}&name=${encodeURIComponent(formData.name)}`);
-      setShowSuccess(true);
     } catch (error) {
-      setErrors({ general: 'Something went wrong. Please try again.' });
+      const errorMessage = error instanceof Error ? error.message : 'Something went wrong. Please try again.';
+      setSaveError(errorMessage);
       setIsLoading(false);
     }
   };
@@ -70,8 +90,9 @@ const SignupPage: React.FC = () => {
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+    if (errors[field] || saveError) {
+      setErrors(prev => ({ ...prev, [field]: null }));
+      setSaveError(null);
     }
   };
 
@@ -138,10 +159,10 @@ const SignupPage: React.FC = () => {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="p-8 pt-0">
-            {errors.general && (
+            {saveError && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
                 <AlertCircle className="w-4 h-4 text-red-500" />
-                <span className="text-sm text-red-600">{errors.general}</span>
+                <span className="text-sm text-red-600">{saveError}</span>
               </div>
             )}
 

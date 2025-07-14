@@ -10,6 +10,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import CheckoutPage from './components/CheckoutPage';
 import SuccessPage from './components/SuccessPage';
 import CancelPage from './components/CancelPage';
+import AdminDashboard from './components/AdminDashboard';
 import AuthProvider from './AuthProvider';
 
 // Main App Components
@@ -88,6 +89,7 @@ function App() {
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/success" element={<SuccessPage />} />
           <Route path="/cancel" element={<CancelPage />} />
+          <Route path="/admin" element={<AdminDashboard />} />
           
           {/* Free Assessment Route */}
           <Route 

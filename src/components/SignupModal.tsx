@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Mail, Lock, User, Eye, EyeOff, Check, AlertCircle } from 'lucide-react';
+import { saveUser } from '../lib/supabase';
 
 interface SignupModalProps {
   isOpen: boolean;
@@ -23,10 +24,11 @@ const SignupModal: React.FC<SignupModalProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState<Record<string, string | null>>({});
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const validateForm = () => {
-    const newErrors: Record<string, string> = {};
+    const newErrors: Record<string, string | null> = {};
 
     if (!formData.name.trim()) {
       newErrors.name = 'Name is required';
@@ -60,12 +62,28 @@ const SignupModal: React.FC<SignupModalProps> = ({
     setIsLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Save user to Supabase
+      const { data, error } = await saveUser(
+        formData.email,
+        formData.name,
+        selectedPlan
+      );
+      
+      if (error) {
+        // Check for duplicate email error
+        if (error.message?.includes('duplicate key') || error.message?.includes('unique constraint')) {
+          setErrors({ email: 'This email is already registered' });
+          setSaveError(null);
+        } else {
+          setSaveError(`Failed to save user: ${error.message}`);
+        }
+        setIsLoading(false);
+        return;
+      }
       
       // Create user object
       const user = {
-        id: Date.now().toString(),
+        id: data?.id || Date.now().toString(),
         name: formData.name,
         email: formData.email,
         plan: selectedPlan,
@@ -75,7 +93,8 @@ const SignupModal: React.FC<SignupModalProps> = ({
       // Call success handler
       onSuccess(user);
     } catch (error) {
-      setErrors({ general: 'Something went wrong. Please try again.' });
+      const errorMessage = error instanceof Error ? error.message : 'Something went wrong. Please try again.';
+      setSaveError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -84,8 +103,9 @@ const SignupModal: React.FC<SignupModalProps> = ({
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+    if (errors[field] || saveError) {
+      setErrors(prev => ({ ...prev, [field]: null }));
+      setSaveError(null);
     }
   };
 
@@ -135,6 +155,13 @@ const SignupModal: React.FC<SignupModalProps> = ({
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
               <AlertCircle className="w-4 h-4 text-red-500" />
               <span className="text-sm text-red-600">{errors.general}</span>
+            </div>
+          )}
+
+          {saveError && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
+              <AlertCircle className="w-4 h-4 text-red-500" />
+              <span className="text-sm text-red-600">{saveError}</span>
             </div>
           )}
 

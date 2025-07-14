@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Mail, ArrowRight, Shield, CheckCircle2, Sparkles } from 'lucide-react';
 import { useWheelSignup } from '../hooks/useWheelSignup';
+import { saveUser } from '../lib/supabase';
 
 interface WheelSignupModalProps {
   isOpen: boolean;
@@ -12,23 +13,39 @@ const WheelSignupModal: React.FC<WheelSignupModalProps> = ({ isOpen, onClose, on
   const { createSignup } = useWheelSignup();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError('');
+    setError(null);
 
     try {
+      // Save to Supabase
+      const { error: saveError } = await saveUser(
+        email,
+        email.split('@')[0], // Use part of email as name
+        'free'
+      );
+      
+      if (saveError) {
+        // Ignore duplicate email errors - we'll still create the wheel signup
+        if (!saveError.message?.includes('duplicate key') && !saveError.message?.includes('unique constraint')) {
+          throw new Error(`Failed to save user: ${saveError.message}`);
+        }
+      }
+      
+      // Create wheel signup
       const success = await createSignup(email);
       
       if (success) {
         onSuccess(email);
       } else {
-        setError('Something went wrong. Please try again.');
+        setError('Failed to create wheel signup. Please try again.');
       }
     } catch (err) {
-      setError('Something went wrong. Please try again.');
+      const errorMessage = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
