@@ -60,7 +60,6 @@ function AppContent() {
           >
             <div className="max-w-7xl mx-auto">
               <Routes>
-                <Route path="/dashboard" element={<Dashboard onNavigate={(view) => window.location.href = `/${view}`} />} />
                 <Route path="/wheel" element={<WheelOfLife />} />
                 <Route path="/values" element={<ValuesClarity />} />
                 <Route path="/vision" element={<VisionBoard />} />
@@ -90,6 +89,13 @@ function App() {
           <Route path="/success" element={<SuccessPage />} />
           <Route path="/cancel" element={<CancelPage />} />
           <Route path="/admin" element={<AdminDashboard />} />
+         
+         {/* Dashboard Route */}
+         <Route path="/dashboard" element={
+           <ProtectedRoute>
+             <AppContent />
+           </ProtectedRoute>
+         } />
           
           {/* Free Assessment Route */}
           <Route 
