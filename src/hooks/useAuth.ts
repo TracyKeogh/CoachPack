@@ -60,31 +60,9 @@ export const useAuth = () => {
       isAuthenticated: false
     };
     return mockAuth;
-    const mockAuth: UseAuthReturn = {
-      user: null,
-      loading: false,
-      error: null,
-      signIn: async () => {},
-      signUp: async () => ({ user: null, error: null }),
-      signOut: async () => {},
-      resetPassword: async () => {},
-      updatePassword: async () => {},
-      clearError: () => {},
-      hasAccess: () => true, // Always return true to allow access
-      isAuthenticated: false
-    };
-    return mockAuth;
   }
   
   // Add isAuthenticated computed property
-  const isAuthenticated = !!context.user;
-  
-  const authContext: UseAuthReturn = {
-    ...context,
-    isAuthenticated
-  };
-  
-  return authContext;
   const isAuthenticated = !!context.user;
   
   const authContext: UseAuthReturn = {
