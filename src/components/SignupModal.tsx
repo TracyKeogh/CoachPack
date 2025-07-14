@@ -56,13 +56,24 @@ const SignupModal: React.FC<SignupModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('SignupModal: Form submitted');
     
     if (!validateForm()) return;
 
     setIsLoading(true);
 
     try {
+      console.log('SignupModal: Testing Supabase connection before saving user');
+      const connectionTest = await testSupabaseConnection();
+      console.log('SignupModal: Connection test result:', connectionTest);
+      
       // Save user to Supabase
+      console.log('SignupModal: Attempting to save user with data:', {
+        email: formData.email,
+        name: formData.fullName,
+        plan: selectedPlan
+      });
+      
       const { data, error } = await saveUser(
         formData.email,
         formData.name,
@@ -70,16 +81,21 @@ const SignupModal: React.FC<SignupModalProps> = ({
       );
       
       if (error) {
+        console.error('SignupModal: Error from saveUser:', error);
         // Check for duplicate email error
         if (error.message?.includes('duplicate key') || error.message?.includes('unique constraint')) {
+          console.log('SignupModal: Duplicate email detected');
           setErrors({ email: 'This email is already registered' });
           setSaveError(null);
         } else {
+          console.error('SignupModal: Other error from saveUser:', error.message);
           setSaveError(`Failed to save user: ${error.message}`);
         }
         setIsLoading(false);
         return;
       }
+      
+      console.log('SignupModal: User saved successfully:', data);
       
       // Create user object
       const user = {
@@ -93,6 +109,7 @@ const SignupModal: React.FC<SignupModalProps> = ({
       // Call success handler
       onSuccess(user);
     } catch (error) {
+      console.error('SignupModal: Exception during form submission:', error);
       const errorMessage = error instanceof Error ? error.message : 'Something went wrong. Please try again.';
       setSaveError(errorMessage);
     } finally {

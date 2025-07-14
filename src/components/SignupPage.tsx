@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { Mail, Lock, User, Eye, EyeOff, Check, AlertCircle, Target, Sparkles, ArrowLeft } from 'lucide-react';
-import { saveUser } from '../lib/supabase';
+import { saveUser, testSupabaseConnection } from '../lib/supabase';
   
 const SignupPage: React.FC = () => {
   const navigate = useNavigate();
@@ -51,15 +51,27 @@ const SignupPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('SignupPage: Form submitted');
     
     if (!validateForm()) {
+      console.log('SignupPage: Form validation failed');
       return;
     }
 
     setIsLoading(true);
 
     try {
+      console.log('SignupPage: Testing Supabase connection before saving user');
+      const connectionTest = await testSupabaseConnection();
+      console.log('SignupPage: Connection test result:', connectionTest);
+      
       // Save user to Supabase
+      console.log('SignupPage: Attempting to save user with data:', {
+        email: formData.email,
+        name: formData.name,
+        productId
+      });
+      
       const { error } = await saveUser(
         formData.email,
         formData.name,
@@ -67,20 +79,25 @@ const SignupPage: React.FC = () => {
       );
       
       if (error) {
+        console.error('SignupPage: Error from saveUser:', error);
         // Check for duplicate email error
         if (error.message?.includes('duplicate key') || error.message?.includes('unique constraint')) {
+          console.log('SignupPage: Duplicate email detected');
           setErrors({ email: 'This email is already registered' });
           setSaveError(null);
         } else {
+          console.error('SignupPage: Other error from saveUser:', error.message);
           setSaveError(`Failed to save user: ${error.message}`);
         }
         setIsLoading(false);
         return;
       }
 
+      console.log('SignupPage: User saved successfully, redirecting to checkout');
       // Redirect to checkout with user information
       navigate(`/checkout?productId=${productId}&email=${encodeURIComponent(formData.email)}&name=${encodeURIComponent(formData.name)}`);
     } catch (error) {
+      console.error('SignupPage: Exception during form submission:', error);
       const errorMessage = error instanceof Error ? error.message : 'Something went wrong. Please try again.';
       setSaveError(errorMessage);
       setIsLoading(false);

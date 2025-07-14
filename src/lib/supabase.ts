@@ -5,14 +5,36 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables. Please check your .env file.');
+  console.error('CRITICAL ERROR: Missing Supabase environment variables. Please check your .env file.');
 }
+
+// Log connection attempt
+console.log('Attempting to connect to Supabase with URL:', supabaseUrl ? 'URL exists' : 'URL missing');
 
 // Create Supabase client
 export const supabase = createClient(
   supabaseUrl || '',
   supabaseAnonKey || ''
 );
+
+// Test Supabase connection
+export const testSupabaseConnection = async (): Promise<boolean> => {
+  try {
+    console.log('Testing Supabase connection...');
+    const { data, error } = await supabase.from('users').select('count').limit(1);
+    
+    if (error) {
+      console.error('Supabase connection test failed:', error);
+      return false;
+    }
+    
+    console.log('Supabase connection successful:', data);
+    return true;
+  } catch (error) {
+    console.error('Exception during Supabase connection test:', error);
+    return false;
+  }
+};
 
 // User types
 export interface User {
@@ -28,22 +50,42 @@ export interface User {
 // Save user to database
 export const saveUser = async (email: string, name: string, plan_type: string = 'complete'): Promise<{ data: User | null; error: Error | null }> => {
   try {
+    console.log('Attempting to save user to Supabase:', { email, name, plan_type });
+    
+    // First, test the connection
+    const isConnected = await testSupabaseConnection();
+    if (!isConnected) {
+      console.error('Cannot save user - Supabase connection failed');
+      return { data: null, error: new Error('Supabase connection failed') };
+    }
+    
+    // Log the exact data being sent
+    const userData = { email, name, plan_type };
+    console.log('Sending user data to Supabase:', JSON.stringify(userData));
+    
     const { data, error } = await supabase
       .from('users')
       .insert([
-        { email, name, plan_type }
+        userData
       ])
       .select()
       .single();
     
     if (error) {
-      console.error('Error saving user:', error);
+      console.error('Error saving user to Supabase:', error);
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint
+      });
       return { data: null, error };
     }
     
+    console.log('User saved successfully:', data);
     return { data, error: null };
   } catch (error) {
-    console.error('Exception saving user:', error);
+    console.error('Exception during user save operation:', error);
     return { data: null, error: error as Error };
   }
 };
