@@ -314,23 +314,6 @@ const AdminDashboard: React.FC = () => {
             >
               Try Again
             </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Users Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        {error ? (
-          <div className="p-6 text-center">
-            <div className="text-red-500 mb-4">{error}</div>
-            <button
-              onClick={handleRefresh}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-            >
-              Try Again
-            </button>
           </div>
         ) : isLoading ? (
           <div className="p-12 text-center">
