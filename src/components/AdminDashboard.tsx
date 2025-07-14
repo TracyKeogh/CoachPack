@@ -263,7 +263,7 @@ const AdminDashboard: React.FC = () => {
                 <Filter className="w-5 h-5 text-slate-500" />
                 <span className="text-slate-700">Filter Plan</span>
               </button>
-              <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 z-10">
+              <div className="absolute left-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 z-10">
                 <button
                   onClick={() => setFilterPlan(null)}
                   className={`flex items-center space-x-2 w-full px-4 py-2 text-left hover:bg-slate-50 transition-colors ${
