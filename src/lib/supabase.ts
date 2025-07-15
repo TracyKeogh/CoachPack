@@ -39,18 +39,19 @@ export const testSupabaseConnection = async (): Promise<boolean> => {
 // User types
 export interface User {
   id: string;
+  user_id: string;
   email: string;
-  name: string;
-  plan_type: string;
-  signup_date: string;
-  email_verified: boolean;
+  full_name: string;
+  subscription_status: string;
+  onboarding_completed: boolean;
   created_at: string;
+  updated_at: string;
 }
 
 // Save user to database
-export const saveUser = async (email: string, name: string, plan_type: string = 'complete'): Promise<{ data: User | null; error: Error | null }> => {
+export const saveUser = async (email: string, name: string, subscription_status: string = 'free'): Promise<{ data: User | null; error: Error | null }> => {
   try {
-    console.log('Attempting to save user to Supabase:', { email, name, plan_type });
+    console.log('Attempting to save user to Supabase:', { email, name, subscription_status });
     
     // Retry getting authenticated user up to 3 times
     let user = null;
@@ -83,17 +84,16 @@ export const saveUser = async (email: string, name: string, plan_type: string = 
     
     // Log the exact data being sent
     const userData = { 
-      id: user.id,  // Use the authenticated user's ID
+      user_id: user.id,  // Use the authenticated user's ID
       email, 
-      name, 
-      plan_type,
-      email_verified: user.email_confirmed_at ? true : false,
-      signup_date: new Date().toISOString()
+      full_name: name, 
+      subscription_status,
+      onboarding_completed: false
     };
     console.log('Sending user data to Supabase:', JSON.stringify(userData));
     
     const { data, error } = await supabase
-      .from('users')
+      .from('user_profiles')
       .insert([userData])
       .select()
       .single();
@@ -121,7 +121,7 @@ export const saveUser = async (email: string, name: string, plan_type: string = 
 export const getUserByEmail = async (email: string): Promise<{ data: User | null; error: Error | null }> => {
   try {
     const { data, error } = await supabase
-      .from('users')
+      .from('user_profiles')
       .select('*')
       .eq('email', email)
       .single();
@@ -142,7 +142,7 @@ export const getUserByEmail = async (email: string): Promise<{ data: User | null
 export const getAllUsers = async (): Promise<{ data: User[] | null; error: Error | null }> => {
   try {
     const { data, error } = await supabase
-      .from('users')
+      .from('user_profiles')
       .select('*')
       .order('created_at', { ascending: false });
     

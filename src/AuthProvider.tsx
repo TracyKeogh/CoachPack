@@ -60,9 +60,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('AuthProvider: Checking if user profile exists for user:', userId);
       const { data, error } = await supabase
-        .from('users')
+        .from('user_profiles')
         .select('id')
-        .eq('id', userId)
+        .eq('user_id', userId)
         .single();
 
       if (error) {
@@ -213,7 +213,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const newUser = {
           id: data.user.id,
           email: data.user.email!,
-          name: data.user.user_metadata.full_name || data.user.email!.split('@')[0],
+          full_name: data.user.user_metadata.full_name || data.user.email!.split('@')[0],
           avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.user.email}`
         };
         
@@ -277,7 +277,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         resultUser = {
           id: data.user.id,
           email: data.user.email!,
-          name: name || data.user.email!.split('@')[0],
+          full_name: name || data.user.email!.split('@')[0],
           avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.user.email}`
         };
         
@@ -521,7 +521,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const newUser = {
           id: session.user.id,
           email: session.user.email!,
-          name: session.user.user_metadata.full_name || session.user.email!.split('@')[0],
+          full_name: session.user.user_metadata.full_name || session.user.email!.split('@')[0],
           avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.email}`
         };
         setUser(newUser);
