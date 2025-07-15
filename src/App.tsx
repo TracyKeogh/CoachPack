@@ -1,22 +1,25 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, Outlet } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 
 // Auth Components
-// Auth Components
+import AuthProvider from './AuthProvider';
 import LoginPage from './components/auth/LoginPage';
-import SignupPage from './components/auth/SignupPage';
 import ForgotPasswordPage from './components/auth/ForgotPasswordPage';
 import ResetPasswordPage from './components/auth/ResetPasswordPage';
 import ProtectedRoute from './components/ProtectedRoute';
-import CheckoutPage from './components/CheckoutPage';
-import SuccessPage from './components/SuccessPage';
-import CancelPage from './components/CancelPage';
-import AdminDashboard from './components/AdminDashboard';
-import AuthProvider from './AuthProvider';
 
 // Main App Components
+import LandingPage from './components/LandingPage';
+import PricingPage from './components/PricingPage';
+import CheckoutPage from './components/CheckoutPage';
+import CheckoutSuccessPage from './components/CheckoutSuccessPage';
+import CancelPage from './components/CancelPage';
+import AdminDashboard from './components/AdminDashboard';
+import FreeWheelAssessment from './components/FreeWheelAssessment';
+
+// Dashboard Components
 import Header from './components/Header';
 import Navigation from './components/Navigation';
 import Dashboard from './components/Dashboard';
@@ -25,17 +28,56 @@ import ValuesClarity from './components/ValuesClarity';
 import VisionBoard from './components/VisionBoard';
 import GoalSetting from './components/GoalSetting';
 import Calendar from './components/Calendar';
-import LandingPage from './components/LandingPage';
 import CommunityTemplates from './components/CommunityTemplates';
-import FreeWheelAssessment from './components/FreeWheelAssessment';
-import PricingPage from './components/PricingPage';
 
-export type ViewType = 'landing' | 'free-wheel' | 'dashboard' | 'wheel' | 'values' | 'vision' | 'goals' | 'calendar' | 'templates';
+// Auth Layout Component
+const AuthLayout: React.FC = () => {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
+          <p className="text-gray-600">Sign in to access your Coach Pack dashboard</p>
+        </div>
+        <Routes>
+          <Route path="login" element={<LoginPage />} />
+          <Route path="forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="reset-password" element={<ResetPasswordPage />} />
+          <Route path="*" element={<Navigate to="/auth/login" replace />} />
+        </Routes>
+      </div>
+    </div>
+  );
+};
 
-// Custom component to handle 404 errors
-const NotFound = () => {
-  const location = useLocation();
-  
+// Dashboard Layout Component
+const DashboardLayout: React.FC = () => {
+  return (
+    <DndProvider backend={HTML5Backend}>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50">
+        <Header />
+        <div className="flex">
+          <Navigation />
+          <main className="flex-1 p-6">
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/wheel" element={<WheelOfLife />} />
+              <Route path="/values" element={<ValuesClarity />} />
+              <Route path="/vision" element={<VisionBoard />} />
+              <Route path="/goals" element={<GoalSetting />} />
+              <Route path="/calendar" element={<Calendar />} />
+              <Route path="/templates" element={<CommunityTemplates />} />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+          </main>
+        </div>
+      </div>
+    </DndProvider>
+  );
+};
+
+// 404 Component
+const NotFound: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50 flex items-center justify-center p-6">
       <div className="bg-white rounded-2xl p-8 shadow-lg border border-slate-200 max-w-md w-full text-center">
@@ -44,7 +86,7 @@ const NotFound = () => {
         </div>
         <h1 className="text-2xl font-bold text-slate-900 mb-2">Page Not Found</h1>
         <p className="text-slate-600 mb-6">
-          We couldn't find the page you're looking for: <span className="font-medium">{location.pathname}</span>
+          The page you're looking for doesn't exist or has been moved.
         </p>
         <div className="space-y-3">
           <a 
@@ -65,92 +107,19 @@ const NotFound = () => {
   );
 };
 
-function AppContent() {
-  const [isNavigationCollapsed, setIsNavigationCollapsed] = React.useState(false);
-  const location = useLocation();
-
-  // Auto-collapse navigation when on dashboard, expand for other views
-  React.useEffect(() => {
-    const path = location.pathname;
-    if (path === '/dashboard') {
-      setIsNavigationCollapsed(true);
-    } else {
-      setIsNavigationCollapsed(false);
-    }
-  }, [location.pathname]);
-
-  return (
-    <DndProvider backend={HTML5Backend}>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50">
-        <Header />
-        <div className="flex">
-          <Navigation 
-            currentView={location.pathname.substring(1) as ViewType || 'dashboard'} 
-            onNavigate={(view) => navigate(`/${view}`)}
-            isCollapsed={isNavigationCollapsed}
-            onToggleCollapse={() => setIsNavigationCollapsed(!isNavigationCollapsed)}
-          />
-          <main 
-            className={`flex-1 p-6 transition-all duration-300 ${
-              isNavigationCollapsed ? 'ml-16' : 'ml-64'
-            }`}
-          >
-            <div className="max-w-7xl mx-auto">
-              <Routes>
-                <Route path="/wheel" element={<WheelOfLife />} />
-                <Route path="/values" element={<ValuesClarity />} />
-                <Route path="/vision" element={<VisionBoard />} />
-                <Route path="/goals" element={<GoalSetting />} />
-                <Route path="/calendar" element={<Calendar />} />
-                <Route path="/templates" element={<CommunityTemplates />} />
-              </Routes>
-            </div>
-          </main>
-        </div>
-      </div>
-    </DndProvider>
-  );
-}
-
-// Layout component for auth pages
-const AuthLayout = () => {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-50">
-      <Outlet />
-    </div>
-  );
-};
-
 function App() {
   return (
-    <Router basename="/">
+    <Router>
       <AuthProvider>
         <Routes>
           {/* Public Routes */}
-          <Route path="/" element={<LandingPage onNavigate={(view) => window.location.href = `/${view}`} />} />
-          
-          {/* Auth Routes with consistent layout */}
-          <Route element={<AuthLayout />}>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignupPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
-          </Route>
-          
+          <Route path="/" element={<LandingPage />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
-          <Route path="/success" element={<SuccessPage />} />
+          <Route path="/checkout-success" element={<CheckoutSuccessPage />} />
           <Route path="/cancel" element={<CancelPage />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-         
-         {/* Dashboard Route */}
-         <Route path="/dashboard" element={
-           <ProtectedRoute>
-             <AppContent />
-           </ProtectedRoute>
-         } />
           
-          {/* Free Assessment Route */}
+          {/* Free Assessment (No Auth Required) */}
           <Route 
             path="/free-wheel" 
             element={
@@ -162,38 +131,77 @@ function App() {
               />
             } 
           />
-
-          {/* Dashboard and feature routes */}
-          <Route path="/wheel" element={
-            <ProtectedRoute>
-              <AppContent />
-            </ProtectedRoute>
-          } />
-          <Route path="/values" element={
-            <ProtectedRoute>
-              <AppContent />
-            </ProtectedRoute>
-          } />
-          <Route path="/vision" element={
-            <ProtectedRoute>
-              <AppContent />
-            </ProtectedRoute>
-          } />
-          <Route path="/goals" element={
-            <ProtectedRoute>
-              <AppContent />
-            </ProtectedRoute>
-          } />
-          <Route path="/calendar" element={
-            <ProtectedRoute>
-              <AppContent />
-            </ProtectedRoute>
-          } />
-          <Route path="/templates" element={
-            <ProtectedRoute>
-              <AppContent />
-            </ProtectedRoute>
-          } />
+          
+          {/* Auth Routes */}
+          <Route path="/auth/*" element={<AuthLayout />} />
+          
+          {/* Protected Dashboard Routes */}
+          <Route 
+            path="/dashboard/*" 
+            element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* Individual Protected Routes (for direct access) */}
+          <Route 
+            path="/wheel" 
+            element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/values" 
+            element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/vision" 
+            element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/goals" 
+            element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/calendar" 
+            element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/templates" 
+            element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* Admin Route */}
+          <Route path="/admin" element={<AdminDashboard />} />
+          
+          {/* Legacy Redirects */}
+          <Route path="/signup" element={<Navigate to="/pricing" replace />} />
+          <Route path="/login" element={<Navigate to="/auth/login" replace />} />
+          <Route path="/success" element={<Navigate to="/checkout-success" replace />} />
           
           {/* 404 Route */}
           <Route path="*" element={<NotFound />} />
