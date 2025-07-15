@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Mail, Lock, Eye, EyeOff, ArrowLeft, Target, Sparkles, AlertCircle } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowLeft, Target, Sparkles, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 
 const loginSchema = z.object({
@@ -17,8 +17,10 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation() as { state?: { from?: { pathname: string }, passwordReset?: boolean } };
-  const { signIn, error: authError, loading: authLoading, clearError } = useAuth();
+  const { signIn, error: authError, loading: authLoading, clearError, resendConfirmationEmail } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
+  const [emailForResend, setEmailForResend] = useState('');
+  const [confirmationSent, setConfirmationSent] = useState(false);
   
   // Get the redirect path from location state or default to dashboard
   const from = location.state?.from?.pathname || '/dashboard';
@@ -39,6 +41,8 @@ const LoginPage: React.FC = () => {
 
   const onSubmit = async (data: LoginFormValues) => {
     clearError();
+    setEmailForResend(data.email);
+    setConfirmationSent(false);
     try {
       await signIn(data.email, data.password);
       // If we get here without error, navigate to the redirect path
@@ -48,6 +52,19 @@ const LoginPage: React.FC = () => {
       console.error('Login error:', error);
     }
   };
+
+  const handleResendConfirmation = async () => {
+    if (!emailForResend) return;
+    
+    try {
+      await resendConfirmationEmail(emailForResend);
+      setConfirmationSent(true);
+    } catch (error) {
+      console.error('Resend confirmation error:', error);
+    }
+  };
+
+  const isEmailNotConfirmedError = authError?.includes('Email not confirmed') || authError?.includes('check your email and click the confirmation link');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-50">
@@ -98,12 +115,34 @@ const LoginPage: React.FC = () => {
               </div>
             )}
 
-            {authError && (
+            {confirmationSent && (
+              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start space-x-3">
+                <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="text-sm font-medium text-green-800">Confirmation Email Sent</h3>
+                  <p className="text-sm text-green-700 mt-1">
+                    We've sent a new confirmation email to {emailForResend}. Please check your inbox and click the confirmation link.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {authError && !confirmationSent && (
               <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-3">
                 <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
                 <div>
                   <h3 className="text-sm font-medium text-red-800">Login failed</h3>
                   <p className="text-sm text-red-700 mt-1">{authError}</p>
+                  {isEmailNotConfirmedError && (
+                    <button
+                      type="button"
+                      onClick={handleResendConfirmation}
+                      disabled={authLoading}
+                      className="mt-2 text-sm font-medium text-red-800 hover:text-red-900 underline disabled:opacity-50"
+                    >
+                      Resend confirmation email
+                    </button>
+                  )}
                 </div>
               </div>
             )}

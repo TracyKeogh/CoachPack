@@ -20,6 +20,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   resetPassword: (email: string, redirectTo?: string) => Promise<void>;
   updatePassword: (password: string) => Promise<void>;
+  resendConfirmationEmail: (email: string) => Promise<void>;
   clearError: () => void;
   hasAccess: boolean;
   testEmailService: () => Promise<void>;
@@ -401,6 +402,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [formatError, testConnection]);
 
+  // Resend confirmation email
+  const resendConfirmationEmail = useCallback(async (email: string) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Test connection first
+      if (!connectionTested) {
+        const isConnected = await testConnection();
+        setConnectionTested(true);
+        if (!isConnected) {
+          throw new Error('Unable to connect to Supabase. Please check your internet connection and try again.');
+        }
+      }
+      console.log('AuthProvider: Attempting to resend confirmation email to:', email);
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email
+      });
+      
+      if (error) {
+        console.error('AuthProvider: Resend confirmation error:', error);
+        throw new Error(formatError(error));
+      }
+
+      console.log('AuthProvider: Confirmation email resent successfully');
+    } catch (err) {
+      console.error('AuthProvider: Resend confirmation exception:', err);
+      setError(err instanceof Error ? err.message : 'Failed to resend confirmation email');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [formatError, testConnection]);
+
   // Clear error
   const clearError = useCallback(() => {
     setError(null);
@@ -523,6 +559,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signOut,
     resetPassword,
     updatePassword,
+    resendConfirmationEmail,
     clearError,
     hasAccess,
     testEmailService,
