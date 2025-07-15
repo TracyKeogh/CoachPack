@@ -52,6 +52,14 @@ export const saveUser = async (email: string, name: string, plan_type: string = 
   try {
     console.log('Attempting to save user to Supabase:', { email, name, plan_type });
     
+    // Get the current authenticated user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      console.error('No authenticated user found:', authError);
+      return { data: null, error: new Error('User must be authenticated first') };
+    }
+
     // First, test the connection
     const isConnected = await testSupabaseConnection();
     if (!isConnected) {
@@ -60,14 +68,19 @@ export const saveUser = async (email: string, name: string, plan_type: string = 
     }
     
     // Log the exact data being sent
-    const userData = { email, name, plan_type };
+    const userData = { 
+      id: user.id,  // Use the authenticated user's ID
+      email, 
+      name, 
+      plan_type,
+      email_verified: user.email_confirmed_at ? true : false,
+      signup_date: new Date().toISOString()
+    };
     console.log('Sending user data to Supabase:', JSON.stringify(userData));
     
     const { data, error } = await supabase
       .from('users')
-      .insert([
-        userData
-      ])
+      .insert([userData])
       .select()
       .single();
     
@@ -123,7 +136,7 @@ export const getAllUsers = async (): Promise<{ data: User[] | null; error: Error
       console.error('Error getting all users:', error);
       return { data: null, error };
     }
-    
+
     return { data, error: null };
   } catch (error) {
     console.error('Exception getting all users:', error);
@@ -143,7 +156,7 @@ export const getUserStatistics = async (): Promise<{ data: any | null; error: Er
       console.error('Error getting user statistics:', error);
       return { data: null, error };
     }
-    
+
     return { data, error: null };
   } catch (error) {
     console.error('Exception getting user statistics:', error);
