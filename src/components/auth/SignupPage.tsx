@@ -75,10 +75,8 @@ const SignupPage: React.FC = () => {
       // Set success state
       setSignupSuccess(true);
       
-      // Redirect to dashboard after short delay
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 2000);
+      // Don't redirect - user needs to confirm email first
+      // The AuthProvider will handle the redirect after email confirmation
       
     } catch (error) {
       console.error('SignupPage: Unexpected error during signup:', error);
