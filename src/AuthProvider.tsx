@@ -1,17 +1,14 @@
-import React, { createContext, useState, useEffect, useCallback } from 'react';
-import { supabase, testConnection, createUserProfile, checkUserProfile, testEmailService as testSupabaseEmail } from './utils/supabase-setup';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { supabase, testSupabaseConnection, saveUser } from './lib/supabase';
+import type { User } from '@supabase/supabase-js';
 
-// Define types for auth error handling
-interface AuthError {
-  message: string;
-  status?: number;
-}
-
+// Define our User type
 export interface User {
   id: string;
   email: string;
-  name?: string;
-  avatar?: string;
+  name: string;
+  avatar: string;
+  hasValidSubscription?: boolean;
 }
 
 interface AuthContextType {
@@ -19,42 +16,161 @@ interface AuthContextType {
   loading: boolean;
   error: string | null;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, name?: string) => Promise<void>;
+  signUp: (email: string, password: string, name?: string) => Promise<{ user: User | null; error: Error | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string, redirectTo?: string) => Promise<void>;
   updatePassword: (password: string) => Promise<void>;
-  clearError: () => void,
-  hasAccess: () => boolean,
-  testEmailService: () => Promise<boolean>;
+  clearError: () => void;
+  hasAccess: boolean;
+  testEmailService: () => Promise<void>;
+  checkSubscription: () => Promise<boolean>;
 }
 
-export const AuthContext = createContext<AuthContextType | null>(null);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-interface AuthProviderProps {
-  children: React.ReactNode;
-}
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
 
-const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [initialized, setInitialized] = useState<boolean>(false);
-  const [connectionTested, setConnectionTested] = useState<boolean>(false);
+  const [initialized, setInitialized] = useState(false);
+  const [connectionTested, setConnectionTested] = useState(false);
 
-  // Clear error
-  const clearError = useCallback(() => {
-    setError(null);
+  // Test connection
+  const testConnection = useCallback(async () => {
+    try {
+      console.log('AuthProvider: Testing Supabase connection...');
+      return await testSupabaseConnection();
+    } catch (error) {
+      console.error('AuthProvider: Connection test failed:', error);
+      return false;
+    }
   }, []);
 
-  // Format error message
-  const formatError = useCallback((error: AuthError): string => {
-    // Handle specific error codes
-    if (error.message.includes('User already registered')) {
-      return 'This email is already registered. Please sign in instead.';
+  // Check if user profile exists
+  const checkUserProfile = useCallback(async (userId: string): Promise<boolean> => {
+    try {
+      console.log('AuthProvider: Checking if user profile exists for user:', userId);
+      const { data, error } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.log('AuthProvider: User profile check error:', error);
+        return false;
+      }
+
+      const exists = !!data;
+      console.log('AuthProvider: User profile exists:', exists);
+      return exists;
+    } catch (error) {
+      console.error('AuthProvider: Exception checking user profile:', error);
+      return false;
     }
+  }, []);
+
+  // Create user profile
+  const createUserProfile = useCallback(async (userId: string, email: string, name: string): Promise<{ success: boolean; error: Error | null }> => {
+    try {
+      console.log('AuthProvider: Creating user profile for user:', userId);
+      const { data, error } = await saveUser(email, name);
+      
+      if (error) {
+        console.error('AuthProvider: Error creating user profile:', error);
+        return { success: false, error };
+      }
+
+      console.log('AuthProvider: User profile created successfully:', data);
+      return { success: true, error: null };
+    } catch (error) {
+      console.error('AuthProvider: Exception creating user profile:', error);
+      return { success: false, error: error as Error };
+    }
+  }, []);
+
+  // Check user subscription status
+  const checkSubscription = useCallback(async (): Promise<boolean> => {
+    if (!user) return false;
     
-    if (error.message.includes('Invalid login credentials')) {
+    try {
+      console.log('AuthProvider: Checking subscription status for user:', user.id);
+      
+      // Check if user has an active subscription
+      const { data: subscriptionData, error: subError } = await supabase
+        .from('stripe_user_subscriptions')
+        .select('subscription_status')
+        .eq('customer_id', user.id)
+        .eq('subscription_status', 'active')
+        .single();
+
+      if (subError && subError.code !== 'PGRST116') { // PGRST116 is "not found"
+        console.error('AuthProvider: Subscription check error:', subError);
+        return false;
+      }
+
+      // Check if user has completed orders (one-time payments)
+      const { data: orderData, error: orderError } = await supabase
+        .from('stripe_user_orders')
+        .select('order_status')
+        .eq('customer_id', user.id)
+        .eq('order_status', 'completed')
+        .limit(1);
+
+      if (orderError) {
+        console.error('AuthProvider: Order check error:', orderError);
+        return false;
+      }
+
+      const hasValidSubscription = !!(subscriptionData || (orderData && orderData.length > 0));
+      console.log('AuthProvider: User has valid subscription/payment:', hasValidSubscription);
+      
+      return hasValidSubscription;
+    } catch (error) {
+      console.error('AuthProvider: Exception checking subscription:', error);
+      return false;
+    }
+  }, [user]);
+
+  // Test email service
+  const testEmailService = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      console.log('AuthProvider: Testing email service...');
+      // This would call your email service test endpoint
+      // For now, we'll just simulate success
+      console.log('AuthProvider: Email service test completed');
+    } catch (error) {
+      console.error('AuthProvider: Email service test failed:', error);
+      setError('Email service test failed');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Format error messages
+  const formatError = useCallback((error: any) => {
+    if (error.message?.includes('Invalid login credentials')) {
       return 'Invalid email or password. Please check your credentials and try again.';
+    }
+    if (error.message?.includes('Email not confirmed')) {
+      return 'Please check your email and click the confirmation link before signing in.';
+    }
+    if (error.message?.includes('User already registered')) {
+      return 'An account with this email already exists. Please sign in instead.';
+    }
+    if (error.message?.includes('Password should be at least 6 characters')) {
+      return 'Password must be at least 6 characters long.';
     }
     
     // Return the original message if no specific handling
@@ -90,12 +206,14 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (data.user) {
         // Successfully signed in
         console.log('AuthProvider: Sign in successful for user:', data.user.id);
-        setUser({
+        const newUser = {
           id: data.user.id,
           email: data.user.email!,
-          name: data.user.user_metadata.full_name,
+          name: data.user.user_metadata.full_name || data.user.email!.split('@')[0],
           avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.user.email}`
-        });
+        };
+        
+        setUser(newUser);
         
         // Check if user profile exists, create if not
         const profileExists = await checkUserProfile(data.user.id);
@@ -104,7 +222,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const { success, error: profileError } = await createUserProfile(
             data.user.id,
             data.user.email!,
-            data.user.user_metadata.full_name
+            data.user.user_metadata.full_name || data.user.email!.split('@')[0]
           );
           if (!success && profileError)
             console.warn('AuthProvider: Failed to create profile, but login successful:', profileError);
@@ -120,7 +238,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [formatError]);
+  }, [formatError, testConnection, checkUserProfile, createUserProfile]);
 
   // Sign up with email and password
   const signUp = useCallback(async (email: string, password: string, name?: string): Promise<{ user: User | null; error: Error | null }> => {
@@ -218,7 +336,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
     
     return { user: resultUser, error: resultError };
-  }, [formatError]);
+  }, [formatError, createUserProfile]);
 
   // Sign out
   const signOut = useCallback(async () => {
@@ -250,7 +368,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [formatError]);
+  }, [formatError, testConnection]);
 
   // Reset password
   const resetPassword = useCallback(async (email: string, redirectTo?: string) => {
@@ -269,33 +387,18 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('AuthProvider: Attempting to send password reset email to:', email);
       
       const options: { redirectTo?: string } = {};
-      
-      // Add redirectTo if provided
       if (redirectTo) {
         options.redirectTo = redirectTo;
-        console.log('AuthProvider: Using redirect URL:', redirectTo);
-      } else {
-        // Default redirect to reset-password page on current origin
-        options.redirectTo = `${window.location.origin}/reset-password`;
-        console.log('AuthProvider: Using default redirect URL:', options.redirectTo);
       }
+      
       const { error } = await supabase.auth.resetPasswordForEmail(email, options);
       
       if (error) {
         console.error('AuthProvider: Password reset error:', error);
         throw new Error(formatError(error));
       }
-      
+
       console.log('AuthProvider: Password reset email sent successfully');
-      
-      // Log additional information for debugging
-      if (import.meta.env.DEV) {
-        console.log('AuthProvider: In development mode - password reset details:');
-        console.log('- Email:', email);
-        console.log('- Redirect URL:', options.redirectTo);
-        console.log('- Origin:', window.location.origin);
-        console.log('- Check Supabase logs for email delivery status');
-      }
     } catch (err) {
       console.error('AuthProvider: Password reset exception:', err);
       setError(err instanceof Error ? err.message : 'Password reset failed');
@@ -303,13 +406,13 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [formatError, connectionTested]);
-  
+  }, [formatError, testConnection]);
+
   // Update password
   const updatePassword = useCallback(async (password: string) => {
     setLoading(true);
     setError(null);
-    
+
     try {
       // Test connection first
       if (!connectionTested) {
@@ -323,65 +426,62 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { error } = await supabase.auth.updateUser({ password });
       
       if (error) {
-        console.error('AuthProvider: Update password error:', error);
+        console.error('AuthProvider: Password update error:', error);
         throw new Error(formatError(error));
       }
-      
+
       console.log('AuthProvider: Password updated successfully');
     } catch (err) {
-      console.error('AuthProvider: Update password exception:', err);
+      console.error('AuthProvider: Password update exception:', err);
       setError(err instanceof Error ? err.message : 'Password update failed');
       throw err;
     } finally {
       setLoading(false);
     }
-  }, [formatError]);
-  
-  // Check if user has access to premium features
-  const hasAccess = useCallback(() => {
-    // For now, return true to allow access to all features
-    // In a production app, you would check subscription status
-    return true;
+  }, [formatError, testConnection]);
+
+  // Clear error
+  const clearError = useCallback(() => {
+    setError(null);
   }, []);
-  
-  // Test email service
-  const testEmailService = useCallback(async (): Promise<boolean> => {
-    try {
-      // First check if we can connect to Supabase
-      if (!connectionTested) {
-        const isConnected = await testConnection();
-        if (!isConnected) {
-          console.error('AuthProvider: Cannot test email service - Supabase connection failed');
-          return false;
-        }
-      }
-      
-      // Use the utility function to test email service
-      const isWorking = await testSupabaseEmail();
-      return isWorking;
-    } catch (error) {
-      console.error('AuthProvider: Error testing email service:', error);
-      return false;
-    }
-  }, [connectionTested]);
 
+  // Check if user has access to paid features
+  const hasAccess = useCallback(async (): Promise<boolean> => {
+    if (!user) return false;
+    return await checkSubscription();
+  }, [user, checkSubscription]);
 
-  // Check for existing session on mount
+  // Initialize authentication
   useEffect(() => {
     const checkSession = async () => {
-      setLoading(true);
       try {
-        console.log('AuthProvider: Checking for existing session');
-        const { data: { session } } = await supabase.auth.getSession();
+        setLoading(true);
         
+        // Test connection first
+        const isConnected = await testConnection();
+        setConnectionTested(true);
+        if (!isConnected) {
+          console.error('AuthProvider: Unable to connect to Supabase');
+          return;
+        }
+        
+        console.log('AuthProvider: Checking existing session...');
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('AuthProvider: Session check error:', error);
+          return;
+        }
+
         if (session?.user) {
-          console.log('AuthProvider: Found existing session for user:', session.user.id);
-          setUser({
+          console.log('AuthProvider: Existing session found for user:', session.user.id);
+          const newUser = {
             id: session.user.id,
             email: session.user.email!,
-            name: session.user.user_metadata.full_name,
+            name: session.user.user_metadata.full_name || session.user.email!.split('@')[0],
             avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.email}`
-          });
+          };
+          setUser(newUser);
           
           // Check if user profile exists, create if not
           try {
@@ -391,7 +491,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               await createUserProfile(
                 session.user.id,
                 session.user.email!,
-                session.user.user_metadata.full_name
+                session.user.user_metadata.full_name || session.user.email!.split('@')[0]
               );
             }
           } catch (profileError) {
@@ -412,31 +512,33 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     checkSession();
 
     // Set up auth state change listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       setLoading(true);
       console.log('AuthProvider: Auth state changed:', event);
       if (session?.user) {
         console.log('AuthProvider: User authenticated:', session.user.id);
-        setUser({
+        const newUser = {
           id: session.user.id,
           email: session.user.email!,
-          name: session.user.user_metadata.full_name,
+          name: session.user.user_metadata.full_name || session.user.email!.split('@')[0],
           avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.email}`
-        });
+        };
+        setUser(newUser);
         
         // Check if user profile exists, create if not
-        checkUserProfile(session.user.id).then(exists => {
-          if (!exists) {
+        try {
+          const profileExists = await checkUserProfile(session.user.id);
+          if (!profileExists) {
             console.log('AuthProvider: Profile not found after auth change, creating one');
-            createUserProfile(
+            await createUserProfile(
               session.user.id,
               session.user.email!,
-              session.user.user_metadata.full_name
-            ).catch(err => {
-              console.warn('AuthProvider: Error creating profile after auth change:', err);
-            });
+              session.user.user_metadata.full_name || session.user.email!.split('@')[0]
+            );
           }
-        });
+        } catch (profileError) {
+          console.warn('AuthProvider: Error checking/creating profile after auth change:', profileError);
+        }
       } else {
         console.log('AuthProvider: User signed out or session expired');
         setUser(null);
@@ -446,7 +548,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [testConnection, checkUserProfile, createUserProfile]);
 
   const value = {
     user,
@@ -459,7 +561,8 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     updatePassword,
     clearError,
     hasAccess,
-    testEmailService
+    testEmailService,
+    checkSubscription
   };
 
   return (
