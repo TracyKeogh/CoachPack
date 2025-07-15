@@ -420,15 +420,9 @@ const AdminDashboard: React.FC = () => {
                       </div>
                     </th>
                     <th 
-                      className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100"
-                      onClick={() => handleSort('email_verified')}
+                      className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider"
                     >
-                      <div className="flex items-center space-x-1">
-                        <span>Verified</span>
-                        {sortField === 'email_verified' && (
-                          <ArrowUpDown className="w-4 h-4" />
-                        )}
-                      </div>
+                      <span>Onboarding</span>
                     </th>
                   </tr>
                 </thead>
