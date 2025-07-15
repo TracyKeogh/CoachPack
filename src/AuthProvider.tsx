@@ -161,6 +161,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Format error messages
   const formatError = useCallback((error: any) => {
+    if (error.message?.includes('email rate limit exceeded') || error.message?.includes('over_email_send_rate_limit')) {
+      return 'Email sending limit reached. Please wait 10-15 minutes before trying again, or contact support if this persists.';
+    }
     if (error.message?.includes('Invalid login credentials')) {
       return 'Invalid email or password. Please check your credentials and try again.';
     }

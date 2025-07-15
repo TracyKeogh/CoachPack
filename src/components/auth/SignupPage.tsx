@@ -159,8 +159,15 @@ const SignupPage: React.FC = () => {
                   <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-3">
                     <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
                     <div>
-                      <h3 className="text-sm font-medium text-red-800">Registration failed</h3>
+                      <h3 className="text-sm font-medium text-red-800">
+                        {(authError || saveError)?.includes('email rate limit') ? 'Rate limit reached' : 'Registration failed'}
+                      </h3>
                       <p className="text-sm text-red-700 mt-1">{authError || saveError}</p>
+                      {(authError || saveError)?.includes('email rate limit') && (
+                        <p className="text-sm text-red-600 mt-2 font-medium">
+                          This is a temporary restriction. You can try again in 10-15 minutes.
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
