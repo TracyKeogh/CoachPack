@@ -5,7 +5,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Mail, Lock, User, Eye, EyeOff, ArrowLeft, Target, Sparkles, AlertCircle, Check } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { saveUser } from '../../lib/supabase';
 
 const signupSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -57,7 +56,7 @@ const SignupPage: React.FC = () => {
     try {
       console.log('SignupPage: Starting signup process');
       
-      // First, create the auth user
+      // Create the auth user (AuthProvider handles profile creation internally)
       const { user, error: signUpError } = await signUp(data.email, data.password, data.name);
       
       if (signUpError) {
@@ -71,44 +70,16 @@ const SignupPage: React.FC = () => {
         return;
       }
       
-      console.log('SignupPage: Auth user created successfully');
+      console.log('SignupPage: User signup completed successfully');
       
-      // Then save additional user data
-      try {
-        const { error: profileError } = await saveUser(
-          data.email,
-          data.name,
-          productId
-        );
-        
-        if (profileError) {
-          // If it's a duplicate key error, it's not critical since auth user was created
-          if (profileError.message?.includes('duplicate key') || profileError.message?.includes('unique constraint')) {
-            console.log('SignupPage: Profile already exists, continuing');
-          } else {
-            console.warn('SignupPage: Profile creation warning:', profileError.message);
-            // Non-critical error, continue with success
-          }
-        }
-        
-        // Set success state
-        setSignupSuccess(true);
-        
-        // Redirect to dashboard after short delay
-        setTimeout(() => {
-          navigate('/dashboard');
-        }, 2000);
-        
-      } catch (profileError) {
-        console.warn('SignupPage: Profile creation error (non-critical):', profileError);
-        // Still consider signup successful if auth user was created
-        setSignupSuccess(true);
-        
-        // Redirect to dashboard after short delay
-        setTimeout(() => {
-          navigate('/dashboard');
-        }, 2000);
-      }
+      // Set success state
+      setSignupSuccess(true);
+      
+      // Redirect to dashboard after short delay
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 2000);
+      
     } catch (error) {
       console.error('SignupPage: Unexpected error during signup:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
