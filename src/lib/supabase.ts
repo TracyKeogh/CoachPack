@@ -52,11 +52,25 @@ export const saveUser = async (email: string, name: string, plan_type: string = 
   try {
     console.log('Attempting to save user to Supabase:', { email, name, plan_type });
     
-    // Get the current authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Retry getting authenticated user up to 3 times
+    let user = null;
+    let authError = null;
     
-    if (authError || !user) {
-      console.error('No authenticated user found:', authError);
+    for (let i = 0; i < 3; i++) {
+      console.log(`Auth attempt ${i + 1}/3`);
+      const { data: { user: authUser }, error } = await supabase.auth.getUser();
+      if (authUser) {
+        user = authUser;
+        console.log('Authentication successful:', authUser.id);
+        break;
+      }
+      authError = error;
+      console.log(`Auth attempt ${i + 1} failed, retrying...`);
+      await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms before retry
+    }
+    
+    if (!user) {
+      console.error('No authenticated user found after retries:', authError);
       return { data: null, error: new Error('User must be authenticated first') };
     }
 
