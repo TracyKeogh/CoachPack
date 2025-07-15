@@ -26,7 +26,7 @@ interface AuthContextType {
   checkSubscription: () => Promise<boolean>;
 }
 
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -110,9 +110,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .select('subscription_status')
         .eq('customer_id', user.id)
         .eq('subscription_status', 'active')
-        .single();
+        .maybeSingle(); // Use maybeSingle instead of single to handle no results
 
-      if (subError && subError.code !== 'PGRST116') { // PGRST116 is "not found"
+      if (subError) {
         console.error('AuthProvider: Subscription check error:', subError);
         return false;
       }
@@ -247,15 +247,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let resultUser: User | null = null;
     let resultError: Error | null = null;
 
-    // Retry mechanism for network issues
-    const maxRetries = 2;
-    let retryCount = 0;
-    let success = false;
-
-    while (!success && retryCount <= maxRetries) {
-      if (retryCount > 0) {
-        console.log(`AuthProvider: Retry attempt ${retryCount} for sign up`);
-      }
     try {
       console.log('AuthProvider: Attempting to sign up with email:', email);
       const { data, error } = await supabase.auth.signUp({
@@ -278,7 +269,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data.user) {
-        success = true;
         console.log('AuthProvider: Sign up successful for user:', data.user.id);
         resultUser = {
           id: data.user.id,
@@ -287,27 +277,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.user.email}`
         };
         
-        setUser({
-          id: data.user.id,
-          email: data.user.email!,
-          name: name || data.user.email!.split('@')[0],
-          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.user.email}`
-        });
+        // Don't set user state or create profile yet
+        // This will be handled by the auth state listener after email verification
+        console.log('AuthProvider: User signup successful, waiting for email verification');
         
-        // Create user profile
-        try {
-          console.log('AuthProvider: Creating user profile after signup');
-          const { success: profileSuccess, error: profileError } = await createUserProfile(
-            data.user.id,
-            data.user.email!,
-            name || data.user.email!.split('@')[0]
-          );
-          if (!profileSuccess && profileError) {
-            console.warn('AuthProvider: Failed to create profile, but signup successful:', profileError);
-          }
-        } catch (profileErr) {
-          console.warn('AuthProvider: Exception creating profile:', profileErr);
-        }
       } else {
         console.error('AuthProvider: No user returned from sign up');
         const noUserError = new Error('Sign up failed. Please try again.');
@@ -318,25 +291,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err) {
       console.error('AuthProvider: Sign up exception:', err);
       setError(err instanceof Error ? err.message : 'Sign up failed');
-      
-      // Only retry for network-related errors
-      if (err instanceof Error && (
-        err.message.includes('network') || 
-        err.message.includes('connection') ||
-        err.message.includes('timeout')
-      )) {
-        retryCount++;
-      } else {
-        resultError = err instanceof Error ? err : new Error('Sign up failed');
-        break;
-      }
+      resultError = err instanceof Error ? err : new Error('Sign up failed');
     } finally {
       setLoading(false);
     }
-    }
     
     return { user: resultUser, error: resultError };
-  }, [formatError, createUserProfile]);
+  }, [formatError]);
 
   // Sign out
   const signOut = useCallback(async () => {
@@ -515,6 +476,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       setLoading(true);
       console.log('AuthProvider: Auth state changed:', event);
+      
       if (session?.user) {
         console.log('AuthProvider: User authenticated:', session.user.id);
         const newUser = {
@@ -525,19 +487,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
         setUser(newUser);
         
-        // Check if user profile exists, create if not
-        try {
-          const profileExists = await checkUserProfile(session.user.id);
-          if (!profileExists) {
-            console.log('AuthProvider: Profile not found after auth change, creating one');
-            await createUserProfile(
-              session.user.id,
-              session.user.email!,
-              session.user.user_metadata.full_name || session.user.email!.split('@')[0]
-            );
+        // Only create profile if user is verified (for new signups)
+        if (event === 'SIGNED_IN' && session.user.email_confirmed_at) {
+          try {
+            const profileExists = await checkUserProfile(session.user.id);
+            if (!profileExists) {
+              console.log('AuthProvider: Profile not found after auth change, creating one');
+              await createUserProfile(
+                session.user.id,
+                session.user.email!,
+                session.user.user_metadata.full_name || session.user.email!.split('@')[0]
+              );
+            }
+          } catch (profileError) {
+            console.warn('AuthProvider: Error checking/creating profile after auth change:', profileError);
           }
-        } catch (profileError) {
-          console.warn('AuthProvider: Error checking/creating profile after auth change:', profileError);
         }
       } else {
         console.log('AuthProvider: User signed out or session expired');
