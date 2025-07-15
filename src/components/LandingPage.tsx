@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Target, Sparkles, BarChart3, Heart, ImageIcon, Calendar, CheckCircle2, Crown, Star } from 'lucide-react';
 import SnappyDemoVideo from './SnappyDemoVideo';
@@ -163,6 +163,57 @@ const LandingPage: React.FC = () => {
                 <h3 className="text-xl font-semibold text-slate-900 mb-2">Wheel of Life</h3>
                 <p className="text-slate-600 mb-4">
                   Assess your satisfaction across 8 key life areas to identify where to focus your energy
+                </p>
+                <Link 
+                  to="/free-wheel"
+                  className="text-purple-600 hover:text-purple-700 font-medium flex items-center"
+                >
+                  Try for free
+                  <ArrowRight className="w-4 h-4 ml-1" />
+                </Link>
+              </div>
+
+              <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:shadow-md transition-all">
+                <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                  <Heart className="w-7 h-7 text-red-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-slate-900 mb-2">Values Clarity</h3>
+                <p className="text-slate-600 mb-4">
+                  Discover your core values through a guided process that reveals what truly matters to you
+                </p>
+                <Link 
+                  to="/pricing"
+                  className="text-purple-600 hover:text-purple-700 font-medium flex items-center"
+                >
+                  Get access
+                  <ArrowRight className="w-4 h-4 ml-1" />
+                </Link>
+              </div>
+
+              <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:shadow-md transition-all">
+                <div className="w-14 h-14 bg-teal-100 rounded-full flex items-center justify-center mb-4">
+                  <ImageIcon className="w-7 h-7 text-teal-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-slate-900 mb-2">Vision Board</h3>
+                <p className="text-slate-600 mb-4">
+                  Create a visual representation of your goals across four key life quadrants
+                </p>
+                <Link 
+                  to="/pricing"
+                  className="text-purple-600 hover:text-purple-700 font-medium flex items-center"
+                >
+                  Get access
+                  <ArrowRight className="w-4 h-4 ml-1" />
+                </Link>
+              </div>
+
+              <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:shadow-md transition-all">
+                <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                  <Calendar className="w-7 h-7 text-blue-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-slate-900 mb-2">12-Week Goals</h3>
+                <p className="text-slate-600 mb-4">
+                  Turn your vision into actionable 12-week goals with weekly milestones and daily actions
                 </p>
                 <Link 
                   to="/pricing"
@@ -347,55 +398,4 @@ const LandingPage: React.FC = () => {
   );
 };
 
-export default LandingPage;free-wheel"
-                  className="text-purple-600 hover:text-purple-700 font-medium flex items-center"
-                >
-                  Try for free
-                  <ArrowRight className="w-4 h-4 ml-1" />
-                </Link>
-              </div>
-
-              <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:shadow-md transition-all">
-                <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mb-4">
-                  <Heart className="w-7 h-7 text-red-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-slate-900 mb-2">Values Clarity</h3>
-                <p className="text-slate-600 mb-4">
-                  Discover your core values through a guided process that reveals what truly matters to you
-                </p>
-                <Link 
-                  to="/pricing"
-                  className="text-purple-600 hover:text-purple-700 font-medium flex items-center"
-                >
-                  Get access
-                  <ArrowRight className="w-4 h-4 ml-1" />
-                </Link>
-              </div>
-
-              <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:shadow-md transition-all">
-                <div className="w-14 h-14 bg-teal-100 rounded-full flex items-center justify-center mb-4">
-                  <ImageIcon className="w-7 h-7 text-teal-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-slate-900 mb-2">Vision Board</h3>
-                <p className="text-slate-600 mb-4">
-                  Create a visual representation of your goals across four key life quadrants
-                </p>
-                <Link 
-                  to="/pricing"
-                  className="text-purple-600 hover:text-purple-700 font-medium flex items-center"
-                >
-                  Get access
-                  <ArrowRight className="w-4 h-4 ml-1" />
-                </Link>
-              </div>
-
-              <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 hover:shadow-md transition-all">
-                <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                  <Calendar className="w-7 h-7 text-blue-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-slate-900 mb-2">12-Week Goals</h3>
-                <p className="text-slate-600 mb-4">
-                  Turn your vision into actionable 12-week goals with weekly milestones and daily actions
-                </p>
-                <Link 
-                  to="/
+export default LandingPage;
