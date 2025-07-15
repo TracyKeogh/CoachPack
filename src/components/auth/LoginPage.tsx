@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Mail, Lock, Eye, EyeOff, ArrowLeft, Target, Sparkles, AlertCircle, CheckCircle } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowLeft, Target, Sparkles, AlertCircle, CheckCircle, Info, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 
 const loginSchema = z.object({
@@ -29,6 +29,7 @@ const LoginPage: React.FC = () => {
   const { 
     register, 
     handleSubmit, 
+    getValues,
     formState: { errors, isSubmitting } 
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -43,6 +44,7 @@ const LoginPage: React.FC = () => {
     clearError();
     setEmailForResend(data.email);
     setConfirmationSent(false);
+    setConfirmationSent(false);
     try {
       await signIn(data.email, data.password);
       // If we get here without error, navigate to the redirect path
@@ -50,17 +52,23 @@ const LoginPage: React.FC = () => {
     } catch (error) {
       // Error is handled by the auth context
       console.error('Login error:', error);
+      setIsSubmitting(false);
     }
   };
 
   const handleResendConfirmation = async () => {
     if (!emailForResend) return;
     
+    setIsResending(true);
+    
     try {
-      await resendConfirmationEmail(emailForResend);
+      const email = emailForResend || getValues('email');
+      await resendConfirmationEmail(email);
       setConfirmationSent(true);
     } catch (error) {
       console.error('Resend confirmation error:', error);
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -136,11 +144,18 @@ const LoginPage: React.FC = () => {
                   {isEmailNotConfirmedError && (
                     <button
                       type="button"
-                      onClick={handleResendConfirmation}
-                      disabled={authLoading}
+                      onClick={() => handleResendConfirmation()}
+                      disabled={authLoading || isResending}
                       className="mt-2 text-sm font-medium text-red-800 hover:text-red-900 underline disabled:opacity-50"
                     >
-                      Resend confirmation email
+                      {isResending ? (
+                        <>
+                          <RefreshCw className="w-3 h-3 inline animate-spin mr-1" />
+                          Sending...
+                        </>
+                      ) : (
+                        "Resend confirmation email"
+                      )}
                     </button>
                   )}
                 </div>
@@ -230,7 +245,7 @@ const LoginPage: React.FC = () => {
                 disabled={isSubmitting || authLoading}
                 className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {(isSubmitting || authLoading) ? (
+                {isSubmitting || authLoading ? (
                   <>
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
                     Signing in...
