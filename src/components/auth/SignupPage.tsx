@@ -120,13 +120,18 @@ const SignupPage: React.FC = () => {
             {signupSuccess ? (
               <div className="text-center py-8">
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Check className="w-8 h-8 text-green-600" />
+                  <Mail className="w-8 h-8 text-green-600" />
                 </div>
-                <h2 className="text-2xl font-bold text-slate-900 mb-2">Account Created!</h2>
+                <h2 className="text-2xl font-bold text-slate-900 mb-2">Check Your Email</h2>
                 <p className="text-slate-600 mb-6">
-                  Your account has been successfully created. You'll be redirected to the dashboard shortly.
+                  We've sent you a confirmation email. Please click the link in the email to verify your account and complete the signup process.
                 </p>
-                <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
+                  <p className="font-medium mb-1">What's next?</p>
+                  <p>1. Check your email inbox (and spam folder)</p>
+                  <p>2. Click the confirmation link</p>
+                  <p>3. You'll be automatically signed in and redirected</p>
+                </div>
               </div>
             ) : (
               <>
