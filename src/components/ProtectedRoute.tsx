@@ -56,9 +56,4 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   return <>{children}</>;
 };
 
-export default ProtectedRoute;  
-  // User is authenticated and has access, render the protected content
-  return <>{children}</>;
-};
-
 export default ProtectedRoute;
