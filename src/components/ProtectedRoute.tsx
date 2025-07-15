@@ -1,50 +1,62 @@
-import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import React, { useState, useEffect } from 'react';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from './AuthProvider';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiresAccess?: boolean;
-  requiresAccess?: boolean;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
-  children, 
-  requiresAccess = false 
-}) => {
-  const { user, loading, isAuthenticated, hasAccess } = useAuth();
-  const location = useLocation();
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+  const { user, loading, checkSubscription } = useAuth();
+  const [hasValidSubscription, setHasValidSubscription] = useState<boolean | null>(null);
+  const [checkingSubscription, setCheckingSubscription] = useState(true);
 
-  // Show loading state while checking authentication
-  if (loading) {
+  useEffect(() => {
+    const verifySubscription = async () => {
+      if (user && !loading) {
+        setCheckingSubscription(true);
+        try {
+          const hasAccess = await checkSubscription();
+          setHasValidSubscription(hasAccess);
+        } catch (error) {
+          console.error('Error checking subscription:', error);
+          setHasValidSubscription(false);
+        } finally {
+          setCheckingSubscription(false);
+        }
+      } else if (!user && !loading) {
+        setHasValidSubscription(false);
+        setCheckingSubscription(false);
+      }
+    };
+
+    verifySubscription();
+  }, [user, loading, checkSubscription]);
+
+  // Show loading while checking authentication or subscription
+  if (loading || checkingSubscription) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-indigo-50">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
       </div>
     );
   }
-  
-  // Check if user is authenticated
-  if (!isAuthenticated) {
-    // Redirect to login page, but save the location they were trying to access
-    return <Navigate to="/login" state={{ from: location }} replace />;
+
+  // Not authenticated - redirect to login
+  if (!user) {
+    return <Navigate to="/login" replace />;
   }
-  
-  // Check if user has access to premium features (if required)
-  if (requiresAccess && !hasAccess()) {
-    // Redirect to pricing page
-    return <Navigate to="/pricing" state={{ from: location }} replace />;
+
+  // Authenticated but no valid subscription - redirect to pricing
+  if (!hasValidSubscription) {
+    return <Navigate to="/pricing" replace />;
   }
-  
-  // Check if user has access to premium features (if required)
-  if (requiresAccess && !hasAccess()) {
-    // Redirect to pricing page
-    return <Navigate to="/pricing" state={{ from: location }} replace />;
-  }
-  
+
+  // Authenticated with valid subscription - allow access
+  return <>{children}</>;
+};
+
+export default ProtectedRoute;  
   // User is authenticated and has access, render the protected content
   return <>{children}</>;
 };
