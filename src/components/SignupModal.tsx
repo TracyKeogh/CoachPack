@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Mail, Lock, User, Eye, EyeOff, Check, AlertCircle } from 'lucide-react';
-import { saveUser } from '../lib/supabase';
+import { saveUser, supabase } from '../lib/supabase';
 
 interface SignupModalProps {
   isOpen: boolean;
@@ -63,37 +63,41 @@ const SignupModal: React.FC<SignupModalProps> = ({
     setIsLoading(true);
 
     try {
-      // Save user to Supabase
-      console.log('SignupModal: Attempting to save user with data:', {
+      // 1. Sign up the user with Supabase Auth
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: formData.email,
-        name: formData.name,
-        plan: selectedPlan
+        password: formData.password,
+        options: { data: { full_name: formData.name } }
       });
-      
+      if (signUpError) {
+        console.error('SignupModal: Error during signUp:', signUpError);
+        setSaveError(signUpError.message || 'Failed to sign up.');
+        setIsLoading(false);
+        return;
+      }
+      if (!signUpData.user) {
+        setSaveError('Sign up failed: No user returned.');
+        setIsLoading(false);
+        return;
+      }
+      // 2. Save user profile in user_profiles table
       const { data, error } = await saveUser(
         formData.email,
         formData.name,
         selectedPlan
       );
-      
       if (error) {
         console.error('SignupModal: Error from saveUser:', error);
-        // Check for duplicate email error
         if (error.message?.includes('duplicate key') || error.message?.includes('unique constraint')) {
-          console.log('SignupModal: Duplicate email detected');
           setErrors({ email: 'This email is already registered' });
           setSaveError(null);
         } else {
-          console.error('SignupModal: Other error from saveUser:', error.message);
           setSaveError(`Failed to save user: ${error.message}`);
         }
         setIsLoading(false);
         return;
       }
-      
-      console.log('SignupModal: User saved successfully:', data);
-      
-      // Create user object
+      // 3. Success: call onSuccess
       const user = {
         id: data?.id || Date.now().toString(),
         name: formData.name,
@@ -101,8 +105,6 @@ const SignupModal: React.FC<SignupModalProps> = ({
         plan: selectedPlan,
         createdAt: new Date().toISOString()
       };
-
-      // Call success handler
       onSuccess(user);
     } catch (error) {
       console.error('SignupModal: Exception during form submission:', error);
