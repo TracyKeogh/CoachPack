@@ -68,7 +68,10 @@ const SignupModal: React.FC<SignupModalProps> = ({
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
-        options: { data: { full_name: formData.name } }
+        options: {
+          data: { full_name: formData.name },
+          emailRedirectTo: 'https://coachpack.org/signin'
+        }
       });
       if (signUpError) {
         setSaveError(signUpError.message || 'Failed to sign up.');
