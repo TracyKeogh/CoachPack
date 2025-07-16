@@ -27,6 +27,8 @@ const SignupModal: React.FC<SignupModalProps> = ({
   const [errors, setErrors] = useState<Record<string, string | null>>({});
   const [saveError, setSaveError] = useState<string | null>(null);
   const [showCheckEmail, setShowCheckEmail] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
 
   const validateForm = () => {
     const newErrors: Record<string, string | null> = {};
@@ -88,6 +90,24 @@ const SignupModal: React.FC<SignupModalProps> = ({
     }
   };
 
+  const handleResendEmail = async () => {
+    setResendLoading(true);
+    setResendMessage(null);
+    try {
+      // Supabase v2+ uses resend({ type: 'signup', email })
+      const { error } = await supabase.auth.resend({ type: 'signup', email: formData.email });
+      if (error) {
+        setResendMessage('Failed to resend email: ' + error.message);
+      } else {
+        setResendMessage('Confirmation email resent! Please check your inbox.');
+      }
+    } catch (err) {
+      setResendMessage('Failed to resend email.');
+    } finally {
+      setResendLoading(false);
+    }
+  };
+
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
@@ -141,7 +161,17 @@ const SignupModal: React.FC<SignupModalProps> = ({
               <Mail className="w-5 h-5 text-blue-500" />
               <span className="text-sm text-blue-600">Check your email to confirm your account and complete signup.</span>
             </div>
-            <p className="text-slate-600">Once you confirm your email, you can log in and access your account.</p>
+            <p className="text-slate-600 mb-4">Once you confirm your email, you can log in and access your account.</p>
+            <button
+              onClick={handleResendEmail}
+              disabled={resendLoading}
+              className="mt-2 px-4 py-2 bg-purple-100 text-purple-700 rounded hover:bg-purple-200 disabled:opacity-50"
+            >
+              {resendLoading ? 'Resending...' : 'Resend Confirmation Email'}
+            </button>
+            {resendMessage && (
+              <div className="mt-3 text-sm text-blue-600">{resendMessage}</div>
+            )}
           </div>
         ) : (
         <form onSubmit={handleSubmit} className="p-8 pt-0">
