@@ -63,14 +63,10 @@ const SignupModal: React.FC<SignupModalProps> = ({
     setIsLoading(true);
 
     try {
-      console.log('SignupModal: Testing Supabase connection before saving user');
-      const connectionTest = await testSupabaseConnection();
-      console.log('SignupModal: Connection test result:', connectionTest);
-      
       // Save user to Supabase
       console.log('SignupModal: Attempting to save user with data:', {
         email: formData.email,
-        name: formData.fullName,
+        name: formData.name,
         plan: selectedPlan
       });
       
