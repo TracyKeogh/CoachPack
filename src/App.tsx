@@ -202,6 +202,8 @@ function App() {
           <Route path="/signup" element={<Navigate to="/pricing" replace />} />
           <Route path="/login" element={<Navigate to="/auth/login" replace />} />
           <Route path="/success" element={<Navigate to="/checkout-success" replace />} />
+          {/* Direct Forgot Password Route for convenience */}
+          <Route path="/forgot-password" element={<Navigate to="/auth/forgot-password" replace />} />
           
           {/* 404 Route */}
           <Route path="*" element={<NotFound />} />
