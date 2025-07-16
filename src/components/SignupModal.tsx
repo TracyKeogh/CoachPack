@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Mail, Lock, User, Eye, EyeOff, Check, AlertCircle } from 'lucide-react';
-import { saveUser, supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 
 interface SignupModalProps {
   isOpen: boolean;
@@ -26,6 +26,7 @@ const SignupModal: React.FC<SignupModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string | null>>({});
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [showCheckEmail, setShowCheckEmail] = useState(false);
 
   const validateForm = () => {
     const newErrors: Record<string, string | null> = {};
@@ -56,12 +57,10 @@ const SignupModal: React.FC<SignupModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('SignupModal: Form submitted');
-    
     if (!validateForm()) return;
-
     setIsLoading(true);
-
+    setSaveError(null);
+    setShowCheckEmail(false);
     try {
       // 1. Sign up the user with Supabase Auth
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
@@ -70,7 +69,6 @@ const SignupModal: React.FC<SignupModalProps> = ({
         options: { data: { full_name: formData.name } }
       });
       if (signUpError) {
-        console.error('SignupModal: Error during signUp:', signUpError);
         setSaveError(signUpError.message || 'Failed to sign up.');
         setIsLoading(false);
         return;
@@ -80,34 +78,9 @@ const SignupModal: React.FC<SignupModalProps> = ({
         setIsLoading(false);
         return;
       }
-      // 2. Save user profile in user_profiles table
-      const { data, error } = await saveUser(
-        formData.email,
-        formData.name,
-        selectedPlan
-      );
-      if (error) {
-        console.error('SignupModal: Error from saveUser:', error);
-        if (error.message?.includes('duplicate key') || error.message?.includes('unique constraint')) {
-          setErrors({ email: 'This email is already registered' });
-          setSaveError(null);
-        } else {
-          setSaveError(`Failed to save user: ${error.message}`);
-        }
-        setIsLoading(false);
-        return;
-      }
-      // 3. Success: call onSuccess
-      const user = {
-        id: data?.id || Date.now().toString(),
-        name: formData.name,
-        email: formData.email,
-        plan: selectedPlan,
-        createdAt: new Date().toISOString()
-      };
-      onSuccess(user);
+      // 2. Show check email message
+      setShowCheckEmail(true);
     } catch (error) {
-      console.error('SignupModal: Exception during form submission:', error);
       const errorMessage = error instanceof Error ? error.message : 'Something went wrong. Please try again.';
       setSaveError(errorMessage);
     } finally {
@@ -137,7 +110,6 @@ const SignupModal: React.FC<SignupModalProps> = ({
         >
           <X className="w-6 h-6" />
         </button>
-
         {/* Header */}
         <div className="p-8 pb-0">
           <div className="text-center mb-6">
@@ -148,7 +120,6 @@ const SignupModal: React.FC<SignupModalProps> = ({
               Join Coach Pack and start your self-coaching journey
             </p>
           </div>
-
           {/* Plan Info */}
           <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 mb-6">
             <div className="flex items-center justify-between">
@@ -163,8 +134,16 @@ const SignupModal: React.FC<SignupModalProps> = ({
             </div>
           </div>
         </div>
-
-        {/* Form */}
+        {/* Form or Check Email Message */}
+        {showCheckEmail ? (
+          <div className="p-8 pt-0 text-center">
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center space-x-2 justify-center">
+              <Mail className="w-5 h-5 text-blue-500" />
+              <span className="text-sm text-blue-600">Check your email to confirm your account and complete signup.</span>
+            </div>
+            <p className="text-slate-600">Once you confirm your email, you can log in and access your account.</p>
+          </div>
+        ) : (
         <form onSubmit={handleSubmit} className="p-8 pt-0">
           {errors.general && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
@@ -172,14 +151,12 @@ const SignupModal: React.FC<SignupModalProps> = ({
               <span className="text-sm text-red-600">{errors.general}</span>
             </div>
           )}
-
           {saveError && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
               <AlertCircle className="w-4 h-4 text-red-500" />
               <span className="text-sm text-red-600">{saveError}</span>
             </div>
           )}
-
           <div className="space-y-4">
             {/* Name Field */}
             <div>
@@ -203,7 +180,6 @@ const SignupModal: React.FC<SignupModalProps> = ({
                 <p className="mt-1 text-sm text-red-600">{errors.name}</p>
               )}
             </div>
-
             {/* Email Field */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -226,7 +202,6 @@ const SignupModal: React.FC<SignupModalProps> = ({
                 <p className="mt-1 text-sm text-red-600">{errors.email}</p>
               )}
             </div>
-
             {/* Password Field */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -256,7 +231,6 @@ const SignupModal: React.FC<SignupModalProps> = ({
                 <p className="mt-1 text-sm text-red-600">{errors.password}</p>
               )}
             </div>
-
             {/* Confirm Password Field */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -287,7 +261,6 @@ const SignupModal: React.FC<SignupModalProps> = ({
               )}
             </div>
           </div>
-
           {/* Submit Button */}
           <button
             type="submit"
@@ -306,12 +279,12 @@ const SignupModal: React.FC<SignupModalProps> = ({
               </div>
             )}
           </button>
-
           {/* Terms */}
           <p className="mt-4 text-xs text-slate-500 text-center">
             By creating an account, you agree to our Terms of Service and Privacy Policy
           </p>
         </form>
+        )}
       </div>
     </div>
   );
