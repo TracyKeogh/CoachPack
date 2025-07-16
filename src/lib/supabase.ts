@@ -46,6 +46,7 @@ export interface User {
   onboarding_completed: boolean;
   created_at: string;
   updated_at: string;
+  is_admin: boolean; // Added for admin protection
 }
 
 // Save user to database

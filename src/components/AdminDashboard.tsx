@@ -14,13 +14,15 @@ import {
   ChevronRight,
   ArrowUpDown
 } from 'lucide-react';
-import { getAllUsers, getUserStatistics, User } from '../lib/supabase';
+import { getAllUsers, getUserStatistics, User, supabase, getUserByEmail } from '../lib/supabase';
 
 const AdminDashboard: React.FC = () => {
+  const [loading, setLoading] = useState(true);
+  const [authorized, setAuthorized] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [statistics, setStatistics] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState<keyof User>('created_at');
@@ -29,6 +31,31 @@ const AdminDashboard: React.FC = () => {
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   
   const usersPerPage = 10;
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      setLoading(true);
+      setError(null);
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        window.location.href = '/signin';
+        return;
+      }
+      const { data: profile, error: profileError } = await getUserByEmail(user.email);
+      if (profileError || !profile) {
+        setError('Could not load user profile.');
+        setLoading(false);
+        return;
+      }
+      if (profile.is_admin) {
+        setAuthorized(true);
+      } else {
+        setError('You are not authorized to view this page.');
+      }
+      setLoading(false);
+    };
+    checkAdmin();
+  }, []);
 
   // Load users and statistics
   useEffect(() => {
@@ -180,6 +207,10 @@ const AdminDashboard: React.FC = () => {
     const date = new Date(dateString);
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
   };
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div style={{ color: 'red', padding: 32 }}>{error}</div>;
+  if (!authorized) return null;
 
   return (
     <div className="space-y-8">
