@@ -44,15 +44,14 @@ const LoginPage: React.FC = () => {
     clearError();
     setEmailForResend(data.email);
     setConfirmationSent(false);
-    setConfirmationSent(false);
     try {
       await signIn(data.email, data.password);
       // If we get here without error, navigate to the redirect path
       navigate(from, { replace: true });
     } catch (error) {
-      // Error is handled by the auth context
+      // Error is handled by the auth context and surfaced in the UI
       console.error('Login error:', error);
-      setIsSubmitting(false);
+      // No manual setIsSubmitting(false) needed
     }
   };
 
