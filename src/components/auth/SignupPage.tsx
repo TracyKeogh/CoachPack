@@ -60,31 +60,17 @@ const SignupPage: React.FC = () => {
       console.log('SignupPage: Starting signup process');
       
       // Create the auth user with custom redirect URL
-      const { user, error: signUpError } = await signUp(
+      await signUp(
         data.email, 
         data.password, 
         data.name,
         `${window.location.origin}/auth/login`
       );
       
-      if (signUpError) {
-        console.error('SignupPage: Auth signup error:', signUpError);
-        return; // Auth context will handle the error display
-      }
-      
-      if (!user) {
-        console.error('SignupPage: No user returned from signup');
-        setSaveError('Failed to create user account');
-        return;
-      }
-      
       console.log('SignupPage: User signup completed successfully');
       
       // Set success state
       setSignupSuccess(true);
-      
-      // Don't redirect - user needs to confirm email first
-      // The AuthProvider will handle the redirect after email confirmation
       
     } catch (error) {
       console.error('SignupPage: Unexpected error during signup:', error);
@@ -132,13 +118,28 @@ const SignupPage: React.FC = () => {
                 </div>
                 <h2 className="text-2xl font-bold text-slate-900 mb-2">Check Your Email</h2>
                 <p className="text-slate-600 mb-6">
-                  We've sent you a confirmation email. Please click the link in the email to verify your account and complete the signup process.
+                  We've sent a confirmation email to your inbox. Please click the link in the email to verify your account and complete the signup process.
                 </p>
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
+                
+                {paymentCompleted && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4 text-sm text-green-800">
+                    <p className="font-medium mb-1">✅ Payment Confirmed</p>
+                    <p>Your $50 payment has been processed successfully. Once you confirm your email, you'll have full access to Coach Pack.</p>
+                  </div>
+                )}
+                
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800 mb-6">
                   <p className="font-medium mb-1">What's next?</p>
-                  <p>1. Check your email inbox (and spam folder)</p>
-                  <p>2. Click the confirmation link</p>
-                  <p>3. You'll be automatically signed in and redirected</p>
+                  <div className="text-left space-y-1">
+                    <p>1. Check your email inbox (and spam folder)</p>
+                    <p>2. Click the confirmation link in the email</p>
+                    <p>3. You'll be redirected to the login page</p>
+                    <p>4. Sign in with your credentials to access Coach Pack</p>
+                  </div>
+                </div>
+                
+                <div className="text-sm text-slate-500">
+                  <p>Didn't receive the email? Check your spam folder or contact support.</p>
                 </div>
               </div>
             ) : (

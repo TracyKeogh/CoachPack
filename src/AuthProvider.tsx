@@ -121,6 +121,11 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     try {
       console.log('AuthProvider: Attempting to sign up with email:', email);
+      
+      // Use the provided redirect URL or default to login page
+      const confirmationRedirectTo = redirectTo || `${window.location.origin}/auth/login`;
+      console.log('AuthProvider: Using confirmation redirect URL:', confirmationRedirectTo);
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -128,7 +133,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           data: {
             full_name: name || email.split('@')[0]
           },
-          emailRedirectTo: redirectTo || `${window.location.origin}/auth/login`
+          emailRedirectTo: confirmationRedirectTo
         }
       });
 
@@ -139,6 +144,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (data.user) {
         console.log('AuthProvider: Sign up successful for user:', data.user.id);
+        console.log('AuthProvider: Confirmation email should be sent to:', email);
         
         // Create user profile
         try {
@@ -155,12 +161,8 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           console.warn('AuthProvider: Profile creation failed during signup:', profileErr);
         }
         
-        setUser({
-          id: data.user.id,
-          email: data.user.email!,
-          name: name || data.user.user_metadata.full_name,
-          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.user.email}`
-        });
+        // Don't set user state immediately - wait for email confirmation
+        console.log('AuthProvider: User needs to confirm email before being signed in');
       } else {
         console.error('AuthProvider: No user returned from sign up');
         throw new Error('Sign up failed. Please try again.');
