@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { CheckCircle, User, Mail, Lock, Eye, EyeOff, Sparkles, Target, AlertCircle } from 'lucide-react';
-import { useAuth } from '../AuthProvider';
+import { useAuth } from '../hooks/useAuth';
 
 const accountSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
