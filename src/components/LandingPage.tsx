@@ -285,7 +285,7 @@ const LandingPage: React.FC = () => {
               </Link>
               
               <p className="text-sm text-slate-500 mt-4">
-                Secure payment • Instant access • 30-day money-back guarantee
+                Secure payment • Instant access • 7-day money-back guarantee
               </p>
             </div>
           </div>

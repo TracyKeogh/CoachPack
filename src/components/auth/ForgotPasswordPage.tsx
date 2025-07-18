@@ -182,7 +182,7 @@ const ForgotPasswordPage: React.FC = () => {
                       </button>
                       
                       <p className="text-sm text-slate-500">
-                        Still having trouble? <a href="mailto:support@coachpack.org" className="text-purple-600 hover:text-purple-700">Contact Support</a>
+                        Still having trouble? <a href="mailto:hello@coachpack.org" className="text-purple-600 hover:text-purple-700">Contact Support</a>
                       </p>
                     </div>
                   </div>

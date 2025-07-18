@@ -133,14 +133,14 @@ const SignupPage: React.FC = () => {
                   <div className="text-left space-y-1">
                     <p>1. Check your email inbox (and spam folder)</p>
                     <p>2. Click the confirmation link in the email</p>
-                    <p>3. You'll be redirected back to the login page</p>
+                    <p>3. You'll be redirected to the login page</p>
                     <p>4. Sign in with your credentials to access Coach Pack</p>
                   </div>
                 </div>
                 
                 <div className="text-sm text-slate-500">
                   <p>Didn't receive the email? Check your spam folder or wait a few minutes and try again.</p>
-                  <p className="mt-2">If you continue having issues, contact support at support@coachpack.org</p>
+                  <p className="mt-2">If you continue having issues, contact support at hello@coachpack.org</p>
                 </div>
               </div>
             ) : (

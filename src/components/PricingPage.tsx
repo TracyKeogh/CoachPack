@@ -182,7 +182,7 @@ const PricingPage: React.FC = () => {
               },
               {
                 question: 'Is there a refund policy?',
-                answer: 'Yes, we offer a 7-day money-back guarantee if you\'re not satisfied with the toolkit.'
+                answer: 'Yes, we offer a 7-day money-back guarantee if you\'re not satisfied with the toolkit. Contact hello@coachpack.org for refunds.'
               },
               {
                 question: 'Do I need to be tech-savvy to use Coach Pack?',
