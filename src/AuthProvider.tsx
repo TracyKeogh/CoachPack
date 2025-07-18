@@ -115,15 +115,15 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, [formatError]);
 
   // Sign up with email and password
-  const signUp = useCallback(async (email: string, password: string, name?: string, redirectTo?: string) => {
+  const signUp = useCallback(async (email: string, password: string, name?: string) => {
     setLoading(true);
     setError(null);
 
     try {
       console.log('AuthProvider: Attempting to sign up with email:', email);
       
-      // Use the provided redirect URL or default to login page
-      const confirmationRedirectTo = redirectTo || `${window.location.origin}/auth/login`;
+      // Use the current origin for redirect
+      const confirmationRedirectTo = `${window.location.origin}/auth/login`;
       console.log('AuthProvider: Using confirmation redirect URL:', confirmationRedirectTo);
       
       const { data, error } = await supabase.auth.signUp({
@@ -144,7 +144,8 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (data.user) {
         console.log('AuthProvider: Sign up successful for user:', data.user.id);
-        console.log('AuthProvider: Confirmation email should be sent to:', email);
+        console.log('AuthProvider: User created in Supabase:', data.user);
+        console.log('AuthProvider: Email confirmation required:', !data.user.email_confirmed_at);
         
         // Create user profile
         try {
@@ -155,14 +156,19 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           );
           
           if (!success && profileError) {
-            console.warn('AuthProvider: Failed to create profile during signup:', profileError);
+            console.error('AuthProvider: Failed to create profile during signup:', profileError);
+            // Don't throw here - user was created successfully in auth
           }
+        } else {
+          console.log('AuthProvider: User profile created successfully');
+        }
         } catch (profileErr) {
           console.warn('AuthProvider: Profile creation failed during signup:', profileErr);
+          // Don't throw here - user was created successfully in auth
         }
         
-        // Don't set user state immediately - wait for email confirmation
-        console.log('AuthProvider: User needs to confirm email before being signed in');
+        // Return the user data for the signup page to handle
+        return { user: data.user, session: data.session };
       } else {
         console.error('AuthProvider: No user returned from sign up');
         throw new Error('Sign up failed. Please try again.');

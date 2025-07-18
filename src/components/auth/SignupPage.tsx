@@ -58,16 +58,16 @@ const SignupPage: React.FC = () => {
     
     try {
       console.log('SignupPage: Starting signup process');
+      console.log('SignupPage: Signup data:', { email: data.email, name: data.name });
       
-      // Create the auth user with custom redirect URL
-      await signUp(
+      // Create the auth user
+      const result = await signUp(
         data.email, 
         data.password, 
-        data.name,
-        `${window.location.origin}/auth/login`
+        data.name
       );
       
-      console.log('SignupPage: User signup completed successfully');
+      console.log('SignupPage: User signup completed successfully:', result);
       
       // Set success state
       setSignupSuccess(true);
@@ -133,13 +133,14 @@ const SignupPage: React.FC = () => {
                   <div className="text-left space-y-1">
                     <p>1. Check your email inbox (and spam folder)</p>
                     <p>2. Click the confirmation link in the email</p>
-                    <p>3. You'll be redirected to the login page</p>
+                    <p>3. You'll be redirected back to the login page</p>
                     <p>4. Sign in with your credentials to access Coach Pack</p>
                   </div>
                 </div>
                 
                 <div className="text-sm text-slate-500">
-                  <p>Didn't receive the email? Check your spam folder or contact support.</p>
+                  <p>Didn't receive the email? Check your spam folder or wait a few minutes and try again.</p>
+                  <p className="mt-2">If you continue having issues, contact support at support@coachpack.org</p>
                 </div>
               </div>
             ) : (
