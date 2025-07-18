@@ -465,6 +465,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setConnectionTested(true);
         if (!isConnected) {
           console.error('AuthProvider: Unable to connect to Supabase');
+          setLoading(false); // Ensure loading is reset on early return
           return;
         }
         
@@ -473,6 +474,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (error) {
           console.error('AuthProvider: Session check error:', error);
+          setLoading(false); // Ensure loading is reset on early return
           return;
         }
 
@@ -505,6 +507,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } catch (error) {
         console.error('Error checking session:', error);
+        setLoading(false); // Ensure loading is reset on error
       } finally {
         setLoading(false);
         setConnectionTested(true);
