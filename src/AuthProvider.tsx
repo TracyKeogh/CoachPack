@@ -204,6 +204,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error('AuthProvider: Sign in error:', error);
+        // Ensure we always throw so the form spinner stops and errors are shown
         throw new Error(formatError(error));
       }
 
@@ -233,11 +234,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } else {
         console.error('AuthProvider: No user returned from sign in');
+        // Always throw if no user is returned
         throw new Error('Sign in failed. Please try again.');
       }
     } catch (err) {
       console.error('AuthProvider: Sign in exception:', err);
       setError(err instanceof Error ? err.message : 'Sign in failed');
+      // Always rethrow so the form knows to stop the spinner
       throw err;
     } finally {
       setLoading(false);
