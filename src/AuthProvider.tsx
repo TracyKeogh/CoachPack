@@ -158,10 +158,9 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           if (!success && profileError) {
             console.error('AuthProvider: Failed to create profile during signup:', profileError);
             // Don't throw here - user was created successfully in auth
+          } else {
+            console.log('AuthProvider: User profile created successfully');
           }
-        } else {
-          console.log('AuthProvider: User profile created successfully');
-        }
         } catch (profileErr) {
           console.warn('AuthProvider: Profile creation failed during signup:', profileErr);
           // Don't throw here - user was created successfully in auth
