@@ -33,6 +33,9 @@ const SignupPage: React.FC = () => {
   // Get product ID from query params if available
   const queryParams = new URLSearchParams(location.search);
   const productId = queryParams.get('productId') || 'complete';
+  const prefilledEmail = queryParams.get('email') || '';
+  const prefilledName = queryParams.get('name') || '';
+  const paymentCompleted = queryParams.get('payment') === 'completed';
 
   const { 
     register, 
@@ -41,8 +44,8 @@ const SignupPage: React.FC = () => {
   } = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
-      name: '',
-      email: '',
+      name: prefilledName,
+      email: prefilledEmail,
       password: '',
       confirmPassword: '',
       acceptTerms: false
@@ -56,8 +59,13 @@ const SignupPage: React.FC = () => {
     try {
       console.log('SignupPage: Starting signup process');
       
-      // Create the auth user (AuthProvider handles profile creation internally)
-      const { user, error: signUpError } = await signUp(data.email, data.password, data.name);
+      // Create the auth user with custom redirect URL
+      const { user, error: signUpError } = await signUp(
+        data.email, 
+        data.password, 
+        data.name,
+        `${window.location.origin}/auth/login`
+      );
       
       if (signUpError) {
         console.error('SignupPage: Auth signup error:', signUpError);
@@ -137,23 +145,42 @@ const SignupPage: React.FC = () => {
               <>
                 <div className="text-center mb-6">
                   <h1 className="text-2xl font-bold text-slate-900 mb-2">
-                    Create Your Account
+                    {paymentCompleted ? 'Complete Your Account Setup' : 'Create Your Account'}
                   </h1>
                   <p className="text-slate-600">
-                    Join Coach Pack and start your journey to intentional living
+                    {paymentCompleted 
+                      ? 'Your payment was successful! Now create your account to access Coach Pack.'
+                      : 'Join Coach Pack and start your journey to intentional living'
+                    }
                   </p>
                 </div>
+
+                {paymentCompleted && (
+                  <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start space-x-3">
+                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h3 className="text-sm font-medium text-green-800">Payment Confirmed</h3>
+                      <p className="text-sm text-green-700 mt-1">
+                        Your payment has been processed successfully. Complete your account setup to access all Coach Pack features.
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Plan Info */}
                 <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 mb-6">
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="font-semibold text-purple-900">Complete Toolkit</h3>
-                      <p className="text-sm text-purple-600">All tools and assessments</p>
+                      <p className="text-sm text-purple-600">
+                        {paymentCompleted ? 'Payment completed - All tools and assessments' : 'All tools and assessments'}
+                      </p>
                     </div>
                     <div className="text-right">
                       <div className="text-2xl font-bold text-purple-900">$50</div>
-                      <div className="text-sm text-purple-600">one-time</div>
+                      <div className="text-sm text-purple-600">
+                        {paymentCompleted ? 'paid' : 'one-time'}
+                      </div>
                     </div>
                   </div>
                 </div>

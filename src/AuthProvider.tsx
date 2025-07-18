@@ -115,7 +115,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, [formatError]);
 
   // Sign up with email and password
-  const signUp = useCallback(async (email: string, password: string, name?: string) => {
+  const signUp = useCallback(async (email: string, password: string, name?: string, redirectTo?: string) => {
     setLoading(true);
     setError(null);
 
@@ -127,7 +127,8 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         options: {
           data: {
             full_name: name || email.split('@')[0]
-          }
+          },
+          emailRedirectTo: redirectTo || `${window.location.origin}/auth/login`
         }
       });
 

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { ArrowLeft, Target, Sparkles, CreditCard, CheckCircle } from 'lucide-react';
 
 const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -14,6 +15,10 @@ const CheckoutPage: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+
+  // Get product ID from query params
+  const queryParams = new URLSearchParams(location.search);
+  const productId = queryParams.get('productId') || 'complete-toolkit';
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -45,7 +50,7 @@ const CheckoutPage: React.FC = () => {
       
       // Redirect to success page after 2 seconds
       setTimeout(() => {
-        navigate('/success');
+        navigate(`/auth/signup?email=${encodeURIComponent(formData.email)}&name=${encodeURIComponent(formData.name)}&productId=${productId}&payment=completed`);
       }, 2000);
     }, 1500);
   };

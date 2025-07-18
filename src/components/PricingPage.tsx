@@ -99,7 +99,7 @@ const PricingPage: React.FC = () => {
             </ul>
 
             <button
-              onClick={() => setShowSignupModal(true)}
+              onClick={() => navigate('/checkout?productId=complete-toolkit')}
               className="w-full py-3 rounded-lg font-semibold transition-colors bg-purple-600 text-white hover:bg-purple-700 flex items-center justify-center space-x-2"
             >
               <span>Get Full Access</span>

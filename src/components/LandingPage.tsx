@@ -277,7 +277,7 @@ const LandingPage: React.FC = () => {
               </div>
               
               <Link 
-                to="/pricing"
+                to="/checkout?productId=complete-toolkit"
                 className="w-full px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all font-semibold text-lg shadow-lg flex items-center justify-center"
               >
                 <span>Get Started Now - $50</span>
