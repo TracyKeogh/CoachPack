@@ -56,7 +56,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const testConnection = useCallback(async () => {
     try {
       console.log('AuthProvider: Testing Supabase connection...');
-      return await testSupabaseConnection();
+      // Add a timeout to the connection test
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Supabase connection test timed out')), 5000));
+      return await Promise.race([testSupabaseConnection(), timeoutPromise]);
     } catch (error) {
       console.error('AuthProvider: Connection test failed:', error);
       return false;
@@ -470,7 +472,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('[AuthProvider] Session check started');
         
         // Test connection first
-        const isConnected = await testConnection();
+        let isConnected = false;
+        try {
+          isConnected = await testConnection();
+        } catch (err) {
+          console.warn('AuthProvider: Supabase connection test timed out or failed:', err);
+          setLoading(false);
+          return;
+        }
         setConnectionTested(true);
         if (!isConnected) {
           console.error('AuthProvider: Unable to connect to Supabase');
