@@ -21,6 +21,7 @@ const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [emailForResend, setEmailForResend] = useState('');
   const [confirmationSent, setConfirmationSent] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   
   // Get the redirect path from location state or default to dashboard
   const from = location.state?.from?.pathname || '/dashboard';
@@ -280,3 +281,9 @@ const LoginPage: React.FC = () => {
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  );
+};
+
+export default LoginPage;
