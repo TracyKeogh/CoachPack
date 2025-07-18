@@ -40,6 +40,10 @@ const LoginPage: React.FC = () => {
     }
   });
 
+  React.useEffect(() => {
+    console.log('[LoginPage] isSubmitting:', isSubmitting, 'authLoading:', authLoading);
+  }, [isSubmitting, authLoading]);
+
   const onSubmit = async (data: LoginFormValues) => {
     clearError();
     setEmailForResend(data.email);

@@ -44,6 +44,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [initialized, setInitialized] = useState(false);
   const [connectionTested, setConnectionTested] = useState(false);
 
+  useEffect(() => {
+    console.log('[AuthProvider] Initial loading state:', loading);
+  }, []);
+
+  useEffect(() => {
+    console.log('[AuthProvider] Loading state changed:', loading);
+  }, [loading]);
+
   // Test connection
   const testConnection = useCallback(async () => {
     try {
@@ -459,6 +467,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const checkSession = async () => {
       try {
         setLoading(true);
+        console.log('[AuthProvider] Session check started');
         
         // Test connection first
         const isConnected = await testConnection();
@@ -512,6 +521,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(false);
         setConnectionTested(true);
         setInitialized(true);
+        console.log('[AuthProvider] Session check finished, loading:', loading);
       }
     };
 
