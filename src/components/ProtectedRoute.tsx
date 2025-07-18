@@ -7,7 +7,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { user, loading, checkSubscription } = useAuth();
+  const { user, loading, hasAccess } = useAuth();
   const [hasValidSubscription, setHasValidSubscription] = useState<boolean | null>(null);
   const [checkingSubscription, setCheckingSubscription] = useState(true);
 
@@ -16,8 +16,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
       if (user && !loading) {
         setCheckingSubscription(true);
         try {
-          const hasAccess = await checkSubscription();
-          setHasValidSubscription(hasAccess);
+          const accessResult = await hasAccess();
+          setHasValidSubscription(accessResult);
         } catch (error) {
           console.error('Error checking subscription:', error);
           setHasValidSubscription(false);
@@ -31,7 +31,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     };
 
     verifySubscription();
-  }, [user, loading, checkSubscription]);
+  }, [user, loading, hasAccess]);
 
   // Show loading while checking authentication or subscription
   if (loading || checkingSubscription) {
