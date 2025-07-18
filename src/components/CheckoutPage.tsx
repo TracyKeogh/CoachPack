@@ -219,16 +219,6 @@ const CheckoutPage: React.FC = () => {
               </button>
             </form>
             
-            {/* Test Mode Notice */}
-            <div className="mt-6 text-center">
-              <p className="text-sm text-amber-600 flex items-center justify-center">
-                <span className="mr-1">⚠️</span> TEST MODE: No actual payment will be processed
-              </p>
-              <p className="text-xs text-slate-500 mt-2">
-                This is a demo checkout. No credit card will be charged.
-              </p>
-            </div>
-            
             {/* Secure Payment Notice */}
             <div className="mt-6 flex items-center justify-center text-sm text-slate-500">
               <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

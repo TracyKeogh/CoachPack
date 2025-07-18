@@ -47,15 +47,13 @@ const ForgotPasswordPage: React.FC = () => {
   }, [emailSentTime]);
 
   // Test email service when component mounts
-  useEffect(() => {
-    const checkEmailService = async () => {
-      try {
-        const isWorking = await testEmailService();
-        setEmailServiceStatus(isWorking ? 'working' : 'not-working');
-      } catch (error) {
-        console.error('Error testing email service:', error);
-        setEmailServiceStatus('not-working');
-      }
+      const options = {
+        redirectTo: redirectTo || (import.meta.env.PROD 
+          ? 'https://coachpack.org/auth/reset-password'
+          : `${window.location.origin}/auth/reset-password`)
+      };
+      
+      console.log('AuthProvider: Using redirect URL:', options.redirectTo);
     };
     
     checkEmailService();

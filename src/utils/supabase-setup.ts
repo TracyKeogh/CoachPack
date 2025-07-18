@@ -8,10 +8,12 @@ const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
 // Validation function for environment variables
 export const validateEnvironment = (): { valid: boolean; message: string } => {
   if (!supabaseUrl) {
-    return { valid: false, message: 'Missing VITE_SUPABASE_URL environment variable' };
+    console.error('PRODUCTION ERROR: Missing VITE_SUPABASE_URL environment variable');
+    return { valid: false, message: 'Missing VITE_SUPABASE_URL environment variable. Please configure in Netlify.' };
   }
   if (!supabaseAnonKey) {
-    return { valid: false, message: 'Missing VITE_SUPABASE_ANON_KEY environment variable' };
+    console.error('PRODUCTION ERROR: Missing VITE_SUPABASE_ANON_KEY environment variable');
+    return { valid: false, message: 'Missing VITE_SUPABASE_ANON_KEY environment variable. Please configure in Netlify.' };
   }
   return { valid: true, message: 'Environment variables are valid' };
 };

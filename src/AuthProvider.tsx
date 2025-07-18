@@ -123,7 +123,9 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('AuthProvider: Attempting to sign up with email:', email);
       
       // Use the current origin for redirect
-      const confirmationRedirectTo = `${window.location.origin}/auth/login`;
+      const confirmationRedirectTo = import.meta.env.PROD 
+        ? 'https://coachpack.org/auth/login'
+        : `${window.location.origin}/auth/login`;
       console.log('AuthProvider: Using confirmation redirect URL:', confirmationRedirectTo);
       
       const { data, error } = await supabase.auth.signUp({

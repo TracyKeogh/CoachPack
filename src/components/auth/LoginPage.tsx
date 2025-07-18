@@ -280,9 +280,3 @@ const LoginPage: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
-    </div>
-  );
-};
-
-export default LoginPage;
