@@ -21,7 +21,7 @@ export const supabase = createClient(
 export const testSupabaseConnection = async (): Promise<boolean> => {
   try {
     console.log('Testing Supabase connection...');
-    const { data, error } = await supabase.from('users').select('count').limit(1);
+    const { data, error } = await supabase.auth.getSession();
     
     if (error) {
       console.error('Supabase connection test failed:', error);
