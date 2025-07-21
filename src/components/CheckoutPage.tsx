@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { ArrowLeft, Target, Sparkles, CreditCard, CheckCircle } from 'lucide-react';
 
+import { validateStripeEnvironment } from '../stripe-config';
+
 const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -15,6 +17,16 @@ const CheckoutPage: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [stripeConfigured, setStripeConfigured] = useState(false);
+
+  // Check Stripe configuration on mount
+  useEffect(() => {
+    const isConfigured = validateStripeEnvironment();
+    setStripeConfigured(isConfigured);
+    if (!isConfigured) {
+      setError('Payment system is currently unavailable. Please contact support.');
+    }
+  }, []);
 
   // Get product ID from query params
   const queryParams = new URLSearchParams(location.search);
@@ -27,6 +39,11 @@ const CheckoutPage: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!stripeConfigured) {
+      setError('Payment system is not properly configured. Please contact support.');
+      return;
+    }
     
     // Simple validation
     if (!formData.name.trim()) {

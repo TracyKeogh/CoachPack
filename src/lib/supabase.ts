@@ -5,16 +5,17 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('CRITICAL PRODUCTION ERROR: Missing Supabase environment variables.');
-  console.error('Required environment variables:');
-  console.error('- VITE_SUPABASE_URL:', supabaseUrl ? '✓ Set' : '✗ Missing');
-  console.error('- VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? '✓ Set' : '✗ Missing');
-  console.error('Please configure these in your Netlify environment variables.');
+  if (import.meta.env.PROD) {
+    console.error('CRITICAL: Missing Supabase environment variables in production');
+  } else {
+    console.error('Missing Supabase environment variables in development');
+    console.error('Required: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY');
+  }
 }
 
-// Log connection attempt (only in development)
-if (import.meta.env.DEV) {
-  console.log('Attempting to connect to Supabase with URL:', supabaseUrl ? 'URL exists' : 'URL missing');
+// Only log in development
+if (import.meta.env.DEV && supabaseUrl && supabaseAnonKey) {
+  console.log('Supabase connection configured for development');
 }
 
 // Create Supabase client

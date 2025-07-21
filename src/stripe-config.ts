@@ -1,28 +1,41 @@
 // Environment validation for Stripe
 const validateStripeEnvironment = () => {
   const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+  const priceId = import.meta.env.VITE_STRIPE_PRICE_ID;
   
   if (!publishableKey) {
-    console.error('PRODUCTION ERROR: Missing VITE_STRIPE_PUBLISHABLE_KEY environment variable');
+    console.error('CRITICAL: Missing VITE_STRIPE_PUBLISHABLE_KEY environment variable');
+    return false;
+  }
+  
+  if (!priceId) {
+    console.error('CRITICAL: Missing VITE_STRIPE_PRICE_ID environment variable');
     return false;
   }
   
   // Check if we're in production but using test keys
   if (import.meta.env.PROD && publishableKey.startsWith('pk_test_')) {
-    console.error('PRODUCTION ERROR: Using Stripe test keys in production. Please configure live keys.');
+    console.error('CRITICAL: Using Stripe test keys in production. Payments will not work.');
     return false;
   }
   
   // Check if we're in development but using live keys
   if (import.meta.env.DEV && publishableKey.startsWith('pk_live_')) {
-    console.warn('WARNING: Using Stripe live keys in development environment');
+    console.warn('WARNING: Using Stripe live keys in development - real payments will be processed');
   }
   
   return true;
 };
 
 // Validate on module load
-validateStripeEnvironment();
+const isStripeValid = validateStripeEnvironment();
+
+// Export validation function for use in components
+export { validateStripeEnvironment };
+
+if (!isStripeValid && import.meta.env.PROD) {
+  console.error('CRITICAL: Stripe is not properly configured for production');
+}
 
 export interface StripeProduct {
   id: string;
@@ -39,9 +52,7 @@ export const STRIPE_PRODUCTS: StripeProduct[] = [
     id: 'complete-toolkit',
     name: 'Complete Toolkit',
     description: 'Full access to all self-coaching tools for 30 days',
-    priceId: import.meta.env.PROD 
-      ? 'price_1QdVXXXXXXXXXXXXXXXXXXXX' // Replace with your actual LIVE Stripe price ID
-      : 'price_1OvXXXXXXXXXXXXXXXXXXXXX', // Test price ID for development
+    priceId: import.meta.env.VITE_STRIPE_PRICE_ID || '',
     price: 50.00,
     currency: 'usd',
     mode: 'payment'
