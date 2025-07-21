@@ -5,6 +5,10 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
 
+// Provide fallback values to prevent app from crashing
+const FALLBACK_URL = 'https://placeholder.supabase.co';
+const FALLBACK_KEY = 'placeholder-key';
+
 // Validation function for environment variables
 export const validateEnvironment = (): { valid: boolean; message: string } => {
   if (!supabaseUrl) {
@@ -22,8 +26,8 @@ export const validateEnvironment = (): { valid: boolean; message: string } => {
 
 // Create Supabase client with anon key (for regular operations)
 export const supabase = createClient(
-  supabaseUrl || '',
-  supabaseAnonKey || '',
+  supabaseUrl || FALLBACK_URL,
+  supabaseAnonKey || FALLBACK_KEY,
   {
     auth: {
       persistSession: true,
@@ -34,7 +38,7 @@ export const supabase = createClient(
 
 // Create Supabase admin client with service role key (for setup operations)
 export const supabaseAdmin = supabaseServiceKey 
-  ? createClient(supabaseUrl || '', supabaseServiceKey, {
+  ? createClient(supabaseUrl || FALLBACK_URL, supabaseServiceKey, {
       auth: {
         persistSession: false,
         autoRefreshToken: false,
