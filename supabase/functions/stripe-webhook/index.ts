@@ -91,6 +91,10 @@ async function handleEvent(event: Stripe.Event) {
       await handlePaymentIntentSucceeded(stripeData as Stripe.PaymentIntent);
       break;
     
+    case 'payment_intent.payment_failed':
+      await handlePaymentIntentFailed(stripeData as Stripe.PaymentIntent);
+      break;
+    
     default:
       console.log(`Unhandled event type: ${event.type}`);
   }
@@ -140,6 +144,31 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
   await updateUserAccessFromPayment(customerId);
 }
 
+async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
+  try {
+    console.error(`❌ Payment failed for PaymentIntent: ${paymentIntent.id}`);
+    console.error(`❌ Failure reason: ${paymentIntent.last_payment_error?.message || 'Unknown'}`);
+    
+    const customerId = paymentIntent.customer as string;
+    
+    if (customerId) {
+      // Get user info for logging
+      const { data: customerData } = await supabase
+        .from('stripe_customers')
+        .select('user_id')
+        .eq('customer_id', customerId)
+        .single();
+
+      if (customerData) {
+        console.error(`❌ Failed payment for user_id: ${customerData.user_id}`);
+      }
+    }
+    
+  } catch (error) {
+    console.error('Error handling payment failure:', error);
+  }
+}
+
 async function syncCustomerSubscription(customerId: string) {
   try {
     // Fetch latest subscription data from Stripe
@@ -155,7 +184,7 @@ async function syncCustomerSubscription(customerId: string) {
       const { error: noSubError } = await supabase.from('stripe_subscriptions').upsert(
         {
           customer_id: customerId,
-          subscription_status: 'not_started',
+          status: 'not_started',
         },
         {
           onConflict: 'customer_id',
