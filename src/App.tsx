@@ -1,11 +1,7 @@
 import React from 'react';
-import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-
-// Environment validation
-import { validateEnvironment } from './utils/supabase-setup';
 
 // Auth Components
 import AuthProvider from './AuthProvider';
@@ -33,24 +29,6 @@ import VisionBoard from './components/VisionBoard';
 import GoalSetting from './components/GoalSetting';
 import Calendar from './components/Calendar';
 import CommunityTemplates from './components/CommunityTemplates';
-
-// Environment Error Component
-const EnvironmentError: React.FC<{ message: string }> = ({ message }) => {
-  return (
-    <div className="min-h-screen bg-red-50 flex items-center justify-center p-6">
-      <div className="bg-white rounded-2xl p-8 shadow-lg border border-red-200 max-w-md w-full text-center">
-        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-          <span className="text-3xl text-red-600">⚠️</span>
-        </div>
-        <h1 className="text-2xl font-bold text-red-900 mb-2">Configuration Error</h1>
-        <p className="text-red-700 mb-6">{message}</p>
-        <p className="text-sm text-red-600">
-          Please contact support at hello@coachpack.org if this issue persists.
-        </p>
-      </div>
-    </div>
-  );
-};
 
 // Auth Layout Component
 const AuthLayout: React.FC = () => {
@@ -130,39 +108,6 @@ const NotFound: React.FC = () => {
 };
 
 function App() {
-  const [envValid, setEnvValid] = useState<boolean | null>(null);
-  const [envMessage, setEnvMessage] = useState<string>('');
-
-  useEffect(() => {
-    // Validate environment on app start
-    try {
-      const { valid, message } = validateEnvironment();
-      setEnvValid(valid);
-      setEnvMessage(message);
-    } catch (error) {
-      console.error('Environment validation error:', error);
-      setEnvValid(false);
-      setEnvMessage('Configuration validation failed. Please contact support.');
-    }
-  }, []);
-
-  // Show loading while checking environment
-  if (envValid === null) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-slate-600">Loading Coach Pack...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show error if environment is not valid
-  if (!envValid) {
-    return <EnvironmentError message={envMessage} />;
-  }
-
   return (
     <Router>
       <AuthProvider>

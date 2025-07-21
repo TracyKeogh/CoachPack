@@ -1,5 +1,5 @@
 // Environment validation for Stripe
-export const validateStripeEnvironment = () => {
+const validateStripeEnvironment = () => {
   const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
   const priceId = import.meta.env.VITE_STRIPE_PRICE_ID;
   
@@ -27,14 +27,14 @@ export const validateStripeEnvironment = () => {
   return true;
 };
 
-// Validate on module load but don't crash the app
-try {
-  const isStripeValid = validateStripeEnvironment();
-  if (!isStripeValid && import.meta.env.PROD) {
-    console.error('CRITICAL: Stripe is not properly configured for production');
-  }
-} catch (error) {
-  console.error('Error validating Stripe environment:', error);
+// Validate on module load
+const isStripeValid = validateStripeEnvironment();
+
+// Export validation function for use in components
+export { validateStripeEnvironment };
+
+if (!isStripeValid && import.meta.env.PROD) {
+  console.error('CRITICAL: Stripe is not properly configured for production');
 }
 
 export interface StripeProduct {
