@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { ArrowLeft, Target, Sparkles, CreditCard, CheckCircle } from 'lucide-react';
 
@@ -18,6 +19,7 @@ const CheckoutPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [stripeConfigured, setStripeConfigured] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Check Stripe configuration on mount
   useEffect(() => {
@@ -26,11 +28,24 @@ const CheckoutPage: React.FC = () => {
     if (!isConfigured) {
       setError('Payment system is currently unavailable. Please contact support.');
     }
+    setIsLoading(false);
   }, []);
 
   // Get product ID from query params
   const queryParams = new URLSearchParams(location.search);
   const productId = queryParams.get('productId') || 'complete-toolkit';
+
+  // Show loading state while checking configuration
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading checkout...</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -67,7 +82,7 @@ const CheckoutPage: React.FC = () => {
       
       // Redirect to success page after 2 seconds
       setTimeout(() => {
-        navigate(`/auth/signup?email=${encodeURIComponent(formData.email)}&name=${encodeURIComponent(formData.name)}&productId=${productId}&payment=completed`);
+        navigate(`/auth/login?email=${encodeURIComponent(formData.email)}&name=${encodeURIComponent(formData.name)}&productId=${productId}&payment=completed`);
       }, 2000);
     }, 1500);
   };

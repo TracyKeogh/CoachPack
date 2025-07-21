@@ -135,6 +135,9 @@ function App() {
           {/* Auth Routes */}
           <Route path="/auth/*" element={<AuthLayout />} />
           
+          {/* Checkout Route - Make sure it's accessible */}
+          <Route path="/checkout" element={<CheckoutPage />} />
+          
           {/* Protected Dashboard Routes */}
           <Route 
             path="/dashboard/*" 

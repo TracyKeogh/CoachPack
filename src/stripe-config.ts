@@ -3,6 +3,12 @@ const validateStripeEnvironment = () => {
   const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
   const priceId = import.meta.env.VITE_STRIPE_PRICE_ID;
   
+  console.log('Stripe environment check:', {
+    hasPublishableKey: !!publishableKey,
+    hasPriceId: !!priceId,
+    publishableKeyPrefix: publishableKey ? publishableKey.substring(0, 7) : 'missing'
+  });
+  
   if (!publishableKey) {
     console.error('CRITICAL: Missing VITE_STRIPE_PUBLISHABLE_KEY environment variable');
     return false;
