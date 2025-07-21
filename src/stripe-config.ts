@@ -6,16 +6,20 @@ const validateStripeEnvironment = () => {
   console.log('Stripe environment check:', {
     hasPublishableKey: !!publishableKey,
     hasPriceId: !!priceId,
-    publishableKeyPrefix: publishableKey ? publishableKey.substring(0, 7) : 'missing'
+    publishableKeyPrefix: publishableKey ? publishableKey.substring(0, 7) : 'missing',
+    priceIdPrefix: priceId ? priceId.substring(0, 8) : 'missing',
+    environment: import.meta.env.MODE
   });
   
   if (!publishableKey) {
     console.error('CRITICAL: Missing VITE_STRIPE_PUBLISHABLE_KEY environment variable');
+    console.error('Expected format: pk_live_... or pk_test_...');
     return false;
   }
   
   if (!priceId) {
     console.error('CRITICAL: Missing VITE_STRIPE_PRICE_ID environment variable');
+    console.error('Expected format: price_...');
     return false;
   }
   
@@ -30,6 +34,7 @@ const validateStripeEnvironment = () => {
     console.warn('WARNING: Using Stripe live keys in development - real payments will be processed');
   }
   
+  console.log('✅ Stripe environment validation passed');
   return true;
 };
 

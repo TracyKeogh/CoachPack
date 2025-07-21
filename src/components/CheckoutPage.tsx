@@ -23,10 +23,23 @@ const CheckoutPage: React.FC = () => {
 
   // Check Stripe configuration on mount
   useEffect(() => {
+    console.log('CheckoutPage: Checking Stripe configuration...');
+    console.log('Environment variables:', {
+      hasPublishableKey: !!import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY,
+      hasPriceId: !!import.meta.env.VITE_STRIPE_PRICE_ID,
+      mode: import.meta.env.MODE,
+      prod: import.meta.env.PROD
+    });
+    
     const isConfigured = validateStripeEnvironment();
+    console.log('Stripe configuration result:', isConfigured);
     setStripeConfigured(isConfigured);
     if (!isConfigured) {
-      setError('Payment system is currently unavailable. Please contact support.');
+      if (import.meta.env.DEV) {
+        setError('Stripe not configured for development. Check console for details.');
+      } else {
+        setError('Payment system is currently unavailable. Please contact support.');
+      }
     }
     setIsLoading(false);
   }, []);
@@ -249,6 +262,16 @@ const CheckoutPage: React.FC = () => {
                   <span>Pay $49.00</span>
                 )}
               </button>
+                {/* Debug info in development */}
+                {import.meta.env.DEV && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 text-sm text-yellow-800">
+                    <p className="font-medium mb-1">🔧 Debug Info (Development Only)</p>
+                    <p>Publishable Key: {import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ? '✅ Set' : '❌ Missing'}</p>
+                    <p>Price ID: {import.meta.env.VITE_STRIPE_PRICE_ID ? '✅ Set' : '❌ Missing'}</p>
+                    <p>Environment: {import.meta.env.MODE}</p>
+                  </div>
+                )}
+                
             </form>
             
             {/* Secure Payment Notice */}
