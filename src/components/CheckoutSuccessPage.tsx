@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { CheckCircle, Target, Sparkles, ArrowRight, AlertCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
@@ -24,6 +24,7 @@ const CheckoutSuccessPage: React.FC = () => {
         return;
       }
 
+      try {
         // For now, we'll assume the payment was successful if we have a session ID
         // The webhook will handle user creation and access provisioning
         setPaymentDetails({ sessionId });
