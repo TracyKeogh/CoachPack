@@ -53,9 +53,22 @@ const CheckoutPage: React.FC = () => {
       
       // Call Stripe checkout function
       const response = await fetch(functionUrl, {
+      
+      if (!supabaseUrl) {
+        throw new Error('Supabase URL not configured. Please set VITE_SUPABASE_URL in your environment variables.');
+      }
+      
+      // Construct the correct Edge Function URL
+      const functionUrl = `${supabaseUrl}/functions/v1/stripe-checkout`;
+      
+      console.log('Calling Edge Function at:', functionUrl);
+      
+      // Call Stripe checkout function
+      const response = await fetch(functionUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
           'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
         },
         body: JSON.stringify({
@@ -71,13 +84,15 @@ const CheckoutPage: React.FC = () => {
       console.log('Response status:', response.status);
       console.log('Response headers:', [...response.headers.entries()]);
 
+      console.log('Response status:', response.status);
+      console.log('Response headers:', [...response.headers.entries()]);
+
       if (!response.ok) {
         let errorData;
         try {
           errorData = await response.json();
         } catch (jsonError) {
           throw new Error(`Payment service error (${response.status})`);
-        }
         let errorData;
         try {
           const responseText = await response.text();
@@ -93,11 +108,24 @@ const CheckoutPage: React.FC = () => {
             throw new Error('Payment service not found. Please check if the Stripe Edge Function is deployed.');
           }
           throw new Error(`Payment service error (${response.status}): ${response.statusText}`);
+        let errorData;
+        try {
+          const responseText = await response.text();
+      }
+            const errorResponse = JSON.parse(responseText);
+            throw new Error(errorResponse.error || `Payment service error (${response.status})`);
+          } else {
+            throw new Error(`Payment service error (${response.status}): Empty response`);
+          }
+        } catch (parseError) {
+          if (response.status === 404) {
+            throw new Error('Payment service not found. Please check if the Stripe Edge Function is deployed.');
+          }
+          throw new Error(`Payment service error (${response.status}): ${response.statusText}`);
         }
-        throw new Error(errorData.error || 'Payment failed');
       }
 
-      let responseData;
+      // Handle success responses
       try {
         const responseText = await response.text();
         console.log('Success response text:', responseText);
@@ -106,28 +134,21 @@ const CheckoutPage: React.FC = () => {
           throw new Error('Empty response from payment service');
         }
         
-        responseData = JSON.parse(responseText);
-      } catch (jsonError) {
-        console.error('Failed to parse success response:', jsonError);
-        throw new Error('Invalid response from payment service');
-      }
-
-      const { url } = responseData;
-      try {
-        responseData = await response.json();
-      } catch (jsonError) {
+        const responseData = JSON.parse(responseText);
+        const { url } = responseData;
+        
+        // Redirect to Stripe Checkout
+        if (url) {
+          console.log('Redirecting to Stripe:', url);
+          window.location.href = url;
+        } else {
+          throw new Error('No checkout URL received from payment service');
+        }
+      } catch (parseError) {
+        console.error('Failed to parse success response:', parseError);
         throw new Error('Invalid response from payment service');
       }
       
-      const { url } = responseData;
-      
-      // Redirect to Stripe Checkout
-      if (url) {
-        console.log('Redirecting to Stripe:', url);
-        window.location.href = url;
-      } else {
-        throw new Error('No checkout URL received from payment service');
-      }
     } catch (error: any) {
       console.error('Checkout error:', error);
       setError(error.message || 'Something went wrong. Please try again.');
