@@ -781,7 +781,7 @@ const ValuesClarity: React.FC = () => {
       </div>
     </div>
   );
-  );
+};
 
 export default ValuesClarity;text-center">
                 <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-2">
