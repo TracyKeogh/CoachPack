@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Target, Sparkles, CreditCard, CheckCircle, Shield } from 'lucide-react';
+import { ArrowLeft, Target, Sparkles, CreditCard, CheckCircle, Shield, Tag, X } from 'lucide-react';
 
 const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
@@ -12,13 +12,77 @@ const CheckoutPage: React.FC = () => {
   const [formData, setFormData] = useState({
     name: initialName,
     email: initialEmail,
+    couponCode: '',
   });
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [couponApplied, setCouponApplied] = useState<{
+    code: string;
+    discount: string;
+    valid: boolean;
+  } | null>(null);
+  const [showCouponField, setShowCouponField] = useState(false);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (error) setError(null);
+    
+    // Reset coupon when code changes
+    if (field === 'couponCode' && couponApplied) {
+      setCouponApplied(null);
+    }
+  };
+
+  const validateCoupon = async () => {
+    if (!formData.couponCode.trim()) {
+      setError('Please enter a coupon code');
+      return;
+    }
+
+    try {
+      // Get Supabase URL from environment
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      
+      if (!supabaseUrl) {
+        throw new Error('Supabase URL not configured');
+      }
+      
+      // Call validate coupon function
+      const response = await fetch(`${supabaseUrl}/functions/v1/validate-coupon`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          coupon_code: formData.couponCode.trim(),
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.valid) {
+          setCouponApplied({
+            code: formData.couponCode.trim(),
+            discount: result.discount,
+            valid: true,
+          });
+          setError(null);
+        } else {
+          setError('Invalid or expired coupon code');
+        }
+      } else {
+        setError('Unable to validate coupon code');
+      }
+    } catch (err) {
+      setError('Unable to validate coupon code');
+      console.error('Coupon validation error:', err);
+    }
+  };
+
+  const removeCoupon = () => {
+    setCouponApplied(null);
+    setFormData(prev => ({ ...prev, couponCode: '' }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -51,6 +115,21 @@ const CheckoutPage: React.FC = () => {
       
       console.log('Calling Edge Function at:', functionUrl);
       
+      // Prepare request body
+      const requestBody: any = {
+        price_id: import.meta.env.VITE_STRIPE_PRICE_ID || 'price_1Rf0j2GR1TepVbUMoQMYDXgT',
+        success_url: `${window.location.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${window.location.origin}/cancel`,
+        mode: 'payment',
+        email: formData.email,
+        name: formData.name,
+      };
+
+      // Add coupon if applied
+      if (couponApplied && couponApplied.valid) {
+        requestBody.coupon_code = couponApplied.code;
+      }
+      
       // Call Stripe checkout function
       const response = await fetch(functionUrl, {
         method: 'POST',
@@ -58,21 +137,13 @@ const CheckoutPage: React.FC = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
         },
-        body: JSON.stringify({
-          price_id: import.meta.env.VITE_STRIPE_PRICE_ID || 'price_1Rf0j2GR1TepVbUMoQMYDXgT',
-          success_url: `${window.location.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
-          cancel_url: `${window.location.origin}/cancel`,
-          mode: 'payment',
-          email: formData.email,
-          name: formData.name,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       console.log('Response status:', response.status);
-      console.log('Response headers:', [...response.headers.entries()]);
 
       if (!response.ok) {
-        let errorData;
+        // Handle error responses
         try {
           const responseText = await response.text();
           console.log('Error response text:', responseText);
@@ -165,6 +236,27 @@ const CheckoutPage: React.FC = () => {
               </p>
               <div className="text-3xl font-bold text-purple-600">$49.00</div>
               <div className="text-sm text-slate-500">One-time payment • No recurring charges</div>
+
+              {/* Coupon Applied Banner */}
+              {couponApplied && (
+                <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Tag className="w-4 h-4 text-green-600" />
+                      <span className="text-sm font-medium text-green-900">
+                        Coupon "{couponApplied.code}" applied!
+                      </span>
+                    </div>
+                    <button
+                      onClick={removeCoupon}
+                      className="text-green-600 hover:text-green-700"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <p className="text-xs text-green-700 mt-1">{couponApplied.discount}</p>
+                </div>
+              )}
             </div>
 
             {/* Account Creation Notice */}
@@ -217,6 +309,46 @@ const CheckoutPage: React.FC = () => {
                   required
                   disabled={isProcessing}
                 />
+              </div>
+
+              {/* Coupon Code Section */}
+              <div>
+                {!showCouponField && !couponApplied && (
+                  <button
+                    type="button"
+                    onClick={() => setShowCouponField(true)}
+                    className="text-purple-600 hover:text-purple-700 text-sm font-medium flex items-center space-x-2"
+                  >
+                    <Tag className="w-4 h-4" />
+                    <span>Have a coupon code?</span>
+                  </button>
+                )}
+
+                {showCouponField && !couponApplied && (
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Coupon Code
+                    </label>
+                    <div className="flex space-x-2">
+                      <input
+                        type="text"
+                        value={formData.couponCode}
+                        onChange={(e) => handleInputChange('couponCode', e.target.value.toUpperCase())}
+                        className="flex-1 px-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                        placeholder="Enter coupon code"
+                        disabled={isProcessing}
+                      />
+                      <button
+                        type="button"
+                        onClick={validateCoupon}
+                        disabled={!formData.couponCode.trim() || isProcessing}
+                        className="px-4 py-3 bg-slate-600 text-white rounded-lg hover:bg-slate-700 focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Apply
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Submit Button */}
