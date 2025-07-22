@@ -77,6 +77,7 @@ const CheckoutPage: React.FC = () => {
           errorData = await response.json();
         } catch (jsonError) {
           throw new Error(`Payment service error (${response.status})`);
+        }
         let errorData;
         try {
           const responseText = await response.text();
