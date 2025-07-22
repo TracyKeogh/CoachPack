@@ -53,6 +53,8 @@ const CheckoutPage: React.FC = () => {
       
       // Call Stripe checkout function
       const response = await fetch(functionUrl, {
+      }
+      )
       
       if (!supabaseUrl) {
         throw new Error('Supabase URL not configured. Please set VITE_SUPABASE_URL in your environment variables.');
