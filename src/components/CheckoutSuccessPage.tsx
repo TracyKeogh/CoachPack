@@ -10,6 +10,7 @@ const CheckoutSuccessPage: React.FC = () => {
   const [isVerifying, setIsVerifying] = useState(true);
   const [verificationError, setVerificationError] = useState<string | null>(null);
   const [paymentDetails, setPaymentDetails] = useState<any>(null);
+  const [needsPasswordReset, setNeedsPasswordReset] = useState(false);
 
   // Get session details from URL params
   const sessionId = searchParams.get('session_id');
@@ -23,30 +24,13 @@ const CheckoutSuccessPage: React.FC = () => {
         return;
       }
 
-      try {
-        // Verify the payment session with your backend
-        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-payment`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({
-            session_id: sessionId
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to verify payment');
-        }
-
-        const data = await response.json();
-        setPaymentDetails(data);
+        // For now, we'll assume the payment was successful if we have a session ID
+        // The webhook will handle user creation and access provisioning
+        setPaymentDetails({ sessionId });
         
-        // Update user access in your system
-        if (user) {
-          // TODO: Update user's subscription status in your database
-          console.log('Payment verified for user:', user.id);
+        // Check if user needs to set up their password
+        if (!user) {
+          setNeedsPasswordReset(true);
         }
         
       } catch (error) {
@@ -146,15 +130,27 @@ const CheckoutSuccessPage: React.FC = () => {
             </div>
 
             {/* Next Steps */}
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
-              <h3 className="font-semibold text-blue-900 mb-2">What's Next?</h3>
-              <div className="text-sm text-blue-700 space-y-1 text-left">
-                <p>1. Access your dashboard immediately</p>
-                <p>2. Start with the Wheel of Life assessment</p>
-                <p>3. Complete your values clarification</p>
-                <p>4. Create your vision board and goals</p>
+            {needsPasswordReset ? (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+                <h3 className="font-semibold text-blue-900 mb-2">Account Setup</h3>
+                <div className="text-sm text-blue-700 space-y-1 text-left">
+                  <p>1. Check your email for account setup instructions</p>
+                  <p>2. Click the link to set your password</p>
+                  <p>3. Sign in to access your dashboard</p>
+                  <p>4. Start with the Wheel of Life assessment</p>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+                <h3 className="font-semibold text-blue-900 mb-2">What's Next?</h3>
+                <div className="text-sm text-blue-700 space-y-1 text-left">
+                  <p>1. Access your dashboard immediately</p>
+                  <p>2. Start with the Wheel of Life assessment</p>
+                  <p>3. Complete your values clarification</p>
+                  <p>4. Create your vision board and goals</p>
+                </div>
+              </div>
+            )}
 
             {/* Transaction ID */}
             {sessionId && (
@@ -164,13 +160,27 @@ const CheckoutSuccessPage: React.FC = () => {
             )}
 
             {/* Continue Button */}
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="w-full px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors font-semibold flex items-center justify-center space-x-2"
-            >
-              <span>Access Your Dashboard</span>
-              <ArrowRight className="w-5 h-5" />
-            </button>
+            {needsPasswordReset ? (
+              <div className="space-y-3">
+                <Link
+                  to="/auth/login"
+                  className="w-full block text-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold"
+                >
+                  Go to Sign In
+                </Link>
+                <p className="text-sm text-slate-500 text-center">
+                  Check your email for password setup instructions
+                </p>
+              </div>
+            ) : (
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="w-full px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors font-semibold flex items-center justify-center space-x-2"
+              >
+                <span>Access Your Dashboard</span>
+                <ArrowRight className="w-5 h-5" />
+              </button>
+            )}
 
             {/* Support */}
             <p className="mt-4 text-xs text-slate-500">

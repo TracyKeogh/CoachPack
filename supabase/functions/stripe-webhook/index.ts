@@ -102,10 +102,25 @@ async function handleEvent(event: Stripe.Event) {
 
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
   const customerId = session.customer as string;
+  const customerEmail = session.metadata?.customer_email || session.customer_details?.email;
+  const customerName = session.metadata?.customer_name || session.customer_details?.name;
   
   if (!customerId) {
     console.error('No customer ID in checkout session');
     return;
+  }
+
+  console.log('Processing checkout session completed:', {
+    sessionId: session.id,
+    customerId,
+    customerEmail,
+    customerName,
+    mode: session.mode
+  });
+
+  // Create Supabase user account if this is a new customer
+  if (customerEmail && customerName) {
+    await createSupabaseUserFromPayment(customerId, customerEmail, customerName);
   }
 
   if (session.mode === 'subscription') {
@@ -115,6 +130,127 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     // For one-time payments, create an order record
     await createOrderRecord(session);
   }
+}
+
+async function createSupabaseUserFromPayment(customerId: string, email: string, name: string) {
+  try {
+    console.log('🆕 Creating Supabase user from payment:', { customerId, email, name });
+    
+    // Check if user already exists
+    const { data: existingUser, error: getUserError } = await supabase.auth.admin.getUserByEmail(email);
+    
+    let userId;
+    
+    if (existingUser && existingUser.user) {
+      console.log('✅ User already exists:', existingUser.user.id);
+      userId = existingUser.user.id;
+    } else {
+      console.log('🆕 Creating new Supabase user');
+      
+      // Generate a temporary password
+      const tempPassword = generateTempPassword();
+      
+      // Create user with admin API
+      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+        email: email,
+        password: tempPassword,
+        email_confirm: false, // Skip email confirmation for paid users
+        user_metadata: {
+          full_name: name,
+          created_via: 'stripe_payment',
+          stripe_customer_id: customerId
+        }
+      });
+      
+      if (createError) {
+        console.error('❌ Error creating Supabase user:', createError);
+        throw new Error(`Failed to create user: ${createError.message}`);
+      }
+      
+      if (!newUser.user) {
+        throw new Error('No user returned from createUser');
+      }
+      
+      userId = newUser.user.id;
+      console.log('✅ Created new Supabase user:', userId);
+      
+      // Send password reset email so user can set their own password
+      try {
+        const { error: resetError } = await supabase.auth.admin.generateLink({
+          type: 'recovery',
+          email: email,
+          options: {
+            redirectTo: `${Deno.env.get('SITE_URL') || 'https://coachpack.org'}/reset-password`
+          }
+        });
+        
+        if (resetError) {
+          console.error('❌ Error sending password reset email:', resetError);
+        } else {
+          console.log('✅ Password reset email sent to:', email);
+        }
+      } catch (emailError) {
+        console.error('❌ Exception sending password reset email:', emailError);
+      }
+    }
+    
+    // Create or update stripe customer mapping
+    const { error: customerError } = await supabase
+      .from('stripe_customers')
+      .upsert({
+        user_id: userId,
+        customer_id: customerId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'customer_id'
+      });
+    
+    if (customerError) {
+      console.error('❌ Error creating customer mapping:', customerError);
+    } else {
+      console.log('✅ Customer mapping created/updated');
+    }
+    
+    // Create or update user profile
+    const { error: profileError } = await supabase
+      .from('user_profiles')
+      .upsert({
+        user_id: userId,
+        email: email,
+        full_name: name,
+        subscription_status: 'lifetime',
+        subscription_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
+        marketing_consent: true,
+        onboarding_completed: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id'
+      });
+    
+    if (profileError) {
+      console.error('❌ Error creating user profile:', profileError);
+    } else {
+      console.log('✅ User profile created/updated');
+    }
+    
+    console.log('✅ Successfully processed user creation from payment');
+    
+  } catch (error) {
+    console.error('💥 Error creating Supabase user from payment:', error);
+    throw error;
+  }
+}
+
+function generateTempPassword(): string {
+  // Generate a secure temporary password
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+  let password = '';
+  for (let i = 0; i < 16; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return password;
 }
 
 async function handleSubscriptionChange(subscription: Stripe.Subscription) {

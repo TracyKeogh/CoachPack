@@ -1,14 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { ArrowLeft, Target, Sparkles, CreditCard, CheckCircle, AlertCircle } from 'lucide-react';
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { ArrowLeft, Target, Sparkles, AlertCircle } from 'lucide-react';
 import { validateStripeEnvironment } from '../stripe-config';
-import { useAuth } from '../hooks/useAuth';
-import { supabase } from '../lib/supabase';
-
-// Initialize Stripe
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 interface CheckoutFormProps {
   productId: string;
@@ -17,25 +10,17 @@ interface CheckoutFormProps {
 }
 
 const CheckoutForm: React.FC<CheckoutFormProps> = ({ productId, userEmail, userName }) => {
-  const stripe = useStripe();
-  const elements = useElements();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    name: userName || user?.name || '',
-    email: userEmail || user?.email || ''
+    name: userName || '',
+    email: userEmail || ''
   });
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     
-    if (!stripe || !elements) {
-      setError('Stripe has not loaded yet. Please try again.');
-      return;
-    }
-
     if (!formData.name.trim() || !formData.email.trim()) {
       setError('Please fill in all required fields.');
       return;
@@ -45,25 +30,22 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ productId, userEmail, userN
     setError(null);
 
     try {
-      // Get the current user's session for authentication
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session) {
-        throw new Error('Failed to authenticate user');
-      }
+      console.log('Creating checkout session for:', formData);
 
-      // Create checkout session
+      // Create checkout session without authentication
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
         },
         body: JSON.stringify({
           price_id: import.meta.env.VITE_STRIPE_PRICE_ID,
           mode: 'payment',
           success_url: `${window.location.origin}/checkout-success?session_id={CHECKOUT_SESSION_ID}`,
           cancel_url: `${window.location.origin}/cancel`,
+          customer_email: formData.email,
+          customer_name: formData.name,
         }),
       });
 
@@ -99,14 +81,14 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ productId, userEmail, userN
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-2">
-            Name
+            Name *
           </label>
           <input
             type="text"
             value={formData.name}
             onChange={(e) => handleInputChange('name', e.target.value)}
             className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            placeholder="Enter your name"
+            placeholder="Enter your full name"
             disabled={isProcessing}
             required
           />
@@ -114,17 +96,20 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ productId, userEmail, userN
         
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-2">
-            Email
+            Email *
           </label>
           <input
             type="email"
             value={formData.email}
             onChange={(e) => handleInputChange('email', e.target.value)}
             className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            placeholder="Enter your email"
+            placeholder="Enter your email address"
             disabled={isProcessing}
             required
           />
+          <p className="text-sm text-slate-500 mt-1">
+            Your account will be created after successful payment
+          </p>
         </div>
       </div>
 
@@ -139,7 +124,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ productId, userEmail, userN
       {/* Submit Button */}
       <button
         type="submit"
-        disabled={!stripe || isProcessing}
+        disabled={isProcessing}
         className="w-full mt-6 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isProcessing ? (
@@ -151,6 +136,11 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ productId, userEmail, userN
           <span>Continue to Payment - $50</span>
         )}
       </button>
+      
+      <p className="text-xs text-slate-500 text-center">
+        By proceeding, you agree to our Terms of Service and Privacy Policy. 
+        Your account will be created automatically after successful payment.
+      </p>
     </form>
   );
 };
@@ -258,16 +248,19 @@ const CheckoutPage: React.FC = () => {
       <div className="flex items-center justify-center py-12 px-6">
         <div className="bg-white rounded-2xl max-w-md w-full shadow-lg border border-slate-200">
           <div className="p-8">
-            <h1 className="text-2xl font-bold text-slate-900 mb-6 text-center">
-              Complete Your Purchase
+            <h1 className="text-2xl font-bold text-slate-900 mb-2 text-center">
+              Get Coach Pack Access
             </h1>
+            <p className="text-slate-600 mb-6 text-center">
+              Complete your purchase to get instant access
+            </p>
             
             {/* Product Info */}
             <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 mb-6">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-semibold text-purple-900">Complete Toolkit</h3>
-                  <p className="text-sm text-purple-600">All tools and assessments</p>
+                  <p className="text-sm text-purple-600">All tools and assessments • 30 days access</p>
                 </div>
                 <div className="text-right">
                   <div className="text-2xl font-bold text-purple-900">$50</div>
@@ -276,14 +269,12 @@ const CheckoutPage: React.FC = () => {
               </div>
             </div>
             
-            {/* Stripe Elements Provider */}
-            <Elements stripe={stripePromise}>
-              <CheckoutForm 
-                productId={productId}
-                userEmail={prefilledEmail}
-                userName={prefilledName}
-              />
-            </Elements>
+            {/* Checkout Form */}
+            <CheckoutForm 
+              productId={productId}
+              userEmail={prefilledEmail}
+              userName={prefilledName}
+            />
             
             {/* Security Notice */}
             <div className="mt-6 flex items-center justify-center text-sm text-slate-500">
