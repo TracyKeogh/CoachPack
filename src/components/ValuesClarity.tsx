@@ -1,93 +1,23 @@
-import React, { useState } from 'react';
-import { useDrag, useDrop } from 'react-dnd';
-import { ChevronRight, ArrowLeft, ArrowRight, Check, Heart, Filter, Search, X, Lightbulb, Users, Target, Compass, Sparkles, Shield, Globe, Wind, BookOpen, Download, RotateCcw, Save } from 'lucide-react';
-import { allValues, getCategories, categoryMetadata, type Value } from '../data/values';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { 
+  Heart, X, ArrowLeft, ArrowRight, RotateCcw, Check, Move, 
+  Undo, ChevronUp, ChevronDown, Download, Save, Upload 
+} from 'lucide-react';
+import { allValues, type Value } from '../data/values';
 import { useValuesData } from '../hooks/useValuesData';
 
-interface DraggableValueProps {
-  value: Value;
-  index: number;
-  moveValue: (dragIndex: number, hoverIndex: number) => void;
-  onRemove?: () => void;
-  showRemove?: boolean;
-  showRank?: boolean;
-}
-
-const DraggableValue: React.FC<DraggableValueProps> = ({ 
-  value, 
-  index, 
-  moveValue, 
-  onRemove,
-  showRemove = false,
-  showRank = false
-}) => {
-  const [{ isDragging }, drag] = useDrag({
-    type: 'value',
-    item: { index },
-    collect: (monitor) => ({
-      isDragging: monitor.isDragging(),
-    }),
-  });
-
-  const [, drop] = useDrop({
-    accept: 'value',
-    hover: (item: { index: number }) => {
-      if (item.index !== index) {
-        moveValue(item.index, index);
-        item.index = index;
-      }
-    },
-  });
-
-  const getCategoryColor = (category: string) => {
-    const colors: Record<string, string> = {
-      'Achievement': 'bg-blue-50 border-blue-200 text-blue-800',
-      'Connection': 'bg-pink-50 border-pink-200 text-pink-800',
-      'Inner Compass': 'bg-purple-50 border-purple-200 text-purple-800',
-      'Freedom & Autonomy': 'bg-yellow-50 border-yellow-200 text-yellow-800',
-      'Purpose & Impact': 'bg-green-50 border-green-200 text-green-800',
-      'Vitality & Health': 'bg-red-50 border-red-200 text-red-800',
-      'Spiritual & Emotional': 'bg-indigo-50 border-indigo-200 text-indigo-800',
-      'Creativity & Expression': 'bg-orange-50 border-orange-200 text-orange-800',
-      'Learning & Growth': 'bg-emerald-50 border-emerald-200 text-emerald-800',
-      'Structure & Stability': 'bg-slate-50 border-slate-200 text-slate-800'
-    };
-    return colors[category] || 'bg-gray-50 border-gray-200 text-gray-800';
-  };
-
-  return (
-    <div
-      ref={(node) => drag(drop(node))}
-      className={`bg-white rounded-lg p-4 shadow-sm border-2 cursor-move transition-all duration-200 ${
-        isDragging ? 'opacity-50 scale-95' : 'hover:shadow-md hover:scale-102'
-      }`}
-    >
-      <div className="flex items-start justify-between">
-        {showRank && (
-          <div className="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold text-sm mr-3 flex-shrink-0">
-            {index + 1}
-          </div>
-        )}
-        <div className="flex-1">
-          <div className="flex items-center space-x-2 mb-2">
-            <h4 className="font-semibold text-slate-900">{value.name}</h4>
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(value.category)}`}>
-              {value.category}
-            </span>
-          </div>
-          <p className="text-sm text-slate-600">{value.description}</p>
-        </div>
-        {showRemove && onRemove && (
-          <button
-            onClick={onRemove}
-            className="ml-2 text-slate-400 hover:text-red-500 transition-colors p-1 hover:bg-red-50 rounded"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-    </div>
-  );
+// Group values into families for step 3
+const valueFamilies = {
+  "Achievement & Growth": ["Achievement", "Ambition", "Excellence", "Growth", "Mastery", "Performance", "Progress", "Drive"],
+  "Connection & Love": ["Love", "Family", "Friendship", "Connection", "Community", "Intimacy", "Belonging", "Care", "Compassion"],
+  "Integrity & Character": ["Honesty", "Integrity", "Authenticity", "Ethics", "Honor", "Dignity", "Respect", "Responsibility", "Accountability"],
+  "Freedom & Independence": ["Freedom", "Independence", "Self-reliance", "Flexibility", "Adventure", "Exploration"],
+  "Peace & Balance": ["Peace", "Balance", "Harmony", "Calm", "Mindfulness", "Stability", "Contentment", "Simplicity"],
+  "Creativity & Expression": ["Creativity", "Expressiveness", "Innovation", "Imagination", "Originality", "Beauty"],
+  "Service & Impact": ["Service", "Altruism", "Contribution", "Impact", "Justice", "Giving", "Helpfulness", "Legacy", "Purpose"],
+  "Health & Vitality": ["Health", "Energy", "Vitality"],
+  "Wisdom & Learning": ["Wisdom", "Learning", "Knowledge", "Education", "Curiosity", "Discovery", "Awareness"],
+  "Security & Stability": ["Security", "Safety", "Stability", "Order", "Organization", "Control", "Reliability"]
 };
 
 const ValuesClarity: React.FC = () => {
@@ -96,7 +26,6 @@ const ValuesClarity: React.FC = () => {
     isLoaded,
     lastSaved,
     updateCurrentStep,
-    updateDiscoveryResponses,
     updateSelectedValues,
     updateCoreValues,
     updateSupportingValues,
@@ -109,118 +38,235 @@ const ValuesClarity: React.FC = () => {
     clearAllData
   } = useValuesData();
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  // New card-deck state
+  const [currentCardIndex, setCurrentCardIndex] = useState(0);
+  const [yesValues, setYesValues] = useState<string[]>([]);
+  const [noValues, setNoValues] = useState<string[]>([]);
+  const [groupedValues, setGroupedValues] = useState<Record<string, string[]>>({});
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
+  const [draggedValue, setDraggedValue] = useState<string | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  
+  // Card dragging state
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [startPos, setStartPos] = useState({ x: 0, y: 0 });
   const [showDataManagement, setShowDataManagement] = useState(false);
-  const importInputRef = React.useRef<HTMLInputElement>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
 
-  const steps = [
-    { number: 1, title: 'Guided Discovery', description: 'Connect with your experiences and emotions' },
-    { number: 2, title: 'Curated Selection', description: 'Choose 12 values that resonate with you' },
-    { number: 3, title: 'Core vs Supporting', description: 'Organize into 9 core and 3 supporting values' },
-    { number: 4, title: 'Rank Core Values', description: 'Prioritize your 9 core values' },
-    { number: 5, title: 'Define & Envision', description: 'Make your top 6 values actionable' },
-  ];
+  // Shuffle values for the card deck
+  const [shuffledValues] = useState(() => 
+    allValues.map(v => v.name).sort(() => Math.random() - 0.5)
+  );
 
-  const discoveryPrompts = [
-    {
-      id: 'proudMoment',
-      question: 'Think of a moment you felt proud. What mattered most to you?',
-      placeholder: 'Describe a time when you felt genuinely proud of yourself...',
-      icon: Sparkles
-    },
-    {
-      id: 'admiredPerson',
-      question: 'Who do you admire, and why?',
-      placeholder: 'Think of someone you look up to and what qualities they embody...',
-      icon: Users
+  // Initialize card deck state when switching to step 1
+  useEffect(() => {
+    if (data.currentStep === 1 && data.selectedValues.length === 0) {
+      setCurrentCardIndex(0);
+      setYesValues([]);
+      setNoValues([]);
     }
-  ];
+  }, [data.currentStep]);
 
-  const themeOptions = [
-    'Courage', 'Growth', 'Kindness', 'Excellence', 'Authenticity', 'Service',
-    'Creativity', 'Leadership', 'Wisdom', 'Connection', 'Freedom', 'Balance'
-  ];
-
-  const getIconForCategory = (categoryName: string) => {
-    const iconMap: Record<string, any> = {
-      'Achievement': Target,
-      'Connection': Users,
-      'Inner Compass': Compass,
-      'Freedom & Autonomy': Wind,
-      'Purpose & Impact': Globe,
-      'Vitality & Health': Heart,
-      'Spiritual & Emotional': Sparkles,
-      'Creativity & Expression': Lightbulb,
-      'Learning & Growth': BookOpen,
-      'Structure & Stability': Shield
-    };
-    return iconMap[categoryName] || Target;
+  // Convert string values back to Value objects
+  const convertToValueObjects = (valueNames: string[]): Value[] => {
+    return valueNames.map(name => allValues.find(v => v.name === name)!).filter(Boolean);
   };
 
-  const valueCategories = Object.entries(categoryMetadata).map(([key, meta]) => ({
-    id: key.toLowerCase().replace(/\s+/g, '-'),
-    name: key,
-    icon: getIconForCategory(key),
-    description: meta.description,
-    values: allValues.filter(v => v.category === key)
-  }));
+  // Step 1: Handle card dragging
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (data.currentStep !== 1) return;
+    setIsDragging(true);
+    setStartPos({ x: e.clientX, y: e.clientY });
+    setDragOffset({ x: 0, y: 0 });
+  };
 
-  const moveValue = (dragIndex: number, hoverIndex: number) => {
-    let currentValues, setCurrentValues;
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isDragging) return;
     
-    if (data.currentStep === 3) {
-      if (data.coreValues.length > 0) {
-        currentValues = data.coreValues;
-        setCurrentValues = updateCoreValues;
-      } else {
-        currentValues = data.supportingValues;
-        setCurrentValues = updateSupportingValues;
-      }
-    } else if (data.currentStep === 4) {
-      currentValues = data.rankedCoreValues;
-      setCurrentValues = updateRankedCoreValues;
+    const deltaX = e.clientX - startPos.x;
+    const deltaY = e.clientY - startPos.y;
+    setDragOffset({ x: deltaX, y: deltaY });
+  }, [isDragging, startPos]);
+
+  const handleMouseUp = useCallback(() => {
+    if (!isDragging) return;
+    
+    const threshold = 120;
+    if (Math.abs(dragOffset.x) > threshold) {
+      handleSwipe(dragOffset.x > 0 ? 'yes' : 'no');
+    }
+    
+    setIsDragging(false);
+    setDragOffset({ x: 0, y: 0 });
+  }, [isDragging, dragOffset]);
+
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isDragging, handleMouseMove, handleMouseUp]);
+
+  // Step 1: Binary Swipe (Yes/No)
+  const handleSwipe = useCallback((choice: 'yes' | 'no') => {
+    if (isAnimating || data.currentStep !== 1) return;
+    
+    setIsAnimating(true);
+    setSwipeDirection(choice === 'yes' ? 'right' : 'left');
+
+    const currentValue = shuffledValues[currentCardIndex];
+    
+    if (choice === 'yes') {
+      setYesValues(prev => [...prev, currentValue]);
     } else {
-      return;
+      setNoValues(prev => [...prev, currentValue]);
     }
-    
-    const draggedValue = currentValues[dragIndex];
-    const newValues = [...currentValues];
-    newValues.splice(dragIndex, 1);
-    newValues.splice(hoverIndex, 0, draggedValue);
-    setCurrentValues(newValues);
+
+    setTimeout(() => {
+      if (currentCardIndex < shuffledValues.length - 1) {
+        setCurrentCardIndex(prev => prev + 1);
+      } else {
+        // Move to step 2 and convert to existing data structure
+        const yesValueObjects = convertToValueObjects([...yesValues, currentValue]);
+        updateSelectedValues(yesValueObjects);
+        updateCurrentStep(2);
+      }
+      
+      setIsAnimating(false);
+      setSwipeDirection(null);
+      setDragOffset({ x: 0, y: 0 });
+    }, 300);
+  }, [isAnimating, currentCardIndex, shuffledValues, yesValues, updateSelectedValues, updateCurrentStep]);
+
+  // Undo last selection
+  const undoLastSelection = () => {
+    if (currentCardIndex > 0) {
+      const lastValue = shuffledValues[currentCardIndex - 1];
+      setYesValues(prev => prev.filter(v => v !== lastValue));
+      setNoValues(prev => prev.filter(v => v !== lastValue));
+      setCurrentCardIndex(prev => prev - 1);
+    }
   };
 
-  const toggleValue = (value: Value) => {
-    if (data.selectedValues.find(v => v.id === value.id)) {
+  // Step 2: Prioritization
+  const toggleValueSelection = (value: Value) => {
+    if (data.selectedValues.some(v => v.id === value.id)) {
       updateSelectedValues(data.selectedValues.filter(v => v.id !== value.id));
-    } else if (data.selectedValues.length < 12) {
+    } else if (data.selectedValues.length < 20) {
       updateSelectedValues([...data.selectedValues, value]);
     }
   };
 
-  const toggleTheme = (theme: string) => {
-    const newThemes = data.discoveryResponses.themes.includes(theme) 
-      ? data.discoveryResponses.themes.filter(t => t !== theme)
-      : [...data.discoveryResponses.themes, theme];
+  // Step 3: Group into families and proceed to existing step structure
+  const groupIntoFamilies = () => {
+    const grouped: Record<string, string[]> = {};
     
-    updateDiscoveryResponses({ themes: newThemes });
+    Object.entries(valueFamilies).forEach(([family, familyValues]) => {
+      const matchedValues = data.selectedValues.filter(value => 
+        familyValues.includes(value.name)
+      );
+      if (matchedValues.length > 0) {
+        grouped[family] = matchedValues.map(v => v.name);
+      }
+    });
+
+    // Handle ungrouped values
+    const groupedFlat = Object.values(grouped).flat();
+    const ungrouped = data.selectedValues.filter(value => !groupedFlat.includes(value.name));
+    if (ungrouped.length > 0) {
+      grouped["Other Important Values"] = ungrouped.map(v => v.name);
+    }
+
+    setGroupedValues(grouped);
+    
+    // Auto-populate core and supporting values for compatibility
+    updateCoreValues(data.selectedValues.slice(0, Math.min(9, data.selectedValues.length)));
+    updateSupportingValues(data.selectedValues.slice(9, Math.min(12, data.selectedValues.length)));
+    updateCurrentStep(3);
   };
 
+  // Step 4: Drag and drop ranking
+  const handleDragStart = (e: React.DragEvent, value: Value, index: number) => {
+    setDraggedValue(value.name);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    setDragOverIndex(index);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    
+    if (draggedValue) {
+      const currentIndex = data.rankedCoreValues.findIndex(v => v.name === draggedValue);
+      if (currentIndex === -1) return;
+      
+      const newRanked = [...data.rankedCoreValues];
+      const [removed] = newRanked.splice(currentIndex, 1);
+      newRanked.splice(targetIndex, 0, removed);
+      
+      updateRankedCoreValues(newRanked);
+    }
+    
+    setDraggedValue(null);
+    setDragOverIndex(null);
+  };
+
+  // Move value up/down in ranking
+  const moveValue = (fromIndex: number, toIndex: number) => {
+    const newRanked = [...data.rankedCoreValues];
+    const [removed] = newRanked.splice(fromIndex, 1);
+    newRanked.splice(toIndex, 0, removed);
+    updateRankedCoreValues(newRanked);
+  };
+
+  const moveUp = (index: number) => {
+    if (index > 0) moveValue(index, index - 1);
+  };
+
+  const moveDown = (index: number) => {
+    if (index < data.rankedCoreValues.length - 1) moveValue(index, index + 1);
+  };
+
+  // Initialize ranking step
+  const initializeRanking = () => {
+    if (data.coreValues.length > 0) {
+      updateRankedCoreValues([...data.coreValues]);
+    }
+    updateCurrentStep(4);
+  };
+
+  // Complete the process and advance to definitions step
+  const completeRanking = () => {
+    updateCurrentStep(5);
+  };
+
+  // Navigation helpers
   const canProceed = () => {
     switch (data.currentStep) {
       case 1:
-        return data.discoveryResponses.proudMoment.trim() !== '' && 
-               data.discoveryResponses.admiredPerson.trim() !== '' &&
-               data.discoveryResponses.themes.length >= 3;
+        return currentCardIndex >= shuffledValues.length - 1;
       case 2:
-        return data.selectedValues.length === 12;
+        return data.selectedValues.length > 0;
       case 3:
-        return data.coreValues.length === 9 && data.supportingValues.length === 3;
+        return data.coreValues.length > 0;
       case 4:
-        return data.rankedCoreValues.length === 9;
+        return data.rankedCoreValues.length > 0;
       case 5:
-        return data.rankedCoreValues.slice(0, 6).every(value => 
+        return data.rankedCoreValues.slice(0, 3).every(value => 
           data.valueDefinitions[value.id]?.meaning?.trim() && 
           data.valueDefinitions[value.id]?.behavior?.trim()
         );
@@ -231,15 +277,17 @@ const ValuesClarity: React.FC = () => {
 
   const proceedToNextStep = () => {
     if (data.currentStep === 2) {
-      // Auto-populate core and supporting from selected values
-      updateCoreValues(data.selectedValues.slice(0, 9));
-      updateSupportingValues(data.selectedValues.slice(9, 12));
+      groupIntoFamilies();
     } else if (data.currentStep === 3) {
-      updateRankedCoreValues([...data.coreValues]);
+      initializeRanking();
+    } else if (data.currentStep === 4) {
+      completeRanking();
+    } else {
+      updateCurrentStep(data.currentStep + 1);
     }
-    updateCurrentStep(data.currentStep + 1);
   };
 
+  // Data management
   const handleExportData = () => {
     const dataString = exportData();
     const blob = new Blob([dataString], { type: 'application/json' });
@@ -272,19 +320,40 @@ const ValuesClarity: React.FC = () => {
   const handleClearAllData = () => {
     if (window.confirm('Are you sure you want to clear all your values data? This action cannot be undone.')) {
       clearAllData();
+      setCurrentCardIndex(0);
+      setYesValues([]);
+      setNoValues([]);
+      setGroupedValues({});
     }
   };
 
-  const filteredValues = data.currentStep === 2 ? 
-    allValues.filter(value => {
-      const matchesSearch = value.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           value.description.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = !selectedCategory || value.category === selectedCategory;
-      return matchesSearch && matchesCategory;
-    }) : [];
+  // Restart process
+  const restart = () => {
+    setCurrentCardIndex(0);
+    setYesValues([]);
+    setNoValues([]);
+    setGroupedValues({});
+    updateCurrentStep(1);
+    updateSelectedValues([]);
+    updateCoreValues([]);
+    updateSupportingValues([]);
+    updateRankedCoreValues([]);
+  };
 
-  const categories = getCategories();
-  const stats = getCompletionStats();
+  const currentCard = shuffledValues[currentCardIndex];
+  const progress = data.currentStep === 1 ? ((currentCardIndex + 1) / shuffledValues.length) * 100 : 100;
+
+  // Calculate swipe progress for visual feedback
+  const swipeProgress = Math.min(Math.abs(dragOffset.x) / 120, 1);
+  const cardRotation = dragOffset.x * 0.1;
+
+  const steps = [
+    { number: 1, title: 'Card Discovery', description: 'Swipe through values to find what resonates' },
+    { number: 2, title: 'Prioritization', description: 'Select your most important values' },
+    { number: 3, title: 'Value Families', description: 'See how your values group together' },
+    { number: 4, title: 'Final Ranking', description: 'Rank your core values by importance' },
+    { number: 5, title: 'Define & Envision', description: 'Make your top values actionable' },
+  ];
 
   // Early return if not loaded yet
   if (!isLoaded) {
@@ -321,27 +390,20 @@ const ValuesClarity: React.FC = () => {
             onClick={() => setShowDataManagement(!showDataManagement)}
             className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
           >
-            <Download className="w-4 h-4" />
-            <span>Data</span>
-          </button>
-          <button 
-            onClick={saveData}
-            className="flex items-center space-x-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-          >
             <Save className="w-4 h-4" />
-            <span>Save Now</span>
+            <span>Manage Data</span>
           </button>
         </div>
       </div>
 
       {/* Data Management Panel */}
       {showDataManagement && (
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+        <div className="bg-slate-50 rounded-lg p-6 border border-slate-200">
           <h3 className="text-lg font-semibold text-slate-900 mb-4">Data Management</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="flex flex-wrap gap-4">
             <button
               onClick={handleExportData}
-              className="flex items-center justify-center space-x-2 px-4 py-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors border border-blue-200"
+              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
             >
               <Download className="w-4 h-4" />
               <span>Export Data</span>
@@ -349,7 +411,7 @@ const ValuesClarity: React.FC = () => {
             
             <button
               onClick={() => importInputRef.current?.click()}
-              className="flex items-center justify-center space-x-2 px-4 py-3 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors border border-green-200"
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               <Upload className="w-4 h-4" />
               <span>Import Data</span>
@@ -357,505 +419,395 @@ const ValuesClarity: React.FC = () => {
             
             <button
               onClick={handleClearAllData}
-              className="flex items-center justify-center space-x-2 px-4 py-3 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors border border-red-200"
+              className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
             >
               <RotateCcw className="w-4 h-4" />
-              <span>Reset Journey</span>
+              <span>Clear All Data</span>
             </button>
+            
+            <input
+              ref={importInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleImportData}
+              className="hidden"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Progress and Steps */}
+      <div className="text-center">
+        {/* Step Indicator */}
+        <div className="flex justify-center space-x-4 mb-6">
+          {steps.map((step) => (
+            <div
+              key={step.number}
+              className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${
+                step.number <= data.currentStep
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-slate-200 text-slate-500'
+              }`}
+            >
+              {step.number < data.currentStep ? <Check className="w-5 h-5" /> : step.number}
+            </div>
+          ))}
+        </div>
+        
+        <div className="flex justify-center space-x-8 text-sm text-slate-600">
+          {steps.map((step) => (
+            <span key={step.number} className={data.currentStep === step.number ? 'font-medium text-purple-600' : ''}>
+              {step.title}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Step 1: Binary Swipe with Piles */}
+      {data.currentStep === 1 && (
+        <div className="space-y-6">
+          <div className="w-full bg-slate-200 rounded-full h-2">
+            <div
+              className="bg-purple-600 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${progress}%` }}
+            />
           </div>
           
-          <input
-            ref={importInputRef}
-            type="file"
-            accept=".json"
-            onChange={handleImportData}
-            className="hidden"
-          />
-          
-          <div className="mt-4 p-3 bg-slate-50 rounded-lg">
-            <h4 className="font-medium text-slate-900 mb-2">Your Progress</h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div>
-                <div className="text-slate-500">Current Step</div>
-                <div className="font-semibold text-slate-900">{stats.currentStep}/5</div>
+          <div className="text-center text-sm text-slate-600 mb-4">
+            Card {currentCardIndex + 1} of {shuffledValues.length}
+          </div>
+
+          <div className="grid grid-cols-5 gap-8 items-start">
+            {/* No Pile */}
+            <div className="space-y-4">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <X className="w-8 h-8 text-red-600" />
+                </div>
+                <h3 className="font-semibold text-red-800">Not Important</h3>
+                <p className="text-sm text-red-600">{noValues.length} values</p>
               </div>
-              <div>
-                <div className="text-slate-500">Completion</div>
-                <div className="font-semibold text-slate-900">{stats.completionPercentage}%</div>
+              
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {noValues.slice(-5).map((value, index) => (
+                  <div
+                    key={value}
+                    className="px-3 py-2 bg-red-50 text-red-800 rounded-lg text-sm text-center border border-red-200"
+                  >
+                    {value}
+                  </div>
+                ))}
+                {noValues.length > 5 && (
+                  <div className="font-medium text-sm">
+                    {value.name}
+                  </div>
+                  
+                  {isSelected && (
+                    <>
+                      <div className="absolute -top-2 -right-2 w-6 h-6 bg-white text-purple-600 rounded-full flex items-center justify-center text-xs font-bold border border-purple-600">
+                        {data.selectedValues.findIndex(v => v.id === value.id) + 1}
+                      </div>
+                      <Heart className="w-4 h-4 mx-auto mt-2 fill-current" />
+                    </>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Selected Values Summary */}
+          {data.selectedValues.length > 0 && (
+            <div className="max-w-4xl mx-auto bg-purple-50 border border-purple-200 rounded-lg p-6">
+              <h3 className="font-semibold text-purple-900 mb-3 text-center">
+                Your Priority Values ({data.selectedValues.length}/20)
+              </h3>
+              <div className="flex flex-wrap gap-2 justify-center">
+                {data.selectedValues.map((value, index) => (
+                  <span
+                    key={value.id}
+                    className="inline-flex items-center space-x-1 px-3 py-1 bg-purple-500 text-white rounded-full text-sm font-medium"
+                  >
+                    <span className="w-5 h-5 bg-white text-purple-600 rounded-full flex items-center justify-center text-xs font-bold">
+                      {index + 1}
+                    </span>
+                    <span>{value.name}</span>
+                  </span>
+                ))}
               </div>
-              <div>
-                <div className="text-slate-500">Core Values</div>
-                <div className="font-semibold text-slate-900">{stats.coreValuesCount}</div>
+            </div>
+          )}
+
+          <div className="flex justify-center">
+            <button
+              onClick={proceedToNextStep}
+              disabled={data.selectedValues.length === 0}
+              className="px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg"
+            >
+              Continue to Grouping
+              <ArrowRight className="w-4 h-4 inline ml-2" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Step 3: Value Families */}
+      {data.currentStep === 3 && (
+        <div className="space-y-6">
+          <div className="text-center">
+            <h2 className="text-2xl font-semibold text-slate-900 mb-2">
+              Your Value Families
+            </h2>
+            <p className="text-slate-600">
+              See how your values naturally group together
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {Object.entries(groupedValues).map(([family, values]) => (
+              <div
+                key={family}
+                className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm"
+              >
+                <h3 className="text-lg font-semibold text-slate-900 mb-4">
+                  {family}
+                </h3>
+                <div className="space-y-2">
+                  {values.map((value) => (
+                    <div
+                      key={value}
+                      className="px-3 py-2 bg-slate-50 rounded-lg text-slate-700"
+                    >
+                      {value}
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div>
-                <div className="text-slate-500">Defined Values</div>
-                <div className="font-semibold text-slate-900">{stats.definedValuesCount}</div>
+            ))}
+          </div>
+
+          <div className="flex justify-center">
+            <button
+              onClick={proceedToNextStep}
+              className="px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              Proceed to Final Ranking
+              <ArrowRight className="w-4 h-4 inline ml-2" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Step 4: Drag & Drop Ranking */}
+      {data.currentStep === 4 && (
+        <div className="space-y-6">
+          <div className="text-center">
+            <h2 className="text-2xl font-semibold text-slate-900 mb-2">
+              Rank Your Values
+            </h2>
+            <p className="text-slate-600">
+              Drag and drop to arrange your values by importance. Your top 3 will be your core values.
+            </p>
+          </div>
+
+          <div className="max-w-2xl mx-auto space-y-3">
+            {data.rankedCoreValues.map((value, index) => (
+              <div
+                key={value.id}
+                draggable
+                onDragStart={(e) => handleDragStart(e, value, index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, index)}
+                className={`flex items-center space-x-4 p-4 rounded-lg border-2 transition-all duration-200 cursor-move hover:shadow-md ${
+                  index < 3
+                    ? 'bg-purple-50 border-purple-200'
+                    : 'bg-white border-slate-200'
+                } ${
+                  dragOverIndex === index ? 'border-purple-400 bg-purple-100' : ''
+                } ${
+                  draggedValue === value.name ? 'opacity-50 scale-95' : ''
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <Move className="w-4 h-4 text-slate-400" />
+                  <button
+                    onClick={() => moveUp(index)}
+                    disabled={index === 0}
+                    className="p-1 hover:bg-slate-100 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronUp className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => moveDown(index)}
+                    disabled={index === data.rankedCoreValues.length - 1}
+                    className="p-1 hover:bg-slate-100 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="flex-1 flex items-center space-x-3">
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                      index < 3
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-slate-200 text-slate-600'
+                    }`}
+                  >
+                    {index + 1}
+                  </div>
+                  <div className="flex-1">
+                    <span className="font-medium text-slate-900">{value.name}</span>
+                    <p className="text-sm text-slate-600">{value.description}</p>
+                  </div>
+                  {index < 3 && (
+                    <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full font-medium">
+                      CORE
+                    </span>
+                  )}
+                </div>
               </div>
+            ))}
+          </div>
+
+          <div className="flex justify-center space-x-4">
+            <button
+              onClick={restart}
+              className="px-6 py-3 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors"
+            >
+              <RotateCcw className="w-4 h-4 inline mr-2" />
+              Start Over
+            </button>
+            
+            <button
+              onClick={proceedToNextStep}
+              className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            >
+              Continue to Definitions
+              <ArrowRight className="w-4 h-4 inline ml-2" />
+            </button>
+          </div>
+
+          {/* Preview of Top 3 */}
+          <div className="max-w-md mx-auto mt-8 p-6 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl border border-purple-200">
+            <h3 className="text-lg font-semibold text-center text-slate-900 mb-4">
+              Your Top 3 Core Values
+            </h3>
+            <div className="space-y-3">
+              {data.rankedCoreValues.slice(0, 3).map((value, index) => (
+                <div key={value.id} className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                    {index + 1}
+                  </div>
+                  <span className="text-slate-900 font-medium">{value.name}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       )}
 
-      {/* Progress Steps */}
-      <div className="flex items-center justify-between max-w-4xl overflow-x-auto">
-        {steps.map((step, index) => (
-          <div key={step.number} className="flex items-center min-w-0">
-            <div className="flex items-center">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
-                data.currentStep === step.number 
-                  ? 'bg-purple-600 text-white' 
-                  : data.currentStep > step.number
-                  ? 'bg-green-500 text-white'
-                  : 'bg-slate-200 text-slate-600'
-              }`}>
-                {data.currentStep > step.number ? <Check className="w-5 h-5" /> : step.number}
-              </div>
-              <div className="ml-3">
-                <h3 className={`font-semibold ${
-                  data.currentStep === step.number ? 'text-purple-600' : 'text-slate-700'
-                }`}>
-                  {step.title}
-                </h3>
-                <p className="text-sm text-slate-500">{step.description}</p>
-              </div>
-            </div>
-            {index < steps.length - 1 && (
-              <ChevronRight className="w-5 h-5 text-slate-400 mx-6 flex-shrink-0" />
-            )}
+      {/* Step 5: Define & Envision (keeping existing implementation) */}
+      {data.currentStep === 5 && (
+        <div className="space-y-8">
+          <div className="text-center mb-8">
+            <h2 className="text-xl font-semibold text-slate-900 mb-2">
+              Define & Envision Your Top 3 Values
+            </h2>
+            <p className="text-slate-600">
+              Make your values actionable by defining what they mean to you and how you live them
+            </p>
           </div>
-        ))}
-      </div>
 
-      {/* Step Content */}
-      <div>
-        {/* Step 1: Guided Discovery */}
-        {data.currentStep === 1 && (
           <div className="space-y-8">
-            <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-8 border border-purple-200">
-              <h2 className="text-2xl font-bold text-purple-900 mb-4">Let's Start with Your Story</h2>
-              <p className="text-purple-700 mb-6">
-                Before diving into values lists, let's connect with your experiences. These reflections will help guide your value selection.
-              </p>
-            </div>
-
-            {discoveryPrompts.map((prompt) => {
-              const Icon = prompt.icon;
-              return (
-                <div key={prompt.id} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-                  <div className="flex items-start space-x-4">
-                    <div className="p-3 bg-purple-100 rounded-lg">
-                      <Icon className="w-6 h-6 text-purple-600" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-slate-900 mb-3">{prompt.question}</h3>
-                      <textarea
-                        value={data.discoveryResponses[prompt.id as keyof typeof data.discoveryResponses] as string}
-                        onChange={(e) => updateDiscoveryResponses({ [prompt.id]: e.target.value })}
-                        placeholder={prompt.placeholder}
-                        className="w-full p-4 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        rows={4}
-                      />
-                    </div>
+            {data.rankedCoreValues.slice(0, 3).map((value, index) => (
+              <div key={value.id} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                <div className="flex items-center space-x-4 mb-6">
+                  <div className="w-10 h-10 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold">
+                    {index + 1}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-slate-900">{value.name}</h3>
+                    <p className="text-slate-600">{value.description}</p>
                   </div>
                 </div>
-              );
-            })}
 
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">
-                What themes emerge from your reflections? (Select at least 3)
-              </h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {themeOptions.map((theme) => (
-                  <button
-                    key={theme}
-                    onClick={() => toggleTheme(theme)}
-                    className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
-                      data.discoveryResponses.themes.includes(theme)
-                        ? 'border-purple-500 bg-purple-50 text-purple-700'
-                        : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
-                    }`}
-                  >
-                    {theme}
-                  </button>
-                ))}
-              </div>
-              <p className="text-sm text-slate-500 mt-3">
-                Selected: {data.discoveryResponses.themes.length} themes
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Step 2: Curated Selection */}
-        {data.currentStep === 2 && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-slate-900">
-                Select 12 Values ({data.selectedValues.length}/12)
-              </h2>
-              <div className="text-sm text-slate-600">
-                {filteredValues.length} values available
-              </div>
-            </div>
-
-            {/* Category Tabs */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {valueCategories.map((category) => {
-                const Icon = category.icon;
-                return (
-                  <div key={category.id} className="bg-white rounded-xl p-4 border border-slate-200 hover:shadow-sm transition-shadow">
-                    <div className="flex items-center space-x-3 mb-3">
-                      <div className="p-2 bg-purple-100 rounded-lg">
-                        <Icon className="w-5 h-5 text-purple-600" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-slate-900">{category.name}</h3>
-                        <p className="text-xs text-slate-500">{category.values.length} values</p>
-                      </div>
-                    </div>
-                    <p className="text-sm text-slate-600 mb-3">{category.description}</p>
-                    <div className="space-y-2">
-                      {category.values.slice(0, 3).map((value) => {
-                        const isSelected = data.selectedValues.find(v => v.id === value.id);
-                        return (
-                          <button
-                            key={value.id}
-                            onClick={() => toggleValue(value)}
-                            disabled={!isSelected && data.selectedValues.length >= 12}
-                            className={`w-full text-left p-2 rounded-lg text-sm transition-all ${
-                              isSelected
-                                ? 'bg-purple-100 text-purple-800 border border-purple-300'
-                                : data.selectedValues.length >= 12
-                                ? 'bg-slate-50 text-slate-400 cursor-not-allowed'
-                                : 'bg-slate-50 text-slate-700 hover:bg-slate-100'
-                            }`}
-                          >
-                            <div className="font-medium">{value.name}</div>
-                            <div className="text-xs opacity-75">{value.description.slice(0, 50)}...</div>
-                          </button>
-                        );
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      What does this mean to you?
+                    </label>
+                    <textarea
+                      value={data.valueDefinitions[value.id]?.meaning || ''}
+                      onChange={(e) => updateValueDefinitions(value.id, { 
+                        ...data.valueDefinitions[value.id],
+                        meaning: e.target.value 
                       })}
-                      {category.values.length > 3 && (
-                        <button
-                          onClick={() => setSelectedCategory(category.name)}
-                          className="w-full text-center p-2 text-sm text-purple-600 hover:text-purple-700 font-medium"
-                        >
-                          View all {category.values.length} values →
-                        </button>
-                      )}
-                    </div>
+                      placeholder="Define what this value means in your own words..."
+                      className="w-full p-3 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      rows={4}
+                    />
                   </div>
-                );
-              })}
-            </div>
 
-            {/* Search and Filter */}
-            {selectedCategory && (
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-slate-900">
-                    {selectedCategory} Values
-                  </h3>
-                  <button
-                    onClick={() => setSelectedCategory('')}
-                    className="text-slate-500 hover:text-slate-700"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {allValues.filter(v => v.category === selectedCategory).map((value) => {
-                    const isSelected = data.selectedValues.find(v => v.id === value.id);
-                    return (
-                      <button
-                        key={value.id}
-                        onClick={() => toggleValue(value)}
-                        disabled={!isSelected && data.selectedValues.length >= 12}
-                        className={`p-4 rounded-lg border-2 text-left transition-all duration-200 ${
-                          isSelected
-                            ? 'border-purple-500 bg-purple-50 text-purple-900'
-                            : data.selectedValues.length >= 12
-                            ? 'border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed'
-                            : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
-                        }`}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <h4 className="font-semibold mb-1">{value.name}</h4>
-                            <p className="text-sm opacity-75">{value.description}</p>
-                          </div>
-                          {isSelected && <Heart className="w-5 h-5 text-purple-500 fill-current ml-2 flex-shrink-0" />}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Step 3: Core vs Supporting */}
-        {data.currentStep === 3 && (
-          <div className="space-y-6">
-            <div className="text-center mb-8">
-              <h2 className="text-xl font-semibold text-slate-900 mb-2">
-                Organize Your Values
-              </h2>
-              <p className="text-slate-600">
-                Drag your 12 selected values into Core (9) and Supporting (3) categories
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Core Values */}
-              <div className="bg-purple-50 rounded-2xl p-6 border-2 border-dashed border-purple-300">
-                <h3 className="text-lg font-semibold text-purple-900 mb-4">
-                  Core Values ({data.coreValues.length}/9)
-                </h3>
-                <p className="text-sm text-purple-700 mb-4">
-                  These are your fundamental guiding principles
-                </p>
-                <div className="space-y-3">
-                  {data.coreValues.map((value, index) => (
-                    <DraggableValue
-                      key={value.id}
-                      value={value}
-                      index={index}
-                      moveValue={moveValue}
-                      onRemove={() => updateCoreValues(data.coreValues.filter(v => v.id !== value.id))}
-                      showRemove={true}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      What does it look like when you live this value?
+                    </label>
+                    <textarea
+                      value={data.valueDefinitions[value.id]?.behavior || ''}
+                      onChange={(e) => updateValueDefinitions(value.id, { 
+                        ...data.valueDefinitions[value.id],
+                        behavior: e.target.value 
+                      })}
+                      placeholder="Describe specific behaviors, actions, or decisions..."
+                      className="w-full p-3 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      rows={4}
                     />
-                  ))}
-                  {data.coreValues.length === 0 && (
-                    <div className="text-center py-8 text-purple-600">
-                      <p>Drag values here to make them core values</p>
-                    </div>
-                  )}
+                  </div>
                 </div>
               </div>
-
-              {/* Supporting Values */}
-              <div className="bg-blue-50 rounded-2xl p-6 border-2 border-dashed border-blue-300">
-                <h3 className="text-lg font-semibold text-blue-900 mb-4">
-                  Supporting Values ({data.supportingValues.length}/3)
-                </h3>
-                <p className="text-sm text-blue-700 mb-4">
-                  Important but secondary to your core values
-                </p>
-                <div className="space-y-3">
-                  {data.supportingValues.map((value, index) => (
-                    <DraggableValue
-                      key={value.id}
-                      value={value}
-                      index={index}
-                      moveValue={moveValue}
-                      onRemove={() => updateSupportingValues(data.supportingValues.filter(v => v.id !== value.id))}
-                      showRemove={true}
-                    />
-                  ))}
-                  {data.supportingValues.length === 0 && (
-                    <div className="text-center py-8 text-blue-600">
-                      <p>Drag values here to make them supporting values</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Available Values */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">Available Values</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {data.selectedValues
-                  .filter(value => 
-                    !data.coreValues.find(cv => cv.id === value.id) && 
-                    !data.supportingValues.find(sv => sv.id === value.id)
-                  )
-                  .map((value) => (
-                    <button
-                      key={value.id}
-                      onClick={() => {
-                        if (data.coreValues.length < 9) {
-                          updateCoreValues([...data.coreValues, value]);
-                        } else if (data.supportingValues.length < 3) {
-                          updateSupportingValues([...data.supportingValues, value]);
-                        }
-                      }}
-                      disabled={data.coreValues.length >= 9 && data.supportingValues.length >= 3}
-                      className="p-3 rounded-lg border border-slate-200 text-left hover:border-slate-300 hover:shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <div className="font-medium text-slate-900">{value.name}</div>
-                      <div className="text-sm text-slate-600">{value.description}</div>
-                    </button>
-                  ))}
-              </div>
-            </div>
+            ))}
           </div>
-        )}
 
-        {/* Step 4: Rank Core Values */}
-        {data.currentStep === 4 && (
-          <div className="space-y-6">
-            <div className="text-center mb-8">
-              <h2 className="text-xl font-semibold text-slate-900 mb-2">
-                Rank Your Core Values
-              </h2>
-              <p className="text-slate-600">
-                Drag to reorder by priority (most important at top)
-              </p>
-            </div>
+          {/* Summary */}
+          <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-8 border border-purple-200">
+            <h3 className="text-2xl font-bold text-center text-slate-900 mb-6">
+              Your Values Journey Complete! 🎉
+            </h3>
             
-            <div className="max-w-2xl mx-auto space-y-4">
-              {data.rankedCoreValues.map((value, index) => (
-                <DraggableValue
-                  key={value.id}
-                  value={value}
-                  index={index}
-                  moveValue={moveValue}
-                  showRank={true}
-                />
-              ))}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-purple-600 mb-2">{data.rankedCoreValues.length}</div>
+                <div className="text-sm text-slate-600">Values Identified</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-purple-600 mb-2">3</div>
+                <div className="text-sm text-slate-600">Core Values Defined</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-purple-600 mb-2">
+                  {Object.keys(data.valueDefinitions).filter(id => 
+                    data.valueDefinitions[id]?.meaning?.trim() && 
+                    data.valueDefinitions[id]?.behavior?.trim()
+                  ).length}
+                </div>
+                <div className="text-sm text-slate-600">Values Fully Defined</div>
+              </div>
             </div>
 
-            {data.rankedCoreValues.length === 9 && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-6 max-w-2xl mx-auto">
-                <h3 className="text-lg font-semibold text-green-800 mb-2">
-                  🎯 Your Ranked Core Values
-                </h3>
-                <p className="text-green-700 mb-4">
-                  These represent your priority order. Your top 6 will be used for deeper reflection in the next step.
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <h4 className="font-medium text-green-800 mb-2">Top 3 Values:</h4>
-                    <ol className="text-green-700 text-sm space-y-1">
-                      {data.rankedCoreValues.slice(0, 3).map((value, index) => (
-                        <li key={value.id}>
-                          {index + 1}. <strong>{value.name}</strong>
-                        </li>
-                      ))}
-                    </ol>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-green-800 mb-2">Next 3 Values:</h4>
-                    <ol className="text-green-700 text-sm space-y-1" start={4}>
-                      {data.rankedCoreValues.slice(3, 6).map((value, index) => (
-                        <li key={value.id}>
-                          {index + 4}. <strong>{value.name}</strong>
-                        </li>
-                      ))}
-                    </ol>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Step 5: Define & Envision */}
-        {data.currentStep === 5 && (
-          <div className="space-y-8">
-            <div className="text-center mb-8">
-              <h2 className="text-xl font-semibold text-slate-900 mb-2">
-                Define & Envision Your Top 6 Values
-              </h2>
-              <p className="text-slate-600">
-                Make your values actionable by defining what they mean to you and how you live them
+            <div className="text-center">
+              <p className="text-slate-700 mb-4">
+                Your core values are now clear and actionable. Use them to guide important decisions, 
+                set meaningful goals, and create a life that feels authentic and fulfilling.
               </p>
-            </div>
-
-            <div className="space-y-8">
-              {data.rankedCoreValues.slice(0, 6).map((value, index) => (
-                <div key={value.id} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-                  <div className="flex items-center space-x-4 mb-6">
-                    <div className="w-10 h-10 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold">
-                      {index + 1}
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-semibold text-slate-900">{value.name}</h3>
-                      <p className="text-slate-600">{value.description}</p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">
-                        What does this mean to you?
-                      </label>
-                      <textarea
-                        value={data.valueDefinitions[value.id]?.meaning || ''}
-                        onChange={(e) => updateValueDefinitions(value.id, { meaning: e.target.value })}
-                        placeholder="Define what this value means in your own words..."
-                        className="w-full p-3 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        rows={4}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">
-                        What does it look like when you live this value?
-                      </label>
-                      <textarea
-                        value={data.valueDefinitions[value.id]?.behavior || ''}
-                        onChange={(e) => updateValueDefinitions(value.id, { behavior: e.target.value })}
-                        placeholder="Describe specific behaviors and actions that demonstrate this value..."
-                        className="w-full p-3 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        rows={4}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Completion Summary */}
-            {canProceed() && (
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-8 border border-green-200">
-                <h3 className="text-2xl font-bold text-green-800 mb-4">
-                  🎉 Your Values Journey is Complete!
-                </h3>
-                <p className="text-green-700 mb-6">
-                  You've successfully clarified your core values and made them actionable. These insights will guide your goal setting and daily decisions.
-                </p>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="bg-white rounded-lg p-4">
-                    <h4 className="font-semibold text-green-800 mb-2">Discovery Themes</h4>
-                    <div className="flex flex-wrap gap-1">
-                      {data.discoveryResponses.themes.map(theme => (
-                        <span key={theme} className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs">
-                          {theme}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div className="bg-white rounded-lg p-4">
-                    <h4 className="font-semibold text-green-800 mb-2">Core Values</h4>
-                    <div className="text-sm text-green-700">
-                      {data.rankedCoreValues.slice(0, 3).map((value, index) => (
-                        <div key={value.id}>{index + 1}. {value.name}</div>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div className="bg-white rounded-lg p-4">
-                    <h4 className="font-semibold text-green-800 mb-2">Supporting Values</h4>
-                    <div className="text-sm text-green-700">
-                      {data.supportingValues.map(value => (
-                        <div key={value.id}>• {value.name}</div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+              <div className="text-sm text-slate-500">
+                These values will be available throughout Coach Pack to inform your vision board, 
+                goals, and daily planning.
               </div>
-            )}
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Navigation */}
       <div className="flex items-center justify-between pt-6 border-t border-slate-200">
@@ -885,4 +837,177 @@ const ValuesClarity: React.FC = () => {
   );
 };
 
-export default ValuesClarity;
+export default ValuesClarity;="text-xs text-red-500 text-center">
+                    +{noValues.length - 5} more
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Spacer */}
+            <div></div>
+
+            {/* Card Area */}
+            <div className="relative h-96 flex items-center justify-center">
+              {currentCardIndex < shuffledValues.length && (
+                <div
+                  onMouseDown={handleMouseDown}
+                  className={`w-80 h-80 bg-white rounded-2xl shadow-lg border-2 flex flex-col items-center justify-center p-8 cursor-grab active:cursor-grabbing transition-all duration-300 select-none ${
+                    isDragging ? 'shadow-2xl scale-105' : ''
+                  } ${
+                    swipeDirection === 'right'
+                      ? 'translate-x-96 rotate-12 opacity-0'
+                      : swipeDirection === 'left'
+                      ? '-translate-x-96 -rotate-12 opacity-0'
+                      : ''
+                  }`}
+                  style={{
+                    transform: `translate(${dragOffset.x}px, ${dragOffset.y}px) rotate(${cardRotation}deg)`,
+                    borderColor: dragOffset.x > 60 ? '#10b981' : dragOffset.x < -60 ? '#ef4444' : '#e2e8f0'
+                  }}
+                >
+                  <div className="text-4xl font-bold text-slate-900 mb-4 text-center">
+                    {currentCard}
+                  </div>
+                  <p className="text-slate-600 text-center text-lg">
+                    Is this important to you?
+                  </p>
+                  
+                  {/* Swipe indicators */}
+                  {Math.abs(dragOffset.x) > 30 && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div
+                        className={`px-4 py-2 rounded-lg font-bold text-white ${
+                          dragOffset.x > 0 ? 'bg-green-500' : 'bg-red-500'
+                        }`}
+                        style={{ opacity: swipeProgress }}
+                      >
+                        {dragOffset.x > 0 ? 'YES' : 'NO'}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Spacer */}
+            <div></div>
+
+            {/* Yes Pile */}
+            <div className="space-y-4">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <Heart className="w-8 h-8 text-green-600" />
+                </div>
+                <h3 className="font-semibold text-green-800">Important</h3>
+                <p className="text-sm text-green-600">{yesValues.length} values</p>
+              </div>
+              
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {yesValues.slice(-5).map((value, index) => (
+                  <div
+                    key={value}
+                    className="px-3 py-2 bg-green-50 text-green-800 rounded-lg text-sm text-center border border-green-200"
+                  >
+                    {value}
+                  </div>
+                ))}
+                {yesValues.length > 5 && (
+                  <div className="text-xs text-green-500 text-center">
+                    +{yesValues.length - 5} more
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-center space-x-8">
+            <button
+              onClick={() => handleSwipe('no')}
+              disabled={isAnimating}
+              className="w-16 h-16 bg-red-100 hover:bg-red-200 rounded-full flex items-center justify-center transition-colors disabled:opacity-50"
+            >
+              <X className="w-8 h-8 text-red-600" />
+            </button>
+            
+            <button
+              onClick={undoLastSelection}
+              disabled={currentCardIndex === 0}
+              className="w-16 h-16 bg-slate-100 hover:bg-slate-200 rounded-full flex items-center justify-center transition-colors disabled:opacity-50"
+            >
+              <Undo className="w-8 h-8 text-slate-600" />
+            </button>
+            
+            <button
+              onClick={() => handleSwipe('yes')}
+              disabled={isAnimating}
+              className="w-16 h-16 bg-green-100 hover:bg-green-200 rounded-full flex items-center justify-center transition-colors disabled:opacity-50"
+            >
+              <Heart className="w-8 h-8 text-green-600" />
+            </button>
+          </div>
+
+          <div className="text-center text-sm text-slate-500">
+            <p>👈 Drag left for No • Drag right for Yes 👉</p>
+          </div>
+        </div>
+      )}
+
+      {/* Step 2: Prioritization Overview */}
+      {data.currentStep === 2 && (
+        <div className="space-y-8">
+          <div className="text-center">
+            <h2 className="text-2xl font-semibold text-slate-900 mb-2">
+              Prioritize Your Values
+            </h2>
+            <p className="text-slate-600 mb-4">
+              From your "Important" values, select the ones that truly matter most to you (maximum 20)
+            </p>
+            <div className="flex justify-center items-center space-x-6 text-sm">
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 bg-slate-100 border border-slate-300 rounded"></div>
+                <span className="text-slate-600">Available ({convertToValueObjects(yesValues).length - data.selectedValues.length})</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 bg-purple-500 rounded"></div>
+                <span className="text-purple-600 font-medium">Priority ({data.selectedValues.length}/20)</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Priority Instruction */}
+          <div className="max-w-2xl mx-auto bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <div className="flex items-start space-x-3">
+              <div className="w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-white text-sm font-bold">!</span>
+              </div>
+              <div>
+                <h3 className="font-medium text-amber-900 mb-1">How to Prioritize</h3>
+                <p className="text-sm text-amber-800">
+                  Think about which values guide your most important decisions. Which ones would you never compromise on? 
+                  These are your priorities - the values that define who you are at your core.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* All Values Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+            {convertToValueObjects(yesValues).map((value) => {
+              const isSelected = data.selectedValues.some(v => v.id === value.id);
+              const canSelect = isSelected || data.selectedValues.length < 20;
+              
+              return (
+                <button
+                  key={value.id}
+                  onClick={() => canSelect && toggleValueSelection(value)}
+                  disabled={!canSelect}
+                  className={`relative p-4 rounded-lg border-2 text-center transition-all duration-200 transform hover:scale-[1.02] ${
+                    isSelected
+                      ? 'bg-purple-500 border-purple-600 text-white shadow-lg scale-[1.02]'
+                      : canSelect
+                      ? 'bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-100'
+                      : 'bg-slate-50 border-slate-200 text-slate-400 opacity-60 cursor-not-allowed'
+                  }`}
+                >
+                  <div className
