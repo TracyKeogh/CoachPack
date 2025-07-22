@@ -39,14 +39,27 @@ const CheckoutPage: React.FC = () => {
     setError(null);
     
     try {
+      // Get Supabase URL from environment
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      
+      if (!supabaseUrl) {
+        throw new Error('Supabase URL not configured. Please set VITE_SUPABASE_URL in your environment variables.');
+      }
+      
+      // Construct the correct Edge Function URL
+      const functionUrl = `${supabaseUrl}/functions/v1/stripe-checkout`;
+      
+      console.log('Calling Edge Function at:', functionUrl);
+      
       // Call Stripe checkout function
-      const response = await fetch('/supabase/functions/v1/stripe-checkout', {
+      const response = await fetch(functionUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
         },
         body: JSON.stringify({
-          price_id: 'price_1Rf0j2GR1TepVbUMoQMYDXgT',
+          price_id: import.meta.env.VITE_STRIPE_PRICE_ID || 'price_1Rf0j2GR1TepVbUMoQMYDXgT',
           success_url: `${window.location.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
           cancel_url: `${window.location.origin}/cancel`,
           mode: 'payment',
@@ -55,17 +68,50 @@ const CheckoutPage: React.FC = () => {
         }),
       });
 
+      console.log('Response status:', response.status);
+      console.log('Response headers:', [...response.headers.entries()]);
+
       if (!response.ok) {
         let errorData;
         try {
           errorData = await response.json();
         } catch (jsonError) {
           throw new Error(`Payment service error (${response.status})`);
+        let errorData;
+        try {
+          const responseText = await response.text();
+          console.log('Error response text:', responseText);
+          
+          if (responseText.trim()) {
+            errorData = JSON.parse(responseText);
+          } else {
+            throw new Error(`Payment service error (${response.status}): Empty response`);
+          }
+        } catch (jsonError) {
+          if (response.status === 404) {
+            throw new Error('Payment service not found. Please check if the Stripe Edge Function is deployed.');
+          }
+          throw new Error(`Payment service error (${response.status}): ${response.statusText}`);
         }
         throw new Error(errorData.error || 'Payment failed');
       }
 
       let responseData;
+      try {
+        const responseText = await response.text();
+        console.log('Success response text:', responseText);
+        
+        if (!responseText.trim()) {
+          throw new Error('Empty response from payment service');
+        }
+        
+        responseData = JSON.parse(responseText);
+      } catch (jsonError) {
+        console.error('Failed to parse success response:', jsonError);
+        throw new Error('Invalid response from payment service');
+      }
+
+      const { url } = responseData;
       try {
         responseData = await response.json();
       } catch (jsonError) {
@@ -76,9 +122,10 @@ const CheckoutPage: React.FC = () => {
       
       // Redirect to Stripe Checkout
       if (url) {
+        console.log('Redirecting to Stripe:', url);
         window.location.href = url;
       } else {
-        throw new Error('No checkout URL received');
+        throw new Error('No checkout URL received from payment service');
       }
     } catch (error: any) {
       console.error('Checkout error:', error);
