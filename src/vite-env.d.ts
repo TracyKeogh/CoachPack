@@ -53,48 +53,9 @@ const CheckoutPage: React.FC = () => {
       
       // Call Stripe checkout function
       const response = await fetch(functionUrl, {
-      
-      if (!supabaseUrl) {
-        throw new Error('Supabase URL not configured. Please set VITE_SUPABASE_URL in your environment variables.');
-      }
-      
-      // Construct the correct Edge Function URL
-      const functionUrl = `${supabaseUrl}/functions/v1/stripe-checkout`;
-      
-      console.log('Calling Edge Function at:', functionUrl);
-      
-      // Call Stripe checkout function
-      const response = await fetch(functionUrl, {
-      
-      if (!supabaseUrl) {
-        throw new Error('Supabase URL not configured. Please set VITE_SUPABASE_URL in your environment variables.');
-      }
-      
-      // Construct the correct Edge Function URL
-      const functionUrl = `${supabaseUrl}/functions/v1/stripe-checkout`;
-      
-      console.log('Calling Edge Function at:', functionUrl);
-      
-      // Call Stripe checkout function
-      const response = await fetch(functionUrl, {
-      
-      if (!supabaseUrl) {
-        throw new Error('Supabase URL not configured. Please set VITE_SUPABASE_URL in your environment variables.');
-      }
-      
-      // Construct the correct Edge Function URL
-      const functionUrl = `${supabaseUrl}/functions/v1/stripe-checkout`;
-      
-      console.log('Calling Edge Function at:', functionUrl);
-      
-      // Call Stripe checkout function
-      const response = await fetch(functionUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
           'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
         },
         body: JSON.stringify({
@@ -110,42 +71,13 @@ const CheckoutPage: React.FC = () => {
       console.log('Response status:', response.status);
       console.log('Response headers:', [...response.headers.entries()]);
 
-      console.log('Response status:', response.status);
-      console.log('Response headers:', [...response.headers.entries()]);
-
-      console.log('Response status:', response.status);
-      console.log('Response headers:', [...response.headers.entries()]);
-
-      console.log('Response status:', response.status);
-      console.log('Response headers:', [...response.headers.entries()]);
-
       if (!response.ok) {
-        let errorData;
-        try {
-          const responseText = await response.text();
-          const responseText = await response.text();
-          errorData = await response.json();
-        } catch (jsonError) {
-          throw new Error(`Payment service error (${response.status})`);
         let errorData;
         try {
           const responseText = await response.text();
           console.log('Error response text:', responseText);
           
           if (responseText.trim()) {
-            errorData = JSON.parse(responseText);
-          } else {
-            throw new Error(`Payment service error (${response.status}): Empty response`);
-          }
-        } catch (jsonError) {
-          if (response.status === 404) {
-            throw new Error('Payment service not found. Please check if the Stripe Edge Function is deployed.');
-          }
-          throw new Error(`Payment service error (${response.status}): ${response.statusText}`);
-        let errorData;
-        try {
-          const responseText = await response.text();
-      }
             const errorResponse = JSON.parse(responseText);
             throw new Error(errorResponse.error || `Payment service error (${response.status})`);
           } else {
