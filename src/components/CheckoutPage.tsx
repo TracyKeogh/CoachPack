@@ -1,220 +1,79 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { ArrowLeft, Target, Sparkles, AlertCircle } from 'lucide-react';
-import { validateStripeEnvironment } from '../stripe-config';
+import React, { useState } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, Target, Sparkles, CreditCard, CheckCircle, Shield } from 'lucide-react';
 
-interface CheckoutFormProps {
-  productId: string;
-  userEmail?: string;
-  userName?: string;
-}
-
-const CheckoutForm: React.FC<CheckoutFormProps> = ({ productId, userEmail, userName }) => {
+const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const productId = searchParams.get('productId') || 'complete-toolkit';
+  const initialEmail = searchParams.get('email') || '';
+  const initialName = searchParams.get('name') || '';
+  
+  const [formData, setFormData] = useState({
+    name: initialName,
+    email: initialEmail,
+  });
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    name: userName || '',
-    email: userEmail || ''
-  });
-
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    
-    if (!formData.name.trim() || !formData.email.trim()) {
-      setError('Please fill in all required fields.');
-      return;
-    }
-
-    setIsProcessing(true);
-    setError(null);
-
-    try {
-      console.log('Creating checkout session for:', formData);
-
-      // Create checkout session without authentication
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({
-          price_id: import.meta.env.VITE_STRIPE_PRICE_ID,
-          mode: 'payment',
-          success_url: `${window.location.origin}/checkout-success?session_id={CHECKOUT_SESSION_ID}`,
-          cancel_url: `${window.location.origin}/cancel`,
-          customer_email: formData.email,
-          customer_name: formData.name,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create checkout session');
-      }
-
-      const { sessionId, url } = await response.json();
-
-      if (url) {
-        // Redirect to Stripe Checkout
-        window.location.href = url;
-      } else {
-        throw new Error('No checkout URL received');
-      }
-    } catch (err) {
-      console.error('Checkout error:', err);
-      setError(err instanceof Error ? err.message : 'Payment failed. Please try again.');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (error) setError(null);
   };
 
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Customer Information */}
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            Name *
-          </label>
-          <input
-            type="text"
-            value={formData.name}
-            onChange={(e) => handleInputChange('name', e.target.value)}
-            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            placeholder="Enter your full name"
-            disabled={isProcessing}
-            required
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            Email *
-          </label>
-          <input
-            type="email"
-            value={formData.email}
-            onChange={(e) => handleInputChange('email', e.target.value)}
-            className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            placeholder="Enter your email address"
-            disabled={isProcessing}
-            required
-          />
-          <p className="text-sm text-slate-500 mt-1">
-            Your account will be created after successful payment
-          </p>
-        </div>
-      </div>
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validation
+    if (!formData.name.trim()) {
+      setError('Please enter your name');
+      return;
+    }
+    
+    if (!formData.email.trim() || !formData.email.includes('@')) {
+      setError('Please enter a valid email address');
+      return;
+    }
+    
+    setIsProcessing(true);
+    setError(null);
+    
+    try {
+      // Call Stripe checkout function
+      const response = await fetch('/supabase/functions/v1/stripe-checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          price_id: 'price_1Qb7FPG7O6rMl3G1T4K7dqKY', // Replace with your actual price ID
+          success_url: `${window.location.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${window.location.origin}/cancel`,
+          mode: 'payment',
+          email: formData.email,
+          name: formData.name,
+        }),
+      });
 
-      {/* Error Display */}
-      {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600 flex items-start space-x-2">
-          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
-      
-      {/* Submit Button */}
-      <button
-        type="submit"
-        disabled={isProcessing}
-        className="w-full mt-6 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {isProcessing ? (
-          <div className="flex items-center justify-center space-x-2">
-            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            <span>Processing...</span>
-          </div>
-        ) : (
-          <span>Continue to Payment - $50</span>
-        )}
-      </button>
-      
-      <p className="text-xs text-slate-500 text-center">
-        By proceeding, you agree to our Terms of Service and Privacy Policy. 
-        Your account will be created automatically after successful payment.
-      </p>
-    </form>
-  );
-};
-
-const CheckoutPage: React.FC = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [stripeConfigured, setStripeConfigured] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [configError, setConfigError] = useState<string | null>(null);
-
-  // Get product ID from query params
-  const queryParams = new URLSearchParams(location.search);
-  const productId = queryParams.get('productId') || 'complete-toolkit';
-  const prefilledEmail = queryParams.get('email') || '';
-  const prefilledName = queryParams.get('name') || '';
-
-  // Check Stripe configuration on mount
-  useEffect(() => {
-    const checkConfig = () => {
-      const { valid, error } = validateStripeEnvironment();
-      
-      if (!valid) {
-        setConfigError(error || 'Stripe configuration is incomplete');
-        setStripeConfigured(false);
-      } else {
-        setStripeConfigured(true);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Payment failed');
       }
+
+      const { url } = await response.json();
       
-      setIsLoading(false);
-    };
-
-    checkConfig();
-  }, []);
-
-  // Show loading state while checking configuration
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading checkout...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show configuration error
-  if (!stripeConfigured) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-50 flex items-center justify-center p-6">
-        <div className="bg-white rounded-2xl max-w-md w-full shadow-lg border border-red-200 p-8 text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AlertCircle className="w-8 h-8 text-red-600" />
-          </div>
-          <h2 className="text-xl font-bold text-slate-900 mb-2">Payment System Unavailable</h2>
-          <p className="text-slate-600 mb-6">
-            {configError || 'The payment system is currently not configured. Please contact support.'}
-          </p>
-          <div className="space-y-3">
-            <button
-              onClick={() => navigate(-1)}
-              className="w-full px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors"
-            >
-              Go Back
-            </button>
-            <p className="text-sm text-slate-500">
-              Contact: hello@spremtlabs.com
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+      // Redirect to Stripe Checkout
+      if (url) {
+        window.location.href = url;
+      } else {
+        throw new Error('No checkout URL received');
+      }
+    } catch (error: any) {
+      console.error('Checkout error:', error);
+      setError(error.message || 'Something went wrong. Please try again.');
+      setIsProcessing(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-50">
@@ -246,57 +105,131 @@ const CheckoutPage: React.FC = () => {
 
       {/* Checkout Content */}
       <div className="flex items-center justify-center py-12 px-6">
-        <div className="bg-white rounded-2xl max-w-md w-full shadow-lg border border-slate-200">
+        <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200">
           <div className="p-8">
-            <h1 className="text-2xl font-bold text-slate-900 mb-2 text-center">
-              Get Coach Pack Access
-            </h1>
-            <p className="text-slate-600 mb-6 text-center">
-              Complete your purchase to get instant access
-            </p>
-            
-            {/* Product Info */}
-            <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 mb-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold text-purple-900">Complete Toolkit</h3>
-                  <p className="text-sm text-purple-600">All tools and assessments • 30 days access</p>
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-purple-900">$50</div>
-                  <div className="text-sm text-purple-600">one-time</div>
-                </div>
+            {/* Product Summary */}
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-700 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Target className="w-8 h-8 text-white" />
               </div>
-            </div>
-            
-            {/* Checkout Form */}
-            <CheckoutForm 
-              productId={productId}
-              userEmail={prefilledEmail}
-              userName={prefilledName}
-            />
-            
-            {/* Security Notice */}
-            <div className="mt-6 flex items-center justify-center text-sm text-slate-500">
-              <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
-              <span>Secured by Stripe • SSL Encrypted</span>
+              <h1 className="text-2xl font-bold text-slate-900 mb-2">Complete Toolkit</h1>
+              <p className="text-slate-600 text-sm mb-4">
+                Lifetime access to all Coach Pack tools and features
+              </p>
+              <div className="text-3xl font-bold text-purple-600">$49.00</div>
+              <div className="text-sm text-slate-500">One-time payment • No recurring charges</div>
             </div>
 
-            {/* Development Notice */}
-            {import.meta.env.DEV && (
-              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
-                <p className="text-yellow-800 font-medium mb-1">Development Mode</p>
-                <p className="text-yellow-700">
-                  Stripe: {import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ? '✅ Configured' : '❌ Missing'}
-                </p>
-                <p className="text-yellow-700">
-                  Price ID: {import.meta.env.VITE_STRIPE_PRICE_ID ? '✅ Set' : '❌ Missing'}
-                </p>
+            {/* Account Creation Notice */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start space-x-3">
+                <Shield className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="text-sm font-semibold text-blue-900 mb-1">Account Setup</h3>
+                  <p className="text-sm text-blue-700">
+                    After payment, we'll create your account and send you an email to set your password.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                <p className="text-red-700 text-sm">{error}</p>
               </div>
             )}
+
+            {/* Customer Information Form */}
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                  placeholder="Enter your full name"
+                  required
+                  disabled={isProcessing}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                  placeholder="Enter your email address"
+                  required
+                  disabled={isProcessing}
+                />
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isProcessing}
+                className="w-full px-6 py-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+              >
+                {isProcessing ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Processing...</span>
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="w-5 h-5" />
+                    <span>Continue to Payment</span>
+                  </>
+                )}
+              </button>
+            </form>
+
+            {/* Security Notice */}
+            <div className="mt-6 text-center">
+              <div className="flex items-center justify-center space-x-2 text-sm text-slate-500">
+                <Shield className="w-4 h-4" />
+                <span>Secured by Stripe • SSL Encrypted</span>
+              </div>
+            </div>
+
+            {/* Included Features */}
+            <div className="mt-8 pt-8 border-t border-slate-200">
+              <h3 className="text-sm font-semibold text-slate-900 mb-3">What's included:</h3>
+              <ul className="space-y-2 text-sm text-slate-600">
+                <li className="flex items-center space-x-2">
+                  <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                  <span>Interactive Wheel of Life Assessment</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                  <span>Values Clarity & Alignment Tools</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                  <span>Digital Vision Board Builder</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                  <span>SMART Goal Setting Framework</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                  <span>Progress Tracking & Analytics</span>
+                </li>
+                <li className="flex items-center space-x-2">
+                  <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                  <span>Community Templates & Resources</span>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>

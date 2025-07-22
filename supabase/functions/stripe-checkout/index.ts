@@ -2,6 +2,7 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import Stripe from 'npm:stripe@17.7.0';
 import { createClient } from 'npm:@supabase/supabase-js@2.49.1';
 
+const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
 const stripeSecret = Deno.env.get('STRIPE_SECRET_KEY')!;
 const stripe = new Stripe(stripeSecret, {
   appInfo: {
@@ -9,8 +10,6 @@ const stripe = new Stripe(stripeSecret, {
     version: '1.0.0',
   },
 });
-
-const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
 // Helper function to create responses with CORS headers
 function corsResponse(body: string | object | null, status = 200) {
@@ -20,7 +19,6 @@ function corsResponse(body: string | object | null, status = 200) {
     'Access-Control-Allow-Headers': '*',
   };
 
-  // For 204 No Content, don't include Content-Type or body
   if (status === 204) {
     return new Response(null, { status, headers });
   }
@@ -36,99 +34,62 @@ function corsResponse(body: string | object | null, status = 200) {
 
 Deno.serve(async (req) => {
   try {
-    console.log('🚀 Stripe checkout function called');
-    console.log('📥 Request method:', req.method);
-    
     if (req.method === 'OPTIONS') {
-      console.log('✅ Handling OPTIONS request (CORS preflight)');
       return corsResponse({}, 204);
     }
 
     if (req.method !== 'POST') {
-      console.log('❌ Invalid method:', req.method);
       return corsResponse({ error: 'Method not allowed' }, 405);
     }
 
-    console.log('📋 Parsing request body...');
-    const requestBody = await req.json();
-    console.log('📋 Full request body:', JSON.stringify(requestBody, null, 2));
-    
-    const { price_id, success_url, cancel_url, mode, customer_email, customer_name } = requestBody;
-    console.log('🔍 Extracted parameters:', {
-      price_id,
-      success_url,
-      cancel_url,
-      mode,
-      customer_email,
-      customer_name
-    });
+    const { price_id, success_url, cancel_url, mode, email, name } = await req.json();
 
-    // Validate required parameters
-    if (!price_id || !success_url || !cancel_url || !customer_email || !customer_name) {
-      const missing = [];
-      if (!price_id) missing.push('price_id');
-      if (!success_url) missing.push('success_url');
-      if (!cancel_url) missing.push('cancel_url');
-      if (!customer_email) missing.push('customer_email');
-      if (!customer_name) missing.push('customer_name');
-      
-      console.log('❌ Missing required parameters:', missing);
-      return corsResponse({ error: `Missing required parameters: ${missing.join(', ')}` }, 400);
+    const error = validateParameters(
+      { price_id, success_url, cancel_url, mode, email, name },
+      {
+        cancel_url: 'string',
+        price_id: 'string',
+        success_url: 'string',
+        mode: { values: ['payment', 'subscription'] },
+        email: 'string',
+        name: 'string',
+      },
+    );
+
+    if (error) {
+      return corsResponse({ error }, 400);
     }
 
-    if (!mode || !['payment', 'subscription'].includes(mode)) {
-      console.log('❌ Invalid mode:', mode);
-      return corsResponse({ error: 'Mode must be either "payment" or "subscription"' }, 400);
-    }
-    
-    console.log('✅ Parameter validation passed');
+    console.log(`Processing checkout for email: ${email}, name: ${name}`);
 
     // Look for existing Stripe customer by email
-    console.log('🔍 Looking up existing Stripe customer by email:', customer_email);
-    
+    const customers = await stripe.customers.list({
+      email: email,
+      limit: 1,
+    });
+
     let customerId;
     
-    try {
-      const existingCustomers = await stripe.customers.list({
-        email: customer_email,
-        limit: 1,
+    if (customers.data.length > 0) {
+      // Use existing customer
+      customerId = customers.data[0].id;
+      console.log(`Using existing Stripe customer: ${customerId}`);
+    } else {
+      // Create new customer
+      const newCustomer = await stripe.customers.create({
+        email: email,
+        name: name,
+        metadata: {
+          email: email,
+          name: name,
+        },
       });
-
-      if (existingCustomers.data.length > 0) {
-        customerId = existingCustomers.data[0].id;
-        console.log('✅ Found existing Stripe customer:', customerId);
-      } else {
-        console.log('🆕 Creating new Stripe customer');
-        const newCustomer = await stripe.customers.create({
-          email: customer_email,
-          name: customer_name,
-          metadata: {
-            source: 'coach-pack-checkout',
-            created_via: 'unauthenticated_flow'
-          },
-        });
-
-        customerId = newCustomer.id;
-        console.log('✅ Created new Stripe customer:', customerId);
-      }
-    } catch (stripeError) {
-      console.error('❌ Error with Stripe customer operations:', stripeError);
-      return corsResponse({ error: 'Failed to create or retrieve customer' }, 500);
+      customerId = newCustomer.id;
+      console.log(`Created new Stripe customer: ${customerId}`);
     }
 
-    console.log('🛒 Creating Stripe checkout session...');
-    console.log('🛒 Checkout session parameters:', {
-      customer: customerId,
-      customer_email,
-      payment_method_types: ['card'],
-      line_items: [{ price: price_id, quantity: 1 }],
-      mode,
-      success_url,
-      cancel_url
-    });
-    
-    // Create Checkout Session with customer info in metadata
-    const session = await stripe.checkout.sessions.create({
+    // Create checkout session - use ONLY customer parameter
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
       customer: customerId,
       payment_method_types: ['card'],
       line_items: [
@@ -141,48 +102,44 @@ Deno.serve(async (req) => {
       success_url,
       cancel_url,
       metadata: {
-        customer_email: customer_email,
-        customer_name: customer_name,
-        source: 'coach-pack-checkout'
+        email: email,
+        name: name,
       },
-      // For one-time payments, collect customer info
-      ...(mode === 'payment' && {
-        customer_creation: 'always',
-      }),
-    });
+    };
 
-    console.log('✅ Checkout session created successfully:', {
-      sessionId: session.id,
-      customerId: customerId,
-      url: session.url,
-      payment_status: session.payment_status,
-      status: session.status
-    });
+    const session = await stripe.checkout.sessions.create(sessionParams);
+
+    console.log(`Created checkout session ${session.id} for customer ${customerId}`);
+
+    return corsResponse({ sessionId: session.id, url: session.url });
     
-    console.log('📤 Returning session data to frontend...');
-    const responseData = { sessionId: session.id, url: session.url };
-    console.log('📤 Response data:', responseData);
-
-    return corsResponse(responseData);
   } catch (error: any) {
-    console.error('💥 CHECKOUT ERROR:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name,
-      type: error.type || 'Unknown'
-    });
-    
-    // Log additional Stripe-specific error details if available
-    if (error.type) {
-      console.error('💳 Stripe error details:', {
-        type: error.type,
-        code: error.code,
-        decline_code: error.decline_code,
-        param: error.param,
-        detail: error.detail
-      });
-    }
-    
+    console.error(`Checkout error: ${error.message}`);
     return corsResponse({ error: error.message }, 500);
   }
 });
+
+type ExpectedType = 'string' | { values: string[] };
+type Expectations<T> = { [K in keyof T]: ExpectedType };
+
+function validateParameters<T extends Record<string, any>>(values: T, expected: Expectations<T>): string | undefined {
+  for (const parameter in values) {
+    const expectation = expected[parameter];
+    const value = values[parameter];
+
+    if (expectation === 'string') {
+      if (value == null) {
+        return `Missing required parameter ${parameter}`;
+      }
+      if (typeof value !== 'string') {
+        return `Expected parameter ${parameter} to be a string got ${JSON.stringify(value)}`;
+      }
+    } else {
+      if (!expectation.values.includes(value)) {
+        return `Expected parameter ${parameter} to be one of ${expectation.values.join(', ')}`;
+      }
+    }
+  }
+
+  return undefined;
+}

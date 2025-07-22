@@ -2,99 +2,63 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import Stripe from 'npm:stripe@17.7.0';
 import { createClient } from 'npm:@supabase/supabase-js@2.49.1';
 
-const stripeSecret = Deno.env.get('STRIPE_SECRET_KEY')!;
-const stripeWebhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!;
-const stripe = new Stripe(stripeSecret, {
+const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
   appInfo: {
     name: 'Coach Pack Integration',
     version: '1.0.0',
   },
 });
 
-const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+function generateTemporaryPassword(length = 12): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
 
 Deno.serve(async (req) => {
+  const signature = req.headers.get('stripe-signature')!;
+  const body = await req.text();
+  const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!;
+
+  let event: Stripe.Event;
+
   try {
-    // Handle OPTIONS request for CORS preflight
-    if (req.method === 'OPTIONS') {
-      return new Response(null, { 
-        status: 204,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, stripe-signature',
-        }
-      });
-    }
+    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+  } catch (err) {
+    console.log(`❌ Webhook signature verification failed:`, err.message);
+    return new Response(`Webhook Error: ${err.message}`, { status: 400 });
+  }
 
-    if (req.method !== 'POST') {
-      return new Response('Method not allowed', { status: 405 });
-    }
+  console.log(`✅ Webhook verified: ${event.type}`);
 
-    // get the signature from the header
-    const signature = req.headers.get('stripe-signature');
-
-    if (!signature) {
-      return new Response('No signature found', { status: 400 });
-    }
-
-    // get the raw body
-    const body = await req.text();
-
-    // verify the webhook signature
-    let event: Stripe.Event;
-
-    try {
-      event = await stripe.webhooks.constructEventAsync(body, signature, stripeWebhookSecret);
-    } catch (error: any) {
-      console.error(`Webhook signature verification failed: ${error.message}`);
-      return new Response(`Webhook signature verification failed: ${error.message}`, { status: 400 });
-    }
-
-    // Process the event asynchronously
-    EdgeRuntime.waitUntil(handleEvent(event));
-
-    return Response.json({ received: true }, {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, stripe-signature',
-      }
+  try {
+    await processWebhookEvent(event);
+    return new Response(JSON.stringify({ received: true }), {
+      headers: { 'Content-Type': 'application/json' },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error processing webhook:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    return new Response(`Webhook Error: ${error.message}`, { status: 500 });
   }
 });
 
-async function handleEvent(event: Stripe.Event) {
-  const stripeData = event?.data?.object ?? {};
-
-  if (!stripeData) {
-    return;
-  }
-
-  console.log(`Processing webhook event: ${event.type}`);
-
+async function processWebhookEvent(event: Stripe.Event) {
   switch (event.type) {
     case 'checkout.session.completed':
-      await handleCheckoutSessionCompleted(stripeData as Stripe.Checkout.Session);
+      await handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
       break;
-    
     case 'customer.subscription.created':
     case 'customer.subscription.updated':
     case 'customer.subscription.deleted':
-      await handleSubscriptionChange(stripeData as Stripe.Subscription);
+      await handleSubscriptionChange(event.data.object as Stripe.Subscription);
       break;
-    
     case 'payment_intent.succeeded':
-      await handlePaymentIntentSucceeded(stripeData as Stripe.PaymentIntent);
+      await handlePaymentIntentSucceeded(event.data.object as Stripe.PaymentIntent);
       break;
-    
-    case 'payment_intent.payment_failed':
-      await handlePaymentIntentFailed(stripeData as Stripe.PaymentIntent);
-      break;
-    
     default:
       console.log(`Unhandled event type: ${event.type}`);
   }
@@ -102,155 +66,116 @@ async function handleEvent(event: Stripe.Event) {
 
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
   const customerId = session.customer as string;
-  const customerEmail = session.metadata?.customer_email || session.customer_details?.email;
-  const customerName = session.metadata?.customer_name || session.customer_details?.name;
+  const { email, name } = session.metadata || {};
   
   if (!customerId) {
     console.error('No customer ID in checkout session');
     return;
   }
 
-  console.log('Processing checkout session completed:', {
-    sessionId: session.id,
-    customerId,
-    customerEmail,
-    customerName,
-    mode: session.mode
-  });
+  console.log(`Processing checkout completion for customer: ${customerId}, email: ${email}, name: ${name}`);
 
-  // Create Supabase user account if this is a new customer
-  if (customerEmail && customerName) {
-    await createSupabaseUserFromPayment(customerId, customerEmail, customerName);
+  // Create Supabase user if they don't exist
+  let userId = await ensureSupabaseUser(email, name, customerId);
+  
+  if (!userId) {
+    console.error('Failed to create or find Supabase user');
+    return;
   }
 
   if (session.mode === 'subscription') {
-    // For subscriptions, we'll sync the subscription data
     await syncCustomerSubscription(customerId);
   } else if (session.mode === 'payment' && session.payment_status === 'paid') {
-    // For one-time payments, create an order record
     await createOrderRecord(session);
   }
 }
 
-async function createSupabaseUserFromPayment(customerId: string, email: string, name: string) {
+async function ensureSupabaseUser(email: string, name: string, customerId: string): Promise<string | null> {
+  if (!email || !name) {
+    console.error('Missing email or name from session metadata');
+    return null;
+  }
+
   try {
-    console.log('🆕 Creating Supabase user from payment:', { customerId, email, name });
-    
-    // Check if user already exists
-    const { data: existingUser, error: getUserError } = await supabase.auth.admin.getUserByEmail(email);
-    
-    let userId;
-    
-    if (existingUser && existingUser.user) {
-      console.log('✅ User already exists:', existingUser.user.id);
-      userId = existingUser.user.id;
+    // Check if user already exists by email
+    const { data: existingUsers } = await supabase.auth.admin.listUsers();
+    const userExists = existingUsers.users.find(user => user.email === email);
+
+    let userId: string;
+
+    if (userExists) {
+      userId = userExists.id;
+      console.log(`User already exists: ${userId}`);
     } else {
-      console.log('🆕 Creating new Supabase user');
+      // Create new user with temporary password
+      const tempPassword = generateTemporaryPassword();
       
-      // Generate a temporary password
-      const tempPassword = generateTempPassword();
-      
-      // Create user with admin API
-      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
-        email: email,
+      const { data: newUser, error: createUserError } = await supabase.auth.admin.createUser({
+        email,
         password: tempPassword,
-        email_confirm: false, // Skip email confirmation for paid users
+        email_confirm: false, // Allow immediate login
         user_metadata: {
           full_name: name,
-          created_via: 'stripe_payment',
-          stripe_customer_id: customerId
-        }
+        },
       });
-      
-      if (createError) {
-        console.error('❌ Error creating Supabase user:', createError);
-        throw new Error(`Failed to create user: ${createError.message}`);
+
+      if (createUserError || !newUser.user) {
+        console.error('Failed to create user:', createUserError);
+        return null;
       }
-      
-      if (!newUser.user) {
-        throw new Error('No user returned from createUser');
-      }
-      
+
       userId = newUser.user.id;
-      console.log('✅ Created new Supabase user:', userId);
-      
-      // Send password reset email so user can set their own password
-      try {
-        const { error: resetError } = await supabase.auth.admin.generateLink({
-          type: 'recovery',
-          email: email,
-          options: {
-            redirectTo: `${Deno.env.get('SITE_URL') || 'https://coachpack.org'}/reset-password`
-          }
-        });
-        
-        if (resetError) {
-          console.error('❌ Error sending password reset email:', resetError);
-        } else {
-          console.log('✅ Password reset email sent to:', email);
-        }
-      } catch (emailError) {
-        console.error('❌ Exception sending password reset email:', emailError);
+      console.log(`Created new user: ${userId}`);
+
+      // Send password reset email so they can set their own password
+      const { error: resetError } = await supabase.auth.admin.generateLink({
+        type: 'recovery',
+        email,
+      });
+
+      if (resetError) {
+        console.warn('Failed to send password reset email:', resetError);
+      } else {
+        console.log('Password reset email sent to:', email);
       }
     }
-    
-    // Create or update stripe customer mapping
+
+    // Ensure customer mapping exists
     const { error: customerError } = await supabase
       .from('stripe_customers')
       .upsert({
         user_id: userId,
         customer_id: customerId,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
       }, {
         onConflict: 'customer_id'
       });
-    
+
     if (customerError) {
-      console.error('❌ Error creating customer mapping:', customerError);
-    } else {
-      console.log('✅ Customer mapping created/updated');
+      console.error('Failed to create customer mapping:', customerError);
     }
-    
+
     // Create or update user profile
     const { error: profileError } = await supabase
       .from('user_profiles')
       .upsert({
         user_id: userId,
-        email: email,
         full_name: name,
-        subscription_status: 'lifetime',
-        subscription_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
-        marketing_consent: true,
-        onboarding_completed: false,
+        subscription_status: 'pro',
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
       }, {
         onConflict: 'user_id'
       });
-    
+
     if (profileError) {
-      console.error('❌ Error creating user profile:', profileError);
-    } else {
-      console.log('✅ User profile created/updated');
+      console.error('Failed to create user profile:', profileError);
     }
-    
-    console.log('✅ Successfully processed user creation from payment');
+
+    return userId;
     
   } catch (error) {
-    console.error('💥 Error creating Supabase user from payment:', error);
-    throw error;
+    console.error('Error ensuring Supabase user:', error);
+    return null;
   }
-}
-
-function generateTempPassword(): string {
-  // Generate a secure temporary password
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-  let password = '';
-  for (let i = 0; i < 16; i++) {
-    password += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return password;
 }
 
 async function handleSubscriptionChange(subscription: Stripe.Subscription) {
@@ -265,10 +190,8 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
 }
 
 async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
-  // If this is a payment for a subscription, it will be handled by the subscription events
   if (paymentIntent.invoice) return;
 
-  // For one-time payments not associated with a checkout session
   const customerId = paymentIntent.customer as string;
   
   if (!customerId) {
@@ -276,38 +199,11 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
     return;
   }
 
-  // Update user profile with access information
   await updateUserAccessFromPayment(customerId);
-}
-
-async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
-  try {
-    console.error(`❌ Payment failed for PaymentIntent: ${paymentIntent.id}`);
-    console.error(`❌ Failure reason: ${paymentIntent.last_payment_error?.message || 'Unknown'}`);
-    
-    const customerId = paymentIntent.customer as string;
-    
-    if (customerId) {
-      // Get user info for logging
-      const { data: customerData } = await supabase
-        .from('stripe_customers')
-        .select('user_id')
-        .eq('customer_id', customerId)
-        .single();
-
-      if (customerData) {
-        console.error(`❌ Failed payment for user_id: ${customerData.user_id}`);
-      }
-    }
-    
-  } catch (error) {
-    console.error('Error handling payment failure:', error);
-  }
 }
 
 async function syncCustomerSubscription(customerId: string) {
   try {
-    // Fetch latest subscription data from Stripe
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
       limit: 1,
@@ -316,37 +212,25 @@ async function syncCustomerSubscription(customerId: string) {
     });
 
     if (subscriptions.data.length === 0) {
-      console.info(`No active subscriptions found for customer: ${customerId}`);
-      const { error: noSubError } = await supabase.from('stripe_subscriptions').upsert(
-        {
-          customer_id: customerId,
-          status: 'not_started',
-        },
-        {
-          onConflict: 'customer_id',
-        },
-      );
-
-      if (noSubError) {
-        console.error('Error updating subscription status:', noSubError);
-        throw new Error('Failed to update subscription status in database');
-      }
+      console.log(`No subscriptions found for customer: ${customerId}`);
       return;
     }
 
-    // Get the subscription
     const subscription = subscriptions.data[0];
 
-    // Update subscription in database
     const { error: subError } = await supabase.from('stripe_subscriptions').upsert(
       {
         customer_id: customerId,
         subscription_id: subscription.id,
-        price_id: subscription.items.data[0].price.id,
-        current_period_start: subscription.current_period_start,
-        current_period_end: subscription.current_period_end,
-        cancel_at_period_end: subscription.cancel_at_period_end,
-        ...(subscription.default_payment_method && typeof subscription.default_payment_method !== 'string'
+        price_id: subscription.items.data[0]?.price?.id ?? null,
+        current_period_start: subscription.current_period_start
+          ? new Date(subscription.current_period_start * 1000).toISOString()
+          : null,
+        current_period_end: subscription.current_period_end
+          ? new Date(subscription.current_period_end * 1000).toISOString()
+          : null,
+        cancel_at_period_end: subscription.cancel_at_period_end ?? false,
+        ...(subscription.default_payment_method?.type === 'card'
           ? {
               payment_method_brand: subscription.default_payment_method.card?.brand ?? null,
               payment_method_last4: subscription.default_payment_method.card?.last4 ?? null,
@@ -364,7 +248,6 @@ async function syncCustomerSubscription(customerId: string) {
       throw new Error('Failed to sync subscription in database');
     }
 
-    // Update user profile with subscription status
     await updateUserAccessFromSubscription(customerId, subscription.status);
     
     console.info(`Successfully synced subscription for customer: ${customerId}`);
@@ -386,7 +269,6 @@ async function createOrderRecord(session: Stripe.Checkout.Session) {
       customer: customerId,
     } = session;
 
-    // Insert the order into the stripe_orders table
     const { error: orderError } = await supabase.from('stripe_orders').insert({
       checkout_session_id,
       payment_intent_id: payment_intent as string,
@@ -395,7 +277,7 @@ async function createOrderRecord(session: Stripe.Checkout.Session) {
       amount_total: amount_total || 0,
       currency: currency || 'usd',
       payment_status: payment_status || 'unpaid',
-      status: 'completed', // assuming we want to mark it as completed since payment is successful
+      status: 'completed',
     });
 
     if (orderError) {
@@ -403,7 +285,6 @@ async function createOrderRecord(session: Stripe.Checkout.Session) {
       throw new Error('Failed to create order record');
     }
 
-    // Update user profile with access information
     await updateUserAccessFromPayment(customerId as string);
     
     console.info(`Successfully processed one-time payment for session: ${checkout_session_id}`);
@@ -415,7 +296,6 @@ async function createOrderRecord(session: Stripe.Checkout.Session) {
 
 async function updateUserAccessFromSubscription(customerId: string, status: string) {
   try {
-    // Get the user_id from the stripe_customers table
     const { data: customerData, error: customerError } = await supabase
       .from('stripe_customers')
       .select('user_id')
@@ -429,13 +309,11 @@ async function updateUserAccessFromSubscription(customerId: string, status: stri
 
     const userId = customerData.user_id;
 
-    // Update the user's profile with subscription status
     const { error: profileError } = await supabase
       .from('user_profiles')
       .update({
         subscription_status: status === 'active' ? 'pro' : 'free',
         subscription_expires_at: status === 'active' ? null : new Date().toISOString(),
-        updated_at: new Date().toISOString()
       })
       .eq('user_id', userId);
 
@@ -443,21 +321,7 @@ async function updateUserAccessFromSubscription(customerId: string, status: stri
       console.error('Error updating user profile:', profileError);
     }
 
-    // Add a record to user_subscriptions table
-    if (status === 'active') {
-      const { error: subError } = await supabase
-        .from('user_subscriptions')
-        .insert({
-          user_id: userId,
-          subscription_type: 'pro',
-          status: 'active',
-          stripe_subscription_id: customerId
-        });
-
-      if (subError) {
-        console.error('Error creating user subscription record:', subError);
-      }
-    }
+    console.info(`Updated access for user ${userId}: ${status}`);
   } catch (error) {
     console.error('Error updating user access from subscription:', error);
   }
@@ -465,7 +329,6 @@ async function updateUserAccessFromSubscription(customerId: string, status: stri
 
 async function updateUserAccessFromPayment(customerId: string) {
   try {
-    // Get the user_id from the stripe_customers table
     const { data: customerData, error: customerError } = await supabase
       .from('stripe_customers')
       .select('user_id')
@@ -479,17 +342,11 @@ async function updateUserAccessFromPayment(customerId: string) {
 
     const userId = customerData.user_id;
 
-    // Calculate expiration date (30 days from now)
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 30);
-
-    // Update the user's profile with lifetime access
     const { error: profileError } = await supabase
       .from('user_profiles')
       .update({
-        subscription_status: 'lifetime',
-        subscription_expires_at: expiresAt.toISOString(),
-        updated_at: new Date().toISOString()
+        subscription_status: 'pro',
+        subscription_expires_at: null,
       })
       .eq('user_id', userId);
 
@@ -497,19 +354,7 @@ async function updateUserAccessFromPayment(customerId: string) {
       console.error('Error updating user profile:', profileError);
     }
 
-    // Add a record to user_subscriptions table
-    const { error: subError } = await supabase
-      .from('user_subscriptions')
-      .insert({
-        user_id: userId,
-        subscription_type: 'lifetime',
-        status: 'active',
-        expires_at: expiresAt.toISOString()
-      });
-
-    if (subError) {
-      console.error('Error creating user subscription record:', subError);
-    }
+    console.info(`Updated lifetime access for user ${userId}`);
   } catch (error) {
     console.error('Error updating user access from payment:', error);
   }
