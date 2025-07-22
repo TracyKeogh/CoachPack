@@ -93,16 +93,7 @@ const LandingPage: React.FC = () => {
 
                 {/* Social Proof */}
                 <div className="flex items-center space-x-4 text-sm text-slate-600">
-                  <div className="flex items-center space-x-1">
-                    <div className="flex">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
-                      ))}
-                    </div>
-                    <span>5.0 rating</span>
-                  </div>
-                  <div className="w-1 h-1 bg-slate-300 rounded-full"></div>
-                  <span>1,000+ transformations</span>
+                  <span>Proven self-coaching frameworks for individuals and teams</span>
                 </div>
               </div>
 
@@ -136,9 +127,9 @@ const LandingPage: React.FC = () => {
                 <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-4 mx-auto">
                   <CheckCircle2 className="w-6 h-6 text-white" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Proven Results</h3>
+                <h3 className="text-xl font-semibold mb-2">Research-Based</h3>
                 <p className="text-purple-100">
-                  Used by individuals and teams at 50+ companies to create measurable improvements.
+                  Built on established psychological frameworks for goal-setting and behavior change.
                 </p>
               </div>
               
@@ -317,44 +308,29 @@ const LandingPage: React.FC = () => {
         <section className="py-16 px-6 bg-white">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl font-bold text-slate-900 mb-12">
-              What People Are Saying
+              Early User Feedback
             </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200">
-                <div className="flex items-center mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
-                  ))}
-                </div>
                 <p className="text-slate-600 mb-4">
                   "Coach Pack helped me identify what was really important to me. The structured approach made all the difference."
                 </p>
-                <p className="text-sm font-medium text-slate-900">Sarah M.</p>
+                <p className="text-sm font-medium text-slate-900">Early User</p>
               </div>
               
               <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200">
-                <div className="flex items-center mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
-                  ))}
-                </div>
                 <p className="text-slate-600 mb-4">
                   "Finally, a system that actually works. I've tried so many goal-setting methods before, but this one stuck."
                 </p>
-                <p className="text-sm font-medium text-slate-900">David L.</p>
+                <p className="text-sm font-medium text-slate-900">Beta Tester</p>
               </div>
               
               <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200">
-                <div className="flex items-center mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
-                  ))}
-                </div>
                 <p className="text-slate-600 mb-4">
                   "The vision board tool is incredible. It helped me visualize my goals in a way that actually motivates me daily."
                 </p>
-                <p className="text-sm font-medium text-slate-900">Maria R.</p>
+                <p className="text-sm font-medium text-slate-900">Pilot User</p>
               </div>
             </div>
           </div>

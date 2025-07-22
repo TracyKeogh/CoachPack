@@ -44,34 +44,23 @@ const PricingPage: React.FC = () => {
           </div>
           
           <h2 className="text-4xl font-bold text-slate-900 mb-4">
-            Transform Your Life with Proven Tools
+            Choose Your Plan
           </h2>
           <p className="text-xl text-slate-600 max-w-2xl mx-auto mb-4">
-            Get the complete self-coaching toolkit for just $50 with 30 days of full access.
+            Individual access or team workshops - choose what works for you.
           </p>
-          <button
-            onClick={() => setShowSignupModal(true)}
-            className="inline-flex items-center space-x-2 px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold"
-          >
-            <span>Get Started Now</span>
-            <ArrowRight className="w-5 h-5" />
-          </button>
         </div>
 
         {/* Pricing Cards */}
-        <div className="grid grid-cols-1 gap-8 max-w-2xl mx-auto mb-12">
-          {/* Free Plan */}
-          <div className="bg-white rounded-2xl p-8 border-2 border-purple-500 ring-2 ring-purple-200 relative hover:shadow-xl transition-all duration-300 max-w-2xl mx-auto">
-            <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-              <div className="bg-purple-600 text-white px-4 py-2 rounded-full text-sm font-medium flex items-center space-x-1">
-                <Crown className="w-4 h-4" />
-                <span>Limited Time Offer</span>
-              </div>
-            </div>
-
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-12">
+          {/* Individual Plan */}
+          <div className="bg-white rounded-2xl p-8 border border-slate-200 hover:shadow-lg transition-all duration-300">
             <div className="text-center mb-8">
-              <h3 className="text-2xl font-bold text-slate-900 mb-2">Complete Toolkit</h3>
-              <p className="text-slate-600 mb-4">Full access to all self-coaching tools for 30 days</p>
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Target className="w-8 h-8 text-purple-600" />
+              </div>
+              <h3 className="text-2xl font-bold text-slate-900 mb-2">Individual Access</h3>
+              <p className="text-slate-600 mb-4">Complete self-coaching toolkit</p>
               <div className="flex items-baseline justify-center space-x-1">
                 <span className="text-4xl font-bold text-slate-900">$50</span>
                 <span className="text-slate-600">one-time</span>
@@ -79,18 +68,18 @@ const PricingPage: React.FC = () => {
               <p className="text-sm text-slate-500 mt-2">30 days of full access</p>
             </div>
 
-            <ul className="space-y-4 mb-8">
+            <ul className="space-y-3 mb-8">
               <li className="flex items-center space-x-3">
                 <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
                 <span className="text-slate-700">Interactive Wheel of Life</span>
               </li>
               <li className="flex items-center space-x-3">
                 <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
-                <span className="text-slate-700">Advanced Values Clarification</span>
+                <span className="text-slate-700">Values Clarification Process</span>
               </li>
               <li className="flex items-center space-x-3">
                 <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
-                <span className="text-slate-700">Visual Vision Board Creation</span>
+                <span className="text-slate-700">Vision Board Creator</span>
               </li>
               <li className="flex items-center space-x-3">
                 <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
@@ -98,19 +87,11 @@ const PricingPage: React.FC = () => {
               </li>
               <li className="flex items-center space-x-3">
                 <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
-                <span className="text-slate-700">Action Calendar & Scheduling</span>
+                <span className="text-slate-700">Action Calendar</span>
               </li>
               <li className="flex items-center space-x-3">
                 <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
-                <span className="text-slate-700">Progress Analytics & Insights</span>
-              </li>
-              <li className="flex items-center space-x-3">
-                <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
-                <span className="text-slate-700">Reflection Tools & Prompts</span>
-              </li>
-              <li className="flex items-center space-x-3">
-                <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
-                <span className="text-slate-700">Data Export & Backup</span>
+                <span className="text-slate-700">Progress Tracking</span>
               </li>
             </ul>
 
@@ -118,9 +99,58 @@ const PricingPage: React.FC = () => {
               onClick={() => navigate('/checkout?productId=complete-toolkit')}
               className="w-full py-3 rounded-lg font-semibold transition-colors bg-purple-600 text-white hover:bg-purple-700 flex items-center justify-center space-x-2"
             >
-              <span>Get Full Access</span>
+              <span>Get Individual Access</span>
               <ArrowRight className="w-5 h-5" />
             </button>
+          </div>
+
+          {/* Company Plan */}
+          <div className="bg-white rounded-2xl p-8 border border-slate-200 hover:shadow-lg transition-all duration-300">
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Users className="w-8 h-8 text-blue-600" />
+              </div>
+              <h3 className="text-2xl font-bold text-slate-900 mb-2">Team Workshop</h3>
+              <p className="text-slate-600 mb-4">Workshop + platform access for teams</p>
+              <div className="flex items-baseline justify-center space-x-1">
+                <span className="text-2xl font-bold text-slate-900">On Application</span>
+              </div>
+              <p className="text-sm text-slate-500 mt-2">Custom pricing based on team size</p>
+            </div>
+
+            <ul className="space-y-3 mb-8">
+              <li className="flex items-center space-x-3">
+                <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
+                <span className="text-slate-700">Half-day workshop session</span>
+              </li>
+              <li className="flex items-center space-x-3">
+                <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
+                <span className="text-slate-700">3-month platform access per employee</span>
+              </li>
+              <li className="flex items-center space-x-3">
+                <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
+                <span className="text-slate-700">Basic progress tracking</span>
+              </li>
+              <li className="flex items-center space-x-3">
+                <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
+                <span className="text-slate-700">Email support</span>
+              </li>
+              <li className="flex items-center space-x-3">
+                <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
+                <span className="text-slate-700">Expert facilitation included</span>
+              </li>
+              <li className="flex items-center space-x-3">
+                <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
+                <span className="text-slate-700">Customized to your team</span>
+              </li>
+            </ul>
+
+            <a
+              href="mailto:hello@spremtlabs.com?subject=Coach Pack Team Workshop Inquiry"
+              className="w-full block text-center py-3 rounded-lg font-semibold transition-colors bg-blue-600 text-white hover:bg-blue-700"
+            >
+              Contact for Quote
+            </a>
           </div>
         </div>
 
@@ -216,15 +246,15 @@ const PricingPage: React.FC = () => {
         {/* CTA Section */}
         <div className="text-center mt-12">
           <p className="text-slate-600 mb-6">
-            Join thousands who have transformed their lives with Coach Pack
+            Start your journey to more intentional living
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button
-              onClick={() => navigate('/signup?productId=complete-toolkit')}
-              className="px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold"
+            <Link
+              to="/free-wheel"
+              className="px-8 py-3 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors font-medium"
             >
-              Get Started Now
-            </button>
+              Try Free Assessment
+            </Link>
           </div>
         </div>
         
