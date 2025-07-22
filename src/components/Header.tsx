@@ -44,6 +44,12 @@ const Header: React.FC = () => {
           >
             Calendar
           </Link>
+          <Link 
+            to="/companies"
+            className="px-4 py-2 text-slate-600 hover:text-slate-900 transition-colors"
+          >
+            For Companies
+          </Link>
           
           <div className="flex items-center space-x-4">
             <Link 

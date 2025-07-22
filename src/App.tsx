@@ -12,6 +12,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 
 // Main App Components
 import LandingPage from './components/LandingPage';
+import CompanyLandingPage from './components/CompanyLandingPage';
 import PricingPage from './components/PricingPage';
 import CheckoutPage from './components/CheckoutPage';
 import CheckoutSuccessPage from './components/CheckoutSuccessPage';
@@ -114,6 +115,7 @@ function App() {
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
+          <Route path="/companies" element={<CompanyLandingPage />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/checkout-success" element={<CheckoutSuccessPage />} />

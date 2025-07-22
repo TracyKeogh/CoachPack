@@ -29,6 +29,12 @@ const LandingPage: React.FC = () => {
                 Free Assessment
               </Link>
               <Link 
+                to="/companies"
+                className="px-4 py-2 text-slate-600 hover:text-slate-900 transition-colors"
+              >
+                For Companies
+              </Link>
+              <Link 
                 to="/auth/login"
                 className="px-4 py-2 text-slate-600 hover:text-slate-900 transition-colors"
               >
@@ -53,7 +59,7 @@ const LandingPage: React.FC = () => {
               <div>
                 <div className="inline-flex items-center space-x-2 bg-purple-100 text-purple-700 px-4 py-2 rounded-full text-sm font-medium mb-6">
                   <Crown className="w-4 h-4" />
-                  <span>Limited Time: $50 Complete Access</span>
+                  <span>Individual Plans Available</span>
                 </div>
                 
                 <h1 className="text-5xl font-bold text-slate-900 mb-6">
@@ -76,6 +82,12 @@ const LandingPage: React.FC = () => {
                     className="px-8 py-4 bg-white text-slate-700 rounded-lg hover:bg-slate-50 transition-colors font-medium border border-slate-200 flex items-center justify-center"
                   >
                     Try Free Assessment
+                  </Link>
+                  <Link 
+                    to="/companies"
+                    className="px-8 py-4 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors font-medium flex items-center justify-center"
+                  >
+                    For Companies
                   </Link>
                 </div>
 
@@ -106,7 +118,7 @@ const LandingPage: React.FC = () => {
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl font-bold mb-6">Why Choose Coach Pack?</h2>
             <p className="text-xl text-purple-100 mb-8">
-              Most people struggle with abstract goal-setting advice. Coach Pack gives you proven frameworks that actually work.
+              Whether you're an individual or leading a team, Coach Pack provides proven frameworks that create lasting change.
             </p>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -126,7 +138,7 @@ const LandingPage: React.FC = () => {
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Proven Results</h3>
                 <p className="text-purple-100">
-                  Based on research-backed coaching methods used by thousands of people worldwide.
+                  Used by individuals and teams at 50+ companies to create measurable improvements.
                 </p>
               </div>
               
@@ -136,9 +148,19 @@ const LandingPage: React.FC = () => {
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Instant Access</h3>
                 <p className="text-purple-100">
-                  No waiting, no subscriptions. Pay once, get immediate access to all tools.
+                  Individual plans or team workshops - choose what works for your situation.
                 </p>
               </div>
+            </div>
+            
+            <div className="mt-8">
+              <Link 
+                to="/companies"
+                className="inline-flex items-center space-x-2 px-6 py-3 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors font-medium"
+              >
+                <span>Explore Team Solutions</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
           </div>
         </section>

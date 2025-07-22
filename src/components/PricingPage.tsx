@@ -27,6 +27,22 @@ const PricingPage: React.FC = () => {
               <p className="text-slate-600">Intentional Living Made Actionable</p>
             </div>
           </div>
+          
+          <div className="flex items-center justify-center space-x-4 mb-6">
+            <Link 
+              to="/pricing"
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg font-medium"
+            >
+              Individual Plans
+            </Link>
+            <Link 
+              to="/companies"
+              className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors font-medium"
+            >
+              For Companies
+            </Link>
+          </div>
+          
           <h2 className="text-4xl font-bold text-slate-900 mb-4">
             Transform Your Life with Proven Tools
           </h2>
