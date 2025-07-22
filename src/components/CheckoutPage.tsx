@@ -46,7 +46,7 @@ const CheckoutPage: React.FC = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          price_id: 'price_1Qb7FPG7O6rMl3G1T4K7dqKY', // Replace with your actual price ID
+          price_id: 'price_1Rf0j2GR1TepVbUMoQMYDXgT',
           success_url: `${window.location.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
           cancel_url: `${window.location.origin}/cancel`,
           mode: 'payment',
