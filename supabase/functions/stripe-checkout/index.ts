@@ -130,7 +130,6 @@ Deno.serve(async (req) => {
     // Create Checkout Session with customer info in metadata
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      customer_email: customer_email,
       payment_method_types: ['card'],
       line_items: [
         {
