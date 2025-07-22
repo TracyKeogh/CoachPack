@@ -1,102 +1,98 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { CheckCircle, User, Mail, Lock, Eye, EyeOff, Sparkles, Target, AlertCircle } from 'lucide-react';
+import { CheckCircle, Target, Sparkles, ArrowRight, AlertCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-
-const accountSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  confirmPassword: z.string()
-}).refine(data => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ['confirmPassword']
-});
-
-type AccountFormValues = z.infer<typeof accountSchema>;
 
 const CheckoutSuccessPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { signUp, loading, error, clearError } = useAuth();
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
-  const [accountCreated, setAccountCreated] = useState(false);
+  const { user } = useAuth();
+  const [isVerifying, setIsVerifying] = useState(true);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
+  const [paymentDetails, setPaymentDetails] = useState<any>(null);
 
-  // Get payment details from URL params
+  // Get session details from URL params
   const sessionId = searchParams.get('session_id');
-  const planType = searchParams.get('plan') || 'complete';
-  const amount = searchParams.get('amount');
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors }
-  } = useForm<AccountFormValues>({
-    resolver: zodResolver(accountSchema),
-    defaultValues: {
-      name: '',
-      email: '',
-      password: '',
-      confirmPassword: ''
-    }
-  });
+  const paymentIntent = searchParams.get('payment_intent');
 
   useEffect(() => {
-    // Verify payment session exists
-    if (!sessionId) {
-      navigate('/pricing');
-    }
-  }, [sessionId, navigate]);
-
-  const onSubmit = async (data: AccountFormValues) => {
-    clearError();
-    setIsCreatingAccount(true);
-
-    try {
-      // Create account with payment verification
-      const result = await signUp(data.email, data.password, data.name);
-      
-      if (result.user) {
-        // TODO: Verify payment with Stripe session_id
-        // TODO: Update user's subscription status in database
-        
-        setAccountCreated(true);
-        
-        // Redirect to dashboard after brief success message
-        setTimeout(() => {
-          navigate('/dashboard');
-        }, 2000);
+    const verifyPayment = async () => {
+      if (!sessionId) {
+        setVerificationError('No session ID found. Please contact support if you were charged.');
+        setIsVerifying(false);
+        return;
       }
-    } catch (err) {
-      console.error('Account creation failed:', err);
-    } finally {
-      setIsCreatingAccount(false);
-    }
-  };
 
-  if (accountCreated) {
+      try {
+        // Verify the payment session with your backend
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-payment`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            session_id: sessionId
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to verify payment');
+        }
+
+        const data = await response.json();
+        setPaymentDetails(data);
+        
+        // Update user access in your system
+        if (user) {
+          // TODO: Update user's subscription status in your database
+          console.log('Payment verified for user:', user.id);
+        }
+        
+      } catch (error) {
+        console.error('Payment verification error:', error);
+        setVerificationError('Unable to verify payment. Please contact support.');
+      } finally {
+        setIsVerifying(false);
+      }
+    };
+
+    verifyPayment();
+  }, [sessionId, user]);
+
+  if (isVerifying) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle className="w-8 h-8 text-green-600" />
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center p-6">
+        <div className="bg-white rounded-2xl max-w-md w-full shadow-lg border border-slate-200 p-8 text-center">
+          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
           </div>
-          
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            Welcome to Coach Pack!
-          </h1>
-          
-          <p className="text-gray-600 mb-6">
-            Your account has been created successfully. You're being redirected to your dashboard...
-          </p>
-          
-          <div className="flex justify-center">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
+          <h2 className="text-xl font-bold text-slate-900 mb-2">Verifying Payment</h2>
+          <p className="text-slate-600">Please wait while we confirm your payment...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (verificationError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-50 flex items-center justify-center p-6">
+        <div className="bg-white rounded-2xl max-w-md w-full shadow-lg border border-red-200 p-8 text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-8 h-8 text-red-600" />
+          </div>
+          <h2 className="text-xl font-bold text-slate-900 mb-2">Payment Verification Issue</h2>
+          <p className="text-slate-600 mb-6">{verificationError}</p>
+          <div className="space-y-3">
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              Go to Dashboard
+            </button>
+            <p className="text-sm text-slate-500">
+              Contact: hello@spremtlabs.com with session ID: {sessionId}
+            </p>
           </div>
         </div>
       </div>
@@ -104,168 +100,82 @@ const CheckoutSuccessPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-blue-600 px-8 py-6 text-center">
-          <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle className="w-6 h-6 text-white" />
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50">
+      {/* Header */}
+      <div className="bg-white border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center space-x-3">
+            <div className="relative">
+              <Target className="w-8 h-8 text-purple-600" />
+              <Sparkles className="w-4 h-4 text-orange-400 absolute -top-1 -right-1" />
+            </div>
+            <div>
+              <span className="text-2xl font-bold text-slate-900">Coach Pack</span>
+              <div className="text-xs text-slate-600">Intentional Living Made Actionable</div>
+            </div>
           </div>
-          <h1 className="text-2xl font-bold text-white mb-2">Payment Successful!</h1>
-          <p className="text-purple-100">Create your account to get started</p>
         </div>
+      </div>
 
-        {/* Payment Summary */}
-        <div className="px-8 py-4 bg-gray-50 border-b">
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-gray-600">Plan:</span>
-            <span className="font-semibold text-gray-900 capitalize">{planType}</span>
-          </div>
-          {amount && (
-            <div className="flex justify-between items-center text-sm mt-1">
-              <span className="text-gray-600">Amount:</span>
-              <span className="font-semibold text-gray-900">${amount}</span>
+      {/* Success Content */}
+      <div className="flex items-center justify-center py-12 px-6">
+        <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 text-center">
+          <div className="p-8">
+            {/* Success Icon */}
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle className="w-12 h-12 text-green-600" />
             </div>
-          )}
-        </div>
 
-        {/* Account Creation Form */}
-        <div className="px-8 py-6">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {/* Name Field */}
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                Full Name
-              </label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  {...register('name')}
-                  type="text"
-                  id="name"
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  placeholder="Enter your full name"
-                />
+            {/* Success Message */}
+            <h1 className="text-3xl font-bold text-slate-900 mb-4">
+              Payment Successful!
+            </h1>
+            <p className="text-slate-600 mb-6">
+              Welcome to Coach Pack! Your purchase has been confirmed and your account is now active.
+            </p>
+
+            {/* Payment Details */}
+            <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
+              <h3 className="font-semibold text-green-900 mb-2">What's Included</h3>
+              <div className="text-sm text-green-700 space-y-1 text-left">
+                <p>✓ Complete Toolkit Access ($50)</p>
+                <p>✓ 30 days of full platform access</p>
+                <p>✓ All coaching tools and assessments</p>
+                <p>✓ Progress tracking and analytics</p>
               </div>
-              {errors.name && (
-                <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
-              )}
             </div>
 
-            {/* Email Field */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  {...register('email')}
-                  type="email"
-                  id="email"
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  placeholder="Enter your email address"
-                />
+            {/* Next Steps */}
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+              <h3 className="font-semibold text-blue-900 mb-2">What's Next?</h3>
+              <div className="text-sm text-blue-700 space-y-1 text-left">
+                <p>1. Access your dashboard immediately</p>
+                <p>2. Start with the Wheel of Life assessment</p>
+                <p>3. Complete your values clarification</p>
+                <p>4. Create your vision board and goals</p>
               </div>
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-              )}
             </div>
 
-            {/* Password Field */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  {...register('password')}
-                  type={showPassword ? 'text' : 'password'}
-                  id="password"
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  placeholder="Create a password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-              {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
-              )}
-            </div>
-
-            {/* Confirm Password Field */}
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                Confirm Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  {...register('confirmPassword')}
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  id="confirmPassword"
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  placeholder="Confirm your password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-              {errors.confirmPassword && (
-                <p className="mt-1 text-sm text-red-600">{errors.confirmPassword.message}</p>
-              )}
-            </div>
-
-            {/* Error Message */}
-            {error && (
-              <div className="flex items-center space-x-2 text-red-600 bg-red-50 p-3 rounded-lg">
-                <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                <span className="text-sm">{error}</span>
+            {/* Transaction ID */}
+            {sessionId && (
+              <div className="text-xs text-slate-500 mb-6">
+                Transaction ID: {sessionId}
               </div>
             )}
 
-            {/* Submit Button */}
+            {/* Continue Button */}
             <button
-              type="submit"
-              disabled={isCreatingAccount}
-              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold py-3 px-4 rounded-lg hover:from-purple-700 hover:to-blue-700 focus:ring-4 focus:ring-purple-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              onClick={() => navigate('/dashboard')}
+              className="w-full px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors font-semibold flex items-center justify-center space-x-2"
             >
-              {isCreatingAccount ? (
-                <div className="flex items-center justify-center space-x-2">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  <span>Creating Account...</span>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center space-x-2">
-                  <Sparkles className="w-5 h-5" />
-                  <span>Create Account & Access Dashboard</span>
-                </div>
-              )}
+              <span>Access Your Dashboard</span>
+              <ArrowRight className="w-5 h-5" />
             </button>
-          </form>
 
-          {/* Security Note */}
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <div className="flex items-start space-x-3">
-              <Target className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <h4 className="font-medium text-gray-900 mb-1">Secure Account</h4>
-                <p className="text-sm text-gray-600">
-                  Your account is automatically verified since you've completed payment. 
-                  You'll have immediate access to all Coach Pack features.
-                </p>
-              </div>
-            </div>
+            {/* Support */}
+            <p className="mt-4 text-xs text-slate-500">
+              Need help? Contact us at hello@spremtlabs.com
+            </p>
           </div>
         </div>
       </div>
