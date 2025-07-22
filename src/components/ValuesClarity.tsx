@@ -60,15 +60,6 @@ const ValuesClarity: React.FC = () => {
     allValues.map(v => v.name).sort(() => Math.random() - 0.5)
   );
 
-  // Initialize card deck state when switching to step 1
-  useEffect(() => {
-    if (data.currentStep === 1 && data.selectedValues.length === 0) {
-      setCurrentCardIndex(0);
-      setYesValues([]);
-      setNoValues([]);
-    }
-  }, [data.currentStep]);
-
   // Convert string values back to Value objects
   const convertToValueObjects = (valueNames: string[]): Value[] => {
     return valueNames.map(name => allValues.find(v => v.name === name)!).filter(Boolean);
@@ -438,7 +429,6 @@ const ValuesClarity: React.FC = () => {
 
       {/* Progress and Steps */}
       <div className="text-center">
-        {/* Step Indicator */}
         <div className="flex justify-center space-x-4 mb-6">
           {steps.map((step) => (
             <div
@@ -478,49 +468,7 @@ const ValuesClarity: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-5 gap-8 items-start">
-            {/* No Pile */}
             <div className="space-y-4">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <X className="w-8 h-8 text-red-600" />
-                </div>
-                <h3 className="font-semibold text-red-800">Not Important</h3>
-                <p className="text-sm text-red-600">{noValues.length} values</p>
-              </div>
-              
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {noValues.slice(-5).map((value, index) => (
-                  <div
-                    key={value}
-                    className="px-3 py-2 bg-red-50 text-red-800 rounded-lg text-sm text-center border border-red-200"
-                  >
-                    {value}
-                  </div>
-                ))}
-                {noValues.length > 5 && (
-                  <div className="font-medium text-sm">
-                    {value.name}
-                  </div>
-                  
-                  {isSelected && (
-                    <>
-                      <div className="absolute -top-2 -right-2 w-6 h-6 bg-white text-purple-600 rounded-full flex items-center justify-center text-xs font-bold border border-purple-600">
-                        {data.selectedValues.findIndex(v => v.id === value.id) + 1}
-                      </div>
-                      <Heart className="w-4 h-4 mx-auto mt-2 fill-current" />
-                    </>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Selected Values Summary */}
-          {data.selectedValues.length > 0 && (
-            <div className="max-w-4xl mx-auto bg-purple-50 border border-purple-200 rounded-lg p-6">
-              <h3 className="font-semibold text-purple-900 mb-3 text-center">
-                Your Priority Values ({data.selectedValues.length}/20)
-              </h3>
               <div className="flex flex-wrap gap-2 justify-center">
                 {data.selectedValues.map((value, index) => (
                   <span
@@ -688,7 +636,6 @@ const ValuesClarity: React.FC = () => {
             </button>
           </div>
 
-          {/* Preview of Top 3 */}
           <div className="max-w-md mx-auto mt-8 p-6 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl border border-purple-200">
             <h3 className="text-lg font-semibold text-center text-slate-900 mb-4">
               Your Top 3 Core Values
@@ -707,7 +654,7 @@ const ValuesClarity: React.FC = () => {
         </div>
       )}
 
-      {/* Step 5: Define & Envision (keeping existing implementation) */}
+      {/* Step 5: Define & Envision */}
       {data.currentStep === 5 && (
         <div className="space-y-8">
           <div className="text-center mb-8">
@@ -769,7 +716,6 @@ const ValuesClarity: React.FC = () => {
             ))}
           </div>
 
-          {/* Summary */}
           <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-8 border border-purple-200">
             <h3 className="text-2xl font-bold text-center text-slate-900 mb-6">
               Your Values Journey Complete! 🎉
@@ -837,17 +783,33 @@ const ValuesClarity: React.FC = () => {
   );
 };
 
-export default ValuesClarity;="text-xs text-red-500 text-center">
+export default ValuesClarity;text-center">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <X className="w-8 h-8 text-red-600" />
+                </div>
+                <h3 className="font-semibold text-red-800">Not Important</h3>
+                <p className="text-sm text-red-600">{noValues.length} values</p>
+              </div>
+              
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {noValues.slice(-5).map((value, index) => (
+                  <div
+                    key={value}
+                    className="px-3 py-2 bg-red-50 text-red-800 rounded-lg text-sm text-center border border-red-200"
+                  >
+                    {value}
+                  </div>
+                ))}
+                {noValues.length > 5 && (
+                  <div className="text-xs text-red-500 text-center">
                     +{noValues.length - 5} more
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Spacer */}
             <div></div>
 
-            {/* Card Area */}
             <div className="relative h-96 flex items-center justify-center">
               {currentCardIndex < shuffledValues.length && (
                 <div
@@ -873,7 +835,6 @@ export default ValuesClarity;="text-xs text-red-500 text-center">
                     Is this important to you?
                   </p>
                   
-                  {/* Swipe indicators */}
                   {Math.abs(dragOffset.x) > 30 && (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                       <div
@@ -890,10 +851,8 @@ export default ValuesClarity;="text-xs text-red-500 text-center">
               )}
             </div>
 
-            {/* Spacer */}
             <div></div>
 
-            {/* Yes Pile */}
             <div className="space-y-4">
               <div className="text-center">
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
@@ -975,7 +934,6 @@ export default ValuesClarity;="text-xs text-red-500 text-center">
             </div>
           </div>
 
-          {/* Priority Instruction */}
           <div className="max-w-2xl mx-auto bg-amber-50 border border-amber-200 rounded-lg p-4">
             <div className="flex items-start space-x-3">
               <div className="w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -991,7 +949,6 @@ export default ValuesClarity;="text-xs text-red-500 text-center">
             </div>
           </div>
 
-          {/* All Values Grid */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
             {convertToValueObjects(yesValues).map((value) => {
               const isSelected = data.selectedValues.some(v => v.id === value.id);
@@ -1010,4 +967,24 @@ export default ValuesClarity;="text-xs text-red-500 text-center">
                       : 'bg-slate-50 border-slate-200 text-slate-400 opacity-60 cursor-not-allowed'
                   }`}
                 >
-                  <div className
+                  <div className="font-medium text-sm">{value.name}</div>
+                  
+                  {isSelected && (
+                    <React.Fragment>
+                      <div className="absolute -top-2 -right-2 w-6 h-6 bg-white text-purple-600 rounded-full flex items-center justify-center text-xs font-bold border border-purple-600">
+                        {data.selectedValues.findIndex(v => v.id === value.id) + 1}
+                      </div>
+                      <Heart className="w-4 h-4 mx-auto mt-2 fill-current" />
+                    </React.Fragment>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {data.selectedValues.length > 0 && (
+            <div className="max-w-4xl mx-auto bg-purple-50 border border-purple-200 rounded-lg p-6">
+              <h3 className="font-semibold text-purple-900 mb-3 text-center">
+                Your Priority Values ({data.selectedValues.length}/20)
+              </h3>
+              <div className="
