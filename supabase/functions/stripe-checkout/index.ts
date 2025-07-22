@@ -3,13 +3,19 @@ import Stripe from 'npm:stripe@17.7.0';
 import { createClient } from 'npm:@supabase/supabase-js@2.49.1';
 
 const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
-const stripeSecret = Deno.env.get('STRIPE_SECRET_KEY')!;
-const stripe = new Stripe(stripeSecret, {
+
+// Validate environment variables
+const stripeSecret = Deno.env.get('STRIPE_SECRET_KEY');
+if (!stripeSecret) {
+  console.error('STRIPE_SECRET_KEY environment variable is not set');
+}
+
+const stripe = stripeSecret ? new Stripe(stripeSecret, {
   appInfo: {
     name: 'Coach Pack Integration',
     version: '1.0.0',
   },
-});
+}) : null;
 
 // Helper function to create responses with CORS headers
 function corsResponse(body: string | object | null, status = 200) {
@@ -34,6 +40,12 @@ function corsResponse(body: string | object | null, status = 200) {
 
 Deno.serve(async (req) => {
   try {
+    // Check if Stripe is properly initialized
+    if (!stripe) {
+      console.error('Stripe not initialized - missing STRIPE_SECRET_KEY');
+      return corsResponse({ error: 'Payment service not configured' }, 500);
+    }
+
     if (req.method === 'OPTIONS') {
       return corsResponse({}, 204);
     }

@@ -56,11 +56,23 @@ const CheckoutPage: React.FC = () => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (jsonError) {
+          throw new Error(`Payment service error (${response.status})`);
+        }
         throw new Error(errorData.error || 'Payment failed');
       }
 
-      const { url } = await response.json();
+      let responseData;
+      try {
+        responseData = await response.json();
+      } catch (jsonError) {
+        throw new Error('Invalid response from payment service');
+      }
+      
+      const { url } = responseData;
       
       // Redirect to Stripe Checkout
       if (url) {
