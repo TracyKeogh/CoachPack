@@ -58,7 +58,7 @@ const CompanyLandingPage: React.FC = () => {
                 
                 <div className="flex flex-col sm:flex-row gap-4 mb-8">
                   <a 
-                    href="mailto:hello@spremtlabs.com?subject=Coach Pack Enterprise Workshop Inquiry"
+                    href="mailto:hello@spremtlabs.com?subject=Coach Pack Team Workshop Inquiry"
                     className="px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all font-semibold text-lg shadow-lg flex items-center justify-center"
                   >
                     <span>Schedule a Demo</span>
@@ -72,20 +72,8 @@ const CompanyLandingPage: React.FC = () => {
                   </Link>
                 </div>
 
-                {/* Social Proof */}
-                <div className="flex items-center space-x-6 text-sm text-slate-600">
-                  <div className="flex items-center space-x-1">
-                    <div className="flex">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
-                      ))}
-                    </div>
-                    <span>5.0 rating</span>
-                  </div>
-                  <div className="w-1 h-1 bg-slate-300 rounded-full"></div>
-                  <span>50+ companies trained</span>
-                  <div className="w-1 h-1 bg-slate-300 rounded-full"></div>
-                  <span>2,000+ employees empowered</span>
+                <div className="text-sm text-slate-600">
+                  <p>Proven self-coaching frameworks adapted for team environments</p>
                 </div>
               </div>
 
@@ -99,26 +87,26 @@ const CompanyLandingPage: React.FC = () => {
                   <div className="space-y-4 mb-6">
                     <div className="flex items-center space-x-3">
                       <CheckCircle2 className="w-5 h-5 text-green-300" />
-                      <span>Interactive team workshops</span>
+                      <span>Half-day team workshop</span>
                     </div>
                     <div className="flex items-center space-x-3">
                       <CheckCircle2 className="w-5 h-5 text-green-300" />
-                      <span>Self-paced learning platform access</span>
+                      <span>3-month platform access per employee</span>
                     </div>
                     <div className="flex items-center space-x-3">
                       <CheckCircle2 className="w-5 h-5 text-green-300" />
-                      <span>Team progress analytics</span>
+                      <span>Basic progress tracking</span>
                     </div>
                     <div className="flex items-center space-x-3">
                       <CheckCircle2 className="w-5 h-5 text-green-300" />
-                      <span>Ongoing coaching support</span>
+                      <span>Email support</span>
                     </div>
                   </div>
                   
                   <div className="bg-white/20 rounded-lg p-4">
-                    <p className="text-purple-100 text-sm mb-2">Starting at</p>
-                    <p className="text-3xl font-bold">Custom Pricing</p>
-                    <p className="text-purple-100 text-sm">Based on team size and needs</p>
+                    <p className="text-purple-100 text-sm mb-2">Pricing</p>
+                    <p className="text-3xl font-bold">On Application</p>
+                    <p className="text-purple-100 text-sm">Contact us for a quote</p>
                   </div>
                 </div>
               </div>
@@ -151,7 +139,7 @@ const CompanyLandingPage: React.FC = () => {
                 <div className="space-y-3">
                   <div className="flex items-center space-x-3">
                     <CheckCircle2 className="w-5 h-5 text-green-600" />
-                    <span className="text-slate-700">Half-day or full-day formats</span>
+                    <span className="text-slate-700">Half-day workshop format</span>
                   </div>
                   <div className="flex items-center space-x-3">
                     <CheckCircle2 className="w-5 h-5 text-green-600" />
@@ -163,7 +151,7 @@ const CompanyLandingPage: React.FC = () => {
                   </div>
                   <div className="flex items-center space-x-3">
                     <CheckCircle2 className="w-5 h-5 text-green-600" />
-                    <span className="text-slate-700">Team building and alignment focus</span>
+                    <span className="text-slate-700">Team alignment focus</span>
                   </div>
                 </div>
               </div>
@@ -218,19 +206,15 @@ const CompanyLandingPage: React.FC = () => {
                 <div className="space-y-3">
                   <div className="flex items-center space-x-3">
                     <CheckCircle2 className="w-5 h-5 text-green-600" />
-                    <span className="text-slate-700">6-month platform access per employee</span>
+                    <span className="text-slate-700">3-month platform access per employee</span>
                   </div>
                   <div className="flex items-center space-x-3">
                     <CheckCircle2 className="w-5 h-5 text-green-600" />
-                    <span className="text-slate-700">Progress tracking and analytics</span>
+                    <span className="text-slate-700">Basic progress tracking</span>
                   </div>
                   <div className="flex items-center space-x-3">
                     <CheckCircle2 className="w-5 h-5 text-green-600" />
-                    <span className="text-slate-700">Monthly check-in sessions</span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <CheckCircle2 className="w-5 h-5 text-green-600" />
-                    <span className="text-slate-700">Team dashboard for managers</span>
+                    <span className="text-slate-700">Email support</span>
                   </div>
                 </div>
               </div>
@@ -253,24 +237,24 @@ const CompanyLandingPage: React.FC = () => {
                 <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-4">
                   <TrendingUp className="w-6 h-6 text-white" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Increased Productivity</h3>
+                <h3 className="text-xl font-semibold mb-2">Enhanced Focus</h3>
                 <p className="text-purple-100 mb-4">
-                  Employees with clear values and goals are 23% more productive and engaged at work.
+                  Research shows that employees with clear personal values and goals demonstrate higher engagement and focus at work.
                 </p>
-                <div className="text-2xl font-bold text-white">+23%</div>
-                <div className="text-sm text-purple-200">Average productivity increase</div>
+                <div className="text-lg font-bold text-white">Improved</div>
+                <div className="text-sm text-purple-200">Employee engagement</div>
               </div>
               
               <div className="bg-white/10 rounded-2xl p-6 backdrop-blur-sm">
                 <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-4">
                   <Users className="w-6 h-6 text-white" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Better Retention</h3>
+                <h3 className="text-xl font-semibold mb-2">Team Alignment</h3>
                 <p className="text-purple-100 mb-4">
-                  Teams with aligned values and clear development paths see significantly lower turnover.
+                  Studies indicate that teams with shared values and clear development paths experience better collaboration and retention.
                 </p>
-                <div className="text-2xl font-bold text-white">-35%</div>
-                <div className="text-sm text-purple-200">Reduction in turnover</div>
+                <div className="text-lg font-bold text-white">Better</div>
+                <div className="text-sm text-purple-200">Team cohesion</div>
               </div>
               
               <div className="bg-white/10 rounded-2xl p-6 backdrop-blur-sm">
@@ -279,37 +263,36 @@ const CompanyLandingPage: React.FC = () => {
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Enhanced Wellbeing</h3>
                 <p className="text-purple-100 mb-4">
-                  Employees report higher life satisfaction and better work-life balance after our program.
+                  Research demonstrates that structured self-reflection and goal-setting practices contribute to improved employee wellbeing and work-life balance.
                 </p>
-                <div className="text-2xl font-bold text-white">4.8/5</div>
-                <div className="text-sm text-purple-200">Employee satisfaction score</div>
+                <div className="text-lg font-bold text-white">Improved</div>
+                <div className="text-sm text-purple-200">Work-life balance</div>
               </div>
             </div>
           </div>
         </section>
 
         {/* Pricing Section */}
-        <section className="py-16 px-6 bg-slate-50">
+        <section className="py-16 px-6 bg-white">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-slate-900 mb-4">
-                Flexible Packages for Every Team Size
+                Team Workshop Package
               </h2>
               <p className="text-xl text-slate-600">
-                Custom solutions designed to fit your organization's needs and budget
+                Comprehensive solution combining workshop facilitation with ongoing self-paced learning
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Starter Package */}
+            <div className="max-w-2xl mx-auto">
               <div className="bg-white rounded-2xl p-8 shadow-lg border border-slate-200">
                 <div className="text-center mb-6">
-                  <h3 className="text-2xl font-bold text-slate-900 mb-2">Starter Package</h3>
-                  <p className="text-slate-600">Perfect for small teams getting started</p>
+                  <h3 className="text-2xl font-bold text-slate-900 mb-2">Workshop + Platform Access</h3>
+                  <p className="text-slate-600">Complete team development solution</p>
                   <div className="mt-4">
-                    <span className="text-sm text-slate-500">Starting at</span>
-                    <div className="text-3xl font-bold text-slate-900">$2,500</div>
-                    <span className="text-slate-600">for teams of 10-25</span>
+                    <span className="text-sm text-slate-500">Pricing</span>
+                    <div className="text-3xl font-bold text-slate-900">On Application</div>
+                    <span className="text-slate-600">Custom quote based on team size</span>
                   </div>
                 </div>
 
@@ -330,133 +313,77 @@ const CompanyLandingPage: React.FC = () => {
                     <CheckCircle2 className="w-5 h-5 text-green-600" />
                     <span className="text-slate-700">Email support</span>
                   </div>
+                  <div className="flex items-center space-x-3">
+                    <CheckCircle2 className="w-5 h-5 text-green-600" />
+                    <span className="text-slate-700">Expert facilitation included</span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <CheckCircle2 className="w-5 h-5 text-green-600" />
+                    <span className="text-slate-700">Customized to your team</span>
+                  </div>
                 </div>
 
                 <a
-                  href="mailto:hello@spremtlabs.com?subject=Coach Pack Starter Package Inquiry"
-                  className="w-full block text-center py-3 px-4 border border-purple-600 text-purple-600 rounded-lg hover:bg-purple-50 transition-colors font-semibold"
+                  href="mailto:hello@spremtlabs.com?subject=Coach Pack Team Workshop Inquiry"
+                  className="w-full block text-center py-3 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold"
                 >
                   Get Quote
-                </a>
-              </div>
-
-              {/* Enterprise Package */}
-              <div className="bg-gradient-to-br from-purple-600 to-blue-600 rounded-2xl p-8 shadow-lg text-white relative">
-                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                  <div className="bg-orange-500 text-white px-4 py-2 rounded-full text-sm font-medium">
-                    Most Popular
-                  </div>
-                </div>
-
-                <div className="text-center mb-6">
-                  <h3 className="text-2xl font-bold mb-2">Enterprise Package</h3>
-                  <p className="text-purple-100">Comprehensive solution for larger organizations</p>
-                  <div className="mt-4">
-                    <span className="text-sm text-purple-200">Starting at</span>
-                    <div className="text-3xl font-bold">$7,500</div>
-                    <span className="text-purple-100">for teams of 25+</span>
-                  </div>
-                </div>
-
-                <div className="space-y-4 mb-8">
-                  <div className="flex items-center space-x-3">
-                    <CheckCircle2 className="w-5 h-5 text-green-300" />
-                    <span>Full-day workshop + follow-up sessions</span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <CheckCircle2 className="w-5 h-5 text-green-300" />
-                    <span>6-month platform access per employee</span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <CheckCircle2 className="w-5 h-5 text-green-300" />
-                    <span>Advanced analytics and reporting</span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <CheckCircle2 className="w-5 h-5 text-green-300" />
-                    <span>Dedicated success manager</span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <CheckCircle2 className="w-5 h-5 text-green-300" />
-                    <span>Custom integrations available</span>
-                  </div>
-                </div>
-
-                <a
-                  href="mailto:hello@spremtlabs.com?subject=Coach Pack Enterprise Package Inquiry"
-                  className="w-full block text-center py-3 px-4 bg-white text-purple-600 rounded-lg hover:bg-slate-50 transition-colors font-semibold"
-                >
-                  Schedule Demo
                 </a>
               </div>
             </div>
 
             <div className="text-center mt-8">
               <p className="text-slate-600 mb-4">
-                Need a custom solution? We work with organizations of all sizes.
+                Pricing varies based on team size and specific requirements.
               </p>
               <a
                 href="mailto:hello@spremtlabs.com?subject=Coach Pack Custom Solution Inquiry"
                 className="inline-flex items-center space-x-2 text-purple-600 hover:text-purple-700 font-medium"
               >
                 <Mail className="w-4 h-4" />
-                <span>Contact us for custom pricing</span>
+                <span>Contact us for a detailed quote</span>
               </a>
             </div>
           </div>
         </section>
 
         {/* Testimonials */}
-        <section className="py-16 px-6 bg-white">
+        <section className="py-16 px-6 bg-slate-50">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-slate-900 mb-4">
-                What Companies Are Saying
+                Early Feedback
               </h2>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200">
-                <div className="flex items-center mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
-                  ))}
-                </div>
                 <p className="text-slate-600 mb-4">
-                  "The workshop transformed how our team thinks about work-life balance. The ongoing platform keeps everyone engaged in their development."
+                  "The structured approach to values and goal-setting provides a clear framework our team can follow together."
                 </p>
                 <div>
-                  <p className="text-sm font-medium text-slate-900">Sarah Chen</p>
-                  <p className="text-xs text-slate-500">HR Director, TechFlow Inc.</p>
+                  <p className="text-sm font-medium text-slate-900">Beta Tester</p>
+                  <p className="text-xs text-slate-500">Team Lead</p>
                 </div>
               </div>
               
               <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200">
-                <div className="flex items-center mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
-                  ))}
-                </div>
                 <p className="text-slate-600 mb-4">
-                  "We saw immediate improvements in team alignment and individual goal clarity. The ROI has been exceptional."
+                  "Having everyone go through the same process creates better alignment and understanding within our team."
                 </p>
                 <div>
-                  <p className="text-sm font-medium text-slate-900">Michael Rodriguez</p>
-                  <p className="text-xs text-slate-500">CEO, Growth Dynamics</p>
+                  <p className="text-sm font-medium text-slate-900">Early Adopter</p>
+                  <p className="text-xs text-slate-500">Department Manager</p>
                 </div>
               </div>
               
               <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200">
-                <div className="flex items-center mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
-                  ))}
-                </div>
                 <p className="text-slate-600 mb-4">
-                  "Our employees love the self-paced tools. It's like having a personal coach available 24/7."
+                  "The combination of group workshop and individual tools works well for different learning preferences on our team."
                 </p>
                 <div>
-                  <p className="text-sm font-medium text-slate-900">Jennifer Park</p>
-                  <p className="text-xs text-slate-500">VP People, InnovateCorp</p>
+                  <p className="text-sm font-medium text-slate-900">Pilot Program</p>
+                  <p className="text-xs text-slate-500">HR Coordinator</p>
                 </div>
               </div>
             </div>
@@ -476,28 +403,28 @@ const CompanyLandingPage: React.FC = () => {
             <div className="bg-white/10 rounded-2xl p-8 backdrop-blur-sm max-w-2xl mx-auto">
               <h3 className="text-2xl font-bold mb-4">Get Started Today</h3>
               <p className="text-slate-200 mb-6">
-                Schedule a consultation to discuss your team's needs and see how Coach Pack can drive results in your organization.
+                Contact us to discuss your team's needs and learn more about our workshop + platform offering.
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <a 
-                  href="mailto:hello@spremtlabs.com?subject=Coach Pack Enterprise Demo Request&body=Hi, I'm interested in learning more about Coach Pack for our company. Please contact me to schedule a demo.%0D%0A%0D%0ACompany: %0D%0ATeam Size: %0D%0AContact Person: %0D%0APhone: %0D%0A%0D%0AThank you!"
+                  href="mailto:hello@spremtlabs.com?subject=Coach Pack Team Workshop Inquiry&body=Hi, I'm interested in learning more about Coach Pack workshops for our team. Please contact me with more information.%0D%0A%0D%0ACompany: %0D%0ATeam Size: %0D%0AContact Person: %0D%0APhone: %0D%0A%0D%0AThank you!"
                   className="px-8 py-3 bg-white text-purple-600 rounded-lg hover:bg-slate-50 transition-colors font-semibold flex items-center justify-center"
                 >
                   <Mail className="w-5 h-5 mr-2" />
-                  Schedule Demo
+                  Contact Us
                 </a>
                 <a 
-                  href="tel:+1-555-COACH-PACK"
+                  href="mailto:hello@spremtlabs.com"
                   className="px-8 py-3 bg-purple-700 text-white rounded-lg hover:bg-purple-800 transition-colors border border-purple-500 flex items-center justify-center"
                 >
-                  <Phone className="w-5 h-5 mr-2" />
-                  Call Us
+                  <Mail className="w-5 h-5 mr-2" />
+                  Get Quote
                 </a>
               </div>
               
               <p className="text-sm text-slate-300 mt-4">
-                Response within 24 hours • Free consultation • Custom proposals available
+                Response within 24 hours • Custom quotes available
               </p>
             </div>
           </div>
@@ -535,7 +462,6 @@ const CompanyLandingPage: React.FC = () => {
               <h3 className="text-white font-semibold mb-4">Resources</h3>
               <ul className="space-y-2 text-sm">
                 <li><a href="#" className="hover:text-white transition-colors">Case Studies</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">ROI Calculator</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Implementation Guide</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Support</a></li>
               </ul>
@@ -548,12 +474,6 @@ const CompanyLandingPage: React.FC = () => {
                   <a href="mailto:hello@spremtlabs.com" className="hover:text-white transition-colors flex items-center">
                     <Mail className="w-4 h-4 mr-2" />
                     hello@spremtlabs.com
-                  </a>
-                </li>
-                <li>
-                  <a href="tel:+1-555-COACH-PACK" className="hover:text-white transition-colors flex items-center">
-                    <Phone className="w-4 h-4 mr-2" />
-                    1-555-COACH-PACK
                   </a>
                 </li>
                 <li><Link to="/" className="hover:text-white transition-colors">Individual Plans</Link></li>
