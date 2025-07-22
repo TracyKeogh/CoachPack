@@ -5,6 +5,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { validateStripeEnvironment } from '../stripe-config';
 import { useAuth } from '../hooks/useAuth';
+import { supabase } from '../lib/supabase';
 
 // Initialize Stripe
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
@@ -44,12 +45,19 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ productId, userEmail, userN
     setError(null);
 
     try {
+      // Get the current user's session for authentication
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        throw new Error('Failed to authenticate user');
+      }
+
       // Create checkout session
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           price_id: import.meta.env.VITE_STRIPE_PRICE_ID,
