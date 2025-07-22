@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Check, Crown, Target, Sparkles, ArrowRight } from 'lucide-react';
+import { Check, Crown, Target, Sparkles, ArrowRight, Users } from 'lucide-react';
 import SignupModal from './SignupModal';
 
 const PricingPage: React.FC = () => {
