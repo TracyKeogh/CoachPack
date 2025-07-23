@@ -1,14 +1,53 @@
-import React from 'react';
-import { Heart, Target, Calendar, Sparkles, ChevronRight, Clock, BarChart3, Eye, CheckSquare, TrendingUp, User } from 'lucide-react';
+import React, { useState } from 'react';
+import { Heart, Target, Calendar, Sparkles, ChevronRight, Clock, BarChart3, Eye, CheckSquare, TrendingUp, User, Menu, Home, ExternalLink } from 'lucide-react';
 
 const CoachPackLifeStoryReimagined = () => {
-  // Left sidebar sections
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Left sidebar sections with proper feature mapping
   const sections = [
-    { id: 'baseline', icon: User, title: 'Baseline', progress: 75, active: false },
-    { id: 'vision', icon: Eye, title: 'Vision', progress: 85, active: true },
-    { id: 'stress', icon: TrendingUp, title: 'Stress Test', progress: 0, active: false },
-    { id: 'plan', icon: CheckSquare, title: 'Plan', progress: 45, active: false },
-    { id: 'track', icon: Calendar, title: 'Track', progress: 30, active: false }
+    { 
+      id: 'baseline', 
+      icon: User, 
+      title: 'Baseline', 
+      progress: 75, 
+      active: false,
+      features: ['Wheel of Life', 'Values Clarity']
+    },
+    { 
+      id: 'vision', 
+      icon: Eye, 
+      title: 'Vision', 
+      progress: 85, 
+      active: true,
+      features: ['Vision Board']
+    },
+    { 
+      id: 'plan', 
+      icon: CheckSquare, 
+      title: 'Plan', 
+      progress: 45, 
+      active: false,
+      features: ['Goal Setting']
+    },
+    { 
+      id: 'stress', 
+      icon: TrendingUp, 
+      title: 'Stress Test', 
+      progress: 0, 
+      active: false,
+      comingSoon: true,
+      features: ['Goal Stress Testing']
+    },
+    { 
+      id: 'track', 
+      icon: Calendar, 
+      title: 'Track', 
+      progress: 30, 
+      active: false,
+      external: true,
+      features: ['Mobile App']
+    }
   ];
 
   // User's life story data
@@ -53,6 +92,7 @@ const CoachPackLifeStoryReimagined = () => {
     <div 
       className={`flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-all duration-200
         ${section.active ? 'bg-purple-100 border-l-4 border-purple-500' : 'hover:bg-slate-100'}
+        ${section.comingSoon ? 'opacity-60' : ''}
       `}
     >
       <section.icon className={`w-5 h-5 ${section.active ? 'text-purple-600' : 'text-slate-600'}`} />
@@ -61,8 +101,17 @@ const CoachPackLifeStoryReimagined = () => {
           <span className={`text-sm font-medium ${section.active ? 'text-purple-900' : 'text-slate-700'}`}>
             {section.title}
           </span>
+          {section.comingSoon && (
+            <span className="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full">Soon</span>
+          )}
+          {section.external && (
+            <ExternalLink className="w-3 h-3 text-slate-400" />
+          )}
         </div>
-        <div className="w-full bg-slate-200 rounded-full h-1.5 mt-1">
+        <div className="text-xs text-slate-500 mb-1">
+          {section.features.join(', ')}
+        </div>
+        <div className="w-full bg-slate-200 rounded-full h-1.5">
           <div 
             className={`h-1.5 rounded-full transition-all duration-300 ${
               section.progress > 0 ? 'bg-purple-500' : 'bg-slate-300'
@@ -78,25 +127,67 @@ const CoachPackLifeStoryReimagined = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex">
       
-      {/* Left Sidebar */}
-      <div className="w-80 bg-white border-r border-slate-200 p-6">
-        <div className="mb-8">
-          <h2 className="text-xl font-bold text-slate-900 mb-2">Your Journey</h2>
-          <p className="text-slate-600 text-sm">From values to daily action</p>
-        </div>
+      {/* Collapsible Left Sidebar */}
+      <div className={`${sidebarOpen ? 'w-80' : 'w-16'} bg-white border-r border-slate-200 transition-all duration-300 flex flex-col`}>
         
-        <div className="space-y-3">
-          {sections.map(section => (
-            <SidebarSection key={section.id} section={section} />
-          ))}
+        {/* Top Navigation Icons */}
+        <div className="p-4 border-b border-slate-200">
+          <div className="space-y-3">
+            {/* Hamburger Menu */}
+            <button 
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors"
+            >
+              <Menu className="w-5 h-5 text-slate-600" />
+            </button>
+            
+            {/* Dashboard Home */}
+            <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-purple-100 text-purple-600">
+              <Home className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
-        {/* Overall Progress */}
-        <div className="mt-8 p-4 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl text-white">
-          <h3 className="font-semibold mb-2">Overall Progress</h3>
-          <div className="text-2xl font-bold">49%</div>
-          <p className="text-purple-100 text-sm">Keep building momentum</p>
-        </div>
+        {/* Journey Sections - Only visible when expanded */}
+        {sidebarOpen && (
+          <div className="flex-1 p-6">
+            <div className="mb-8">
+              <h2 className="text-xl font-bold text-slate-900 mb-2">Your Journey</h2>
+              <p className="text-slate-600 text-sm">From values to daily action</p>
+            </div>
+            
+            <div className="space-y-3">
+              {sections.map(section => (
+                <SidebarSection key={section.id} section={section} />
+              ))}
+            </div>
+
+            {/* Overall Progress */}
+            <div className="mt-8 p-4 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl text-white">
+              <h3 className="font-semibold mb-2">Overall Progress</h3>
+              <div className="text-2xl font-bold">49%</div>
+              <p className="text-purple-100 text-sm">Keep building momentum</p>
+            </div>
+          </div>
+        )}
+
+        {/* Collapsed state indicators */}
+        {!sidebarOpen && (
+          <div className="flex-1 p-2 pt-6">
+            <div className="space-y-2">
+              {sections.map(section => (
+                <div 
+                  key={section.id}
+                  className={`w-10 h-10 rounded-lg flex items-center justify-center cursor-pointer transition-colors
+                    ${section.active ? 'bg-purple-100 text-purple-600' : 'hover:bg-slate-100 text-slate-600'}
+                  `}
+                >
+                  <section.icon className="w-5 h-5" />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Main Content */}
