@@ -65,4 +65,432 @@ export const useCalendarData = () => {
         if (parsedData.events) {
           parsedData.events = parsedData.events.map((event: any) => ({
             ...event,
-            start
+            start: new Date(event.start),
+            end: new Date(event.end)
+          }));
+        }
+        
+        // Ensure autoPopulateSettings exists (for backward compatibility)
+        if (!parsedData.autoPopulateSettings) {
+          parsedData.autoPopulateSettings = defaultCalendarData.autoPopulateSettings;
+        }
+        
+        setData(parsedData);
+        setLastSaved(new Date(parsedData.lastUpdated));
+      } else {
+        // If no calendar data, initialize with empty data
+        setData(defaultCalendarData);
+      }
+      
+      // Then load goals data to populate action pool
+      loadGoalsIntoActionPool();
+    } catch (error) {
+      console.error('Failed to load calendar data:', error);
+      setData(defaultCalendarData);
+    }
+    setIsLoaded(true);
+  }, []);
+
+  // Load goals data into action pool
+  const loadGoalsIntoActionPool = useCallback(() => {
+    try {
+      console.log("Loading goals into action pool");
+      const stored = localStorage.getItem(GOALS_STORAGE_KEY);
+      if (!stored) {
+        console.log("No goals data found");
+        return;
+      }
+      
+      const parsedGoalsData = JSON.parse(stored);
+      console.log("Parsed goals data:", parsedGoalsData);
+      
+      const actionPool: ActionPoolItem[] = [];
+      
+      if (parsedGoalsData && parsedGoalsData.categoryGoals) {
+        console.log("Found categoryGoals:", parsedGoalsData.categoryGoals);
+        
+        try {
+          Object.entries(parsedGoalsData.categoryGoals).forEach(([category, categoryData]: [string, any]) => {
+            console.log(`Processing category: ${category}`);
+            
+            // Map categories to calendar categories
+            const calendarCategory = category === 'health' ? 'body' : 
+                                   category === 'relationships' ? 'balance' :
+                                   category === 'fun' ? 'personal' : 
+                                   category; // business stays as business
+            
+            // Process different goal structures
+            if (categoryData && typeof categoryData === 'object') {
+              // Look for actions in various possible structures
+              let actions: any[] = [];
+              
+              if (categoryData.actions && Array.isArray(categoryData.actions)) {
+                actions = categoryData.actions;
+              } else if (categoryData.weeklyActions && Array.isArray(categoryData.weeklyActions)) {
+                actions = categoryData.weeklyActions.map((action: any) => ({ ...action, frequency: 'weekly' }));
+              } else if (categoryData.dailyActions && Array.isArray(categoryData.dailyActions)) {
+                actions = categoryData.dailyActions.map((action: any) => ({ ...action, frequency: 'daily' }));
+              }
+              
+              if (actions.length > 0) {
+                console.log(`Found ${actions.length} actions for ${category}`);
+                
+                actions.forEach((action: any, index: number) => {
+                  let actionTitle = '';
+                  let actionFrequency: 'daily' | 'weekly' | '3x-week' = '3x-week';
+                  let actionDuration = 60; // Default duration
+                  
+                  if (typeof action === 'string') {
+                    actionTitle = action;
+                  } else if (typeof action === 'object' && action !== null) {
+                    // New format with title property
+                    if (action.title) {
+                      actionTitle = action.title;
+                    } 
+                    // Old format with text property
+                    else if (action.text) {
+                      actionTitle = action.text;
+                    }
+                    
+                    // Get frequency if available
+                    if (action.frequency) {
+                      actionFrequency = action.frequency as 'daily' | 'weekly' | '3x-week';
+                    }
+                    
+                    // Get duration if available
+                    if (action.duration && typeof action.duration === 'number') {
+                      actionDuration = action.duration;
+                    }
+                  }
+                  
+                  if (actionTitle) {
+                    console.log(`Adding action to pool: ${actionTitle}`);
+                    // Create action pool item
+                    actionPool.push({
+                      id: `${category}-action-${index}-${Date.now()}`,
+                      title: actionTitle,
+                      duration: actionDuration,
+                      category: calendarCategory as 'business' | 'body' | 'balance' | 'personal',
+                      frequency: actionFrequency,
+                      relatedGoal: categoryData.title || categoryData.goal || (typeof categoryData === 'string' ? categoryData : 'Goal'),
+                      priority: action.priority || 'medium'
+                    });
+                  }
+                });
+              } else {
+                console.log(`No actions found for category: ${category}`);
+              }
+            }
+          });
+        } catch (err) {
+          console.error("Error processing goals data:", err);
+        }
+      } else {
+        console.log("No categoryGoals found in parsed data:", parsedGoalsData);
+      }
+      
+      // Update action pool, but preserve existing actions that might have been manually added or modified
+      setData(prev => {
+        const existingActionIds = new Set(prev.actionPool.map(action => action.id));
+        const newActions = actionPool.filter(action => !existingActionIds.has(action.id));
+        
+        return {
+          ...prev,
+          actionPool: [...prev.actionPool, ...newActions]
+        };
+      });
+      
+      console.log("Final action pool:", actionPool);
+    } catch (error) {
+      console.error('Failed to load goals into action pool:', error);
+    }
+  }, []);
+
+  // Auto-save function
+  const saveData = useCallback(() => {
+    if (!isLoaded) return;
+
+    try {
+      const dataToSave: CalendarData = {
+        ...data,
+        lastUpdated: new Date().toISOString()
+      };
+      
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+      setLastSaved(new Date());
+    } catch (error) {
+      console.error('Failed to save calendar data:', error);
+    }
+  }, [data, isLoaded]);
+
+  // Auto-save whenever data changes
+  useEffect(() => {
+    if (isLoaded) {
+      const timeoutId = setTimeout(saveData, 1000); // Debounce saves
+      return () => clearTimeout(timeoutId);
+    }
+  }, [data, saveData, isLoaded]);
+
+  // Event management functions
+  const addEvent = useCallback((event: Omit<Event, 'id'>) => {
+    const newEvent: Event = {
+      ...event,
+      id: `event-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    };
+    
+    setData(prev => ({
+      ...prev,
+      events: [...prev.events, newEvent]
+    }));
+    
+    return newEvent.id;
+  }, []);
+
+  const updateEvent = useCallback((eventId: string, updates: Partial<Event>) => {
+    setData(prev => ({
+      ...prev,
+      events: prev.events.map(event => 
+        event.id === eventId ? { ...event, ...updates } : event
+      )
+    }));
+  }, []);
+
+  const removeEvent = useCallback((eventId: string) => {
+    setData(prev => ({
+      ...prev,
+      events: prev.events.filter(event => event.id !== eventId)
+    }));
+  }, []);
+
+  // Bulk remove auto-generated events (useful for refreshing daily actions)
+  const removeAutoGeneratedEvents = useCallback((frequency?: 'daily' | 'weekly') => {
+    setData(prev => ({
+      ...prev,
+      events: prev.events.filter(event => 
+        !(event.isAutoGenerated && (!frequency || event.frequency === frequency))
+      )
+    }));
+  }, []);
+
+  // Action pool management
+  const addActionToPool = useCallback((action: Omit<ActionPoolItem, 'id'>) => {
+    const newAction: ActionPoolItem = {
+      ...action,
+      id: `action-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    };
+    
+    setData(prev => ({
+      ...prev,
+      actionPool: [...prev.actionPool, newAction]
+    }));
+    
+    return newAction.id;
+  }, []);
+
+  const updateActionInPool = useCallback((actionId: string, updates: Partial<ActionPoolItem>) => {
+    setData(prev => ({
+      ...prev,
+      actionPool: prev.actionPool.map(action => 
+        action.id === actionId ? { ...action, ...updates } : action
+      )
+    }));
+  }, []);
+
+  const removeActionFromPool = useCallback((actionId: string) => {
+    setData(prev => ({
+      ...prev,
+      actionPool: prev.actionPool.filter(action => action.id !== actionId)
+    }));
+  }, []);
+
+  // Convert action to event with enhanced scheduling logic
+  const scheduleActionFromPool = useCallback((actionId: string, start: Date, options?: {
+    removeFromPool?: boolean;
+    isAutoGenerated?: boolean;
+  }) => {
+    const action = data.actionPool.find(a => a.id === actionId);
+    if (!action) return null;
+    
+    const end = new Date(start);
+    end.setMinutes(end.getMinutes() + action.duration);
+    
+    const newEvent: Event = {
+      id: `scheduled-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      title: action.title,
+      start,
+      end,
+      category: action.category,
+      frequency: action.frequency,
+      relatedGoal: action.relatedGoal,
+      isAutoGenerated: options?.isAutoGenerated || false
+    };
+    
+    setData(prev => ({
+      ...prev,
+      events: [...prev.events, newEvent],
+      actionPool: options?.removeFromPool 
+        ? prev.actionPool.filter(a => a.id !== actionId)
+        : prev.actionPool
+    }));
+    
+    return newEvent.id;
+  }, [data.actionPool]);
+
+  // Auto-populate daily actions for a specific date range
+  const autoPopulateDailyActions = useCallback((startDate: Date, endDate: Date) => {
+    if (!data.autoPopulateSettings.dailyActionsEnabled) return;
+    
+    const dailyActions = data.actionPool.filter(action => action.frequency === 'daily');
+    if (dailyActions.length === 0) return;
+    
+    // Remove existing auto-generated daily events in the date range
+    setData(prev => ({
+      ...prev,
+      events: prev.events.filter(event => {
+        if (!event.isAutoGenerated || event.frequency !== 'daily') return true;
+        const eventDate = new Date(event.start);
+        return eventDate < startDate || eventDate > endDate;
+      })
+    }));
+    
+    // Generate events for each day in the range
+    const currentDate = new Date(startDate);
+    const [defaultHour, defaultMinute] = data.autoPopulateSettings.defaultDailyStartTime.split(':').map(Number);
+    
+    while (currentDate <= endDate) {
+      dailyActions.forEach((action, index) => {
+        const eventStart = new Date(currentDate);
+        // Stagger daily actions by 15 minutes to avoid conflicts
+        eventStart.setHours(defaultHour, defaultMinute + (index * 15), 0, 0);
+        
+        const eventEnd = new Date(eventStart);
+        eventEnd.setMinutes(eventEnd.getMinutes() + action.duration);
+        
+        const newEvent: Event = {
+          id: `daily-auto-${action.id}-${currentDate.toISOString().split('T')[0]}`,
+          title: action.title,
+          start: eventStart,
+          end: eventEnd,
+          category: action.category,
+          frequency: 'daily',
+          relatedGoal: action.relatedGoal,
+          isAutoGenerated: true
+        };
+        
+        setData(prev => ({
+          ...prev,
+          events: [...prev.events, newEvent]
+        }));
+      });
+      
+      // Move to next day
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+  }, [data.actionPool, data.autoPopulateSettings]);
+
+  // Utility functions
+  const getEventsForDay = useCallback((date: Date): Event[] => {
+    return data.events.filter(event => {
+      const eventDate = new Date(event.start);
+      return eventDate.getDate() === date.getDate() &&
+             eventDate.getMonth() === date.getMonth() &&
+             eventDate.getFullYear() === date.getFullYear();
+    });
+  }, [data.events]);
+
+  const getEventsForWeek = useCallback((startDate: Date): Event[] => {
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + 7);
+    
+    return data.events.filter(event => {
+      const eventDate = new Date(event.start);
+      return eventDate >= startDate && eventDate < endDate;
+    });
+  }, [data.events]);
+
+  const getActionsByFrequency = useCallback((frequency: 'daily' | 'weekly' | '3x-week') => {
+    return data.actionPool.filter(action => action.frequency === frequency);
+  }, [data.actionPool]);
+
+  // Check for scheduling conflicts
+  const hasSchedulingConflict = useCallback((start: Date, end: Date, excludeEventId?: string): boolean => {
+    return data.events.some(event => {
+      if (excludeEventId && event.id === excludeEventId) return false;
+      
+      const eventStart = new Date(event.start);
+      const eventEnd = new Date(event.end);
+      
+      return (start < eventEnd && end > eventStart);
+    });
+  }, [data.events]);
+
+  // Find next available time slot
+  const findNextAvailableSlot = useCallback((preferredStart: Date, duration: number): Date | null => {
+    const slotEnd = new Date(preferredStart.getTime() + duration * 60000);
+    
+    if (!hasSchedulingConflict(preferredStart, slotEnd)) {
+      return preferredStart;
+    }
+    
+    // Try finding next available slot within the same day
+    const dayStart = new Date(preferredStart);
+    dayStart.setHours(6, 0, 0, 0); // Start searching from 6 AM
+    
+    const dayEnd = new Date(preferredStart);
+    dayEnd.setHours(22, 0, 0, 0); // Stop searching at 10 PM
+    
+    const currentTime = new Date(Math.max(dayStart.getTime(), preferredStart.getTime()));
+    
+    while (currentTime < dayEnd) {
+      const testEnd = new Date(currentTime.getTime() + duration * 60000);
+      
+      if (!hasSchedulingConflict(currentTime, testEnd)) {
+        return new Date(currentTime);
+      }
+      
+      // Move forward by 15 minutes
+      currentTime.setMinutes(currentTime.getMinutes() + 15);
+    }
+    
+    return null; // No available slot found
+  }, [hasSchedulingConflict]);
+
+  // Update auto-populate settings
+  const updateAutoPopulateSettings = useCallback((settings: Partial<CalendarData['autoPopulateSettings']>) => {
+    setData(prev => ({
+      ...prev,
+      autoPopulateSettings: {
+        ...prev.autoPopulateSettings,
+        ...settings
+      }
+    }));
+  }, []);
+
+  // Refresh action pool from goals
+  const refreshActionPool = useCallback(() => {
+    loadGoalsIntoActionPool();
+  }, [loadGoalsIntoActionPool]);
+
+  return {
+    data,
+    isLoaded,
+    lastSaved,
+    addEvent,
+    updateEvent,
+    removeEvent,
+    removeAutoGeneratedEvents,
+    addActionToPool,
+    updateActionInPool,
+    removeActionFromPool,
+    scheduleActionFromPool,
+    autoPopulateDailyActions,
+    getEventsForDay,
+    getEventsForWeek,
+    getActionsByFrequency,
+    hasSchedulingConflict,
+    findNextAvailableSlot,
+    updateAutoPopulateSettings,
+    refreshActionPool,
+    saveData
+  };
+};
