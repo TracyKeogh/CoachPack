@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, Target, Calendar, Sparkles, ChevronRight, Clock, BarChart3, Eye, CheckSquare, TrendingUp, User } from 'lucide-react';
+import { Heart, Target, Calendar, Sparkles, ChevronRight } from 'lucide-react';
 
 type ViewType = 'dashboard' | 'wheel' | 'values' | 'vision' | 'goals' | 'calendar' | 'templates';
 
