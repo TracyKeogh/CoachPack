@@ -115,13 +115,13 @@ const Header: React.FC = () => {
             ) : (
               <div className="flex items-center space-x-4">
                 <Link 
-                  to="/login"
+                  to="/auth/login"
                   className="px-4 py-2 text-slate-600 hover:text-slate-900 transition-colors"
                 >
                   Sign In
                 </Link>
                 <Link 
-                  to="/signup"
+                  to="/auth/signup"
                   className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                 >
                   Sign Up

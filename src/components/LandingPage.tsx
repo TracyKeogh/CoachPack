@@ -39,7 +39,7 @@ const LandingPage: React.FC = () => {
                 For Companies
               </Link>
               <Link 
-                to="/auth/login"
+                to="/login"
                 className="px-4 py-2 text-slate-600 hover:text-slate-900 transition-colors"
               >
                 Sign In
