@@ -510,61 +510,64 @@ const CoachPackLifeStoryReimagined = () => {
       {/* Right Sidebar Navigation */}
       <div className={`${sidebarOpen ? 'w-80' : 'w-16'} bg-white border-l border-slate-200 transition-all duration-300 flex flex-col`}>
         
-        {/* Top Navigation Icons */}
-        <div className="p-4 border-b border-slate-200">
+        {/* Top Section - Always visible */}
+        <div className="p-4">
+          {/* Hamburger Menu - Top */}
+          <button 
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors mb-6"
+          >
+            <Menu className="w-5 h-5 text-slate-600" />
+          </button>
+        </div>
+
+        {/* Navigation Icons - Always visible */}
+        <div className="flex-1 p-2">
           <div className="space-y-3">
-            {/* Hamburger Menu */}
-            <button 
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors"
-            >
-              <Menu className="w-5 h-5 text-slate-600" />
-            </button>
-            
-            {/* Dashboard Home */}
-            <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-purple-100 text-purple-600">
+            {/* Dashboard Icon */}
+            <div className="w-10 h-10 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center cursor-pointer">
               <Home className="w-5 h-5" />
-            </button>
+            </div>
+            
+            {/* Journey Section Icons */}
+            {sections.map(section => (
+              <div 
+                key={section.id}
+                className={`w-10 h-10 rounded-lg flex items-center justify-center cursor-pointer transition-colors relative
+                  ${section.active ? 'bg-purple-100 text-purple-600' : 'hover:bg-slate-100 text-slate-600'}
+                  ${section.comingSoon ? 'opacity-60' : ''}
+                `}
+              >
+                <section.icon className="w-5 h-5" />
+                {section.active && (
+                  <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-purple-500 rounded-r-full -ml-2"></div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Journey Sections - Only visible when expanded */}
+        {/* Expanded Menu Content - Only when sidebar is open */}
         {sidebarOpen && (
-          <div className="flex-1 p-6">
-            <div className="mb-8">
-              <h2 className="text-xl font-bold text-slate-900 mb-2">Your Journey</h2>
-              <p className="text-slate-600 text-sm">From values to daily action</p>
-            </div>
-            
-            <div className="space-y-3">
-              {sections.map(section => (
-                <SidebarSection key={section.id} section={section} />
-              ))}
-            </div>
+          <div className="absolute left-0 top-0 w-80 h-full bg-white border-l border-slate-200 shadow-xl">
+            <div className="p-6">
+              <div className="mb-8">
+                <h2 className="text-xl font-bold text-slate-900 mb-2">Your Journey</h2>
+                <p className="text-slate-600 text-sm">From values to daily action</p>
+              </div>
+              
+              <div className="space-y-3">
+                {sections.map(section => (
+                  <SidebarSection key={section.id} section={section} />
+                ))}
+              </div>
 
-            {/* Overall Progress */}
-            <div className="mt-8 p-4 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl text-white">
-              <h3 className="font-semibold mb-2">Overall Progress</h3>
-              <div className="text-2xl font-bold">49%</div>
-              <p className="text-purple-100 text-sm">Keep building momentum</p>
-            </div>
-          </div>
-        )}
-
-        {/* Collapsed state indicators */}
-        {!sidebarOpen && (
-          <div className="flex-1 p-2 pt-6">
-            <div className="space-y-2">
-              {sections.map(section => (
-                <div 
-                  key={section.id}
-                  className={`w-10 h-10 rounded-lg flex items-center justify-center cursor-pointer transition-colors
-                    ${section.active ? 'bg-purple-100 text-purple-600' : 'hover:bg-slate-100 text-slate-600'}
-                  `}
-                >
-                  <section.icon className="w-5 h-5" />
-                </div>
-              ))}
+              {/* Overall Progress */}
+              <div className="mt-8 p-4 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl text-white">
+                <h3 className="font-semibold mb-2">Overall Progress</h3>
+                <div className="text-2xl font-bold">49%</div>
+                <p className="text-purple-100 text-sm">Keep building momentum</p>
+              </div>
             </div>
           </div>
         )}
