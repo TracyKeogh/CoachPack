@@ -1,677 +1,625 @@
-import React from 'react';
-import { 
-  BarChart3, 
-  Heart, 
-  ImageIcon, 
-  Target,
-  Calendar as CalendarIcon,
-  ArrowRight,
-  Download,
-  Sparkles,
-  CheckCircle2,
-  Clock,
-  Star,
-  Zap,
-  Eye,
-  Compass
-} from 'lucide-react';
-import type { ViewType } from '../App';
-import { useValuesData } from '../hooks/useValuesData';
-import { useWheelData } from '../hooks/useWheelData';
-import { useVisionBoardData } from '../hooks/useVisionBoardData';
-import { useGoalSettingData } from '../hooks/useGoalSettingData';
+import React, { useState, useEffect } from 'react';
+import { Heart, Target, Calendar, Sparkles, ChevronRight, Clock, BarChart3, Eye, CheckSquare, TrendingUp, User } from 'lucide-react';
+
+type ViewType = 'dashboard' | 'wheel' | 'values' | 'vision' | 'goals' | 'calendar' | 'templates';
 
 interface DashboardProps {
   onNavigate: (view: ViewType) => void;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
-  // Load real data from hooks
-  const { data: valuesData } = useValuesData();
-  const { data: wheelData, reflectionData } = useWheelData();
-  const { visionItems } = useVisionBoardData();
-  const { data: goalsData } = useGoalSettingData();
+  const [valuesData, setValuesData] = useState({ rankedCoreValues: [] });
+  const [wheelData, setWheelData] = useState([]);
+  const [reflectionData, setReflectionData] = useState({});
+  const [visionItems, setVisionItems] = useState([]);
+  const [goalsData, setGoalsData] = useState({ categoryGoals: {}, annualSnapshot: {} });
 
-  // Get top values
-  const coreValues = valuesData.rankedCoreValues.slice(0, 6);
-  const supportingValues = valuesData.supportingValues.slice(0, 3);
+  useEffect(() => {
+    try {
+      const storedValues = localStorage.getItem('coach-pack-values-clarity');
+      if (storedValues) {
+        setValuesData(JSON.parse(storedValues));
+      }
+    } catch (error) {
+      console.error('Failed to load values data:', error);
+    }
 
-  // Get wheel areas
-  const wheelAreas = wheelData || [];
+    try {
+      const storedWheel = localStorage.getItem('coach-pack-wheel-of-life');
+      if (storedWheel) {
+        const wheelDataParsed = JSON.parse(storedWheel);
+        setWheelData(wheelDataParsed.lifeAreas || []);
+        setReflectionData(wheelDataParsed.reflections || {});
+      }
+    } catch (error) {
+      console.error('Failed to load wheel data:', error);
+    }
+
+    try {
+      const storedVision = localStorage.getItem('coach-pack-vision-board');
+      if (storedVision) {
+        const visionDataParsed = JSON.parse(storedVision);
+        setVisionItems(visionDataParsed.visionItems || []);
+      }
+    } catch (error) {
+      console.error('Failed to load vision data:', error);
+    }
+
+    try {
+      const storedGoals = localStorage.getItem('coach-pack-goal-setting');
+      if (storedGoals) {
+        setGoalsData(JSON.parse(storedGoals));
+      }
+    } catch (error) {
+      console.error('Failed to load goals data:', error);
+    }
+  }, []);
+
+  const getCompletionStats = () => {
+    const completedReflections = Object.values(reflectionData).filter(
+      (reflection: any) => 
+        reflection?.goingWell?.length > 0 || 
+        reflection?.needsImprovement?.length > 0 || 
+        reflection?.idealVision?.trim() !== ''
+    ).length;
+
+    const averageScore = wheelData.length > 0 ? 
+      wheelData.reduce((sum, item: any) => sum + (item?.score || 0), 0) / wheelData.length : 0;
+    
+    return {
+      averageScore,
+      completedReflections,
+      totalAreas: wheelData.length,
+      wheelCompleted: wheelData.every((area: any) => (area?.score || 0) > 0),
+      allReflectionsCompleted: completedReflections === wheelData.length
+    };
+  };
+
+  const getGoalsProgress = () => {
+    const categoryGoals = goalsData?.categoryGoals || {};
+    const totalCategories = 3;
+    const completedCategories = Object.values(categoryGoals).filter((goal: any) => goal?.goal?.trim()).length;
+    const hasAnnualSnapshot = goalsData?.annualSnapshot?.snapshot?.trim();
+    
+    const totalSteps = 1 + totalCategories;
+    const completedSteps = (hasAnnualSnapshot ? 1 : 0) + completedCategories;
+    
+    return {
+      completed: completedSteps,
+      total: totalSteps,
+      percentage: totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0
+    };
+  };
+
+  const wheelStats = getCompletionStats();
+  const goalsProgress = getGoalsProgress();
   
-  // Get goals
-  const activeGoals = Object.values(goalsData.categoryGoals)
-    .filter(goal => goal.goal && goal.goal.trim() !== '');
+  const sections = [
+    { 
+      id: 'baseline' as ViewType, 
+      icon: User, 
+      title: 'Baseline', 
+      progress: wheelStats.wheelCompleted ? (wheelStats.allReflectionsCompleted ? 100 : 75) : (wheelStats.averageScore > 0 ? 50 : 0),
+      active: true 
+    },
+    { 
+      id: 'vision' as ViewType, 
+      icon: Eye, 
+      title: 'Vision', 
+      progress: visionItems.length > 0 ? Math.min(100, (visionItems.length / 4) * 100) : 0,
+      active: false 
+    },
+    { 
+      id: 'goals' as ViewType, 
+      icon: CheckSquare, 
+      title: 'Plan', 
+      progress: goalsProgress.percentage,
+      active: false 
+    },
+    { 
+      id: 'calendar' as ViewType, 
+      icon: Calendar, 
+      title: 'Track', 
+      progress: 0,
+      active: false 
+    }
+  ];
 
-  // Get today's date
-  const today = new Date();
-  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  const todayFormatted = `${dayNames[today.getDay()]}, ${monthNames[today.getMonth()]} ${today.getDate()}, ${today.getFullYear()}`;
+  const overallProgress = Math.round(sections.reduce((sum, section) => sum + section.progress, 0) / sections.length);
 
-  // Get a focus for today based on goals
-  const todaysFocus = activeGoals.length > 0 
-    ? activeGoals[0].goal 
-    : "Align your actions with your values";
+  const getUserStory = () => {
+    const hasValues = valuesData?.rankedCoreValues && valuesData.rankedCoreValues.length > 0;
+    const hasWheel = wheelData && wheelData.length > 0 && wheelStats.averageScore > 0;
+    const hasVision = visionItems && visionItems.length > 0;
+    const hasGoals = Object.keys(goalsData?.categoryGoals || {}).length > 0;
 
-  // Value emojis/icons mapping
-  const valueIcons: Record<string, string> = {
-    'Vitality': '⚡',
-    'Growth': '🌱',
-    'Connection': '🔗',
-    'Purpose': '🎯',
-    'Freedom': '🕊️',
-    'Excellence': '✨',
-    'Creativity': '🎨',
-    'Adventure': '🧭',
-    'Peace': '☮️',
-    'Health': '💪',
-    'Love': '❤️',
-    'Family': '👨‍👩‍👧‍👦',
-    'Balance': '⚖️',
-    'Wisdom': '🧠',
-    'Integrity': '🛡️',
-    'Courage': '🦁',
-    'Gratitude': '🙏',
-    'Joy': '😊'
+    const daysIntoJourney = Math.max(1, Math.round((overallProgress / 100) * 30) + 1);
+    
+    let visionStatement = "Complete your baseline assessment to unlock your personal vision";
+    if (hasGoals && goalsData?.annualSnapshot?.snapshot) {
+      visionStatement = goalsData.annualSnapshot.snapshot;
+    } else if (hasVision && visionItems.length > 0) {
+      visionStatement = "Building a life of purpose, growth, and fulfillment";
+    }
+
+    let currentFocus = "Taking the first steps toward intentional living";
+    if (hasGoals) {
+      const activeGoals = Object.values(goalsData?.categoryGoals || {}).filter((goal: any) => goal?.goal?.trim());
+      if (activeGoals.length > 0) {
+        currentFocus = `Focusing on ${activeGoals.map((g: any) => g.category).join(', ')} goals for meaningful progress`;
+      }
+    } else if (hasValues) {
+      currentFocus = "Aligning daily actions with your core values";
+    }
+
+    let coreValues = ["Select Your Values", "Complete Baseline", "To See Results"];
+    if (hasValues && valuesData.rankedCoreValues.length > 0) {
+      coreValues = valuesData.rankedCoreValues.slice(0, 3).map((v: any) => v.name);
+    }
+
+    let lifeAreas = Array(8).fill(null).map((_, i) => ({
+      area: ['Career', 'Health', 'Relationships', 'Growth', 'Recreation', 'Money', 'Environment', 'Contribution'][i],
+      now: 0,
+      vision: 0,
+      gap: 0
+    }));
+
+    if (hasWheel && wheelData) {
+      lifeAreas = wheelData.map((area: any, index: number) => {
+        const reflection = (reflectionData as any)[index];
+        const visionScore = reflection?.targetRating || Math.min(10, (area?.score || 0) + 2);
+        return {
+          area: area?.area || 'Unknown',
+          now: area?.score || 0,
+          vision: visionScore,
+          gap: visionScore - (area?.score || 0)
+        };
+      });
+    }
+
+    return {
+      name: "Your Journey",
+      daysIntoJourney,
+      totalDays: 90,
+      coreValues,
+      visionStatement,
+      currentFocus,
+      lifeAreas,
+      hasData: hasValues || hasWheel || hasVision || hasGoals
+    };
   };
 
-  // Get icon for value
-  const getValueIcon = (valueName: string) => {
-    return valueIcons[valueName] || '💎';
+  const storyData = getUserStory();
+  const progressPercentage = (storyData.daysIntoJourney / storyData.totalDays) * 100;
+
+  const getUpcomingMilestones = () => {
+    const milestones: Array<{
+      title: string;
+      date: string;
+      daysAway: number;
+      type: 'milestone' | 'goal';
+      color: string;
+    }> = [];
+
+    const categoryGoals = goalsData?.categoryGoals || {};
+    
+    Object.entries(categoryGoals).forEach(([category, goalData]: [string, any]) => {
+      if (goalData?.milestones && Array.isArray(goalData.milestones)) {
+        goalData.milestones.forEach((milestone: any) => {
+          if (milestone?.dueDate && milestone?.title) {
+            const dueDate = new Date(milestone.dueDate);
+            const today = new Date();
+            const daysAway = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+            
+            if (daysAway > 0 && daysAway <= 60) {
+              milestones.push({
+                title: milestone.title,
+                date: `Day ${storyData.daysIntoJourney + daysAway}`,
+                daysAway,
+                type: 'milestone',
+                color: category === 'business' ? 'purple' : category === 'body' ? 'green' : 'blue'
+              });
+            }
+          }
+        });
+      }
+    });
+
+    return milestones.sort((a, b) => a.daysAway - b.daysAway).slice(0, 3);
   };
+
+  const upcomingMilestones = getUpcomingMilestones();
+
+  const SidebarSection = ({ section }: { section: typeof sections[0] }) => (
+    <div 
+      className={`flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-all duration-200 ${
+        section.active ? 'bg-purple-100 border-l-4 border-purple-500' : 'hover:bg-slate-100'
+      }`}
+      onClick={() => onNavigate && onNavigate(section.id)}
+    >
+      <section.icon className={`w-5 h-5 ${
+        section.active ? 'text-purple-600' : section.progress > 0 ? 'text-slate-600' : 'text-slate-400'
+      }`} />
+      <div className="flex-1">
+        <div className="flex items-center space-x-2">
+          <span className={`text-sm font-medium ${
+            section.active ? 'text-purple-900' : section.progress > 0 ? 'text-slate-700' : 'text-slate-500'
+          }`}>
+            {section.title}
+          </span>
+        </div>
+        <div className="w-full bg-slate-200 rounded-full h-1.5 mt-1">
+          <div 
+            className={`h-1.5 rounded-full transition-all duration-300 ${
+              section.progress > 0 ? 'bg-purple-500' : 'bg-slate-300'
+            }`}
+            style={{ width: `${section.progress}%` }}
+          />
+        </div>
+      </div>
+      <span className="text-xs text-slate-500 font-medium">{section.progress}%</span>
+    </div>
+  );
 
   return (
-    <div className="space-y-6">
-      {/* Header Banner */}
-      <div className="bg-slate-800 rounded-2xl p-8 text-white shadow-sm">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">CoachPack Dashboard</h1>
-            <p className="text-slate-300">Your journey from values to daily action</p>
-          </div>
-          <div className="mt-4 md:mt-0 text-right">
-            <p className="text-slate-300">Today's Focus</p>
-            <p className="text-xl font-semibold">{todaysFocus}</p>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex">
+      {/* Left Sidebar */}
+      <div className="w-80 bg-white border-r border-slate-200 p-6">
+        <div className="mb-8">
+          <h2 className="text-xl font-bold text-slate-900 mb-2">Your Journey</h2>
+          <p className="text-slate-600 text-sm">From values to daily action</p>
+        </div>
+        
+        <div className="space-y-3">
+          {sections.map(section => (
+            <SidebarSection key={section.id} section={section} />
+          ))}
+        </div>
+
+        <div className={`mt-8 p-4 rounded-xl text-white ${
+          overallProgress > 50 ? 'bg-gradient-to-r from-purple-500 to-purple-600' : 
+          overallProgress > 0 ? 'bg-gradient-to-r from-slate-500 to-slate-600' : 
+          'bg-gradient-to-r from-slate-400 to-slate-500'
+        }`}>
+          <h3 className="font-semibold mb-2">Overall Progress</h3>
+          <div className="text-2xl font-bold">{overallProgress}%</div>
+          <p className={`text-sm ${
+            overallProgress > 50 ? 'text-purple-100' : 'text-slate-100'
+          }`}>
+            {overallProgress === 0 ? 'Ready to begin' : 
+             overallProgress < 25 ? 'Getting started' :
+             overallProgress < 50 ? 'Building momentum' :
+             overallProgress < 75 ? 'Making great progress' : 'Almost there!'}
+          </p>
         </div>
       </div>
 
-      {/* Vision Section - Starting with the big picture */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-        <div className="flex items-center space-x-3 mb-6">
-          <Eye className="w-8 h-8 text-slate-700" />
-          <h2 className="text-2xl font-bold text-slate-800">Your Vision</h2>
-        </div>
-        
-        <div className="bg-slate-50 rounded-lg p-4 border border-slate-200 mb-6">
-          <p className="text-lg italic text-slate-700">
-            {goalsData.annualSnapshot?.snapshot || 
-              "I feel energized and healthy. My career is thriving with new opportunities and growth. My relationships are deep and fulfilling, and I'm living with purpose and joy every day."}
-          </p>
-          
-          {goalsData.annualSnapshot?.mantra && (
-            <div className="mt-3 text-center">
-              <p className="text-sm text-slate-500">Personal Mantra</p>
-              <p className="text-slate-700 font-medium">{goalsData.annualSnapshot.mantra}</p>
-            </div>
-          )}
-        </div>
-        
-        {visionItems.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-            {visionItems.slice(0, 4).map(item => (
-              <div key={item.id} className="relative group overflow-hidden rounded-lg h-24">
-                <img 
-                  src={item.imageUrl} 
-                  alt={item.title}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 flex items-center justify-center transition-all duration-200">
-                  <p className="text-white text-center p-2 opacity-0 group-hover:opacity-100 transition-opacity text-sm font-medium">
-                    {item.title}
-                  </p>
-                </div>
+      {/* Main Content */}
+      <div className="flex-1 overflow-y-auto">
+        {/* Hero Section */}
+        <div className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-blue-600/20"></div>
+          <div className="relative max-w-6xl mx-auto px-8 py-16">
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center space-x-2 bg-purple-500/20 px-4 py-2 rounded-full mb-6">
+                <Sparkles className="w-5 h-5 text-purple-400" />
+                <span className="text-purple-300 font-medium">Day {storyData.daysIntoJourney} of Your Journey</span>
               </div>
-            ))}
-          </div>
-        )}
-        
-        <div className="flex justify-center">
-          <button
-            onClick={() => onNavigate('vision')}
-            className="flex items-center space-x-2 px-6 py-3 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors font-semibold"
-          >
-            <ImageIcon className="w-5 h-5" />
-            <span>{visionItems.length > 0 ? 'View Full Vision Board' : 'Create Vision Board'}</span>
-          </button>
-          </div>
-        </div>
-
-      {/* Core Values Section */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-        <div className="mb-6 text-center">
-          <h2 className="text-3xl font-bold mb-2 text-slate-800">Your Core Values</h2>
-          <p className="text-slate-600">The principles that guide your decisions and actions</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          {coreValues.length > 0 ? (
-            coreValues.map((value) => {
-              const definition = valuesData.valueDefinitions[value.id];
-              return (
-                <div key={value.id} className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <div className="text-2xl">{getValueIcon(value.name)}</div>
-                    <h3 className="text-xl font-bold text-slate-800">{value.name}</h3>
-                  </div>
-                  {definition?.meaning ? (
-                    <p className="text-slate-600">{definition.meaning}</p>
-                  ) : (
-                    <p className="text-slate-600">{value.description}</p>
-                  )}
-                </div>
-              );
-            })
-          ) : (
-            <div className="col-span-3 text-center py-8 bg-slate-50 rounded-lg border border-slate-200">
-              <Heart className="w-12 h-12 mx-auto mb-3 text-slate-400" />
-              <h3 className="text-xl font-bold mb-2 text-slate-800">Discover Your Core Values</h3>
-              <p className="text-slate-600 mb-4">Identify what truly matters to guide your decisions</p>
-              <button 
-                onClick={() => onNavigate('values')}
-                className="px-6 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors font-semibold"
-              >
-                Start Values Clarification
-              </button>
+              <h1 className="text-5xl font-bold text-white mb-6 leading-tight">
+                {storyData.visionStatement}
+              </h1>
+              <p className="text-xl text-slate-300 max-w-3xl mx-auto">
+                {storyData.currentFocus}
+              </p>
             </div>
-          )}
-        </div>
 
-        {supportingValues.length > 0 && (
-          <div>
-            <h3 className="text-xl font-bold mb-3 flex items-center text-slate-800">
-              <Star className="w-5 h-5 mr-2" /> Supporting Values
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {supportingValues.map(value => (
-                <div key={value.id} className="bg-slate-100 px-3 py-1 rounded-full text-sm text-slate-700 border border-slate-200">
-                  {getValueIcon(value.name)} {value.name}
+            {/* Core Values */}
+            <div className="flex justify-center space-x-6 mb-12">
+              {storyData.coreValues.map((value, i) => (
+                <div key={i} className={`bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-6 py-4 ${
+                  !storyData.hasData ? 'opacity-60' : ''
+                }`}>
+                  <div className="flex items-center space-x-3">
+                    <Heart className={`w-5 h-5 ${storyData.hasData ? 'text-purple-400' : 'text-slate-400'}`} />
+                    <span className={`font-semibold ${storyData.hasData ? 'text-white' : 'text-slate-300'}`}>{value}</span>
+                  </div>
                 </div>
               ))}
             </div>
-          </div>
-        )}
 
-        <div className="mt-6 bg-slate-50 rounded-lg p-4 border border-slate-200">
-          <div className="flex items-center">
-            <div className="w-6 h-6 bg-slate-200 rounded-full flex items-center justify-center mr-2">
-              <CheckCircle2 className="w-4 h-4 text-slate-700" />
+            {/* Journey Progress Arc */}
+            <div className="max-w-2xl mx-auto">
+              <div className="relative">
+                <div className="w-full h-3 bg-slate-700/50 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-purple-500 via-blue-500 to-green-500 rounded-full transition-all duration-2000 ease-out"
+                    style={{ width: `${progressPercentage}%` }}
+                  ></div>
+                </div>
+                <div className="flex justify-between mt-3 text-sm">
+                  <span className="text-slate-400">Start</span>
+                  <span className="text-purple-300 font-medium">{Math.round(progressPercentage)}% Complete</span>
+                  <span className={progressPercentage > 50 ? 'text-green-400' : 'text-slate-500'}>Vision Achieved</span>
+                </div>
+              </div>
             </div>
-            <p className="text-sm text-slate-600">
-              <span className="font-semibold text-slate-800">Remember:</span> When your actions align with these values, you feel energized and authentic. When they don't, you feel drained or conflicted.
+          </div>
+        </div>
+
+        {/* Life Areas */}
+        <div className="max-w-6xl mx-auto px-8 py-16">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-white mb-4">Your Life Today</h2>
+            <p className="text-slate-400">
+              {storyData.hasData ? "See how each area is evolving toward your vision" : "Complete your assessment to see your starting point and vision"}
             </p>
           </div>
-        </div>
-      </div>
 
-      {/* Goals Section */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-        <div className="flex items-center space-x-3 mb-6">
-          <Target className="w-8 h-8 text-slate-700" />
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900">12-Week Goals</h2>
-            <p className="text-slate-600">Your focused areas for transformation</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {activeGoals.length > 0 ? (
-            activeGoals.map((goal, index) => {
-              const categoryIcon = goal.category === 'business' ? '💼' : goal.category === 'body' ? '💪' : '⚖️';
-              const categoryColor = goal.category === 'business' ? 'from-purple-500 to-purple-600' : 
-                                   goal.category === 'body' ? 'from-green-500 to-green-600' : 
-                                   'from-blue-500 to-blue-600';
-              const categoryBg = goal.category === 'business' ? 'bg-slate-800' : 
-                               goal.category === 'body' ? 'bg-slate-700' : 
-                               'bg-slate-600';
-              const progress = Math.floor(Math.random() * 100); // In a real app, calculate actual progress
-              
-              return (
-                <div key={index} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                  <div className={`${categoryBg} p-4 text-white`}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-2xl">{categoryIcon}</span>
-                        <h3 className="font-bold">{goal.category === 'business' ? 'Professional' : goal.category === 'body' ? 'Physical' : 'Personal'}</h3>
-                      </div>
-                      <div className="text-white/90 font-bold">{progress}%</div>
-                    </div>
-                    <p className="mt-2 font-semibold">{goal.goal}</p>
-                  </div>
-                  
-                  <div className="p-4">
-                    {/* Milestone */}
-                    {goal.milestones && goal.milestones.length > 0 && (
-                      <div className="mb-4">
-                        <p className="text-xs text-slate-500 mb-1">90-Day Milestone</p>
-                        <p className="text-sm font-medium text-slate-800">{goal.milestones[0].title || "Set your milestone"}</p>
-                      </div>
-                    )}
-                    
-                    {/* Weekly Actions */}
-                    <div>
-                      <p className="text-xs text-slate-500 mb-2">Weekly Actions</p>
-                      <div className="space-y-1">
-                        {goal.actions.slice(0, 3).map((action, i) => (
-                          <div key={i} className="flex items-center space-x-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
-                            <p className="text-sm text-slate-700">{action.text}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    {/* Connected Values */}
-                    <div className="mt-4">
-                      <p className="text-xs text-slate-500 mb-2">Connected Values</p>
-                      <div className="flex flex-wrap gap-1">
-                        {['Vitality', 'Excellence', 'Growth'].slice(0, 2 + index % 2).map((value, i) => (
-                          <span key={i} className="px-2 py-1 bg-slate-100 text-slate-700 rounded-full text-xs border border-slate-200">
-                            {value}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <div className="col-span-3 text-center py-8 bg-slate-50 rounded-lg border border-slate-200">
-              <Target className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-              <h3 className="text-xl font-bold text-slate-900 mb-2">Set Your 12-Week Goals</h3>
-              <p className="text-slate-600 mb-4">Transform your values and life assessment into focused goals</p>
-              <button 
-                onClick={() => onNavigate('goals')}
-                className="px-6 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors font-semibold"
-              >
-                Create Your Goals
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Life Areas Section */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-        <div className="flex items-center space-x-3 mb-6">
-          <BarChart3 className="w-8 h-8 text-slate-700" />
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900">Life Areas</h2>
-            <p className="text-slate-600">Your current satisfaction across key life domains</p>
-          </div>
-        </div>
-
-        <div className="flex flex-col items-center">
-          {wheelAreas.length > 0 ? (
-            <>
-              <svg width="400" height="400" viewBox="0 0 600 600" className="mb-4">
-                {/* Background rings */}
-                {Array.from({ length: 10 }, (_, ringIndex) => {
-                  const ring = ringIndex + 1;
-                  const centerX = 300;
-                  const centerY = 300;
-                  const maxRadius = 180;
-                  const minRadius = 20;
-                  const innerRadius = minRadius + (ringIndex * (maxRadius - minRadius)) / 10;
-                  const outerRadius = minRadius + ((ringIndex + 1) * (maxRadius - minRadius)) / 10;
-                  const segmentCount = wheelAreas.length;
-                  const anglePerSegment = segmentCount > 0 ? (2 * Math.PI) / segmentCount : 0;
-                  
-                  return (
-                    <g key={`ring-${ring}`}>
-                      {wheelAreas.map((segment, segmentIndex) => {
-                        const isScored = segment.score >= ring;
-                        
-                        // Create segment path
-                        const startAngle = segmentIndex * anglePerSegment - Math.PI / 2;
-                        const endAngle = (segmentIndex + 1) * anglePerSegment - Math.PI / 2;
-                        
-                        const x1 = centerX + innerRadius * Math.cos(startAngle);
-                        const y1 = centerY + innerRadius * Math.sin(startAngle);
-                        const x2 = centerX + outerRadius * Math.cos(startAngle);
-                        const y2 = centerY + outerRadius * Math.sin(startAngle);
-                        
-                        const x3 = centerX + outerRadius * Math.cos(endAngle);
-                        const y3 = centerY + outerRadius * Math.sin(endAngle);
-                        const x4 = centerX + innerRadius * Math.cos(endAngle);
-                        const y4 = centerY + innerRadius * Math.sin(endAngle);
-                        
-                        const largeArcFlag = anglePerSegment > Math.PI ? 1 : 0;
-                        
-                        const path = `
-                          M ${x1} ${y1}
-                          L ${x2} ${y2}
-                          A ${outerRadius} ${outerRadius} 0 ${largeArcFlag} 1 ${x3} ${y3}
-                          L ${x4} ${y4}
-                          A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${x1} ${y1}
-                          Z
-                        `;
-                        
-                        let fillColor = '#f8fafc';
-                        let opacity = 0.3;
-                        let strokeColor = '#e2e8f0';
-                        let strokeWidth = 1;
-                        
-                        if (isScored) {
-                          fillColor = segment.color;
-                          opacity = 0.4 + (ring / 10) * 0.5;
-                          strokeColor = segment.color;
-                          strokeWidth = 2;
-                        }
-                        
-                        return (
-                          <path
-                            key={`segment-${segmentIndex}-ring-${ring}`}
-                            d={path}
-                            fill={fillColor}
-                            fillOpacity={opacity}
-                            stroke={strokeColor}
-                            strokeWidth={strokeWidth}
-                          />
-                        );
-                      })}
-                    </g>
-                  );
-                })}
-
-                {/* Center circle */}
-                <circle
-                  cx={300}
-                  cy={300}
-                  r={20}
-                  fill="white"
-                  stroke="#8b5cf6"
-                  strokeWidth="2"
-                />
-                <text
-                  x={300}
-                  y={297}
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  className="text-sm font-bold fill-slate-900"
-                >
-                  {wheelAreas.length > 0 ? 
-                    (wheelAreas.reduce((sum, area) => sum + area.score, 0) / wheelAreas.length).toFixed(1) : 
-                    '-'}
-                </text>
-                <text
-                  x={300}
-                  y={308}
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  className="text-xs fill-slate-600"
-                >
-                  Avg
-                </text>
-
-                {/* Labels */}
-                {wheelAreas.map((segment, index) => {
-                  const segmentCount = wheelAreas.length;
-                  const anglePerSegment = (2 * Math.PI) / segmentCount;
-                  const angle = (index + 0.5) * anglePerSegment - Math.PI / 2;
-                  const labelRadius = 230;
-                  const x = 300 + labelRadius * Math.cos(angle);
-                  const y = 300 + labelRadius * Math.sin(angle);
-                  
-                  let textAnchor = 'middle';
-                  if (Math.cos(angle) > 0.3) textAnchor = 'start';
-                  else if (Math.cos(angle) < -0.3) textAnchor = 'end';
-                  
-                  return (
-                    <g key={`label-${index}`}>
-                      <text
-                        x={x}
-                        y={y}
-                        textAnchor={textAnchor}
-                        dominantBaseline="middle"
-                        className="text-sm font-bold"
-                        fill="white"
-                        stroke="white"
-                        strokeWidth="3"
-                      >
-                        {segment.area}
-                      </text>
-                      <text
-                        x={x}
-                        y={y}
-                        textAnchor={textAnchor}
-                        dominantBaseline="middle"
-                        className="text-sm font-bold"
-                        fill={segment.darkColor}
-                      >
-                        {segment.area}
-                      </text>
+          {/* Wheel Comparison */}
+          <div className="bg-slate-800/30 backdrop-blur-sm border border-slate-700/30 rounded-3xl p-8 mb-12">
+            <div className="flex items-center justify-center space-x-16">
+              {/* Current State Wheel */}
+              <div className="text-center">
+                <h3 className="text-xl font-semibold text-slate-300 mb-6">Today</h3>
+                <div className="relative mb-4">
+                  <svg width="200" height="200" className="transform -rotate-90">
+                    {storyData.lifeAreas.map((area, index) => {
+                      const startAngle = (index * 360) / storyData.lifeAreas.length;
+                      const endAngle = ((index + 1) * 360) / storyData.lifeAreas.length;
+                      const radius = Math.max(20, (area.now / 10) * 80);
                       
-                      <text
-                        x={x}
-                        y={y + 16}
-                        textAnchor={textAnchor}
-                        dominantBaseline="middle"
-                        className="text-xs"
-                        fill={segment.color}
-                      >
-                        {segment.score}/10
-                      </text>
-                    </g>
-                  );
-                })}
-              </svg>
-              
-              <button 
-                onClick={() => onNavigate('wheel')}
-                className="px-6 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors font-semibold"
-              >
-                Update Your Wheel
-              </button>
-            </>
-          ) : (
-            <div className="col-span-4 text-center py-8 bg-slate-50 rounded-lg border border-slate-200">
-              <BarChart3 className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-              <h3 className="text-xl font-bold text-slate-900 mb-2">Assess Your Life Balance</h3>
-              <p className="text-slate-600 mb-4">Rate your satisfaction across 8 key life areas</p>
-              <button 
-                onClick={() => onNavigate('wheel')}
-                className="px-6 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors font-semibold"
-              >
-                Complete Wheel Assessment
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Daily Actions */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-        <div className="flex items-center space-x-3 mb-6">
-          <CalendarIcon className="w-8 h-8 text-slate-700" />
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900">Daily Actions</h2>
-            <p className="text-slate-600">{todayFormatted}</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-            <h3 className="font-semibold text-slate-900 mb-3 flex items-center">
-              <Clock className="w-5 h-5 mr-2 text-slate-700" /> Today's Schedule
-            </h3>
-            
-            <div className="space-y-3">
-              {activeGoals.length > 0 ? (
-                activeGoals.flatMap(goal => 
-                  goal.actions.slice(0, 2).map((action, i) => (
-                    <div key={`${goal.category}-${i}`} className="flex items-center space-x-3 p-3 bg-white rounded-lg border border-slate-200">
-                      <div className="w-10 h-10 rounded-full flex items-center justify-center" 
-                        style={{ 
-                          backgroundColor: goal.category === 'business' ? '#e0e7ff' : 
-                                          goal.category === 'body' ? '#dcfce7' : '#dbeafe',
-                          color: goal.category === 'business' ? '#4f46e5' : 
-                                goal.category === 'body' ? '#16a34a' : '#2563eb'
-                        }}>
-                        {goal.category === 'business' ? '💼' : goal.category === 'body' ? '💪' : '⚖️'}
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-slate-900">{action.text}</p>
-                        <p className="text-xs text-slate-500">
-                          {action.frequency === 'daily' ? 'Daily' : 
-                           action.frequency === 'weekly' ? 'Weekly' : 
-                           'Multiple times per week'}
-                        </p>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <div className="w-2 h-2 rounded-full bg-slate-500" />
-                        <span className="text-xs text-slate-600 font-medium">
-                          {goal.category === 'business' ? 'Professional' : 
-                           goal.category === 'body' ? 'Physical' : 'Personal'}
-                        </span>
-                      </div>
-                    </div>
-                  ))
-                )
-              ) : (
-                <div className="text-center py-6">
-                  <p className="text-slate-500">Schedule actions from your goals</p>
-                  <button 
-                    onClick={() => onNavigate('calendar')}
-                    className="mt-2 text-slate-700 font-medium hover:text-slate-900"
-                  >
-                    Open Calendar →
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-          
-          <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-            <h3 className="font-semibold text-slate-900 mb-3 flex items-center">
-              <Compass className="w-5 h-5 mr-2 text-slate-700" /> Value Alignment
-            </h3>
-            
-            <div className="space-y-4">
-              <div className="bg-white rounded-lg p-4 border border-slate-200">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium text-slate-900">Values in Action Today</h4>
-                  <div className="text-slate-700 font-bold">
-                    {coreValues.length > 0 ? `${Math.min(3, coreValues.length)}/${coreValues.length}` : '0/0'}
-                  </div>
-                </div>
-                
-                {coreValues.length > 0 ? (
-                  <div className="space-y-2">
-                    {coreValues.slice(0, 3).map(value => (
-                      <div key={value.id} className="flex items-center space-x-2">
-                        <div className="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center text-slate-700">
-                          {getValueIcon(value.name)}
-                        </div>
-                        <span className="text-sm text-slate-700">{value.name}</span>
-                      </div>
+                      const startAngleRad = (startAngle * Math.PI) / 180;
+                      const endAngleRad = (endAngle * Math.PI) / 180;
+                      
+                      const x1 = 100 + radius * Math.cos(startAngleRad);
+                      const y1 = 100 + radius * Math.sin(startAngleRad);
+                      const x2 = 100 + radius * Math.cos(endAngleRad);
+                      const y2 = 100 + radius * Math.sin(endAngleRad);
+                      
+                      const largeArcFlag = endAngleRad - startAngleRad <= Math.PI ? "0" : "1";
+                      
+                      return (
+                        <path
+                          key={index}
+                          d={`M 100 100 L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
+                          fill={area.now > 0 ? "rgba(147, 51, 234, 0.6)" : "rgba(71, 85, 105, 0.4)"}
+                          stroke={area.now > 0 ? "rgba(147, 51, 234, 0.8)" : "rgba(71, 85, 105, 0.6)"}
+                          strokeWidth="1"
+                        />
+                      );
+                    })}
+                    
+                    {[20, 40, 60, 80].map(r => (
+                      <circle
+                        key={r}
+                        cx="100"
+                        cy="100"
+                        r={r}
+                        fill="none"
+                        stroke="rgba(148, 163, 184, 0.1)"
+                        strokeWidth="1"
+                      />
                     ))}
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-slate-300">
+                        {storyData.hasData ? 
+                          Math.round(storyData.lifeAreas.reduce((sum, area) => sum + area.now, 0) / 8 * 10) / 10 :
+                          '?'
+                        }
+                      </div>
+                      <div className="text-xs text-slate-400">{storyData.hasData ? 'Avg' : 'Start'}</div>
+                    </div>
                   </div>
-                ) : (
-                  <p className="text-slate-500 text-sm">Complete your values clarification</p>
-                )}
+                </div>
               </div>
-              
-              <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                <h4 className="font-medium text-slate-900 mb-2">Daily Reflection</h4>
-                <p className="text-sm text-slate-600">
-                  Take a moment to reflect on how today's actions aligned with your core values.
-                </p>
-                <button 
-                  onClick={() => onNavigate('wheel')}
-                  className="mt-3 px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors text-sm font-medium"
-                >
-                  Start Reflection
-                </button>
+
+              {/* Arrow */}
+              <div className="flex flex-col items-center">
+                <ChevronRight className="w-12 h-12 text-purple-400 mb-2" />
+                <div className="text-sm text-purple-400 font-medium">12 Weeks</div>
+              </div>
+
+              {/* Vision State Wheel */}
+              <div className="text-center">
+                <h3 className="text-xl font-semibold text-green-300 mb-6">Your Vision</h3>
+                <div className="relative mb-4">
+                  <svg width="200" height="200" className="transform -rotate-90">
+                    {storyData.lifeAreas.map((area, index) => {
+                      const startAngle = (index * 360) / storyData.lifeAreas.length;
+                      const endAngle = ((index + 1) * 360) / storyData.lifeAreas.length;
+                      const radius = Math.max(20, (area.vision / 10) * 80);
+                      
+                      const startAngleRad = (startAngle * Math.PI) / 180;
+                      const endAngleRad = (endAngle * Math.PI) / 180;
+                      
+                      const x1 = 100 + radius * Math.cos(startAngleRad);
+                      const y1 = 100 + radius * Math.sin(startAngleRad);
+                      const x2 = 100 + radius * Math.cos(endAngleRad);
+                      const y2 = 100 + radius * Math.sin(endAngleRad);
+                      
+                      const largeArcFlag = endAngleRad - startAngleRad <= Math.PI ? "0" : "1";
+                      
+                      return (
+                        <path
+                          key={index}
+                          d={`M 100 100 L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
+                          fill={area.vision > 0 ? "rgba(34, 197, 94, 0.6)" : "rgba(71, 85, 105, 0.4)"}
+                          stroke={area.vision > 0 ? "rgba(34, 197, 94, 0.8)" : "rgba(71, 85, 105, 0.6)"}
+                          strokeWidth="1"
+                        />
+                      );
+                    })}
+                    
+                    {[20, 40, 60, 80].map(r => (
+                      <circle
+                        key={r}
+                        cx="100"
+                        cy="100"
+                        r={r}
+                        fill="none"
+                        stroke="rgba(148, 163, 184, 0.1)"
+                        strokeWidth="1"
+                      />
+                    ))}
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-300">
+                        {storyData.hasData ? 
+                          Math.round(storyData.lifeAreas.reduce((sum, area) => sum + area.vision, 0) / 8 * 10) / 10 :
+                          '?'
+                        }
+                      </div>
+                      <div className="text-xs text-green-400">{storyData.hasData ? 'Target' : 'Vision'}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-center space-x-8 mt-8 text-sm">
+              {storyData.lifeAreas.slice(0, 4).map((area, i) => (
+                <div key={i} className={storyData.hasData ? "text-slate-400" : "text-slate-500"}>{area.area}</div>
+              ))}
+            </div>
+          </div>
+
+          {/* 90-Day Calendar */}
+          <div className="bg-slate-800/30 backdrop-blur-sm border border-slate-700/30 rounded-3xl p-8">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-3">
+                <Target className="w-8 h-8 text-purple-400" />
+                <h3 className="text-2xl font-bold text-white">Your 90-Day Journey</h3>
+              </div>
+              <div className="text-right">
+                <div className="text-sm text-slate-400">Day {storyData.daysIntoJourney} of 90</div>
+                <div className="text-lg font-semibold text-purple-400">{90 - storyData.daysIntoJourney} days remaining</div>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-10 gap-1 mb-6">
+              {Array.from({ length: 90 }, (_, i) => {
+                const dayNumber = i + 1;
+                const isPast = dayNumber <= storyData.daysIntoJourney;
+                const isToday = dayNumber === storyData.daysIntoJourney;
+                
+                const milestone = upcomingMilestones.find(m => 
+                  m.daysAway === dayNumber - storyData.daysIntoJourney
+                );
+                
+                return (
+                  <div
+                    key={i}
+                    className={`aspect-square rounded-sm flex items-center justify-center text-xs font-medium relative ${
+                      isPast 
+                        ? 'bg-slate-600/60 text-slate-400' 
+                        : isToday 
+                          ? 'bg-purple-500 text-white animate-pulse ring-2 ring-purple-400' 
+                          : 'bg-slate-700/30 text-slate-500 hover:bg-slate-600/40'
+                    }`}
+                  >
+                    {milestone ? (
+                      <div className={`absolute inset-0 ${
+                        milestone.color === 'purple' ? 'bg-purple-500' :
+                        milestone.color === 'green' ? 'bg-green-500' :
+                        'bg-blue-500'
+                      } rounded-sm flex items-center justify-center text-white`}>
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        </svg>
+                      </div>
+                    ) : (
+                      dayNumber
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mb-6">
+              <div className="w-full bg-slate-700/50 rounded-full h-3 overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-slate-400 via-purple-500 to-green-500 rounded-full transition-all duration-1000"
+                  style={{ width: `${(storyData.daysIntoJourney / 90) * 100}%` }}
+                ></div>
+              </div>
+              <div className="flex justify-between mt-2 text-sm">
+                <span className="text-slate-400">Start</span>
+                <span className="text-purple-400 font-medium">Day {storyData.daysIntoJourney}</span>
+                <span className="text-green-400">Vision Achieved</span>
+              </div>
+            </div>
+
+            {upcomingMilestones.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                {upcomingMilestones.map((event, i) => (
+                  <div key={i} className="bg-slate-700/50 rounded-xl p-4 border border-slate-600/30">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                      </svg>
+                      <span className="text-xs text-slate-400 uppercase font-medium">{event.type}</span>
+                    </div>
+                    <h4 className="text-lg font-semibold text-white mb-1">{event.title}</h4>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400 text-sm">{event.date}</span>
+                      <span className="text-purple-400 text-sm font-medium">{event.daysAway} days</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="text-slate-500 mb-4">
+                  <Calendar className="w-12 h-12 mx-auto mb-2 opacity-40" />
+                  <p>
+                    {storyData.hasData ? 
+                      "Add milestones to your goals to see upcoming events" : 
+                      "Complete your planning stages to see upcoming milestones and goals"
+                    }
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-center space-x-6 text-xs">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-slate-600 rounded-sm"></div>
+                <span className="text-slate-400">Past</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-purple-500 rounded-sm"></div>
+                <span className="text-slate-400">Today</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-slate-700 rounded-sm"></div>
+                <span className="text-slate-400">Future</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <svg className="w-3 h-3 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+                <span className="text-slate-400">Milestones</span>
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Journey Navigation */}
-      <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 hidden md:block">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2 text-slate-700">
-            </div>
-            <div className="text-slate-300">→</div>
-            <div className="flex items-center space-x-2 text-slate-700">
-              <BarChart3 className="w-5 h-5" />
-              <span className="font-medium">Life Areas</span>
-            </div>
-            <div className="text-slate-300">→</div>
-            <div className="flex items-center space-x-2 text-slate-700">
-              <Target className="w-5 h-5" />
-              <span className="font-medium">Goals</span>
-            </div>
-            <div className="text-slate-300">→</div>
-            <div className="flex items-center space-x-2 text-slate-700">
-              <CalendarIcon className="w-5 h-5" />
-              <span className="font-medium">Daily Actions</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Stats Summary */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-          <div>
-            <div className="text-3xl font-bold text-slate-800 mb-1">
-              {visionItems.length}
-            </div>
-            <p className="text-slate-600">Vision Items</p>
-          </div>
-          
-          <div>
-            <div className="text-3xl font-bold text-slate-800 mb-1">
-              {coreValues.length > 0 ? coreValues.length : 0}
-            </div>
-            <p className="text-slate-600">Core Values</p>
-          </div>
-          
-          <div>
-            <div className="text-3xl font-bold text-slate-800 mb-1">
-              {activeGoals.length}
-            </div>
-            <p className="text-slate-600">Active Goals</p>
-          </div>
-          
-          <div>
-            <div className="text-3xl font-bold text-slate-800 mb-1">
-              {wheelAreas.length > 0 ? 
-                (wheelAreas.reduce((sum, area) => sum + area.score, 0) / wheelAreas.length).toFixed(1) : 
-                '-'}
-            </div>
-            <p className="text-slate-600">Life Balance Score</p>
-          </div>
-        </div>
-        
-        <div className="mt-6 p-4 bg-white rounded-lg border border-slate-200">
-          <div className="flex items-center">
-            <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-700 mr-4">
-              <Zap className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-slate-900">Your goals connect to {coreValues.length > 0 ? '83%' : '0%'} of your core values</h3>
-              <p className="text-sm text-slate-600">
-                {coreValues.length > 0 ? 
-                  'Great alignment! Your actions are supporting what matters most to you.' : 
-                  'Complete your values clarification to see alignment'}
-              </p>
+          <div className="mt-12 text-center">
+            <div className="inline-flex items-center space-x-4 bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/30 rounded-2xl px-8 py-6">
+              <div className="text-3xl">🎯</div>
+              <div>
+                <div className="text-lg font-semibold text-white">
+                  {storyData.hasData ? "You're Building Momentum" : "Your Journey Awaits"}
+                </div>
+                <div className="text-slate-400 text-sm">
+                  {storyData.hasData ? 
+                    `${90 - storyData.daysIntoJourney} days remaining to achieve your vision` :
+                    "Complete your baseline assessment to unlock your personal story"
+                  }
+                </div>
+              </div>
             </div>
           </div>
         </div>
