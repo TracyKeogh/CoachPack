@@ -56,6 +56,8 @@ Deno.serve(async (req) => {
 
     const { price_id, success_url, cancel_url, mode, email, name } = await req.json();
 
+    // Extract coupon_code if provided
+    const { price_id, success_url, cancel_url, mode, email, name, coupon_code } = await req.json();
     const error = validateParameters(
       { price_id, success_url, cancel_url, mode, email, name },
       {
@@ -119,6 +121,15 @@ Deno.serve(async (req) => {
       },
     };
 
+    // Add coupon if provided
+    if (coupon_code) {
+      console.log(`Applying coupon code: ${coupon_code}`);
+      sessionParams.discounts = [
+        {
+          coupon: coupon_code,
+        },
+      ];
+    }
     const session = await stripe.checkout.sessions.create(sessionParams);
 
     console.log(`Created checkout session ${session.id} for customer ${customerId}`);
