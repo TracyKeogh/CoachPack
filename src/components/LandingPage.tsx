@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Target, Sparkles, BarChart3, Heart, ImageIcon, Calendar, CheckCircle2, Crown, Star } from 'lucide-react';
-import PromotionalVideo from './PromotionalVideo';
+import SnappyDemoVideo from './SnappyDemoVideo';
 
 const LandingPage: React.FC = () => {
   const handleCTAClick = () => {
@@ -102,7 +102,7 @@ const LandingPage: React.FC = () => {
               </div>
 
               <div>
-                <PromotionalVideo 
+                <SnappyDemoVideo 
                   autoPlay={false} 
                   showControls={true} 
                   onCTAClick={handleCTAClick}
