@@ -64,10 +64,11 @@ const NotFound = () => {
   );
 };
 
-function AppContent() {
+// Main app layout with navigation
+function AppLayout() {
   const [isNavigationCollapsed, setIsNavigationCollapsed] = React.useState(false);
   const location = useLocation();
-  const navigate = useNavigate(); // THIS WAS MISSING - CRITICAL FIX
+  const navigate = useNavigate();
 
   // Auto-collapse navigation when on dashboard, expand for other views
   React.useEffect(() => {
@@ -96,15 +97,7 @@ function AppContent() {
             }`}
           >
             <div className="max-w-7xl mx-auto">
-              <Routes>
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/wheel" element={<WheelOfLife />} />
-                <Route path="/values" element={<ValuesClarity />} />
-                <Route path="/vision" element={<VisionBoard />} />
-                <Route path="/goals" element={<GoalSetting />} />
-                <Route path="/calendar" element={<Calendar />} />
-                <Route path="/templates" element={<CommunityTemplates />} />
-              </Routes>
+              <Outlet />
             </div>
           </main>
         </div>
@@ -143,13 +136,6 @@ function App() {
           <Route path="/success" element={<SuccessPage />} />
           <Route path="/cancel" element={<CancelPage />} />
           <Route path="/admin" element={<AdminDashboard />} />
-         
-         {/* Dashboard Route */}
-         <Route path="/dashboard" element={
-           <ProtectedRoute>
-             <AppContent />
-           </ProtectedRoute>
-         } />
           
           {/* Free Assessment Route */}
           <Route 
@@ -164,37 +150,16 @@ function App() {
             } 
           />
 
-          {/* Dashboard and feature routes */}
-          <Route path="/wheel" element={
-            <ProtectedRoute>
-              <AppContent />
-            </ProtectedRoute>
-          } />
-          <Route path="/values" element={
-            <ProtectedRoute>
-              <AppContent />
-            </ProtectedRoute>
-          } />
-          <Route path="/vision" element={
-            <ProtectedRoute>
-              <AppContent />
-            </ProtectedRoute>
-          } />
-          <Route path="/goals" element={
-            <ProtectedRoute>
-              <AppContent />
-            </ProtectedRoute>
-          } />
-          <Route path="/calendar" element={
-            <ProtectedRoute>
-              <AppContent />
-            </ProtectedRoute>
-          } />
-          <Route path="/templates" element={
-            <ProtectedRoute>
-              <AppContent />
-            </ProtectedRoute>
-          } />
+          {/* Protected App Routes - ALL use the same AppLayout */}
+          <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/wheel" element={<WheelOfLife />} />
+            <Route path="/values" element={<ValuesClarity />} />
+            <Route path="/vision" element={<VisionBoard />} />
+            <Route path="/goals" element={<GoalSetting />} />
+            <Route path="/calendar" element={<Calendar />} />
+            <Route path="/templates" element={<CommunityTemplates />} />
+          </Route>
           
           {/* 404 Route */}
           <Route path="*" element={<NotFound />} />
