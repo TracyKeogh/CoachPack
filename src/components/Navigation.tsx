@@ -162,9 +162,9 @@ const Navigation: React.FC<NavigationProps> = ({
 
   const JourneySection = ({ section }: { section: typeof sections[0] }) => (
     <div 
-      className={`flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-all duration-200 ${
+      className={`flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-all duration-200 group relative ${
         section.active ? 'bg-purple-100 border-l-4 border-purple-500' : 'hover:bg-slate-100'
-      }`}
+      } ${isCollapsed ? 'justify-center' : ''}`}
       onClick={() => onNavigate && onNavigate(section.id)}
     >
       <section.icon className={`w-5 h-5 ${
@@ -198,6 +198,11 @@ const Navigation: React.FC<NavigationProps> = ({
         <div className="absolute left-full ml-2 px-2 py-1 bg-slate-900 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
           {section.title} - {section.progress}%
         </div>
+      )}
+
+      {/* Active indicator for collapsed state */}
+      {isCollapsed && section.active && (
+        <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-purple-600 rounded-l" />
       )}
     </div>
   );
@@ -289,41 +294,74 @@ const Navigation: React.FC<NavigationProps> = ({
           )}
 
           {/* Additional Navigation Items */}
-          {!isCollapsed && (
-            <>
-              <div className="border-t border-slate-200 pt-6">
-                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">
-                  Additional Tools
-                </h3>
-                <ul className="space-y-2">
-                  {traditionalNavItems.map((item) => {
-                    const Icon = item.icon;
-                    const isActive = currentView === item.id;
-                    
-                    return (
-                      <li key={item.id}>
-                        <button
-                          onClick={() => onNavigate(item.id as ViewType)}
-                          className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-200 group ${
-                            isActive 
-                              ? 'bg-purple-50 text-purple-700 shadow-sm' 
-                              : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
-                          }`}
-                        >
-                          <div className="flex items-center space-x-3">
-                            <Icon className={`w-5 h-5 ${isActive ? 'text-purple-600' : item.color}`} />
-                            <span className="font-medium">{item.label}</span>
-                          </div>
-                          <ChevronRight className={`w-4 h-4 transition-transform ${
-                            isActive ? 'text-purple-500 transform rotate-90' : 'text-slate-400 group-hover:text-slate-600'
-                          }`} />
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            </>
+          {!isCollapsed ? (
+            <div className="border-t border-slate-200 pt-6">
+              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">
+                Additional Tools
+              </h3>
+              <ul className="space-y-2">
+                {traditionalNavItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = currentView === item.id;
+                  
+                  return (
+                    <li key={item.id}>
+                      <button
+                        onClick={() => onNavigate(item.id as ViewType)}
+                        className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-200 group ${
+                          isActive 
+                            ? 'bg-purple-50 text-purple-700 shadow-sm' 
+                            : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <Icon className={`w-5 h-5 ${isActive ? 'text-purple-600' : item.color}`} />
+                          <span className="font-medium">{item.label}</span>
+                        </div>
+                        <ChevronRight className={`w-4 h-4 transition-transform ${
+                          isActive ? 'text-purple-500 transform rotate-90' : 'text-slate-400 group-hover:text-slate-600'
+                        }`} />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ) : (
+            <div className="border-t border-slate-200 pt-6">
+              <ul className="space-y-2">
+                {traditionalNavItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = currentView === item.id;
+                  
+                  return (
+                    <li key={item.id}>
+                      <button
+                        onClick={() => onNavigate(item.id as ViewType)}
+                        className={`w-full flex items-center justify-center p-3 rounded-lg transition-all duration-200 group relative ${
+                          isActive 
+                            ? 'bg-purple-50 text-purple-700 shadow-sm' 
+                            : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+                        }`}
+                        title={item.label}
+                      >
+                        <Icon className={`w-5 h-5 ${isActive ? 'text-purple-600' : item.color}`} />
+                        
+                        {/* Tooltip for collapsed state */}
+                        <div className="absolute left-full ml-2 px-2 py-1 bg-slate-900 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                          {item.label}
+                        </div>
+
+                        {/* Active indicator for collapsed state */}
+                        {isActive && (
+                          <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-purple-600 rounded-l" />
+                        )}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           )}
         </div>
       </nav>
