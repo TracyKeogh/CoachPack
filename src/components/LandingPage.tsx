@@ -1,9 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Target, Sparkles, BarChart3, Heart, ImageIcon, Calendar, CheckCircle2, Crown, Star } from 'lucide-react';
-import SnappyDemoVideo from './SnappyDemoVideo';
+import PromotionalVideo from './PromotionalVideo';
 
 const LandingPage: React.FC = () => {
+  const handleCTAClick = () => {
+    window.location.href = '/free-wheel';
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50">
       {/* Hero Section */}
@@ -98,7 +102,11 @@ const LandingPage: React.FC = () => {
               </div>
 
               <div>
-                <SnappyDemoVideo autoPlay={false} showControls={true} />
+                <PromotionalVideo 
+                  autoPlay={false} 
+                  showControls={true} 
+                  onCTAClick={handleCTAClick}
+                />
               </div>
             </div>
           </div>
