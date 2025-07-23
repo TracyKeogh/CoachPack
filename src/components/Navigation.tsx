@@ -228,9 +228,9 @@ const Navigation: React.FC<NavigationProps> = ({
           isCollapsed ? 'w-16' : 'w-80'
         }`}
       >
-        <div className="p-6">
+        <div className={`${isCollapsed ? 'p-2' : 'p-6'}`}>
           {/* Header with Toggle */}
-          <div className="flex items-center justify-between mb-6">
+          <div className={`flex items-center justify-between ${isCollapsed ? 'mb-2' : 'mb-6'}`}>
             {!isCollapsed && (
               <div className="flex items-center space-x-3">
                 <button
@@ -244,7 +244,7 @@ const Navigation: React.FC<NavigationProps> = ({
             )}
             <button
               onClick={onToggleCollapse}
-              className={`p-1 hover:bg-slate-100 rounded transition-colors ${
+              className={`p-2 hover:bg-slate-100 rounded transition-colors ${
                 isCollapsed ? 'mx-auto' : ''
               }`}
               title={isCollapsed ? "Open navigation" : "Collapse navigation"}
@@ -267,7 +267,7 @@ const Navigation: React.FC<NavigationProps> = ({
           )}
 
           {/* Journey Progress Sections */}
-          <div className="space-y-3 mb-8">
+          <div className="space-y-2 mb-8">
             {sections.map(section => (
               <JourneySection key={section.id} section={section} />
             ))}
