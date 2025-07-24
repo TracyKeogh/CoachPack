@@ -1,328 +1,415 @@
-import React, { useState } from 'react';
-import { 
-  ArrowRight,
-  Share2,
-  Eye,
-  Download,
-} from 'lucide-react';
-import { Plus, Target, Edit3, X, Check, Flag, Calendar, Pencil, ArrowLeft, Save, Heart, Lightbulb, Sparkles, CalendarIcon } from 'lucide-react';
-import MilestonesSection from './MilestonesSection';
-import { getTwelveWeeksFromNow } from '../types/goals';
-import { useValuesData } from '../hooks/useValuesData';
-import { useTemplates } from '../hooks/useTemplates';
-import { Link } from 'react-router-dom';
-import { v4 as uuidv4 } from 'uuid';
+import React, { useState, useEffect } from 'react';
+import { ArrowRight, Target, Repeat, MapPin, Sparkles, TrendingUp, Dumbbell, Scale, CheckCircle, Calendar } from 'lucide-react';
 
-interface Goal {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  milestones: Milestone[];
-  actionItems: ActionItem[];
-  connectedValues: string[];
-  targetDate: string;
-  progress: number;
-  isShared?: boolean;
-}
-
-interface Milestone {
-  id: string;
-  title: string;
-  targetDate: string;
-  completed: boolean;
-}
-
-interface ActionItem {
-  id: string;
-  title: string;
-  frequency: 'daily' | 'weekly' | '3x-week';
-  completed: boolean;
-}
-
-const GoalSetting: React.FC = () => {
-  const [currentStep, setCurrentStep] = useState<'annual' | 'category'>('annual');
-  const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0);
-  const [categories] = useState(['business', 'body', 'balance']);
-  const [annualSnapshot, setAnnualSnapshot] = useState({
-    vision: 'I feel energized and healthy. My career is thriving with new opportunities and growth. My relationships are deep and fulfilling, and I\'m living with purpose and joy every day.',
-    priorities: '1. Build a sustainable business\n2. Improve physical health and energy\n3. Create more balance between work and personal life',
-    growth: 'Develop deeper self-awareness and emotional intelligence. Learn new skills that expand my capabilities both professionally and personally.'
-  });
-  const [categoryGoals, setCategoryGoals] = useState<Record<string, Goal[]>>({
-    business: [
-      {
-        id: '1',
-        title: 'Grow my business to $10k/month revenue',
-        description: 'Create a sustainable business model with consistent monthly revenue through product sales and client work',
-        category: 'business',
-        milestones: [
-          {
-            id: 'm1',
-            title: 'Launch new product offering',
-            targetDate: getTwelveWeeksFromNow(),
-            completed: false
-          },
-          {
-            id: 'm2',
-            title: 'Reach 1,000 email subscribers',
-            targetDate: getTwelveWeeksFromNow(),
-            completed: false
-          }
-        ],
-        actionItems: [
-          {
-            id: 'a1',
-            title: 'Write weekly newsletter',
-            frequency: 'weekly',
-            completed: false
-          },
-          {
-            id: 'a2',
-            title: 'Reach out to 3 potential clients',
-            frequency: 'weekly',
-            completed: false
-          },
-          {
-            id: 'a3',
-            title: 'Review metrics and adjust strategy',
-            frequency: 'weekly',
-            completed: false
-          }
-        ],
-        connectedValues: ['Growth', 'Freedom', 'Excellence'],
-        targetDate: getTwelveWeeksFromNow(),
-        progress: 0
-      }
-    ],
-    body: [
-      {
-        id: '2',
-        title: 'Improve energy and physical health',
-        description: 'Establish consistent exercise routine, improve nutrition, and prioritize sleep for better overall energy and health',
-        category: 'body',
-        milestones: [
-          {
-            id: 'm3',
-            title: 'Complete 30 consecutive days of exercise',
-            targetDate: getTwelveWeeksFromNow(),
-            completed: false
-          },
-          {
-            id: 'm4',
-            title: 'Establish 7-hour sleep routine',
-            targetDate: getTwelveWeeksFromNow(),
-            completed: false
-          }
-        ],
-        actionItems: [
-          {
-            id: 'a4',
-            title: 'Exercise for 30 minutes',
-            frequency: '3x-week',
-            completed: false
-          },
-          {
-            id: 'a5',
-            title: 'Meal prep on Sundays',
-            frequency: 'weekly',
-            completed: false
-          },
-          {
-            id: 'a6',
-            title: 'No screens 1 hour before bed',
-            frequency: 'daily',
-            completed: false
-          }
-        ],
-        connectedValues: ['Health', 'Vitality', 'Discipline'],
-        targetDate: getTwelveWeeksFromNow(),
-        progress: 0
-      }
-    ],
-    balance: [
-      {
-        id: '3',
-        title: 'Create better work-life harmony',
-        description: 'Establish clear boundaries between work and personal life, prioritize relationships, and make time for activities that bring joy',
-        category: 'balance',
-        milestones: [
-          {
-            id: 'm5',
-            title: 'Implement no-work weekends',
-            targetDate: getTwelveWeeksFromNow(),
-            completed: false
-          },
-          {
-            id: 'm6',
-            title: 'Plan quarterly weekend getaway',
-            targetDate: getTwelveWeeksFromNow(),
-            completed: false
-          }
-        ],
-        actionItems: [
-          {
-            id: 'a7',
-            title: 'Schedule quality time with loved ones',
-            frequency: 'weekly',
-            completed: false
-          },
-          {
-            id: 'a8',
-            title: 'Dedicate 30 minutes to a hobby',
-            frequency: '3x-week',
-            completed: false
-          },
-          {
-            id: 'a9',
-            title: 'Practice mindfulness meditation',
-            frequency: 'daily',
-            completed: false
-          }
-        ],
-        connectedValues: ['Balance', 'Connection', 'Joy'],
-        targetDate: getTwelveWeeksFromNow(),
-        progress: 0
-      }
-    ]
-  });
-  const [editingGoal, setEditingGoal] = useState<string | null>(null);
-  const [newGoal, setNewGoal] = useState<Partial<Goal>>({});
-  const { valuesData } = useValuesData();
-  const { shareTemplate, userSharedCount } = useTemplates();
-
-  const currentCategory = categories[currentCategoryIndex];
-
-  const handleAnnualSnapshotChange = (field: string, value: string) => {
-    setAnnualSnapshot(prev => ({ ...prev, [field]: value }));
+const GoalSetting = () => {
+  const [currentFlow, setCurrentFlow] = useState('annual');
+  const [selectedCategory, setSelectedCategory] = useState('business');
+  const [isLoading, setIsLoading] = useState(false);
+  const [user, setUser] = useState(null);
+  const [supabase, setSupabase] = useState(null);
+  
+  const getOneYearFromNow = () => {
+    const date = new Date();
+    date.setFullYear(date.getFullYear() + 1);
+    return date.toISOString().split('T')[0];
   };
 
-  const handleAddGoal = () => {
-    if (newGoal.title && newGoal.description) {
-      const goal: Goal = {
-        id: Date.now().toString(),
-        title: newGoal.title,
-        description: newGoal.description,
-        category: currentCategory,
-        milestones: [],
-        actionItems: [],
-        connectedValues: newGoal.connectedValues || [],
-        targetDate: newGoal.targetDate || getTwelveWeeksFromNow(),
-        progress: 0
+  const getNinetyDaysFromNow = () => {
+    const date = new Date();
+    date.setDate(date.getDate() + 90);
+    return date.toISOString().split('T')[0];
+  };
+
+  const [annualVision, setAnnualVision] = useState({
+    snapshot: '',
+    targetDate: getOneYearFromNow()
+  });
+
+  const [currentSteps, setCurrentSteps] = useState({
+    business: 0,
+    body: 0,
+    balance: 0
+  });
+  
+  const [goalsData, setGoalsData] = useState({
+    business: {
+      goalText: '',
+      measureText: '',
+      targetDate: getNinetyDaysFromNow(),
+      habits: [],
+      milestones: []
+    },
+    body: {
+      goalText: '',
+      measureText: '',
+      targetDate: getNinetyDaysFromNow(),
+      habits: [],
+      milestones: []
+    },
+    balance: {
+      goalText: '',
+      measureText: '',
+      targetDate: getNinetyDaysFromNow(),
+      habits: [],
+      milestones: []
+    }
+  });
+
+  const categories = [
+    { id: 'business', title: 'Business', icon: TrendingUp, color: 'from-blue-500 to-purple-600' },
+    { id: 'body', title: 'Body', icon: Dumbbell, color: 'from-green-500 to-teal-600' },
+    { id: 'balance', title: 'Balance', icon: Scale, color: 'from-orange-500 to-pink-600' }
+  ];
+
+  const steps = ['Define', 'Habits', 'Milestones'];
+  const currentCategory = categories.find(c => c.id === selectedCategory);
+  const currentFormData = goalsData[selectedCategory];
+  const currentStep = currentSteps[selectedCategory];
+
+  useEffect(() => {
+    const initializeApp = async () => {
+      const supabaseClient = window.supabase || window.supabaseClient || globalThis.supabase;
+      
+      if (!supabaseClient) {
+        console.error('Supabase client not found. Make sure Supabase is initialized.');
+        return;
+      }
+
+      setSupabase(supabaseClient);
+
+      try {
+        const result = await supabaseClient.auth.getUser();
+        const user = result.data.user;
+        setUser(user);
+        
+        if (user) {
+          await loadGoalsData(user.id, supabaseClient);
+        }
+      } catch (error) {
+        console.error('Error getting user:', error);
+      }
+    };
+
+    initializeApp();
+  }, []);
+
+  const loadGoalsData = async (userId, supabaseClient) => {
+    setIsLoading(true);
+    try {
+      const result = await supabaseClient
+        .from('user_goals_data')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+      if (result.error && result.error.code !== 'PGRST116') {
+        console.error('Error loading goals data:', result.error);
+        return;
+      }
+
+      if (result.data) {
+        setCurrentFlow(result.data.current_step || 'annual');
+        setAnnualVision(result.data.annual_snapshot || { snapshot: '', targetDate: getOneYearFromNow() });
+        
+        if (result.data.category_goals) {
+          setGoalsData(result.data.category_goals);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading goals data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const saveGoalsData = async () => {
+    if (!user || !supabase) {
+      console.error('User or Supabase client not available');
+      return false;
+    }
+
+    setIsLoading(true);
+    try {
+      const dataToSave = {
+        user_id: user.id,
+        current_step: currentFlow,
+        annual_snapshot: annualVision,
+        category_goals: goalsData,
+        last_updated: new Date().toISOString()
       };
 
-      setCategoryGoals(prev => ({
+      const result = await supabase
+        .from('user_goals_data')
+        .upsert(dataToSave, { onConflict: 'user_id' });
+
+      if (result.error) {
+        console.error('Error saving goals data:', result.error);
+        alert('Error saving data. Please try again.');
+        return false;
+      }
+
+      console.log('Goals data saved successfully');
+      return true;
+    } catch (error) {
+      console.error('Error saving goals data:', error);
+      alert('Error saving data. Please try again.');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updateCurrentStep = (newStep) => {
+    setCurrentSteps(prev => ({
+      ...prev,
+      [selectedCategory]: newStep
+    }));
+  };
+
+  const updateField = (field, value) => {
+    setGoalsData(prev => ({
+      ...prev,
+      [selectedCategory]: {
+        ...prev[selectedCategory],
+        [field]: value
+      }
+    }));
+  };
+
+  const addItem = (type, data) => {
+    if (typeof data === 'string') {
+      if (!data.trim()) return;
+      const newItem = { id: Date.now(), text: data.trim() };
+      setGoalsData(prev => ({
         ...prev,
-        [currentCategory]: [...prev[currentCategory], goal]
+        [selectedCategory]: {
+          ...prev[selectedCategory],
+          [type]: [...prev[selectedCategory][type], newItem]
+        }
       }));
-
-      setNewGoal({});
-      setEditingGoal(null);
+    } else {
+      const newItem = { id: Date.now(), ...data };
+      setGoalsData(prev => ({
+        ...prev,
+        [selectedCategory]: {
+          ...prev[selectedCategory],
+          [type]: [...prev[selectedCategory][type], newItem]
+        }
+      }));
     }
   };
 
-  const handleEditGoal = (goalId: string, updates: Partial<Goal>) => {
-    setCategoryGoals(prev => ({
+  const removeItem = (type, id) => {
+    setGoalsData(prev => ({
       ...prev,
-      [currentCategory]: prev[currentCategory].map(goal =>
-        goal.id === goalId ? { ...goal, ...updates } : goal
-      )
+      [selectedCategory]: {
+        ...prev[selectedCategory],
+        [type]: prev[selectedCategory][type].filter(item => item.id !== id)
+      }
     }));
   };
 
-  const handleDeleteGoal = (goalId: string) => {
-    setCategoryGoals(prev => ({
-      ...prev,
-      [currentCategory]: prev[currentCategory].filter(goal => goal.id !== goalId)
-    }));
-  };
-
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case 'business': return 'blue';
-      case 'body': return 'green';
-      case 'balance': return 'purple';
-      default: return 'gray';
+  const handleAnnualComplete = async () => {
+    if (!annualVision.snapshot.trim()) return;
+    
+    const saved = await saveGoalsData();
+    if (saved) {
+      setCurrentFlow('90day');
     }
   };
 
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'business': return Target;
-      case 'body': return Heart;
-      case 'balance': return Sparkles;
-      default: return Target;
+  const handleCategoryComplete = async () => {
+    const saved = await saveGoalsData();
+    if (saved) {
+      updateCurrentStep(0);
+      
+      const allCompleted = categories.every(cat => 
+        goalsData[cat.id].goalText.trim() && 
+        goalsData[cat.id].habits.length > 0 && 
+        goalsData[cat.id].milestones.length > 0
+      );
+      
+      if (allCompleted) {
+        setCurrentFlow('summary');
+      } else {
+        const nextCategory = categories.find(cat => 
+          !goalsData[cat.id].goalText.trim() || 
+          goalsData[cat.id].habits.length === 0 || 
+          goalsData[cat.id].milestones.length === 0
+        );
+        if (nextCategory) {
+          setSelectedCategory(nextCategory.id);
+        }
+      }
     }
   };
 
-  const nextCategory = () => {
-    if (currentCategoryIndex < categories.length - 1) {
-      setCurrentCategoryIndex(currentCategoryIndex + 1);
-    }
-  };
-
-  const prevCategory = () => {
-    if (currentCategoryIndex > 0) {
-      setCurrentCategoryIndex(currentCategoryIndex - 1);
-    }
-  };
-
-  if (currentStep === 'annual') {
+  if (currentFlow === 'annual') {
     return (
-      <div className="max-w-4xl mx-auto p-6 space-y-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Annual Vision</h1>
-          <p className="text-gray-600">Set the foundation for your goals, milestones, and actions</p>
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-purple-800">
+        <div className="max-w-4xl mx-auto p-6">
+          <div className="bg-white/10 backdrop-blur-sm rounded-3xl p-12 shadow-2xl border border-white/20">
+            <div className="text-center mb-12">
+              <div className="w-24 h-24 bg-gradient-to-br from-purple-400 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl">
+                <Calendar className="w-12 h-12 text-white" />
+              </div>
+              <h1 className="text-4xl font-light text-white mb-4">Your Annual Vision</h1>
+              <p className="text-purple-200 text-lg">Paint a picture of your life one year from now</p>
+            </div>
+
+            <div className="space-y-8">
+              <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-xl">
+                <label className="block text-sm font-medium text-gray-700 mb-4 uppercase tracking-wider">
+                  Life Snapshot - {new Date(annualVision.targetDate).toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}
+                </label>
+                <textarea
+                  value={annualVision.snapshot}
+                  onChange={(e) => setAnnualVision(prev => ({ ...prev, snapshot: e.target.value }))}
+                  placeholder="Describe what your life looks like a year from now... How do you feel? What have you accomplished? What does a typical day look like?"
+                  className="w-full h-48 bg-transparent border-none resize-none text-lg text-gray-800 placeholder-gray-500 focus:outline-none leading-relaxed"
+                />
+              </div>
+
+              <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-xl">
+                <label className="block text-sm font-medium text-gray-700 mb-3 uppercase tracking-wider">Target Date</label>
+                <input
+                  type="date"
+                  value={annualVision.targetDate}
+                  onChange={(e) => setAnnualVision(prev => ({ ...prev, targetDate: e.target.value }))}
+                  className="w-full bg-transparent border border-gray-300 rounded-lg px-4 py-3 text-gray-800 focus:outline-none focus:border-purple-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-center mt-12">
+              <button
+                onClick={handleAnnualComplete}
+                disabled={!annualVision.snapshot.trim() || isLoading}
+                className={`px-12 py-4 rounded-xl font-medium text-lg transition-all flex items-center gap-3 ${
+                  !annualVision.snapshot.trim() || isLoading
+                    ? 'bg-white/20 text-white/40 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:from-purple-600 hover:to-blue-600 shadow-xl'
+                }`}
+              >
+                {isLoading ? 'Saving...' : 'Continue to 90-Day Goals'}
+                <ArrowRight className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
         </div>
+      </div>
+    );
+  }
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              What does success look like this year?
-            </label>
-            <textarea
-              value={annualSnapshot.vision}
-              onChange={(e) => handleAnnualSnapshotChange('vision', e.target.value)}
-              className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-              rows={4}
-              placeholder="Describe your vision for the year..."
-            />
-          </div>
+  if (currentFlow === 'summary') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="max-w-6xl mx-auto p-6">
+          <div className="bg-white rounded-3xl shadow-xl border p-12">
+            <div className="text-center mb-12">
+              <div className="w-24 h-24 bg-gradient-to-br from-green-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl">
+                <CheckCircle className="w-12 h-12 text-white" />
+              </div>
+              <h1 className="text-4xl font-light text-gray-900 mb-4">Goals Complete!</h1>
+              <p className="text-gray-600 text-lg">Here's your complete goal-setting summary</p>
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              What are your top 3 priorities?
-            </label>
-            <textarea
-              value={annualSnapshot.priorities}
-              onChange={(e) => handleAnnualSnapshotChange('priorities', e.target.value)}
-              className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-              rows={3}
-              placeholder="List your key priorities..."
-            />
-          </div>
+            <div className="mb-12">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-6">Annual Vision</h2>
+              <div className="bg-purple-50 rounded-2xl p-8 border border-purple-200">
+                <div className="flex items-center gap-3 mb-4">
+                  <Calendar className="w-6 h-6 text-purple-600" />
+                  <span className="text-sm font-medium text-purple-800">
+                    Target: {new Date(annualVision.targetDate).toLocaleDateString('en-US', { 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                  </span>
+                </div>
+                <p className="text-gray-700 leading-relaxed">{annualVision.snapshot}</p>
+              </div>
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              How do you want to grow personally?
-            </label>
-            <textarea
-              value={annualSnapshot.growth}
-              onChange={(e) => handleAnnualSnapshotChange('growth', e.target.value)}
-              className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-              rows={3}
-              placeholder="Describe your personal growth goals..."
-            />
-          </div>
+            <div className="space-y-8">
+              <h2 className="text-2xl font-semibold text-gray-900">90-Day Goals</h2>
+              
+              {categories.map((category) => {
+                const goalData = goalsData[category.id];
+                const Icon = category.icon;
+                
+                return (
+                  <div key={category.id} className="bg-gray-50 rounded-2xl p-8 border border-gray-200">
+                    <div className="flex items-center gap-4 mb-6">
+                      <div className={`w-12 h-12 bg-gradient-to-br ${category.color} rounded-full flex items-center justify-center`}>
+                        <Icon className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-semibold text-gray-900">{category.title}</h3>
+                        <p className="text-sm text-gray-600">
+                          Target: {new Date(goalData.targetDate).toLocaleDateString('en-US', { 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          })}
+                        </p>
+                      </div>
+                    </div>
 
-          <div className="flex justify-end pt-4">
-            <button
-              onClick={() => setCurrentStep('category')}
-              className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-            >
-              Continue to Goals, Milestones & Actions
-              <ArrowRight className="w-4 h-4" />
-            </button>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div>
+                        <h4 className="font-medium text-gray-900 mb-3">Goal</h4>
+                        <p className="text-gray-700">{goalData.goalText}</p>
+                        {goalData.measureText && (
+                          <p className="text-sm text-gray-500 mt-1">Measured by: {goalData.measureText}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <h4 className="font-medium text-gray-900 mb-3">Habits ({goalData.habits.length})</h4>
+                        <ul className="space-y-1">
+                          {goalData.habits.slice(0, 3).map((habit) => (
+                            <li key={habit.id} className="text-gray-700 text-sm">• {habit.text}</li>
+                          ))}
+                          {goalData.habits.length > 3 && (
+                            <li className="text-gray-500 text-sm">+{goalData.habits.length - 3} more</li>
+                          )}
+                        </ul>
+                      </div>
+
+                      <div>
+                        <h4 className="font-medium text-gray-900 mb-3">Milestones ({goalData.milestones.length})</h4>
+                        <ul className="space-y-1">
+                          {goalData.milestones.slice(0, 3).map((milestone) => (
+                            <li key={milestone.id} className="text-gray-700 text-sm">• {milestone.text}</li>
+                          ))}
+                          {goalData.milestones.length > 3 && (
+                            <li className="text-gray-500 text-sm">+{goalData.milestones.length - 3} more</li>
+                          )}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex justify-center mt-12">
+              <button
+                onClick={() => {
+                  if (window.history && window.history.back) {
+                    window.history.back();
+                  }
+                }}
+                className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-12 py-4 rounded-xl font-medium text-lg hover:from-purple-600 hover:to-blue-600 shadow-xl transition-all"
+              >
+                Return to Dashboard
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -330,308 +417,294 @@ const GoalSetting: React.FC = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 capitalize">
-            {currentCategory} Goals & Action Plan            
-          </h1>
-          <p className="text-gray-600 mt-1">
-            Step {currentCategoryIndex + 1} of {categories.length}
-          </p>
-          <p className="text-sm text-gray-500 mt-1">
-            <span className="inline-flex items-center">
-              <Share2 className="w-4 h-4 mr-1" />
-              Share your goals as templates for others to use
-            </span>
-          </p>
-        </div>
-        
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => setCurrentStep('annual')}
-            className="text-gray-600 hover:text-gray-800 transition-colors"
-          >
-            Back to Annual Vision
-          </button>
-          
-          <div className="flex items-center gap-2">
-            <button
-              onClick={prevCategory}
-              disabled={currentCategoryIndex === 0}
-              className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </button>
-            
-            <span className="text-sm text-gray-600">
-              {currentCategoryIndex + 1} / {categories.length}
-            </span>
-            
-            <button
-              onClick={nextCategory}
-              disabled={currentCategoryIndex === categories.length - 1}
-              className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <ArrowRight className="w-4 h-4" />
-            </button>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="bg-white/30 backdrop-blur-sm border-b border-gray-200/50 p-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-3xl font-semibold text-gray-900">90-Day Goals</h1>
+              <p className="text-gray-600">Break down your annual vision into actionable goals</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-500">Step {currentStep + 1} of 3</span>
+              <Sparkles className="w-8 h-8 text-gray-900" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            {categories.map((category) => {
+              const Icon = category.icon;
+              const isCompleted = goalsData[category.id].goalText.trim() && 
+                                goalsData[category.id].habits.length > 0 && 
+                                goalsData[category.id].milestones.length > 0;
+              
+              return (
+                <button
+                  key={category.id}
+                  onClick={() => setSelectedCategory(category.id)}
+                  className={`p-6 rounded-2xl border-2 transition-all relative ${
+                    selectedCategory === category.id
+                      ? 'border-blue-300 bg-blue-50 shadow-md'
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                  }`}
+                >
+                  {isCompleted && (
+                    <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                      <CheckCircle className="w-4 h-4 text-white" />
+                    </div>
+                  )}
+                  <div className={`w-12 h-12 bg-gradient-to-br ${category.color} rounded-full flex items-center justify-center mx-auto mb-3`}>
+                    <Icon className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-gray-900">{category.title}</h3>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div 
+              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${((currentStep + 1) / 3) * 100}%` }}
+            />
           </div>
         </div>
-        
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="space-y-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center gap-3 mb-4">
-              {React.createElement(getCategoryIcon(currentCategory), {
-                className: `w-6 h-6 text-${getCategoryColor(currentCategory)}-600`
-              })}
-              <h2 className="text-xl font-semibold text-gray-900 capitalize flex items-center">
-                Add {currentCategory} Goal
-                <span className="ml-2 px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">Includes Actions & Milestones</span>
-              </h2>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Goal Title
-                </label>
-                <input
-                  type="text"
-                  value={newGoal.title || ''}
-                  onChange={(e) => setNewGoal(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter your goal..."
-                />
+      <div className="max-w-4xl mx-auto p-6 pb-24">
+        <div className="bg-white rounded-3xl shadow-xl border p-12">
+          
+          {currentStep === 0 && (
+            <div className="space-y-8">
+              <div className="text-center">
+                <div className={`w-20 h-20 bg-gradient-to-br ${currentCategory.color} rounded-full flex items-center justify-center mx-auto mb-6`}>
+                  <Target className="w-10 h-10 text-white" />
+                </div>
+                <h2 className="text-3xl font-light text-gray-900 mb-3">What do you want to achieve?</h2>
+                <p className="text-gray-600">Define your {currentCategory.title.toLowerCase()} goal for the next 90 days</p>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
-                </label>
-                <textarea
-                  value={newGoal.description || ''}
-                  onChange={(e) => setNewGoal(prev => ({ ...prev, description: e.target.value }))}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                  rows={3}
-                  placeholder="Describe your goal in detail..."
-                />
-              </div>
+              <div className="space-y-6">
+                <div className="bg-gray-50 rounded-2xl p-6">
+                  <label className="block text-sm font-medium text-gray-600 mb-3 uppercase tracking-wider">Goal Statement</label>
+                  <input
+                    type="text"
+                    value={currentFormData.goalText}
+                    onChange={(e) => updateField('goalText', e.target.value)}
+                    placeholder="I will..."
+                    className="w-full bg-transparent border-none text-2xl font-light text-gray-800 placeholder-gray-500 focus:outline-none"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Target Date
-                </label>
-                <input
-                  type="date"
-                  value={newGoal.targetDate || getTwelveWeeksFromNow()}
-                  onChange={(e) => setNewGoal(prev => ({ ...prev, targetDate: e.target.value }))}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-
-              {valuesData?.ranked_core_values && valuesData.ranked_core_values.length > 0 && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Connected Values
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {valuesData.ranked_core_values.map((value: string) => (
-                      <button
-                        key={value}
-                        onClick={() => {
-                          const currentValues = newGoal.connectedValues || [];
-                          const isSelected = currentValues.includes(value);
-                          setNewGoal(prev => ({
-                            ...prev,
-                            connectedValues: isSelected
-                              ? currentValues.filter(v => v !== value)
-                              : [...currentValues, value]
-                          }));
-                        }}
-                        className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                          (newGoal.connectedValues || []).includes(value)
-                            ? `bg-${getCategoryColor(currentCategory)}-100 text-${getCategoryColor(currentCategory)}-800 border-${getCategoryColor(currentCategory)}-300`
-                            : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
-                        } border`}
-                      >
-                        {value}
-                      </button>
-                    ))}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-gray-50 rounded-2xl p-6">
+                    <label className="block text-sm font-medium text-gray-600 mb-3 uppercase tracking-wider">How will you measure it?</label>
+                    <input
+                      type="text"
+                      value={currentFormData.measureText}
+                      onChange={(e) => updateField('measureText', e.target.value)}
+                      placeholder="pounds, dollars, miles"
+                      className="w-full bg-transparent border-none text-xl text-gray-800 placeholder-gray-500 focus:outline-none"
+                    />
+                  </div>
+                  <div className="bg-gray-50 rounded-2xl p-6">
+                    <label className="block text-sm font-medium text-gray-600 mb-3 uppercase tracking-wider">Target Date</label>
+                    <input
+                      type="date"
+                      value={currentFormData.targetDate}
+                      onChange={(e) => updateField('targetDate', e.target.value)}
+                      className="w-full bg-transparent border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:border-blue-500"
+                    />
                   </div>
                 </div>
-              )}
-
-              <button
-                onClick={handleAddGoal}
-                disabled={!newGoal.title || !newGoal.description}
-                className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors ${
-                  newGoal.title && newGoal.description
-                    ? `bg-${getCategoryColor(currentCategory)}-600 text-white hover:bg-${getCategoryColor(currentCategory)}-700`
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                <Plus className="w-4 h-4" />
-                Add Goal
-              </button>
+              </div>
             </div>
+          )}
+
+          {currentStep === 1 && (
+            <HabitsStep 
+              formData={currentFormData}
+              addItem={addItem}
+              removeItem={removeItem}
+              currentCategory={currentCategory}
+            />
+          )}
+
+          {currentStep === 2 && (
+            <MilestonesStep 
+              formData={currentFormData}
+              addItem={addItem}
+              removeItem={removeItem}
+              currentCategory={currentCategory}
+            />
+          )}
+        </div>
+      </div>
+
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t px-4 py-3 shadow-lg">
+        <div className="max-w-4xl mx-auto flex justify-between">
+          <button
+            onClick={() => updateCurrentStep(Math.max(0, currentStep - 1))}
+            disabled={currentStep === 0}
+            className={`px-8 py-3 rounded-xl font-medium transition-all ${
+              currentStep === 0 
+                ? 'text-gray-300 cursor-not-allowed' 
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            Previous
+          </button>
+          
+          <button
+            onClick={() => {
+              if (currentStep === 2) {
+                handleCategoryComplete();
+              } else {
+                updateCurrentStep(Math.min(2, currentStep + 1));
+              }
+            }}
+            disabled={!currentFormData.goalText.trim() || isLoading}
+            className={`px-10 py-3 rounded-xl font-medium transition-all flex items-center gap-2 ${
+              !currentFormData.goalText.trim() || isLoading
+                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
+          >
+            {isLoading ? 'Saving...' : currentStep === 2 ? `Complete ${currentCategory.title} Goal` : 'Continue'}
+            {currentStep !== 2 && !isLoading && <ArrowRight className="w-4 h-4" />}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const HabitsStep = ({ formData, addItem, removeItem, currentCategory }) => {
+  const [newHabit, setNewHabit] = useState('');
+
+  const handleAdd = () => {
+    addItem('habits', newHabit);
+    setNewHabit('');
+  };
+
+  return (
+    <div className="space-y-8">
+      <div className="text-center">
+        <div className={`w-20 h-20 bg-gradient-to-br ${currentCategory.color} rounded-full flex items-center justify-center mx-auto mb-6`}>
+          <Repeat className="w-10 h-10 text-white" />
+        </div>
+        <h2 className="text-3xl font-light text-gray-900 mb-3">How will you get there?</h2>
+        <p className="text-gray-600">Daily actions that will make it happen</p>
+      </div>
+
+      <div className="space-y-4">
+        {formData.habits.map((habit, index) => (
+          <div key={habit.id} className="bg-gray-50 rounded-2xl p-4 flex items-center gap-4 group">
+            <div className={`w-8 h-8 bg-gradient-to-br ${currentCategory.color} rounded-full flex items-center justify-center text-white text-sm font-medium`}>
+              {index + 1}
+            </div>
+            <div className="flex-1 text-lg text-gray-800">{habit.text}</div>
+            <button
+              onClick={() => removeItem('habits', habit.id)}
+              className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 text-sm px-3 py-1 rounded-full bg-red-50 hover:bg-red-100 transition-all"
+            >
+              Remove
+            </button>
+          </div>
+        ))}
+        
+        <div className="bg-gray-50 rounded-2xl p-4 border-2 border-dashed border-gray-300">
+          <div className="flex gap-4">
+            <input
+              type="text"
+              value={newHabit}
+              onChange={(e) => setNewHabit(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleAdd()}
+              placeholder="Add a habit or routine..."
+              className="flex-1 bg-transparent border-none text-lg text-gray-800 placeholder-gray-500 focus:outline-none"
+            />
+            <button
+              onClick={handleAdd}
+              disabled={!newHabit.trim()}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:bg-gray-300 transition-colors"
+            >
+              Add
+            </button>
           </div>
         </div>
+      </div>
+    </div>
+  );
+};
 
-        <div className="space-y-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 capitalize">
-              {currentCategory} Goals with Milestones & Actions ({categoryGoals[currentCategory].length})
-            </h3>
+const MilestonesStep = ({ formData, addItem, removeItem, currentCategory }) => {
+  const [newMilestone, setNewMilestone] = useState('');
+  const [newDate, setNewDate] = useState('');
 
-            {categoryGoals[currentCategory].length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <Target className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                <p>No goals added yet</p>
-                <p className="text-sm">Add your first {currentCategory} goal to get started</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {categoryGoals[currentCategory].map((goal) => (
-                  <div
-                    key={goal.id}
-                    className={`border-l-4 border-${getCategoryColor(currentCategory)}-500 bg-${getCategoryColor(currentCategory)}-50 p-4 rounded-r-lg`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <h4 className="font-medium text-gray-900 flex items-center">
-                            {goal.title}
-                            {goal.isShared && (
-                              <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs flex items-center">
-                                <Share2 className="w-3 h-3 mr-1" />
-                                Shared
-                              </span>
-                            )}
-                          </h4>
-                          <div className="flex items-center space-x-1">
-                            <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-medium flex items-center">
-                              <Flag className="w-3 h-3 mr-1" />
-                              Milestones
-                            </span>
-                            <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium flex items-center">
-                              <Lightbulb className="w-3 h-3 mr-1" />
-                              Actions
-                            </span>
-                          </div>
-                        </div>
-                        <p className="text-sm text-gray-600 mt-1">{goal.description}</p>
-                        
-                        {goal.connectedValues.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {goal.connectedValues.map((value) => (
-                              <span
-                                key={value}
-                                className={`px-2 py-1 text-xs rounded-full bg-${getCategoryColor(currentCategory)}-100 text-${getCategoryColor(currentCategory)}-800`}
-                              >
-                                {value}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                        
-                        <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
-                          <div className="flex items-center gap-1">
-                            <CalendarIcon className="w-4 h-4" />
-                            Due: {new Date(goal.targetDate).toLocaleDateString()}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Flag className="w-4 h-4 text-amber-500" />
-                            <span className="font-medium">{goal.milestones.length} milestones</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Lightbulb className="w-4 h-4 text-blue-500" />
-                            <span className="font-medium">{goal.actionItems.length} actions</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2 ml-4 space-x-1">
-                        <div className="flex items-center">
-                          <span className="text-xs text-gray-500 mr-2">Share</span>
-                          <button
-                            onClick={() => handleShareGoal(goal.id, !goal.isShared)}
-                            className={`relative w-10 h-5 transition-colors duration-200 ease-linear rounded-full ${
-                              goal.isShared ? 'bg-green-500' : 'bg-gray-300'
-                            }`}
-                          >
-                            <span
-                              className={`absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform duration-200 ease-linear transform ${
-                                goal.isShared ? 'translate-x-5' : 'translate-x-0'
-                              }`}
-                            />
-                          </button>
-                        </div>
-                        <button
-                          onClick={() => setEditingGoal(editingGoal === goal.id ? null : goal.id)}
-                          className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteGoal(goal.id)}
-                          className="p-2 text-red-400 hover:text-red-600 transition-colors"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
+  const handleAdd = () => {
+    if (!newMilestone.trim()) return;
+    const milestoneData = {
+      text: newMilestone.trim(),
+      date: newDate || 'No date set'
+    };
+    addItem('milestones', milestoneData);
+    setNewMilestone('');
+    setNewDate('');
+  };
 
-                    {editingGoal === goal.id && (
-                      <div className="mt-4 pt-4 border-t border-gray-200 space-y-4">
-                        {goal.isShared && (
-                          <div className="bg-green-50 rounded-lg p-3 border border-green-200">
-                            <div className="flex items-center mb-2">
-                              <Share2 className="w-5 h-5 text-green-600 mr-2" />
-                              <h3 className="font-semibold text-green-800">This goal is shared as a template</h3>
-                            </div>
-                            <p className="text-sm text-green-700">
-                              Your goal structure is available for others to use as a template.
-                              All personal information is removed before sharing.
-                            </p>
-                          </div>
-                        )}
-                        
-                        <div className="bg-amber-50 rounded-lg p-3 mb-4 border border-amber-200">
-                          <div className="flex items-center mb-2">
-                            <Flag className="w-5 h-5 text-amber-600 mr-2" />
-                            <h3 className="font-semibold text-amber-800">Milestones track your progress</h3>
-                          </div>
-                          <p className="text-sm text-amber-700">Break your goal into key achievements that mark your progress.</p>
-                        </div>
-                        
-                        <div className="bg-blue-50 rounded-lg p-3 mb-4 border border-blue-200">
-                          <div className="flex items-center mb-2">
-                            <Lightbulb className="w-5 h-5 text-blue-600 mr-2" />
-                            <h3 className="font-semibold text-blue-800">Actions drive daily progress</h3>
-                          </div>
-                          <p className="text-sm text-blue-700">Regular actions that move you toward your milestones and goal.</p>
-                        </div>
-                        
-                        <MilestonesSection
-                          goalId={goal.id}
-                          milestones={goal.milestones}
-                          onUpdateMilestones={(milestones) => 
-                            handleEditGoal(goal.id, { milestones })
-                          }
-                          actionItems={goal.actionItems}
-                          onUpdateActionItems={(actionItems) => 
-                            handleEditGoal(goal.id, { actionItems })
-                          }
-                        />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
+  return (
+    <div className="space-y-8">
+      <div className="text-center">
+        <div className={`w-20 h-20 bg-gradient-to-br ${currentCategory.color} rounded-full flex items-center justify-center mx-auto mb-6`}>
+          <MapPin className="w-10 h-10 text-white" />
+        </div>
+        <h2 className="text-3xl font-light text-gray-900 mb-3">Milestones</h2>
+        <p className="text-gray-600">When will you know you're on track?</p>
+      </div>
+
+      <div className="space-y-4">
+        {formData.milestones.map((milestone, index) => (
+          <div key={milestone.id} className="bg-gray-50 rounded-2xl p-4 flex items-center gap-4 group">
+            <div className={`w-8 h-8 bg-gradient-to-br ${currentCategory.color} rounded-full flex items-center justify-center`}>
+              <MapPin className="w-4 h-4 text-white" />
+            </div>
+            <div className="flex-1">
+              <div className="text-lg text-gray-800">{milestone.text}</div>
+              <div className="text-sm text-gray-500">{milestone.date}</div>
+            </div>
+            <button
+              onClick={() => removeItem('milestones', milestone.id)}
+              className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 text-sm px-3 py-1 rounded-full bg-red-50 hover:bg-red-100 transition-all"
+            >
+              Remove
+            </button>
+          </div>
+        ))}
+        
+        <div className="bg-gray-50 rounded-2xl p-4 border-2 border-dashed border-gray-300">
+          <div className="space-y-3">
+            <input
+              type="text"
+              value={newMilestone}
+              onChange={(e) => setNewMilestone(e.target.value)}
+              placeholder="Add a milestone..."
+              className="w-full bg-transparent border-none text-lg text-gray-800 placeholder-gray-500 focus:outline-none"
+            />
+            <div className="flex gap-3">
+              <input
+                type="date"
+                value={newDate}
+                onChange={(e) => setNewDate(e.target.value)}
+                className="flex-1 bg-transparent border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:border-blue-500"
+              />
+              <button
+                onClick={handleAdd}
+                disabled={!newMilestone.trim()}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:bg-gray-300 transition-colors"
+              >
+                Add
+              </button>
+            </div>
           </div>
         </div>
       </div>
