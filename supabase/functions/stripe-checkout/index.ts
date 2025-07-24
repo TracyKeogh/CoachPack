@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
       return corsResponse({ error: 'Method not allowed' }, 405);
     }
 
-    const { price_id, success_url, cancel_url, mode, coupon_code } = await req.json();
+    const { price_id, success_url, cancel_url, mode, coupon_code, validate_only } = await req.json();
 
     const error = validateParameters(
       { price_id, success_url, cancel_url, mode },
@@ -99,6 +99,11 @@ Deno.serve(async (req) => {
         return corsResponse({ error: couponError || 'Invalid coupon code' }, 400);
       }
       validatedPromotion = promotion;
+      
+      // If this is just a validation request, return success
+      if (validate_only) {
+        return corsResponse({ valid: true, promotion: validatedPromotion });
+      }
     }
 
     const authHeader = req.headers.get('Authorization')!;
