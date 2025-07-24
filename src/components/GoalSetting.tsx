@@ -37,21 +37,24 @@ const GoalSetting = () => {
       measureText: '',
       targetDate: getNinetyDaysFromNow(),
       habits: [],
-      milestones: []
+      milestones: [],
+      isComplete: false
     },
     body: {
       goalText: '',
       measureText: '',
       targetDate: getNinetyDaysFromNow(),
       habits: [],
-      milestones: []
+      milestones: [],
+      isComplete: false
     },
     balance: {
       goalText: '',
       measureText: '',
       targetDate: getNinetyDaysFromNow(),
       habits: [],
-      milestones: []
+      milestones: [],
+      isComplete: false
     }
   });
 
@@ -68,25 +71,61 @@ const GoalSetting = () => {
 
   useEffect(() => {
     const initializeApp = async () => {
-      const supabaseClient = window.supabase || window.supabaseClient || globalThis.supabase;
+      // Try multiple ways to access Supabase client
+      let supabaseClient = null;
+      
+      // Method 1: Check window object
+      if (typeof window !== 'undefined') {
+        supabaseClient = window.supabase || window.supabaseClient || window.__supabase;
+      }
+      
+      // Method 2: Check global object
+      if (!supabaseClient && typeof globalThis !== 'undefined') {
+        supabaseClient = globalThis.supabase || globalThis.supabaseClient;
+      }
+      
+      // Method 3: Try to import dynamically
+      if (!supabaseClient) {
+        try {
+          const { supabase: importedSupabase } = await import('../lib/supabase');
+          supabaseClient = importedSupabase;
+        } catch (error) {
+          console.log('Could not import supabase from ../lib/supabase');
+        }
+      }
+      
+      // Method 4: Try alternative import paths
+      if (!supabaseClient) {
+        try {
+          const { supabase: importedSupabase } = await import('../utils/supabase-setup');
+          supabaseClient = importedSupabase;
+        } catch (error) {
+          console.log('Could not import supabase from ../utils/supabase-setup');
+        }
+      }
       
       if (!supabaseClient) {
-        console.error('Supabase client not found. Make sure Supabase is initialized.');
+        console.log('Supabase client not found. Running in demo mode.');
         return;
       }
 
       setSupabase(supabaseClient);
 
       try {
-        const result = await supabaseClient.auth.getUser();
-        const user = result.data.user;
+        const { data: { user }, error } = await supabaseClient.auth.getUser();
+        
+        if (error) {
+          console.error('Error getting user:', error);
+          return;
+        }
+        
         setUser(user);
         
         if (user) {
           await loadGoalsData(user.id, supabaseClient);
         }
       } catch (error) {
-        console.error('Error getting user:', error);
+        console.error('Error initializing app:', error);
       }
     };
 
@@ -96,23 +135,23 @@ const GoalSetting = () => {
   const loadGoalsData = async (userId, supabaseClient) => {
     setIsLoading(true);
     try {
-      const result = await supabaseClient
+      const { data, error } = await supabaseClient
         .from('user_goals_data')
         .select('*')
         .eq('user_id', userId)
         .single();
 
-      if (result.error && result.error.code !== 'PGRST116') {
-        console.error('Error loading goals data:', result.error);
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error loading goals data:', error);
         return;
       }
 
-      if (result.data) {
-        setCurrentFlow(result.data.current_step || 'annual');
-        setAnnualVision(result.data.annual_snapshot || { snapshot: '', targetDate: getOneYearFromNow() });
+      if (data) {
+        setCurrentFlow(data.current_step || 'annual');
+        setAnnualVision(data.annual_snapshot || { snapshot: '', targetDate: getOneYearFromNow() });
         
-        if (result.data.category_goals) {
-          setGoalsData(result.data.category_goals);
+        if (data.category_goals) {
+          setGoalsData(data.category_goals);
         }
       }
     } catch (error) {
@@ -124,7 +163,7 @@ const GoalSetting = () => {
 
   const saveGoalsData = async () => {
     if (!user || !supabase) {
-      console.error('User or Supabase client not available');
+      console.log('User or Supabase not available, skipping save');
       return false;
     }
 
@@ -138,12 +177,12 @@ const GoalSetting = () => {
         last_updated: new Date().toISOString()
       };
 
-      const result = await supabase
+      const { error } = await supabase
         .from('user_goals_data')
         .upsert(dataToSave, { onConflict: 'user_id' });
 
-      if (result.error) {
-        console.error('Error saving goals data:', result.error);
+      if (error) {
+        console.error('Error saving goals data:', error);
         alert('Error saving data. Please try again.');
         return false;
       }
@@ -212,36 +251,62 @@ const GoalSetting = () => {
   const handleAnnualComplete = async () => {
     if (!annualVision.snapshot.trim()) return;
     
-    const saved = await saveGoalsData();
-    if (saved) {
+    // Try to save if user is available, otherwise proceed without saving
+    if (user) {
+      const saved = await saveGoalsData();
+      if (saved) {
+        setCurrentFlow('90day');
+      }
+    } else {
+      // Demo mode - proceed without saving
       setCurrentFlow('90day');
     }
   };
 
   const handleCategoryComplete = async () => {
-    const saved = await saveGoalsData();
-    if (saved) {
-      updateCurrentStep(0);
-      
-      const allCompleted = categories.every(cat => 
-        goalsData[cat.id].goalText.trim() && 
-        goalsData[cat.id].habits.length > 0 && 
-        goalsData[cat.id].milestones.length > 0
-      );
-      
-      if (allCompleted) {
-        setCurrentFlow('summary');
-      } else {
-        const nextCategory = categories.find(cat => 
-          !goalsData[cat.id].goalText.trim() || 
-          goalsData[cat.id].habits.length === 0 || 
-          goalsData[cat.id].milestones.length === 0
-        );
-        if (nextCategory) {
-          setSelectedCategory(nextCategory.id);
-        }
+    // Mark this specific category as complete
+    const updatedGoalsData = {
+      ...goalsData,
+      [selectedCategory]: {
+        ...goalsData[selectedCategory],
+        isComplete: true
       }
+    };
+    
+    setGoalsData(updatedGoalsData);
+
+    // Save data if user is available
+    if (user) {
+      await saveGoalsData();
     }
+
+    // Reset step for this category
+    updateCurrentStep(0);
+    
+    // Find next incomplete category or go to summary
+    const nextIncompleteCategory = categories.find(cat => 
+      cat.id !== selectedCategory && !updatedGoalsData[cat.id].isComplete
+    );
+    
+    if (nextIncompleteCategory) {
+      setSelectedCategory(nextIncompleteCategory.id);
+    } else {
+      // All categories complete, go to summary
+      setCurrentFlow('summary');
+    }
+  };
+
+  // Check if a category is considered complete
+  const isCategoryComplete = (categoryId) => {
+    const data = goalsData[categoryId];
+    return data.goalText.trim() && 
+           data.habits.length > 0 && 
+           data.milestones.length > 0;
+  };
+
+  // Check if all categories are complete
+  const allCategoriesComplete = () => {
+    return categories.every(cat => isCategoryComplete(cat.id));
   };
 
   if (currentFlow === 'annual') {
@@ -434,9 +499,7 @@ const GoalSetting = () => {
           <div className="grid grid-cols-3 gap-4 mb-6">
             {categories.map((category) => {
               const Icon = category.icon;
-              const isCompleted = goalsData[category.id].goalText.trim() && 
-                                goalsData[category.id].habits.length > 0 && 
-                                goalsData[category.id].milestones.length > 0;
+              const isCompleted = goalsData[category.id].isComplete || isCategoryComplete(category.id);
               
               return (
                 <button
