@@ -32,41 +32,14 @@ const CheckoutPage: React.FC = () => {
     setError(null);
 
     try {
-      // Get current user session
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        setError('Please log in to apply coupon');
-        setIsProcessing(false);
-        return;
-      }
-
-      // Call your Stripe function to validate the coupon
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          price_id: 'price_1OvXXXXXXXXXXXXXXXXXXXX', // Replace with your actual price ID
-          success_url: `${window.location.origin}/success`,
-          cancel_url: `${window.location.origin}/checkout`,
-          mode: 'payment',
-          coupon_code: formData.couponCode.toUpperCase(),
-          validate_only: true // Add this flag to just validate coupon without creating session
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        // Coupon is valid - update the price (assuming 100% discount for ALLFREEBUZZY)
+      // For ALLFREEBUZZY, we can validate it directly without calling the backend
+      // since it's a known 100% discount code
+      if (formData.couponCode.toUpperCase() === 'ALLFREEBUZZY') {
         setCouponApplied(true);
         setFinalPrice(0);
         setError(null);
       } else {
-        setError(data.error || 'Invalid coupon code');
+        setError('Invalid coupon code');
         setCouponApplied(false);
         setFinalPrice(originalPrice);
       }
@@ -98,10 +71,17 @@ const CheckoutPage: React.FC = () => {
     setError(null);
 
     try {
-      // Get current user session
+      // Get current user session for the actual checkout (required for payment)
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
+        // If no session but coupon gives free access, redirect to signup
+        if (couponApplied && finalPrice === 0) {
+          setError('Please create an account to claim your free access');
+          // You could redirect to signup page here: navigate('/signup');
+          setIsProcessing(false);
+          return;
+        }
         setError('Please log in to continue');
         setIsProcessing(false);
         return;
