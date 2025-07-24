@@ -145,4 +145,134 @@ Deno.serve(async (req) => {
 
       const { error: createCustomerError } = await supabase.from('stripe_customers').insert({
         user_id: user.id,
-        customer_id:
+        customer_id: newCustomer.id,
+      });
+
+      if (createCustomerError) {
+        console.error('Failed to save customer information in the database', createCustomerError);
+
+        // Try to clean up both the Stripe customer and subscription record
+        try {
+          await stripe.customers.del(newCustomer.id);
+          await supabase.from('stripe_subscriptions').delete().eq('customer_id', newCustomer.id);
+        } catch (deleteError) {
+          console.error('Failed to clean up after customer mapping error:', deleteError);
+        }
+
+        return corsResponse({ error: 'Failed to create customer mapping' }, 500);
+      }
+
+      if (mode === 'subscription') {
+        const { error: createSubscriptionError } = await supabase.from('stripe_subscriptions').insert({
+          customer_id: newCustomer.id,
+          status: 'not_started',
+        });
+
+        if (createSubscriptionError) {
+          console.error('Failed to save subscription in the database', createSubscriptionError);
+
+          // Try to clean up the Stripe customer since we couldn't create the subscription
+          try {
+            await stripe.customers.del(newCustomer.id);
+          } catch (deleteError) {
+            console.error('Failed to delete Stripe customer after subscription creation error:', deleteError);
+          }
+
+          return corsResponse({ error: 'Unable to save the subscription in the database' }, 500);
+        }
+      }
+
+      customerId = newCustomer.id;
+
+      console.log(`Successfully set up new customer ${customerId} with subscription record`);
+    } else {
+      customerId = customer.customer_id;
+
+      if (mode === 'subscription') {
+        // Verify subscription exists for existing customer
+        const { data: subscription, error: getSubscriptionError } = await supabase
+          .from('stripe_subscriptions')
+          .select('status')
+          .eq('customer_id', customerId)
+          .maybeSingle();
+
+        if (getSubscriptionError) {
+          console.error('Failed to fetch subscription information from the database', getSubscriptionError);
+          return corsResponse({ error: 'Failed to fetch subscription information' }, 500);
+        }
+
+        if (!subscription) {
+          // Create subscription record for existing customer if missing
+          const { error: createSubscriptionError } = await supabase.from('stripe_subscriptions').insert({
+            customer_id: customerId,
+            status: 'not_started',
+          });
+
+          if (createSubscriptionError) {
+            console.error('Failed to create subscription record for existing customer', createSubscriptionError);
+            return corsResponse({ error: 'Failed to create subscription record for existing customer' }, 500);
+          }
+        }
+      }
+    }
+
+    // Prepare checkout session parameters
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
+      customer: customerId,
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price: price_id,
+          quantity: 1,
+        },
+      ],
+      mode,
+      success_url,
+      cancel_url,
+    };
+
+    // Add promotion code if validated
+    if (validatedPromotion) {
+      sessionParams.discounts = [
+        {
+          promotion_code: validatedPromotion.id,
+        },
+      ];
+    }
+
+    // Create Checkout Session
+    const session = await stripe.checkout.sessions.create(sessionParams);
+
+    console.log(`Created checkout session ${session.id} for customer ${customerId}${validatedPromotion ? ` with promotion code ${coupon_code}` : ''}`);
+
+    return corsResponse({ sessionId: session.id, url: session.url });
+  } catch (error: any) {
+    console.error(`Checkout error: ${error.message}`);
+    return corsResponse({ error: error.message }, 500);
+  }
+});
+
+type ExpectedType = 'string' | { values: string[] };
+type Expectations<T> = { [K in keyof T]: ExpectedType };
+
+function validateParameters<T extends Record<string, any>>(values: T, expected: Expectations<T>): string | undefined {
+  for (const parameter in values) {
+    const expectation = expected[parameter];
+    const value = values[parameter];
+
+    if (expectation === 'string') {
+      if (value == null) {
+        return `Missing required parameter ${parameter}`;
+      }
+      if (typeof value !== 'string') {
+        return `Expected parameter ${parameter} to be a string got ${JSON.stringify(value)}`;
+      }
+    } else {
+      if (!expectation.values.includes(value)) {
+        return `Expected parameter ${parameter} to be one of ${expectation.values.join(', ')}`;
+      }
+    }
+  }
+
+  return undefined;
+}
