@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowRight, Target, Repeat, MapPin, Sparkles, TrendingUp, Dumbbell, Scale, CheckCircle, Calendar } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 const GoalSetting = () => {
   const [currentFlow, setCurrentFlow] = useState('annual');
   const [selectedCategory, setSelectedCategory] = useState('business');
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState(null);
-  const [supabase, setSupabase] = useState(null);
   
   const getOneYearFromNow = () => {
     const date = new Date();
@@ -68,51 +68,48 @@ const GoalSetting = () => {
 
   useEffect(() => {
     const initializeApp = async () => {
-      const supabaseClient = window.supabase || window.supabaseClient || globalThis.supabase;
-      
-      if (!supabaseClient) {
-        console.error('Supabase client not found. Make sure Supabase is initialized.');
-        return;
-      }
-
-      setSupabase(supabaseClient);
-
       try {
-        const result = await supabaseClient.auth.getUser();
-        const user = result.data.user;
+        // Test Supabase connection
+        const { data: { user }, error } = await supabase.auth.getUser();
+        
+        if (error) {
+          console.error('Error getting user:', error);
+          return;
+        }
+
         setUser(user);
         
         if (user) {
-          await loadGoalsData(user.id, supabaseClient);
+          await loadGoalsData(user.id);
         }
       } catch (error) {
-        console.error('Error getting user:', error);
+        console.error('Error initializing app:', error);
       }
     };
 
     initializeApp();
   }, []);
 
-  const loadGoalsData = async (userId, supabaseClient) => {
+  const loadGoalsData = async (userId) => {
     setIsLoading(true);
     try {
-      const result = await supabaseClient
+      const { data, error } = await supabase
         .from('user_goals_data')
         .select('*')
         .eq('user_id', userId)
-        .maybeSingle(); // FIXED: Changed from .single() to .maybeSingle()
+        .single();
 
-      if (result.error && result.error.code !== 'PGRST116') {
-        console.error('Error loading goals data:', result.error);
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error loading goals data:', error);
         return;
       }
 
-      if (result.data) {
-        setCurrentFlow(result.data.current_step || 'annual');
-        setAnnualVision(result.data.annual_snapshot || { snapshot: '', targetDate: getOneYearFromNow() });
+      if (data) {
+        setCurrentFlow(data.current_step || 'annual');
+        setAnnualVision(data.annual_snapshot || { snapshot: '', targetDate: getOneYearFromNow() });
         
-        if (result.data.category_goals) {
-          setGoalsData(result.data.category_goals);
+        if (data.category_goals) {
+          setGoalsData(data.category_goals);
         }
       }
     } catch (error) {
@@ -123,8 +120,8 @@ const GoalSetting = () => {
   };
 
   const saveGoalsData = async () => {
-    if (!user || !supabase) {
-      console.error('User or Supabase client not available');
+    if (!user) {
+      console.error('User not available');
       return false;
     }
 
@@ -138,12 +135,12 @@ const GoalSetting = () => {
         last_updated: new Date().toISOString()
       };
 
-      const result = await supabase
+      const { error } = await supabase
         .from('user_goals_data')
         .upsert(dataToSave, { onConflict: 'user_id' });
 
-      if (result.error) {
-        console.error('Error saving goals data:', result.error);
+      if (error) {
+        console.error('Error saving goals data:', error);
         alert('Error saving data. Please try again.');
         return false;
       }
@@ -159,480 +156,471 @@ const GoalSetting = () => {
     }
   };
 
-  const updateCurrentData = (field, value) => {
+  const updateAnnualVision = (field, value) => {
+    setAnnualVision(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const updateGoalData = (category, field, value) => {
     setGoalsData(prev => ({
       ...prev,
-      [selectedCategory]: {
-        ...prev[selectedCategory],
+      [category]: {
+        ...prev[category],
         [field]: value
       }
     }));
   };
 
-  const addHabit = () => {
-    const newHabit = {
-      id: Date.now(),
-      text: '',
-      frequency: 'daily'
-    };
-    
-    updateCurrentData('habits', [...currentFormData.habits, newHabit]);
+  const addHabit = (category) => {
+    setGoalsData(prev => ({
+      ...prev,
+      [category]: {
+        ...prev[category],
+        habits: [...prev[category].habits, '']
+      }
+    }));
   };
 
-  const updateHabit = (habitId, field, value) => {
-    const updatedHabits = currentFormData.habits.map(habit =>
-      habit.id === habitId ? { ...habit, [field]: value } : habit
-    );
-    updateCurrentData('habits', updatedHabits);
+  const updateHabit = (category, index, value) => {
+    setGoalsData(prev => ({
+      ...prev,
+      [category]: {
+        ...prev[category],
+        habits: prev[category].habits.map((habit, i) => i === index ? value : habit)
+      }
+    }));
   };
 
-  const removeHabit = (habitId) => {
-    const updatedHabits = currentFormData.habits.filter(habit => habit.id !== habitId);
-    updateCurrentData('habits', updatedHabits);
+  const removeHabit = (category, index) => {
+    setGoalsData(prev => ({
+      ...prev,
+      [category]: {
+        ...prev[category],
+        habits: prev[category].habits.filter((_, i) => i !== index)
+      }
+    }));
   };
 
-  const addMilestone = () => {
+  const addMilestone = (category) => {
     const newMilestone = {
-      id: Date.now(),
-      text: '',
-      targetDate: '',
+      id: Date.now().toString(),
+      title: '',
+      date: '',
       completed: false
     };
-    
-    updateCurrentData('milestones', [...currentFormData.milestones, newMilestone]);
+    setGoalsData(prev => ({
+      ...prev,
+      [category]: {
+        ...prev[category],
+        milestones: [...prev[category].milestones, newMilestone]
+      }
+    }));
   };
 
-  const updateMilestone = (milestoneId, field, value) => {
-    const updatedMilestones = currentFormData.milestones.map(milestone =>
-      milestone.id === milestoneId ? { ...milestone, [field]: value } : milestone
-    );
-    updateCurrentData('milestones', updatedMilestones);
+  const updateMilestone = (category, index, field, value) => {
+    setGoalsData(prev => ({
+      ...prev,
+      [category]: {
+        ...prev[category],
+        milestones: prev[category].milestones.map((milestone, i) => 
+          i === index ? { ...milestone, [field]: value } : milestone
+        )
+      }
+    }));
   };
 
-  const removeMilestone = (milestoneId) => {
-    const updatedMilestones = currentFormData.milestones.filter(milestone => milestone.id !== milestoneId);
-    updateCurrentData('milestones', updatedMilestones);
+  const removeMilestone = (category, index) => {
+    setGoalsData(prev => ({
+      ...prev,
+      [category]: {
+        ...prev[category],
+        milestones: prev[category].milestones.filter((_, i) => i !== index)
+      }
+    }));
   };
 
-  const nextStep = () => {
-    if (currentStep < steps.length - 1) {
-      setCurrentSteps(prev => ({
-        ...prev,
-        [selectedCategory]: prev[selectedCategory] + 1
-      }));
+  const nextStep = (category) => {
+    setCurrentSteps(prev => ({
+      ...prev,
+      [category]: Math.min(prev[category] + 1, steps.length - 1)
+    }));
+  };
+
+  const prevStep = (category) => {
+    setCurrentSteps(prev => ({
+      ...prev,
+      [category]: Math.max(prev[category] - 1, 0)
+    }));
+  };
+
+  const nextCategory = () => {
+    const currentIndex = categories.findIndex(c => c.id === selectedCategory);
+    if (currentIndex < categories.length - 1) {
+      setSelectedCategory(categories[currentIndex + 1].id);
+    } else {
+      // Move to review or completion
+      setCurrentFlow('review');
     }
   };
 
-  const prevStep = () => {
-    if (currentStep > 0) {
-      setCurrentSteps(prev => ({
-        ...prev,
-        [selectedCategory]: prev[selectedCategory] - 1
-      }));
+  const prevCategory = () => {
+    const currentIndex = categories.findIndex(c => c.id === selectedCategory);
+    if (currentIndex > 0) {
+      setSelectedCategory(categories[currentIndex - 1].id);
+    } else {
+      setCurrentFlow('annual');
     }
   };
 
-  const switchCategory = (categoryId) => {
-    setSelectedCategory(categoryId);
-  };
-
-  const handleFlowChange = (flow) => {
-    setCurrentFlow(flow);
-    if (flow === 'categories') {
-      setSelectedCategory('business');
-    }
-  };
-
-  if (isLoading && !user) {
+  if (currentFlow === 'annual') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading your goals...</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-slate-900 mb-4">Annual Vision Setting</h1>
+            <p className="text-lg text-slate-600">Define your one-year vision to guide your quarterly goals</p>
+          </div>
+
+          <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
+            <div className="space-y-8">
+              <div>
+                <label className="block text-lg font-semibold text-slate-900 mb-4">
+                  Your Annual Vision Snapshot
+                </label>
+                <textarea
+                  value={annualVision.snapshot}
+                  onChange={(e) => updateAnnualVision('snapshot', e.target.value)}
+                  placeholder="Describe where you want to be in one year. What does your ideal life look like? How do you feel? What have you accomplished?"
+                  className="w-full h-32 p-4 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-lg font-semibold text-slate-900 mb-4">
+                  Target Date
+                </label>
+                <input
+                  type="date"
+                  value={annualVision.targetDate}
+                  onChange={(e) => updateAnnualVision('targetDate', e.target.value)}
+                  className="px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+
+              <div className="flex justify-between pt-6">
+                <div></div>
+                <button
+                  onClick={() => {
+                    setCurrentFlow('category');
+                    saveGoalsData();
+                  }}
+                  disabled={!annualVision.snapshot.trim()}
+                  className="flex items-center space-x-2 px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <span>Continue to Goals</span>
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
-  if (!user) {
+  if (currentFlow === 'category') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Please sign in to access your goals</h2>
-          <p className="text-gray-600">You need to be authenticated to view and manage your goals.</p>
-        </div>
-      </div>
-    );
-  }
-
-  const renderAnnualVision = () => (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full mb-4">
-            <Sparkles className="w-8 h-8 text-white" />
-          </div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">Your Annual Vision</h2>
-          <p className="text-gray-600">Paint a picture of where you want to be in one year</p>
-        </div>
-
-        <div className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Target Date
-            </label>
-            <input
-              type="date"
-              value={annualVision.targetDate}
-              onChange={(e) => setAnnualVision(prev => ({ ...prev, targetDate: e.target.value }))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-slate-900 mb-4">
+              {currentCategory.title} Goals
+            </h1>
+            <p className="text-lg text-slate-600">
+              Step {currentStep + 1} of {steps.length}: {steps[currentStep]}
+            </p>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Your Vision Snapshot
-            </label>
-            <textarea
-              value={annualVision.snapshot}
-              onChange={(e) => setAnnualVision(prev => ({ ...prev, snapshot: e.target.value }))}
-              placeholder="Describe in detail where you see yourself in one year. What does your ideal life look like? What have you achieved? How do you feel?"
-              rows={8}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-            />
+          {/* Category Navigation */}
+          <div className="flex justify-center mb-8">
+            <div className="flex space-x-1 bg-white rounded-lg p-1 shadow-sm border border-slate-200">
+              {categories.map((category) => (
+                <button
+                  key={category.id}
+                  onClick={() => setSelectedCategory(category.id)}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-colors ${
+                    selectedCategory === category.id
+                      ? 'bg-purple-100 text-purple-700'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <category.icon className="w-5 h-5" />
+                  <span>{category.title}</span>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
 
-        <div className="flex justify-between mt-8">
-          <button
-            onClick={() => handleFlowChange('categories')}
-            disabled={isLoading}
-            className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg hover:from-purple-600 hover:to-pink-700 transition-all duration-200 flex items-center gap-2 disabled:opacity-50"
-          >
-            Continue to 90-Day Goals
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderCategorySelection = () => (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">90-Day Goal Categories</h2>
-        <p className="text-gray-600">Choose a category to set your focused 90-day goals</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {categories.map((category) => {
-          const Icon = category.icon;
-          const isActive = selectedCategory === category.id;
-          const isCompleted = currentSteps[category.id] >= steps.length - 1;
-          
-          return (
-            <button
-              key={category.id}
-              onClick={() => switchCategory(category.id)}
-              className={`relative p-6 rounded-xl border-2 transition-all duration-200 ${
-                isActive
-                  ? 'border-indigo-500 bg-indigo-50'
-                  : 'border-gray-200 bg-white hover:border-gray-300'
-              }`}
-            >
-              {isCompleted && (
-                <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                  <CheckCircle className="w-4 h-4 text-white" />
+          <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
+            {currentStep === 0 && (
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-lg font-semibold text-slate-900 mb-4">
+                    What is your main {currentCategory.title.toLowerCase()} goal for the next 90 days?
+                  </label>
+                  <textarea
+                    value={currentFormData.goalText}
+                    onChange={(e) => updateGoalData(selectedCategory, 'goalText', e.target.value)}
+                    placeholder={`Describe your specific ${currentCategory.title.toLowerCase()} goal...`}
+                    className="w-full h-24 p-4 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                  />
                 </div>
-              )}
-              
-              <div className={`w-12 h-12 bg-gradient-to-br ${category.color} rounded-lg flex items-center justify-center mb-4 mx-auto`}>
-                <Icon className="w-6 h-6 text-white" />
+
+                <div>
+                  <label className="block text-lg font-semibold text-slate-900 mb-4">
+                    How will you measure success?
+                  </label>
+                  <textarea
+                    value={currentFormData.measureText}
+                    onChange={(e) => updateGoalData(selectedCategory, 'measureText', e.target.value)}
+                    placeholder="What specific metrics or outcomes will show you've achieved this goal?"
+                    className="w-full h-24 p-4 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-lg font-semibold text-slate-900 mb-4">
+                    Target Date
+                  </label>
+                  <input
+                    type="date"
+                    value={currentFormData.targetDate}
+                    onChange={(e) => updateGoalData(selectedCategory, 'targetDate', e.target.value)}
+                    className="px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  />
+                </div>
               </div>
-              
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">{category.title}</h3>
-              
-              <div className="text-sm text-gray-600">
-                Step {currentSteps[category.id] + 1} of {steps.length}
-              </div>
-              
-              <div className="mt-3 w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className={`bg-gradient-to-r ${category.color} h-2 rounded-full transition-all duration-300`}
-                  style={{ width: `${((currentSteps[category.id] + 1) / steps.length) * 100}%` }}
-                ></div>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-
-      {renderGoalForm()}
-    </div>
-  );
-
-  const renderGoalForm = () => {
-    if (!currentCategory) return null;
-
-    const Icon = currentCategory.icon;
-
-    return (
-      <div className="bg-white rounded-xl shadow-lg p-8">
-        <div className="flex items-center gap-4 mb-6">
-          <div className={`w-12 h-12 bg-gradient-to-br ${currentCategory.color} rounded-lg flex items-center justify-center`}>
-            <Icon className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h3 className="text-2xl font-bold text-gray-900">{currentCategory.title}</h3>
-            <p className="text-gray-600">{steps[currentStep]} - Step {currentStep + 1} of {steps.length}</p>
-          </div>
-        </div>
-
-        <div className="mb-6">
-          <div className="flex space-x-2">
-            {steps.map((step, index) => (
-              <div
-                key={step}
-                className={`flex-1 h-2 rounded-full ${
-                  index <= currentStep
-                    ? `bg-gradient-to-r ${currentCategory.color}`
-                    : 'bg-gray-200'
-                }`}
-              ></div>
-            ))}
-          </div>
-        </div>
-
-        {renderStepContent()}
-
-        <div className="flex justify-between mt-8">
-          <button
-            onClick={prevStep}
-            disabled={currentStep === 0}
-            className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Previous
-          </button>
-
-          <div className="flex gap-3">
-            <button
-              onClick={saveGoalsData}
-              disabled={isLoading}
-              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 disabled:opacity-50"
-            >
-              {isLoading ? 'Saving...' : 'Save Progress'}
-            </button>
-
-            {currentStep < steps.length - 1 ? (
-              <button
-                onClick={nextStep}
-                className={`px-6 py-3 bg-gradient-to-r ${currentCategory.color} text-white rounded-lg hover:opacity-90 transition-all duration-200 flex items-center gap-2`}
-              >
-                Next Step
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            ) : (
-              <button
-                onClick={saveGoalsData}
-                disabled={isLoading}
-                className={`px-6 py-3 bg-gradient-to-r ${currentCategory.color} text-white rounded-lg hover:opacity-90 transition-all duration-200 flex items-center gap-2 disabled:opacity-50`}
-              >
-                {isLoading ? 'Saving...' : 'Complete Category'}
-                <CheckCircle className="w-4 h-4" />
-              </button>
             )}
+
+            {currentStep === 1 && (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-4">
+                    Daily/Weekly Habits
+                  </h3>
+                  <p className="text-slate-600 mb-6">
+                    What consistent actions will help you achieve your {currentCategory.title.toLowerCase()} goal?
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  {currentFormData.habits.map((habit, index) => (
+                    <div key={index} className="flex items-center space-x-3">
+                      <input
+                        type="text"
+                        value={habit}
+                        onChange={(e) => updateHabit(selectedCategory, index, e.target.value)}
+                        placeholder="Enter a daily or weekly habit..."
+                        className="flex-1 px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                      <button
+                        onClick={() => removeHabit(selectedCategory, index)}
+                        className="p-3 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                  
+                  <button
+                    onClick={() => addHabit(selectedCategory)}
+                    className="w-full px-4 py-3 border-2 border-dashed border-slate-300 rounded-lg text-slate-600 hover:border-purple-300 hover:text-purple-600 transition-colors"
+                  >
+                    + Add Habit
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {currentStep === 2 && (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-4">
+                    Key Milestones
+                  </h3>
+                  <p className="text-slate-600 mb-6">
+                    Break your goal into smaller milestones with specific deadlines.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  {currentFormData.milestones.map((milestone, index) => (
+                    <div key={milestone.id} className="border border-slate-200 rounded-lg p-4">
+                      <div className="space-y-3">
+                        <input
+                          type="text"
+                          value={milestone.title}
+                          onChange={(e) => updateMilestone(selectedCategory, index, 'title', e.target.value)}
+                          placeholder="Milestone title..."
+                          className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        />
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="date"
+                            value={milestone.date}
+                            onChange={(e) => updateMilestone(selectedCategory, index, 'date', e.target.value)}
+                            className="px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          />
+                          <button
+                            onClick={() => removeMilestone(selectedCategory, index)}
+                            className="p-3 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  <button
+                    onClick={() => addMilestone(selectedCategory)}
+                    className="w-full px-4 py-3 border-2 border-dashed border-slate-300 rounded-lg text-slate-600 hover:border-purple-300 hover:text-purple-600 transition-colors"
+                  >
+                    + Add Milestone
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Navigation */}
+            <div className="flex justify-between pt-8 mt-8 border-t border-slate-200">
+              <button
+                onClick={() => {
+                  if (currentStep === 0) {
+                    prevCategory();
+                  } else {
+                    prevStep(selectedCategory);
+                  }
+                }}
+                className="flex items-center space-x-2 px-6 py-3 text-slate-600 hover:text-slate-900 transition-colors"
+              >
+                <ArrowRight className="w-5 h-5 rotate-180" />
+                <span>Previous</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  saveGoalsData();
+                  if (currentStep === steps.length - 1) {
+                    nextCategory();
+                  } else {
+                    nextStep(selectedCategory);
+                  }
+                }}
+                className="flex items-center space-x-2 px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                <span>{currentStep === steps.length - 1 ? 'Continue' : 'Next'}</span>
+                <ArrowRight className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
     );
-  };
+  }
 
-  const renderStepContent = () => {
-    switch (currentStep) {
-      case 0: // Define
-        return (
-          <div className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                What specific goal do you want to achieve in {currentCategory.title.toLowerCase()}?
-              </label>
-              <textarea
-                value={currentFormData.goalText}
-                onChange={(e) => updateCurrentData('goalText', e.target.value)}
-                placeholder={`Describe your ${currentCategory.title.toLowerCase()} goal in detail...`}
-                rows={4}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                How will you measure success?
-              </label>
-              <textarea
-                value={currentFormData.measureText}
-                onChange={(e) => updateCurrentData('measureText', e.target.value)}
-                placeholder="What specific metrics or indicators will show you've achieved this goal?"
-                rows={3}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Target Date
-              </label>
-              <input
-                type="date"
-                value={currentFormData.targetDate}
-                onChange={(e) => updateCurrentData('targetDate', e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              />
-            </div>
+  if (currentFlow === 'review') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-slate-900 mb-4">Goals Summary</h1>
+            <p className="text-lg text-slate-600">Review your complete goal-setting plan</p>
           </div>
-        );
 
-      case 1: // Habits
-        return (
-          <div className="space-y-6">
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="text-lg font-semibold text-gray-900">Daily Habits</h4>
-                <button
-                  onClick={addHabit}
-                  className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors"
-                >
-                  Add Habit
-                </button>
-              </div>
+          <div className="space-y-8">
+            {/* Annual Vision */}
+            <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
+              <h2 className="text-2xl font-bold text-slate-900 mb-4">Annual Vision</h2>
+              <p className="text-slate-700 leading-relaxed">{annualVision.snapshot}</p>
+              <p className="text-slate-500 mt-4">Target Date: {annualVision.targetDate}</p>
+            </div>
 
-              {currentFormData.habits.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <Repeat className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No habits added yet. Click "Add Habit" to get started.</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {currentFormData.habits.map((habit) => (
-                    <div key={habit.id} className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg">
-                      <input
-                        type="text"
-                        value={habit.text}
-                        onChange={(e) => updateHabit(habit.id, 'text', e.target.value)}
-                        placeholder="Describe this daily habit..."
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      />
-                      <select
-                        value={habit.frequency}
-                        onChange={(e) => updateHabit(habit.id, 'frequency', e.target.value)}
-                        className="px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      >
-                        <option value="daily">Daily</option>
-                        <option value="weekly">Weekly</option>
-                        <option value="monthly">Monthly</option>
-                      </select>
-                      <button
-                        onClick={() => removeHabit(habit.id)}
-                        className="px-3 py-2 text-red-600 hover:bg-red-50 rounded transition-colors"
-                      >
-                        Remove
-                      </button>
+            {/* Category Goals */}
+            {categories.map((category) => {
+              const data = goalsData[category.id];
+              return (
+                <div key={category.id} className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
+                  <div className="flex items-center space-x-3 mb-6">
+                    <category.icon className="w-8 h-8 text-purple-600" />
+                    <h2 className="text-2xl font-bold text-slate-900">{category.title}</h2>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="font-semibold text-slate-900 mb-2">Goal</h3>
+                      <p className="text-slate-700">{data.goalText}</p>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        );
 
-      case 2: // Milestones
-        return (
-          <div className="space-y-6">
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="text-lg font-semibold text-gray-900">Key Milestones</h4>
-                <button
-                  onClick={addMilestone}
-                  className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors"
-                >
-                  Add Milestone
-                </button>
-              </div>
-
-              {currentFormData.milestones.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <MapPin className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No milestones added yet. Click "Add Milestone" to get started.</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {currentFormData.milestones.map((milestone) => (
-                    <div key={milestone.id} className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg">
-                      <input
-                        type="text"
-                        value={milestone.text}
-                        onChange={(e) => updateMilestone(milestone.id, 'text', e.target.value)}
-                        placeholder="Describe this milestone..."
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      />
-                      <input
-                        type="date"
-                        value={milestone.targetDate}
-                        onChange={(e) => updateMilestone(milestone.id, 'targetDate', e.target.value)}
-                        className="px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      />
-                      <button
-                        onClick={() => removeMilestone(milestone.id)}
-                        className="px-3 py-2 text-red-600 hover:bg-red-50 rounded transition-colors"
-                      >
-                        Remove
-                      </button>
+                    <div>
+                      <h3 className="font-semibold text-slate-900 mb-2">Success Metrics</h3>
+                      <p className="text-slate-700">{data.measureText}</p>
                     </div>
-                  ))}
+
+                    <div>
+                      <h3 className="font-semibold text-slate-900 mb-2">Target Date</h3>
+                      <p className="text-slate-700">{data.targetDate}</p>
+                    </div>
+
+                    {data.habits.length > 0 && (
+                      <div>
+                        <h3 className="font-semibold text-slate-900 mb-2">Habits</h3>
+                        <ul className="space-y-1">
+                          {data.habits.map((habit, index) => (
+                            <li key={index} className="text-slate-700">• {habit}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {data.milestones.length > 0 && (
+                      <div>
+                        <h3 className="font-semibold text-slate-900 mb-2">Milestones</h3>
+                        <ul className="space-y-2">
+                          {data.milestones.map((milestone, index) => (
+                            <li key={index} className="flex justify-between items-center text-slate-700">
+                              <span>• {milestone.title}</span>
+                              <span className="text-slate-500 text-sm">{milestone.date}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
+              );
+            })}
           </div>
-        );
 
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="container mx-auto py-8">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Goal Setting</h1>
-          <div className="flex justify-center gap-8">
+          <div className="flex justify-center mt-8">
             <button
-              onClick={() => handleFlowChange('annual')}
-              className={`px-6 py-3 rounded-lg transition-all duration-200 ${
-                currentFlow === 'annual'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
-              }`}
+              onClick={() => {
+                saveGoalsData();
+                alert('Your goals have been saved successfully!');
+              }}
+              className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
             >
-              Annual Vision
-            </button>
-            <button
-              onClick={() => handleFlowChange('categories')}
-              className={`px-6 py-3 rounded-lg transition-all duration-200 ${
-                currentFlow === 'categories'
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              90-Day Goals
+              Complete Goal Setting
             </button>
           </div>
         </div>
-
-        {currentFlow === 'annual' ? renderAnnualVision() : renderCategorySelection()}
       </div>
-    </div>
-  );
+    );
+  }
+
+  return null;
 };
 
 export default GoalSetting;
