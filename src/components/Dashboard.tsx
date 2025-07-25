@@ -187,13 +187,14 @@ const Dashboard = () => {
       });
     }
 
-    // Check Vision completion
-    if (data.vision?.vision_elements && data.vision.vision_elements.length > 0) {
+    // Check Vision completion (check both vision_elements and vision_items)
+    const visionItems = data.vision?.vision_items || data.vision?.vision_elements || [];
+    if (visionItems && visionItems.length > 0) {
       completedFeatures++;
       totalProgress += 100;
       recentActivity.push({
         feature: 'Vision Board',
-        action: 'Created vision board',
+        action: `Created vision board with ${visionItems.length} items`,
         date: data.vision.last_updated,
         icon: Eye,
         color: 'text-purple-600'
