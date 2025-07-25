@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Camera, Type, Upload, X, FlipHorizontal, Check, Edit3, Save, Download, RotateCcw } from 'lucide-react';
+import { Camera, Type, Upload, X, FlipHorizontal, Save, Download, RotateCcw } from 'lucide-react';
 
 export interface VisionCard {
   id: string;
@@ -25,7 +25,7 @@ export interface PersonalVisionData {
   lastUpdated: string;
 }
 
-const STORAGE_KEY = 'coach-pack-personal-vision';
+const STORAGE_KEY = 'coach-pack-vision-board';
 
 const INSPIRING_PHRASES = [
   "This feeling drives me forward",
@@ -43,7 +43,7 @@ const SAMPLE_IMAGES = [
   'https://images.pexels.com/photos/1128318/pexels-photo-1128318.jpeg?auto=compress&cs=tinysrgb&w=400'
 ];
 
-const PersonalVisionBoard: React.FC = () => {
+const VisionBoard: React.FC = () => {
   const [visionCards, setVisionCards] = useState<VisionCard[]>([]);
   const [textElements, setTextElements] = useState<TextElement[]>([]);
   const [draggedItem, setDraggedItem] = useState<{ type: 'card' | 'text'; id: string } | null>(null);
@@ -53,6 +53,7 @@ const PersonalVisionBoard: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [showDataManagement, setShowDataManagement] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
   
   const canvasRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -72,10 +73,13 @@ const PersonalVisionBoard: React.FC = () => {
         console.error('Failed to load personal vision data:', error);
       }
     }
+    setIsLoaded(true);
   }, []);
 
   // Auto-save data with debouncing
   useEffect(() => {
+    if (!isLoaded) return;
+    
     const timer = setTimeout(() => {
       const data: PersonalVisionData = {
         visionCards,
@@ -87,7 +91,7 @@ const PersonalVisionBoard: React.FC = () => {
       setLastSaved(new Date());
     }, 1000);
     return () => clearTimeout(timer);
-  }, [visionCards, textElements, uploadedImages]);
+  }, [visionCards, textElements, uploadedImages, isLoaded]);
 
   const getSizeStyles = (size: 'small' | 'medium' | 'large') => {
     switch (size) {
@@ -238,7 +242,7 @@ const PersonalVisionBoard: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `personal-vision-board-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `vision-board-${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -303,457 +307,521 @@ const PersonalVisionBoard: React.FC = () => {
 
   const stats = getCompletionStats();
 
+  if (!isLoaded) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-center min-h-96">
+          <div className="text-center">
+            <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-slate-900 mb-2">Loading Your Vision Board...</h2>
+            <p className="text-slate-600">Retrieving your saved progress...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">Your Personal Vision Board</h1>
-          <p className="text-lg text-slate-600">Upload your images and click cards to add meaning</p>
-          
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">Vision Board</h1>
+          <p className="text-slate-600 mt-2">
+            Create visual representations of your goals across four key life areas
+          </p>
           {lastSaved && (
-            <p className="text-sm text-slate-500 mt-2">
-              Last saved: {lastSaved.toLocaleTimeString()}
+            <p className="text-sm text-green-600 mt-1">
+              ✓ Last saved: {lastSaved.toLocaleTimeString()}
             </p>
           )}
         </div>
-
-        {/* Action Bar */}
-        <div className="flex flex-wrap justify-center gap-4 mb-8">
-          <button
-            onClick={() => setShowImageOptions(true)}
-            className="flex items-center space-x-2 px-6 py-3 bg-white border-2 border-blue-200 rounded-xl hover:border-blue-300 hover:shadow-md transition-all duration-200"
+        <div className="flex items-center space-x-3">
+          <button 
+            onClick={() => setShowDataManagement(!showDataManagement)}
+            className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
           >
-            <Camera className="w-5 h-5 text-blue-600" />
-            <span className="font-medium text-slate-700">Add Vision Card</span>
+            <Download className="w-4 h-4" />
+            <span>Data</span>
           </button>
-          
-          <div className="flex items-center space-x-2 px-6 py-3 bg-white border-2 border-purple-200 rounded-xl">
-            <Type className="w-5 h-5 text-purple-600" />
-            <input
-              type="text"
-              placeholder="Add inspiring text..."
-              value={newText}
-              onChange={(e) => setNewText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && newText.trim()) {
-                  addText(newText.trim());
-                }
-              }}
-              className="bg-transparent outline-none placeholder-slate-400 font-medium text-slate-700 w-48"
-            />
-          </div>
 
-          <button
+          <button 
             onClick={forceSaveData}
-            className="flex items-center space-x-2 px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors"
+            className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
           >
-            <Save className="w-5 h-5" />
+            <Save className="w-4 h-4" />
             <span>Save Now</span>
           </button>
-
-          <button
-            onClick={() => setShowDataManagement(!showDataManagement)}
-            className="flex items-center space-x-2 px-6 py-3 bg-slate-600 text-white rounded-xl hover:bg-slate-700 transition-colors"
-          >
-            <Download className="w-5 h-5" />
-            <span>Manage Data</span>
-          </button>
         </div>
+      </div>
 
-        {/* Data Management Panel */}
-        {showDataManagement && (
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 mb-8">
-            <h3 className="text-lg font-semibold text-slate-900 mb-4">Data Management</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <button
-                onClick={handleExportData}
-                className="flex items-center justify-center space-x-2 px-4 py-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors border border-blue-200"
-              >
-                <Download className="w-4 h-4" />
-                <span>Export Data</span>
-              </button>
-              
-              <button
-                onClick={() => importInputRef.current?.click()}
-                className="flex items-center justify-center space-x-2 px-4 py-3 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors border border-green-200"
-              >
-                <Upload className="w-4 h-4" />
-                <span>Import Data</span>
-              </button>
-              
-              <button
-                onClick={handleClearAllData}
-                className="flex items-center justify-center space-x-2 px-4 py-3 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors border border-red-200"
-              >
-                <RotateCcw className="w-4 h-4" />
-                <span>Reset Board</span>
-              </button>
+      {/* Data Management Panel */}
+      {showDataManagement && (
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">Data Management</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <button
+              onClick={handleExportData}
+              className="flex items-center justify-center space-x-2 px-4 py-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors border border-blue-200"
+            >
+              <Download className="w-4 h-4" />
+              <span>Export Data</span>
+            </button>
+            
+            <button
+              onClick={() => importInputRef.current?.click()}
+              className="flex items-center justify-center space-x-2 px-4 py-3 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors border border-green-200"
+            >
+              <Upload className="w-4 h-4" />
+              <span>Import Data</span>
+            </button>
+            
+            <button
+              onClick={handleClearAllData}
+              className="flex items-center justify-center space-x-2 px-4 py-3 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors border border-red-200"
+            >
+              <RotateCcw className="w-4 h-4" />
+              <span>Reset Board</span>
+            </button>
+          </div>
+          
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".json"
+            onChange={handleImportData}
+            className="hidden"
+          />
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-lg">
+            <div className="text-center">
+              <div className="text-slate-500 text-sm">Vision Cards</div>
+              <div className="font-semibold text-slate-900">{stats.totalCards}</div>
             </div>
-            
-            <input
-              ref={importInputRef}
-              type="file"
-              accept=".json"
-              onChange={handleImportData}
-              className="hidden"
-            />
-            
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 p-4 bg-slate-50 rounded-lg">
-              <div className="text-center">
-                <div className="text-slate-500 text-sm">Vision Cards</div>
-                <div className="font-semibold text-slate-900">{stats.totalCards}</div>
-              </div>
-              <div className="text-center">
-                <div className="text-slate-500 text-sm">With Meaning</div>
-                <div className="font-semibold text-slate-900">{stats.cardsWithMeaning}</div>
-              </div>
-              <div className="text-center">
-                <div className="text-slate-500 text-sm">Text Elements</div>
-                <div className="font-semibold text-slate-900">{stats.customTextElements}</div>
-              </div>
-              <div className="text-center">
-                <div className="text-slate-500 text-sm">Personal Images</div>
-                <div className="font-semibold text-slate-900">{stats.uploadedImagesCount}</div>
-              </div>
-              <div className="text-center">
-                <div className="text-slate-500 text-sm">Completion</div>
-                <div className="font-semibold text-slate-900">{stats.completionPercentage}%</div>
-              </div>
+            <div className="text-center">
+              <div className="text-slate-500 text-sm">With Meaning</div>
+              <div className="font-semibold text-slate-900">{stats.cardsWithMeaning}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-slate-500 text-sm">Text Elements</div>
+              <div className="font-semibold text-slate-900">{stats.customTextElements}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-slate-500 text-sm">Completion</div>
+              <div className="font-semibold text-slate-900">{stats.completionPercentage}%</div>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Vision Board Canvas */}
-        <div 
-          ref={canvasRef}
-          className="relative bg-white rounded-2xl shadow-xl border border-slate-200 mx-auto overflow-hidden"
-          style={{ width: '800px', height: '600px' }}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
+      {/* Action Bar */}
+      <div className="flex flex-wrap justify-center gap-4">
+        <button
+          onClick={() => setShowImageOptions(true)}
+          className="flex items-center space-x-2 px-6 py-3 bg-white border-2 border-blue-200 rounded-xl hover:border-blue-300 hover:shadow-md transition-all duration-200"
         >
-          {/* Vision Cards */}
-          {visionCards.map((card) => {
-            const sizeStyles = getSizeStyles(card.size);
-            return (
-              <div
-                key={card.id}
-                className="absolute cursor-move group"
-                style={{ 
-                  left: card.position.x, 
-                  top: card.position.y,
-                  perspective: '1000px'
+          <Camera className="w-5 h-5 text-blue-600" />
+          <span className="font-medium text-slate-700">Add Vision Card</span>
+        </button>
+        
+        <div className="flex items-center space-x-2 px-6 py-3 bg-white border-2 border-purple-200 rounded-xl">
+          <Type className="w-5 h-5 text-purple-600" />
+          <input
+            type="text"
+            placeholder="Add inspiring text..."
+            value={newText}
+            onChange={(e) => setNewText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && newText.trim()) {
+                addText(newText.trim());
+              }
+            }}
+            className="bg-transparent outline-none placeholder-slate-400 font-medium text-slate-700 w-48"
+          />
+        </div>
+      </div>
+
+      {/* Vision Board Canvas */}
+      <div 
+        ref={canvasRef}
+        className="relative bg-white rounded-2xl shadow-xl border border-slate-200 mx-auto overflow-hidden"
+        style={{ width: '800px', height: '600px' }}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
+        {/* Vision Cards */}
+        {visionCards.map((card) => {
+          const sizeStyles = getSizeStyles(card.size);
+          return (
+            <div
+              key={card.id}
+              className="absolute cursor-move group"
+              style={{ 
+                left: card.position.x, 
+                top: card.position.y,
+                perspective: '1000px'
+              }}
+              onMouseDown={(e) => handleMouseDown(e, card.id, 'card')}
+            >
+              <div 
+                className="relative transition-transform duration-700"
+                style={{
+                  transformStyle: 'preserve-3d',
+                  transform: card.isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+                  ...sizeStyles
                 }}
-                onMouseDown={(e) => handleMouseDown(e, card.id, 'card')}
               >
+                {/* Front Side (Image) */}
                 <div 
-                  className="relative transition-transform duration-700"
-                  style={{
-                    transformStyle: 'preserve-3d',
-                    transform: card.isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
-                    ...sizeStyles
+                  className="absolute inset-0 rounded-xl shadow-lg border-4 border-white hover:shadow-xl transition-shadow duration-200 cursor-pointer"
+                  style={{ backfaceVisibility: 'hidden' }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!draggedItem) flipCard(card.id);
                   }}
                 >
-                  {/* Front Side (Image) */}
-                  <div 
-                    className="absolute inset-0 rounded-xl shadow-lg border-4 border-white hover:shadow-xl transition-shadow duration-200 cursor-pointer"
-                    style={{ backfaceVisibility: 'hidden' }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!draggedItem) flipCard(card.id);
-                    }}
-                  >
-                    <img
-                      src={card.imageUrl}
-                      alt="Vision"
-                      className="w-full h-full object-cover rounded-lg"
-                    />
-                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-black group-hover:bg-opacity-20 rounded-lg transition-all duration-200 flex items-center justify-center pointer-events-none">
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                        <div className="bg-white bg-opacity-90 rounded-full p-2">
-                          <FlipHorizontal className="w-4 h-4 text-slate-700" />
-                        </div>
+                  <img
+                    src={card.imageUrl}
+                    alt="Vision"
+                    className="w-full h-full object-cover rounded-lg"
+                  />
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-black group-hover:bg-opacity-20 rounded-lg transition-all duration-200 flex items-center justify-center pointer-events-none">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <div className="bg-white bg-opacity-90 rounded-full p-2">
+                        <FlipHorizontal className="w-4 h-4 text-slate-700" />
                       </div>
                     </div>
                   </div>
+                </div>
 
-                  {/* Back Side (Text) */}
-                  <div 
-                    className="absolute inset-0 rounded-xl shadow-lg border-4 border-white bg-slate-50"
-                    style={{ 
-                      backfaceVisibility: 'hidden',
-                      transform: 'rotateY(180deg)'
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="p-3 h-full flex flex-col space-y-2">
-                      <textarea
-                        value={card.meaning}
-                        onChange={(e) => updateCard(card.id, { meaning: e.target.value })}
-                        placeholder="What does this represent in your life?"
-                        className="flex-1 text-xs bg-transparent border-none outline-none resize-none text-slate-700 placeholder-slate-400"
-                        onClick={(e) => e.stopPropagation()}
-                        onFocus={(e) => e.stopPropagation()}
-                        onMouseDown={(e) => e.stopPropagation()}
-                      />
-                      <textarea
-                        value={card.feeling}
-                        onChange={(e) => updateCard(card.id, { feeling: e.target.value })}
-                        placeholder="How will achieving this make you feel?"
-                        className="flex-1 text-xs bg-transparent border-none outline-none resize-none text-slate-700 placeholder-slate-400"
-                        onClick={(e) => e.stopPropagation()}
-                        onFocus={(e) => e.stopPropagation()}
-                        onMouseDown={(e) => e.stopPropagation()}
-                      />
-                    </div>
+                {/* Back Side (Text) */}
+                <div 
+                  className="absolute inset-0 rounded-xl shadow-lg border-4 border-white bg-slate-50"
+                  style={{ 
+                    backfaceVisibility: 'hidden',
+                    transform: 'rotateY(180deg)'
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="p-3 h-full flex flex-col space-y-2">
+                    <textarea
+                      value={card.meaning}
+                      onChange={(e) => updateCard(card.id, { meaning: e.target.value })}
+                      placeholder="What does this represent in your life?"
+                      className="flex-1 text-xs bg-transparent border-none outline-none resize-none text-slate-700 placeholder-slate-400"
+                      onClick={(e) => e.stopPropagation()}
+                      onFocus={(e) => e.stopPropagation()}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => {
+                        e.stopPropagation();
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          // Force immediate save
+                          const data: PersonalVisionData = {
+                            visionCards,
+                            textElements,
+                            uploadedImages,
+                            lastUpdated: new Date().toISOString()
+                          };
+                          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                          setLastSaved(new Date());
+                          (e.target as HTMLTextAreaElement).blur();
+                          // Flip card back to image side
+                          setTimeout(() => {
+                            flipCard(card.id);
+                          }, 100);
+                        }
+                      }}
+                    />
+                    <textarea
+                      value={card.feeling}
+                      onChange={(e) => updateCard(card.id, { feeling: e.target.value })}
+                      placeholder="How will achieving this make you feel?"
+                      className="flex-1 text-xs bg-transparent border-none outline-none resize-none text-slate-700 placeholder-slate-400"
+                      onClick={(e) => e.stopPropagation()}
+                      onFocus={(e) => e.stopPropagation()}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => {
+                        e.stopPropagation();
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          // Force immediate save
+                          const data: PersonalVisionData = {
+                            visionCards,
+                            textElements,
+                            uploadedImages,
+                            lastUpdated: new Date().toISOString()
+                          };
+                          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                          setLastSaved(new Date());
+                          (e.target as HTMLTextAreaElement).blur();
+                          // Flip card back to image side
+                          setTimeout(() => {
+                            flipCard(card.id);
+                          }, 100);
+                        }
+                      }}
+                    />
+                    
+                    {/* Flip Back Button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        flipCard(card.id);
+                      }}
+                      className="self-center mt-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors text-xs flex items-center space-x-1"
+                    >
+                      <FlipHorizontal className="w-3 h-3" />
+                      <span>Flip Back</span>
+                    </button>
                   </div>
+                </div>
 
-                  {/* Size Controls */}
-                  <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex bg-white rounded-full shadow-lg border border-slate-200 z-20">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        updateCard(card.id, { size: 'small' });
-                      }}
-                      className={`px-2 py-1 text-xs rounded-l-full transition-colors ${
-                        card.size === 'small' ? 'bg-blue-500 text-white' : 'text-slate-600 hover:bg-slate-100'
-                      }`}
-                    >
-                      S
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        updateCard(card.id, { size: 'medium' });
-                      }}
-                      className={`px-2 py-1 text-xs transition-colors ${
-                        card.size === 'medium' ? 'bg-blue-500 text-white' : 'text-slate-600 hover:bg-slate-100'
-                      }`}
-                    >
-                      M
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        updateCard(card.id, { size: 'large' });
-                      }}
-                      className={`px-2 py-1 text-xs rounded-r-full transition-colors ${
-                        card.size === 'large' ? 'bg-blue-500 text-white' : 'text-slate-600 hover:bg-slate-100'
-                      }`}
-                    >
-                      L
-                    </button>
-                  </div>
-
-                  {/* Delete Button */}
+                {/* Size Controls */}
+                <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex bg-white rounded-full shadow-lg border border-slate-200 z-20">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      removeItem(card.id, 'card');
+                      updateCard(card.id, { size: 'small' });
                     }}
-                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center text-sm font-bold hover:bg-red-600 z-10"
+                    className={`px-2 py-1 text-xs rounded-l-full transition-colors ${
+                      card.size === 'small' ? 'bg-blue-500 text-white' : 'text-slate-600 hover:bg-slate-100'
+                    }`}
                   >
-                    ×
+                    S
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      updateCard(card.id, { size: 'medium' });
+                    }}
+                    className={`px-2 py-1 text-xs transition-colors ${
+                      card.size === 'medium' ? 'bg-blue-500 text-white' : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    M
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      updateCard(card.id, { size: 'large' });
+                    }}
+                    className={`px-2 py-1 text-xs rounded-r-full transition-colors ${
+                      card.size === 'large' ? 'bg-blue-500 text-white' : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    L
                   </button>
                 </div>
-              </div>
-            );
-          })}
 
-          {/* Text Elements */}
-          {textElements.map((textEl) => (
-            <div
-              key={textEl.id}
-              className="absolute cursor-move group select-none"
-              style={{ 
-                left: textEl.position.x, 
-                top: textEl.position.y,
-                color: textEl.color
-              }}
-              onMouseDown={(e) => handleMouseDown(e, textEl.id, 'text')}
-            >
-              <div className="relative">
-                <div className="bg-white bg-opacity-90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-md border border-white font-semibold text-lg">
-                  {textEl.text}
-                </div>
+                {/* Delete Button */}
                 <button
-                  onClick={() => removeItem(textEl.id, 'text')}
-                  className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center text-xs font-bold hover:bg-red-600"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeItem(card.id, 'card');
+                  }}
+                  className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center text-sm font-bold hover:bg-red-600 z-10"
                 >
                   ×
                 </button>
               </div>
             </div>
-          ))}
+          );
+        })}
 
-          {/* Empty State */}
-          {visionCards.length === 0 && textElements.length === 0 && (
-            <div 
-              className="absolute inset-0 flex items-center justify-center border-2 border-dashed border-slate-300 rounded-xl m-4"
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-            >
-              <div className="text-center">
-                <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Upload className="w-12 h-12 text-slate-400" />
-                </div>
-                <h3 className="text-2xl font-semibold text-slate-700 mb-3">Create Your Personal Vision</h3>
-                <p className="text-slate-500 mb-6 max-w-md mx-auto leading-relaxed">
-                  Drag & drop your photos here or click "Add Vision Card" to upload images that represent your dreams and goals.
-                </p>
-                <div className="flex items-center justify-center space-x-6 text-sm text-slate-400">
-                  <div className="flex items-center space-x-2">
-                    <Upload className="w-4 h-4" />
-                    <span>Drag & drop images</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <FlipHorizontal className="w-4 h-4" />
-                    <span>Flip to add meaning</span>
-                  </div>
-                </div>
+        {/* Text Elements - Only show existing text elements, no default "New Text" */}
+        {textElements.filter(text => text.text !== 'New Text').map((textEl) => (
+          <div
+            key={textEl.id}
+            className="absolute cursor-move group select-none"
+            style={{ 
+              left: textEl.position.x, 
+              top: textEl.position.y,
+              color: textEl.color
+            }}
+            onMouseDown={(e) => handleMouseDown(e, textEl.id, 'text')}
+          >
+            <div className="relative">
+              <div className="bg-white bg-opacity-90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-md border border-white font-semibold text-lg">
+                {textEl.text}
               </div>
-            </div>
-          )}
-
-          {/* Help Text */}
-          {visionCards.length > 0 && (
-            <div className="absolute bottom-4 left-4 text-xs text-slate-400 bg-white bg-opacity-80 px-2 py-1 rounded">
-              Click cards to flip • Drag to move • Hover for size controls
-            </div>
-          )}
-        </div>
-
-        {/* Image Options Modal */}
-        {showImageOptions && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-6">
-            <div className="bg-white rounded-2xl p-8 max-w-4xl w-full max-h-screen overflow-y-auto">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-2xl font-semibold text-slate-900">Add Your Vision Images</h3>
-                <button 
-                  onClick={() => setShowImageOptions(false)}
-                  className="w-8 h-8 text-slate-400 hover:text-slate-600 text-2xl flex items-center justify-center"
-                >
-                  ×
-                </button>
-              </div>
-
-              {/* Upload Section */}
-              <div className="mb-8">
-                <h4 className="text-lg font-medium text-slate-900 mb-4">Upload Your Photos</h4>
-                <div 
-                  className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-blue-400 transition-colors cursor-pointer"
-                  onClick={() => fileInputRef.current?.click()}
-                  onDragOver={handleDragOver}
-                  onDrop={handleDrop}
-                >
-                  <Upload className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-                  <p className="text-lg font-medium text-slate-700 mb-2">
-                    {isUploading ? 'Uploading...' : 'Drop your images here or click to browse'}
-                  </p>
-                  <p className="text-sm text-slate-500">
-                    Upload photos that represent your dreams, goals, and aspirations
-                  </p>
-                </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
-                  className="hidden"
-                />
-              </div>
-
-              {/* Uploaded Images */}
-              {uploadedImages.length > 0 && (
-                <div className="mb-8">
-                  <h4 className="text-lg font-medium text-slate-900 mb-4">Your Uploaded Images</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {uploadedImages.map((imageUrl, index) => (
-                      <div key={index} className="relative group">
-                        <button
-                          onClick={() => addVisionCard(imageUrl)}
-                          className="aspect-square rounded-xl overflow-hidden hover:scale-105 hover:shadow-lg transition-all duration-200 border-2 border-transparent hover:border-blue-300 w-full"
-                        >
-                          <img src={imageUrl} alt={`Uploaded ${index + 1}`} className="w-full h-full object-cover" />
-                        </button>
-                        <button
-                          onClick={() => removeUploadedImage(imageUrl)}
-                          className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center text-sm font-bold hover:bg-red-600"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Sample Images */}
-              <div>
-                <h4 className="text-lg font-medium text-slate-900 mb-4">Or Choose from Samples</h4>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {SAMPLE_IMAGES.map((url, index) => (
-                    <button
-                      key={index}
-                      onClick={() => addVisionCard(url)}
-                      className="aspect-square rounded-xl overflow-hidden hover:scale-105 hover:shadow-lg transition-all duration-200 border-2 border-transparent hover:border-blue-300"
-                    >
-                      <img src={url} alt={`Sample ${index + 1}`} className="w-full h-full object-cover" />
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <button
+                onClick={() => removeItem(textEl.id, 'text')}
+                className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center text-xs font-bold hover:bg-red-600"
+              >
+                ×
+              </button>
             </div>
           </div>
-        )}
+        ))}
 
-        {/* Quick Text Suggestions */}
-        {newText === '' && visionCards.length > 0 && (
-          <div className="mt-8 text-center">
-            <p className="text-sm text-slate-500 mb-3">Quick add inspiring text:</p>
-            <div className="flex flex-wrap justify-center gap-2">
-              {INSPIRING_PHRASES.map((phrase, index) => (
-                <button
-                  key={index}
-                  onClick={() => addText(phrase)}
-                  className="px-4 py-2 bg-white border border-slate-200 rounded-full text-sm text-slate-600 hover:border-purple-300 hover:text-purple-600 transition-colors"
-                >
-                  {phrase}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Progress & Actions */}
-        {visionCards.length > 0 && (
-          <div className="mt-8 space-y-6">
-            {visionCards.some(card => !card.meaning && !card.feeling) && (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
-                <p className="text-amber-700 font-medium">
-                  💡 Click your vision cards to flip them and add what they mean to you
-                </p>
-                <p className="text-amber-600 text-sm mt-1">
-                  Personal meaning is what transforms images into powerful motivation
-                </p>
+        {/* Empty State */}
+        {visionCards.length === 0 && textElements.filter(text => text.text !== 'New Text').length === 0 && (
+          <div 
+            className="absolute inset-0 flex items-center justify-center border-2 border-dashed border-slate-300 rounded-xl m-4"
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+          >
+            <div className="text-center">
+              <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Upload className="w-12 h-12 text-slate-400" />
               </div>
-            )}
-
-            <div className="text-center bg-blue-50 rounded-xl p-6 border border-blue-200">
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">Turn Vision into Action</h3>
-              <p className="text-slate-600 leading-relaxed max-w-2xl mx-auto">
-                Your vision cards represent the life you're creating. Use Coach Pack's Goals section to break these dreams into specific weekly actions.
+              <h3 className="text-2xl font-semibold text-slate-700 mb-3">Create Your Personal Vision</h3>
+              <p className="text-slate-500 mb-6 max-w-md mx-auto leading-relaxed">
+                Drag & drop your photos here or click "Add Vision Card" to upload images that represent your dreams and goals.
               </p>
+              <div className="flex items-center justify-center space-x-6 text-sm text-slate-400">
+                <div className="flex items-center space-x-2">
+                  <Upload className="w-4 h-4" />
+                  <span>Drag & drop images</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <FlipHorizontal className="w-4 h-4" />
+                  <span>Flip to add meaning</span>
+                </div>
+              </div>
             </div>
+          </div>
+        )}
+
+        {/* Help Text */}
+        {visionCards.length > 0 && (
+          <div className="absolute bottom-4 left-4 text-xs text-slate-400 bg-white bg-opacity-80 px-2 py-1 rounded">
+            Click cards to flip • Drag to move • Hover for size controls • Enter saves & flips back
           </div>
         )}
       </div>
+
+      {/* Image Options Modal */}
+      {showImageOptions && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-6">
+          <div className="bg-white rounded-2xl p-8 max-w-4xl w-full max-h-screen overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-semibold text-slate-900">Add Your Vision Images</h3>
+              <button 
+                onClick={() => setShowImageOptions(false)}
+                className="w-8 h-8 text-slate-400 hover:text-slate-600 text-2xl flex items-center justify-center"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Upload Section */}
+            <div className="mb-8">
+              <h4 className="text-lg font-medium text-slate-900 mb-4">Upload Your Photos</h4>
+              <div 
+                className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-blue-400 transition-colors cursor-pointer"
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+              >
+                <Upload className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                <p className="text-lg font-medium text-slate-700 mb-2">
+                  {isUploading ? 'Uploading...' : 'Drop your images here or click to browse'}
+                </p>
+                <p className="text-sm text-slate-500">
+                  Upload photos that represent your dreams, goals, and aspirations
+                </p>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
+                className="hidden"
+              />
+            </div>
+
+            {/* Uploaded Images */}
+            {uploadedImages.length > 0 && (
+              <div className="mb-8">
+                <h4 className="text-lg font-medium text-slate-900 mb-4">Your Uploaded Images</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {uploadedImages.map((imageUrl, index) => (
+                    <div key={index} className="relative group">
+                      <button
+                        onClick={() => addVisionCard(imageUrl)}
+                        className="aspect-square rounded-xl overflow-hidden hover:scale-105 hover:shadow-lg transition-all duration-200 border-2 border-transparent hover:border-blue-300 w-full"
+                      >
+                        <img src={imageUrl} alt={`Uploaded ${index + 1}`} className="w-full h-full object-cover" />
+                      </button>
+                      <button
+                        onClick={() => removeUploadedImage(imageUrl)}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center text-sm font-bold hover:bg-red-600"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Sample Images */}
+            <div>
+              <h4 className="text-lg font-medium text-slate-900 mb-4">Or Choose from Samples</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {SAMPLE_IMAGES.map((url, index) => (
+                  <button
+                    key={index}
+                    onClick={() => addVisionCard(url)}
+                    className="aspect-square rounded-xl overflow-hidden hover:scale-105 hover:shadow-lg transition-all duration-200 border-2 border-transparent hover:border-blue-300"
+                  >
+                    <img src={url} alt={`Sample ${index + 1}`} className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Text Suggestions */}
+      {newText === '' && visionCards.length > 0 && textElements.length === 0 && (
+        <div className="text-center">
+          <p className="text-sm text-slate-500 mb-3">Quick add inspiring text:</p>
+          <div className="flex flex-wrap justify-center gap-2">
+            {INSPIRING_PHRASES.map((phrase, index) => (
+              <button
+                key={index}
+                onClick={() => addText(phrase)}
+                className="px-4 py-2 bg-white border border-slate-200 rounded-full text-sm text-slate-600 hover:border-purple-300 hover:text-purple-600 transition-colors"
+              >
+                {phrase}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Progress & Actions */}
+      {visionCards.length > 0 && (
+        <div className="space-y-6">
+          {visionCards.some(card => !card.meaning && !card.feeling) && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
+              <p className="text-amber-700 font-medium">
+                💡 Click your vision cards to flip them and add what they mean to you
+              </p>
+              <p className="text-amber-600 text-sm mt-1">
+                Personal meaning is what transforms images into powerful motivation
+              </p>
+            </div>
+          )}
+
+          <div className="text-center bg-blue-50 rounded-xl p-6 border border-blue-200">
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">Turn Vision into Action</h3>
+            <p className="text-slate-600 leading-relaxed max-w-2xl mx-auto">
+              Your vision cards represent the life you're creating. Use Coach Pack's Goals section to break these dreams into specific weekly actions.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default PersonalVisionBoard;
+export default VisionBoard;
