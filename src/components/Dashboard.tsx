@@ -34,14 +34,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const { visionItems } = useVisionBoardData();
   const { data: goalsData } = useGoalSettingData();
 
-  // Get top values
-  const coreValues = valuesData.rankedCoreValues?.slice(0, 6) || [];
-  const supportingValues = valuesData.supportingValues?.slice(0, 3) || [];
+  // Get top values with safe access
+  const coreValues = valuesData?.rankedCoreValues?.slice(0, 6) || [];
+  const supportingValues = valuesData?.supportingValues?.slice(0, 3) || [];
 
   // Get wheel areas
   const wheelAreas = wheelData || [];
 
-  // Get goals
+  // Get goals with safe access
   const activeGoals = Object.values(goalsData?.categoryGoals || {})
     .filter(goal => goal?.goal && goal.goal.trim() !== '');
 
