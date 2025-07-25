@@ -48,7 +48,22 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   // Calculate completion stats
   const wheelCompleted = wheelAreas.length > 0 && wheelAreas.some(area => area.score > 0);
   const valuesCompleted = coreValues.length > 0;
-  const visionCompleted = visionItems.length > 0;
+  
+  // Check for actual user-created vision content (not default stock photos)
+  const defaultImageUrls = [
+    'https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg?auto=compress&cs=tinysrgb&w=400',
+    'https://images.pexels.com/photos/618833/pexels-photo-618833.jpeg?auto=compress&cs=tinysrgb&w=400',
+    'https://images.pexels.com/photos/1128318/pexels-photo-1128318.jpeg?auto=compress&cs=tinysrgb&w=400',
+    'https://images.pexels.com/photos/1051838/pexels-photo-1051838.jpeg?auto=compress&cs=tinysrgb&w=400'
+  ];
+  
+  const customVisionItems = visionItems.filter(item => 
+    !defaultImageUrls.includes(item.imageUrl) || 
+    (item.title !== 'Dream Office Space' && item.title !== 'Mountain Adventure' && 
+     item.title !== 'Family Time' && item.title !== 'Inner Peace')
+  );
+  
+  const visionCompleted = customVisionItems.length > 0;
   const goalsCompleted = activeGoals.length > 0;
 
   const completedFeatures = [wheelCompleted, valuesCompleted, visionCompleted, goalsCompleted].filter(Boolean).length;
@@ -134,7 +149,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Vision Items</p>
-              <p className="text-3xl font-bold text-gray-900">{visionItems.length}</p>
+              <p className="text-3xl font-bold text-gray-900">{customVisionItems.length}</p>
             </div>
             <div className="bg-purple-100 rounded-full p-3">
               <Eye className="h-6 w-6 text-purple-600" />
@@ -247,7 +262,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     <h3 className="font-medium text-gray-900">Vision Board</h3>
                     <p className="text-sm text-gray-600">
                       {visionCompleted ? 
-                        `${visionItems.length} vision item${visionItems.length === 1 ? '' : 's'} created` : 
+                        `${customVisionItems.length} vision item${customVisionItems.length === 1 ? '' : 's'} created` : 
                         'Not started'
                       }
                     </p>
@@ -269,47 +284,63 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Vision Board Preview - Show actual user images */}
-          {visionItems.length > 0 && (
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <Eye className="h-5 w-5 mr-2" />
-                Your Vision Board
-              </h2>
-              <div className="grid grid-cols-2 gap-2 mb-4">
-                {visionItems.slice(0, 4).map((item, index) => (
-                  <div key={item.id || index} className="aspect-square rounded-lg overflow-hidden bg-gray-100 relative">
-                    {item.imageUrl ? (
-                      <img 
-                        src={item.imageUrl} 
-                        alt={item.title || 'Vision item'} 
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          const fallback = target.parentElement?.querySelector('.fallback') as HTMLElement;
-                          if (fallback) fallback.style.display = 'flex';
-                        }}
-                      />
-                    ) : null}
-                    <div className={`fallback absolute inset-0 bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center text-xs text-gray-600 ${item.imageUrl ? 'hidden' : 'flex'}`}>
-                      {item.title || 'Vision Item'}
+          {(() => {
+            // Filter out default stock photos to show only user-customized content
+            const defaultImageUrls = [
+              'https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg?auto=compress&cs=tinysrgb&w=400',
+              'https://images.pexels.com/photos/618833/pexels-photo-618833.jpeg?auto=compress&cs=tinysrgb&w=400',
+              'https://images.pexels.com/photos/1128318/pexels-photo-1128318.jpeg?auto=compress&cs=tinysrgb&w=400',
+              'https://images.pexels.com/photos/1051838/pexels-photo-1051838.jpeg?auto=compress&cs=tinysrgb&w=400'
+            ];
+            
+            const customVisionItems = visionItems.filter(item => 
+              !defaultImageUrls.includes(item.imageUrl) || 
+              (item.title !== 'Dream Office Space' && item.title !== 'Mountain Adventure' && 
+               item.title !== 'Family Time' && item.title !== 'Inner Peace')
+            );
+            
+            return customVisionItems.length > 0 ? (
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <Eye className="h-5 w-5 mr-2" />
+                  Your Vision Board
+                </h2>
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  {customVisionItems.slice(0, 4).map((item, index) => (
+                    <div key={item.id || index} className="aspect-square rounded-lg overflow-hidden bg-gray-100 relative">
+                      {item.imageUrl ? (
+                        <img 
+                          src={item.imageUrl} 
+                          alt={item.title || 'Vision item'} 
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const fallback = target.parentElement?.querySelector('.fallback') as HTMLElement;
+                            if (fallback) fallback.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <div className={`fallback absolute inset-0 bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center text-xs text-gray-600 ${item.imageUrl ? 'hidden' : 'flex'}`}>
+                        {item.title || 'Vision Item'}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+                {customVisionItems.length > 4 && (
+                  <p className="text-xs text-gray-500 mb-2">
+                    +{customVisionItems.length - 4} more items
+                  </p>
+                )}
+                <button 
+                  onClick={() => onNavigate('vision')}
+                  className="w-full text-center py-2 text-sm text-purple-600 hover:text-purple-700 font-medium transition-colors"
+                >
+                  View Full Vision Board →
+                </button>
               </div>
-              {visionItems.length > 4 && (
-                <p className="text-xs text-gray-500 mb-2">
-                  +{visionItems.length - 4} more items
-                </p>
-              )}
-              <button 
-                onClick={() => onNavigate('vision')}
-                className="w-full text-center py-2 text-sm text-purple-600 hover:text-purple-700 font-medium transition-colors"
-              >
-                View Full Vision Board →
-              </button>
-            </div>
-          )}
+            ) : null;
+          })()}
 
           {/* Today's Focus */}
           <div className="bg-white rounded-xl shadow-lg p-6">
@@ -345,7 +376,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 <p className="text-xs text-gray-600">Active Goals</p>
               </div>
               <div>
-                <div className="text-2xl font-bold text-purple-600">{visionItems.length}</div>
+                <div className="text-2xl font-bold text-purple-600">{customVisionItems.length}</div>
                 <p className="text-xs text-gray-600">Vision Items</p>
               </div>
             </div>
