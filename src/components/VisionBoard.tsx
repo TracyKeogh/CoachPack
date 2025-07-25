@@ -25,6 +25,64 @@ export interface PersonalVisionData {
   lastUpdated: string;
 }
 
+// Image compression utility
+const compressImage = (file: File, maxWidth: number = 800, quality: number = 0.8): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    
+    img.onload = () => {
+      // Calculate new dimensions
+      let { width, height } = img;
+      if (width > height) {
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+      } else {
+        if (height > maxWidth) {
+          width = (width * maxWidth) / height;
+          height = maxWidth;
+        }
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
+      
+      // Draw and compress
+      ctx?.drawImage(img, 0, 0, width, height);
+      const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+      resolve(compressedDataUrl);
+    };
+    
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
+  });
+};
+
+// Storage management utilities
+const getStorageSize = (): number => {
+  let total = 0;
+  for (let key in localStorage) {
+    if (localStorage.hasOwnProperty(key)) {
+      total += localStorage[key].length + key.length;
+    }
+  }
+  return total;
+};
+
+const formatStorageSize = (bytes: number): string => {
+  const mb = bytes / (1024 * 1024);
+  return `${mb.toFixed(2)} MB`;
+};
+
+const canStoreData = (dataSize: number): boolean => {
+  const currentSize = getStorageSize();
+  const availableSpace = 5 * 1024 * 1024; // 5MB typical localStorage limit
+  return (currentSize + dataSize) < (availableSpace * 0.9); // Use 90% of available space
+};
+
 const STORAGE_KEY = 'coach-pack-vision-board';
 
 const INSPIRING_PHRASES = [
@@ -71,24 +129,64 @@ const VisionBoard: React.FC = () => {
         setLastSaved(new Date(data.lastUpdated));
       } catch (error) {
         console.error('Failed to load personal vision data:', error);
+        // Clear corrupted data
+        localStorage.removeItem(STORAGE_KEY);
       }
     }
     setIsLoaded(true);
   }, []);
 
-  // Auto-save data with debouncing
+  // Auto-save data with smart storage management
   useEffect(() => {
     if (!isLoaded) return;
     
     const timer = setTimeout(() => {
-      const data: PersonalVisionData = {
-        visionCards,
-        textElements,
-        uploadedImages,
-        lastUpdated: new Date().toISOString()
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      setLastSaved(new Date());
+      try {
+        const data: PersonalVisionData = {
+          visionCards,
+          textElements,
+          uploadedImages,
+          lastUpdated: new Date().toISOString()
+        };
+        
+        const dataString = JSON.stringify(data);
+        const dataSize = new Blob([dataString]).size;
+        
+        if (!canStoreData(dataSize)) {
+          console.warn('Storage limit approaching. Data size:', formatStorageSize(dataSize));
+          // Try to save without uploaded images if storage is full
+          const reducedData = {
+            ...data,
+            uploadedImages: []
+          };
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(reducedData));
+          alert('Storage is nearly full. Uploaded images were not saved. Please export your data or use smaller images.');
+        } else {
+          localStorage.setItem(STORAGE_KEY, dataString);
+        }
+        
+        setLastSaved(new Date());
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+          console.error('Storage quota exceeded. Current size:', formatStorageSize(getStorageSize()));
+          // Try to save critical data only
+          try {
+            const criticalData = {
+              visionCards,
+              textElements,
+              uploadedImages: [], // Remove images to save space
+              lastUpdated: new Date().toISOString()
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(criticalData));
+            alert('Storage full. Vision cards and text saved, but uploaded images were removed. Please export your data.');
+          } catch (fallbackError) {
+            console.error('Failed to save even critical data:', fallbackError);
+            alert('Unable to save data. Please export your current work immediately.');
+          }
+        } else {
+          console.error('Failed to save data:', error);
+        }
+      }
     }, 1000);
     return () => clearTimeout(timer);
   }, [visionCards, textElements, uploadedImages, isLoaded]);
@@ -106,29 +204,44 @@ const VisionBoard: React.FC = () => {
     }
   };
 
-  const handleFileUpload = useCallback((files: FileList) => {
+  const handleFileUpload = useCallback(async (files: FileList) => {
     setIsUploading(true);
     const newImages: string[] = [];
     
-    Array.from(files).forEach((file, index) => {
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const imageUrl = e.target?.result as string;
-          newImages.push(imageUrl);
-          
-          if (newImages.length === files.length || index === files.length - 1) {
-            setUploadedImages(prev => [...prev, ...newImages]);
-            setIsUploading(false);
-            
-            if (newImages.length > 0) {
-              addVisionCard(newImages[0]);
-            }
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (file.type.startsWith('image/')) {
+          try {
+            // Compress image before storing
+            const compressedImage = await compressImage(file, 800, 0.7);
+            newImages.push(compressedImage);
+          } catch (compressionError) {
+            console.error('Failed to compress image:', compressionError);
+            // Fallback to original file if compression fails
+            const reader = new FileReader();
+            const originalImage = await new Promise<string>((resolve, reject) => {
+              reader.onload = (e) => resolve(e.target?.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(file);
+            });
+            newImages.push(originalImage);
           }
-        };
-        reader.readAsDataURL(file);
+        }
       }
-    });
+      
+      setUploadedImages(prev => [...prev, ...newImages]);
+      setIsUploading(false);
+      
+      if (newImages.length > 0) {
+        addVisionCard(newImages[0]);
+      }
+      
+    } catch (error) {
+      console.error('Failed to process files:', error);
+      setIsUploading(false);
+      alert('Failed to upload some images. Please try again with smaller files.');
+    }
   }, []);
 
   const addVisionCard = useCallback((imageUrl: string) => {
@@ -261,6 +374,7 @@ const VisionBoard: React.FC = () => {
         setTextElements(data.textElements || []);
         setUploadedImages(data.uploadedImages || []);
         setLastSaved(new Date());
+        alert('Vision board data imported successfully!');
       } catch (error) {
         console.error('Failed to import data:', error);
         alert('Invalid file format. Please select a valid vision board export file.');
@@ -281,14 +395,33 @@ const VisionBoard: React.FC = () => {
   }, []);
 
   const forceSaveData = useCallback(() => {
-    const data: PersonalVisionData = {
-      visionCards,
-      textElements,
-      uploadedImages,
-      lastUpdated: new Date().toISOString()
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    setLastSaved(new Date());
+    try {
+      const data: PersonalVisionData = {
+        visionCards,
+        textElements,
+        uploadedImages,
+        lastUpdated: new Date().toISOString()
+      };
+      
+      const dataString = JSON.stringify(data);
+      const dataSize = new Blob([dataString]).size;
+      
+      if (!canStoreData(dataSize)) {
+        alert(`Storage limit reached (${formatStorageSize(getStorageSize())}). Please export your data or remove some images.`);
+        return;
+      }
+      
+      localStorage.setItem(STORAGE_KEY, dataString);
+      setLastSaved(new Date());
+      
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+        alert(`Storage is full (${formatStorageSize(getStorageSize())}). Please export your data and clear storage.`);
+      } else {
+        console.error('Failed to save data:', error);
+        alert('Failed to save data. Please try again.');
+      }
+    }
   }, [visionCards, textElements, uploadedImages]);
 
   const getCompletionStats = useCallback(() => {
@@ -300,7 +433,7 @@ const VisionBoard: React.FC = () => {
       totalCards,
       cardsWithMeaning,
       customTextElements: textElements.length,
-      uploadedImagesCount: uploadedImages.length,
+      uploadedImagesCount: uploadedImages.length, // Keep for display but not saved
       completionPercentage
     };
   }, [visionCards, textElements, uploadedImages]);
@@ -393,7 +526,7 @@ const VisionBoard: React.FC = () => {
             className="hidden"
           />
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-lg">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 p-4 bg-slate-50 rounded-lg">
             <div className="text-center">
               <div className="text-slate-500 text-sm">Vision Cards</div>
               <div className="font-semibold text-slate-900">{stats.totalCards}</div>
@@ -407,8 +540,12 @@ const VisionBoard: React.FC = () => {
               <div className="font-semibold text-slate-900">{stats.customTextElements}</div>
             </div>
             <div className="text-center">
-              <div className="text-slate-500 text-sm">Completion</div>
-              <div className="font-semibold text-slate-900">{stats.completionPercentage}%</div>
+              <div className="text-slate-500 text-sm">Uploaded Images</div>
+              <div className="font-semibold text-slate-900">{stats.uploadedImagesCount}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-slate-500 text-sm">Storage Used</div>
+              <div className="font-semibold text-slate-900">{formatStorageSize(getStorageSize())}</div>
             </div>
           </div>
         </div>
@@ -519,15 +656,25 @@ const VisionBoard: React.FC = () => {
                         e.stopPropagation();
                         if (e.key === 'Enter' && !e.shiftKey) {
                           e.preventDefault();
-                          // Force immediate save
-                          const data: PersonalVisionData = {
-                            visionCards,
-                            textElements,
-                            uploadedImages,
-                            lastUpdated: new Date().toISOString()
-                          };
-                          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-                          setLastSaved(new Date());
+                          // Force immediate save with error handling
+                          try {
+                            const data: PersonalVisionData = {
+                              visionCards,
+                              textElements,
+                              uploadedImages,
+                              lastUpdated: new Date().toISOString()
+                            };
+                            
+                            const dataString = JSON.stringify(data);
+                            if (canStoreData(new Blob([dataString]).size)) {
+                              localStorage.setItem(STORAGE_KEY, dataString);
+                              setLastSaved(new Date());
+                            } else {
+                              console.warn('Storage limit reached during Enter save');
+                            }
+                          } catch (error) {
+                            console.error('Failed to save on Enter:', error);
+                          }
                           (e.target as HTMLTextAreaElement).blur();
                           // Flip card back to image side
                           setTimeout(() => {
@@ -548,15 +695,25 @@ const VisionBoard: React.FC = () => {
                         e.stopPropagation();
                         if (e.key === 'Enter' && !e.shiftKey) {
                           e.preventDefault();
-                          // Force immediate save
-                          const data: PersonalVisionData = {
-                            visionCards,
-                            textElements,
-                            uploadedImages,
-                            lastUpdated: new Date().toISOString()
-                          };
-                          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-                          setLastSaved(new Date());
+                          // Force immediate save with error handling
+                          try {
+                            const data: PersonalVisionData = {
+                              visionCards,
+                              textElements,
+                              uploadedImages,
+                              lastUpdated: new Date().toISOString()
+                            };
+                            
+                            const dataString = JSON.stringify(data);
+                            if (canStoreData(new Blob([dataString]).size)) {
+                              localStorage.setItem(STORAGE_KEY, dataString);
+                              setLastSaved(new Date());
+                            } else {
+                              console.warn('Storage limit reached during Enter save');
+                            }
+                          } catch (error) {
+                            console.error('Failed to save on Enter:', error);
+                          }
                           (e.target as HTMLTextAreaElement).blur();
                           // Flip card back to image side
                           setTimeout(() => {
