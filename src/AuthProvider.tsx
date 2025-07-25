@@ -292,11 +292,13 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const checkSession = async () => {
       try {
+        console.log('AuthProvider: Starting session check');
         console.log('AuthProvider: Checking for existing session');
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.user) {
           console.log('AuthProvider: Found existing session for user:', session.user.id);
+          console.log('AuthProvider: User email:', session.user.email);
           setUser({
             id: session.user.id,
             email: session.user.email!,
@@ -310,6 +312,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.error('AuthProvider: Session check error:', err);
         // Don't set error state for session check failures
       } finally {
+        console.log('AuthProvider: Session check complete, setting initialized=true, loading=false');
         setInitialized(true);
         setLoading(false);
       }
@@ -321,8 +324,10 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('AuthProvider: Auth state change:', event, session?.user?.id);
+        console.log('AuthProvider: Full auth state change details:', { event, hasSession: !!session, hasUser: !!session?.user });
         
         if (event === 'SIGNED_IN' && session?.user) {
+          console.log('AuthProvider: Processing SIGNED_IN event');
           setUser({
             id: session.user.id,
             email: session.user.email!,
@@ -330,16 +335,19 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.email}`
           });
         } else if (event === 'SIGNED_OUT') {
+          console.log('AuthProvider: Processing SIGNED_OUT event');
           setUser(null);
         }
         
         if (initialized) {
+          console.log('AuthProvider: Setting loading=false (initialized=true)');
           setLoading(false);
         }
       }
     );
 
     return () => {
+      console.log('AuthProvider: Cleaning up auth state listener');
       subscription.unsubscribe();
     };
   }, [initialized]);

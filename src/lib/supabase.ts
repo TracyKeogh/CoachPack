@@ -16,6 +16,14 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Only log in development
 if (import.meta.env.DEV && supabaseUrl && supabaseAnonKey) {
   console.log('Supabase connection configured for development');
+  console.log('VITE_SUPABASE_URL:', supabaseUrl);
+  console.log('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'Present' : 'Missing');
+} else {
+  console.log('Supabase environment check:', {
+    isDev: import.meta.env.DEV,
+    hasUrl: !!supabaseUrl,
+    hasKey: !!supabaseAnonKey
+  });
 }
 
 // Create Supabase client
