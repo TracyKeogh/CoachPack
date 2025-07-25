@@ -31,7 +31,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   // Load real data from hooks
   const { data: valuesData } = useValuesData();
   const { data: wheelData, reflectionData } = useWheelData();
-  const { visionItems, isLoaded: visionLoaded } = useVisionBoardData();
+  const { visionItems } = useVisionBoardData();
   const { data: goalsData } = useGoalSettingData();
 
   // Get top values
@@ -40,7 +40,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
   // Get wheel areas
   const wheelAreas = wheelData || [];
-  
+
   // Get goals
   const activeGoals = Object.values(goalsData?.categoryGoals || {})
     .filter(goal => goal?.goal && goal.goal.trim() !== '');
@@ -53,21 +53,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     'https://images.pexels.com/photos/1051838/pexels-photo-1051838.jpeg?auto=compress&cs=tinysrgb&w=400'
   ];
   
-  const defaultTitles = ['Dream Office Space', 'Mountain Adventure', 'Family Time', 'Inner Peace'];
-  
-  const customVisionItems = visionItems.filter(item => {
-    // Keep item if it has a custom image (not default stock photo)
-    const hasCustomImage = !defaultImageUrls.includes(item.imageUrl);
-    
-    // Keep item if it has a custom title (not default title)
-    const hasCustomTitle = !defaultTitles.includes(item.title);
-    
-    // Keep item if it's been edited from "New Vision Item"
-    const isEditedNewItem = item.title !== 'New Vision Item' || item.description !== 'Click to edit description';
-    
-    // Keep item if ANY of these conditions are true
-    return hasCustomImage || hasCustomTitle || isEditedNewItem;
-  });
+  const customVisionItems = visionItems.filter(item => 
+    !defaultImageUrls.includes(item.imageUrl) || 
+    (item.title !== 'Dream Office Space' && item.title !== 'Mountain Adventure' && 
+     item.title !== 'Family Time' && item.title !== 'Inner Peace')
+  );
 
   // Calculate completion stats
   const wheelCompleted = wheelAreas.length > 0 && wheelAreas.some(area => area.score > 0);
@@ -98,26 +88,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     : wheelCompleted
     ? 'Consider setting some goals based on your wheel assessment'
     : 'Start with your Wheel of Life assessment';
-
-  // Debug logging
-  React.useEffect(() => {
-    console.log('Dashboard Debug:', {
-      totalVisionItems: visionItems.length,
-      visionItemsDetails: visionItems.map(item => ({
-        id: item.id,
-        title: item.title,
-        imageUrl: item.imageUrl,
-        isCustomImage: !defaultImageUrls.includes(item.imageUrl),
-        isCustomTitle: !defaultTitles.includes(item.title)
-      })),
-      customVisionItems: customVisionItems.length,
-      visionLoaded,
-      wheelCompleted,
-      valuesCompleted,
-      visionCompleted,
-      goalsCompleted
-    });
-  }, [visionItems, customVisionItems, visionLoaded, wheelCompleted, valuesCompleted, visionCompleted, goalsCompleted]);
 
   return (
     <div className="space-y-8">
