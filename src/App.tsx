@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate, Outlet } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, Outlet, useNavigate } from 'react-router-dom';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 
@@ -64,8 +64,7 @@ const NotFound = () => {
   );
 };
 
-// Main app layout with navigation
-function AppLayout() {
+function AppContent() {
   const [isNavigationCollapsed, setIsNavigationCollapsed] = React.useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -87,7 +86,7 @@ function AppLayout() {
         <div className="flex">
           <Navigation 
             currentView={location.pathname.substring(1) as ViewType || 'dashboard'} 
-            onNavigate={(view: ViewType) => navigate(`/${view}`)}
+            onNavigate={(view) => navigate(`/${view}`)}
             isCollapsed={isNavigationCollapsed}
             onToggleCollapse={() => setIsNavigationCollapsed(!isNavigationCollapsed)}
           />
@@ -97,7 +96,15 @@ function AppLayout() {
             }`}
           >
             <div className="max-w-7xl mx-auto">
-              <Outlet />
+              <Routes>
+                <Route path="/dashboard" element={<Dashboard onNavigate={(view) => navigate(`/${view}`)} />} />
+                <Route path="/wheel" element={<WheelOfLife />} />
+                <Route path="/values" element={<ValuesClarity />} />
+                <Route path="/vision" element={<VisionBoard />} />
+                <Route path="/goals" element={<GoalSetting />} />
+                <Route path="/calendar" element={<Calendar />} />
+                <Route path="/templates" element={<CommunityTemplates />} />
+              </Routes>
             </div>
           </main>
         </div>
@@ -126,13 +133,9 @@ function App() {
           {/* Auth Routes with consistent layout */}
           <Route element={<AuthLayout />}>
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/auth/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
-            <Route path="/auth/signup" element={<SignupPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
-            <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
           </Route>
           
           <Route path="/pricing" element={<PricingPage />} />
@@ -140,6 +143,13 @@ function App() {
           <Route path="/success" element={<SuccessPage />} />
           <Route path="/cancel" element={<CancelPage />} />
           <Route path="/admin" element={<AdminDashboard />} />
+         
+         {/* Dashboard Route */}
+         <Route path="/dashboard" element={
+           <ProtectedRoute>
+             <AppContent />
+           </ProtectedRoute>
+         } />
           
           {/* Free Assessment Route */}
           <Route 
@@ -154,16 +164,37 @@ function App() {
             } 
           />
 
-          {/* Protected App Routes - ALL use the same AppLayout */}
-          <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/wheel" element={<WheelOfLife />} />
-            <Route path="/values" element={<ValuesClarity />} />
-            <Route path="/vision" element={<VisionBoard />} />
-            <Route path="/goals" element={<GoalSetting />} />
-            <Route path="/calendar" element={<Calendar />} />
-            <Route path="/templates" element={<CommunityTemplates />} />
-          </Route>
+          {/* Dashboard and feature routes */}
+          <Route path="/wheel" element={
+            <ProtectedRoute>
+              <AppContent />
+            </ProtectedRoute>
+          } />
+          <Route path="/values" element={
+            <ProtectedRoute>
+              <AppContent />
+            </ProtectedRoute>
+          } />
+          <Route path="/vision" element={
+            <ProtectedRoute>
+              <AppContent />
+            </ProtectedRoute>
+          } />
+          <Route path="/goals" element={
+            <ProtectedRoute>
+              <AppContent />
+            </ProtectedRoute>
+          } />
+          <Route path="/calendar" element={
+            <ProtectedRoute>
+              <AppContent />
+            </ProtectedRoute>
+          } />
+          <Route path="/templates" element={
+            <ProtectedRoute>
+              <AppContent />
+            </ProtectedRoute>
+          } />
           
           {/* 404 Route */}
           <Route path="*" element={<NotFound />} />
