@@ -79,6 +79,10 @@ function AppContent() {
     }
   }, [location.pathname]);
 
+  const handleNavigate = (view: ViewType) => {
+    navigate(`/${view}`);
+  };
+
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50">
@@ -86,7 +90,7 @@ function AppContent() {
         <div className="flex">
           <Navigation 
             currentView={location.pathname.substring(1) as ViewType || 'dashboard'} 
-            onNavigate={(view) => navigate(`/${view}`)}
+            onNavigate={handleNavigate}
             isCollapsed={isNavigationCollapsed}
             onToggleCollapse={() => setIsNavigationCollapsed(!isNavigationCollapsed)}
           />
@@ -97,7 +101,8 @@ function AppContent() {
           >
             <div className="max-w-7xl mx-auto">
               <Routes>
-                <Route path="/dashboard" element={<Dashboard onNavigate={(view) => navigate(`/${view}`)} />} />
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/dashboard" element={<Dashboard onNavigate={handleNavigate} />} />
                 <Route path="/wheel" element={<WheelOfLife />} />
                 <Route path="/values" element={<ValuesClarity />} />
                 <Route path="/vision" element={<VisionBoard />} />
@@ -143,13 +148,6 @@ function App() {
           <Route path="/success" element={<SuccessPage />} />
           <Route path="/cancel" element={<CancelPage />} />
           <Route path="/admin" element={<AdminDashboard />} />
-         
-         {/* Dashboard Route */}
-         <Route path="/dashboard" element={
-           <ProtectedRoute>
-             <AppContent />
-           </ProtectedRoute>
-         } />
           
           {/* Free Assessment Route */}
           <Route 
@@ -164,7 +162,12 @@ function App() {
             } 
           />
 
-          {/* Dashboard and feature routes */}
+          {/* Protected Dashboard and feature routes */}
+          <Route path="/dashboard/*" element={
+            <ProtectedRoute>
+              <AppContent />
+            </ProtectedRoute>
+          } />
           <Route path="/wheel" element={
             <ProtectedRoute>
               <AppContent />
