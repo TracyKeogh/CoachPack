@@ -67,7 +67,7 @@ const NotFound = () => {
 function AppContent() {
   const [isNavigationCollapsed, setIsNavigationCollapsed] = React.useState(false);
   const location = useLocation();
-  const navigate = useNavigate(); // THIS WAS MISSING!
+  const navigate = useNavigate();
 
   // Auto-collapse navigation when on dashboard, expand for other views
   React.useEffect(() => {
@@ -90,7 +90,7 @@ function AppContent() {
         <div className="flex">
           <Navigation 
             currentView={location.pathname.substring(1) as ViewType || 'dashboard'} 
-            onNavigate={handleNavigate} // FIXED: Now using handleNavigate instead of undefined navigate
+            onNavigate={handleNavigate}
             isCollapsed={isNavigationCollapsed}
             onToggleCollapse={() => setIsNavigationCollapsed(!isNavigationCollapsed)}
           />
@@ -101,7 +101,6 @@ function AppContent() {
           >
             <div className="max-w-7xl mx-auto">
               <Routes>
-                {/* ADDED: Dashboard route that was missing */}
                 <Route path="/dashboard" element={<Dashboard onNavigate={handleNavigate} />} />
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/wheel" element={<WheelOfLife />} />
@@ -150,7 +149,7 @@ function App() {
           <Route path="/cancel" element={<CancelPage />} />
           <Route path="/admin" element={<AdminDashboard />} />
          
-         {/* Dashboard Route - FIXED: Simplified to single route */}
+         {/* Dashboard Route */}
          <Route path="/dashboard" element={
            <ProtectedRoute>
              <AppContent />
