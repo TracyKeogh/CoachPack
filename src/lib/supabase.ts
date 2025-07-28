@@ -170,11 +170,6 @@ export const getAllUsers = async (): Promise<{ data: User[] | null; error: Error
     return { data, error: null };
   } catch (error) {
     console.error('Exception getting all users:', error);
-    }
-
-    return { data, error: null };
-  } catch (error) {
-    console.error('Exception getting user statistics:', error);
     return { data: null, error: error as Error };
   }
 };
