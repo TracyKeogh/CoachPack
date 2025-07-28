@@ -154,6 +154,26 @@ export const getUserByEmail = async (email: string): Promise<{ data: User | null
   }
 };
 
+// Get user statistics (for admin)
+export const getUserStatistics = async (): Promise<{ data: any | null; error: Error | null }> => {
+  try {
+    const { data, error } = await supabase
+      .from('user_statistics')
+      .select('*')
+      .single();
+    
+    if (error) {
+      console.error('Error getting user statistics:', error);
+      return { data: null, error };
+    }
+
+    return { data, error: null };
+  } catch (error) {
+    console.error('Exception getting user statistics:', error);
+    return { data: null, error: error as Error };
+  }
+};
+
 // Get all users (for admin)
 export const getAllUsers = async (): Promise<{ data: User[] | null; error: Error | null }> => {
   try {
