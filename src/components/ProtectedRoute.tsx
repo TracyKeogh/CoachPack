@@ -11,12 +11,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const [hasValidSubscription, setHasValidSubscription] = useState<boolean | null>(null);
   const [checkingSubscription, setCheckingSubscription] = useState(true);
 
-  console.log('ProtectedRoute: Rendering with state:', { 
-    hasUser: !!user, 
-    loading, 
-    hasValidSubscription, 
-    checkingSubscription 
-  });
   useEffect(() => {
     const verifySubscription = async () => {
       if (user && !loading) {
