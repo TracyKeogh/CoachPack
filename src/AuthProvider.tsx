@@ -290,6 +290,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Check for existing session on mount
   useEffect(() => {
+    const checkSession = async () => {
       try {
         console.log('AuthProvider: Starting session check');
         console.log('AuthProvider: Checking for existing session');
