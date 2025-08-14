@@ -1,34 +1,41 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Heart, Target, Calendar, Sparkles, ChevronRight, Clock, BarChart3, Eye, CheckSquare, TrendingUp, User, Menu, Home, ExternalLink } from 'lucide-react';
+import { useDashboardData } from '../hooks/useDashboardData';
 
-const CoachPackLifeStoryReimagined = () => {
+const Dashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const navigate = useNavigate();
+  const dashboardData = useDashboardData();
 
-  // Left sidebar sections with proper feature mapping
+  // Left sidebar sections with proper feature mapping and navigation
   const sections = [
     { 
       id: 'baseline', 
       icon: User, 
       title: 'Baseline', 
-      progress: 75, 
+      progress: dashboardData.baselineProgress, 
       active: false,
-      features: ['Wheel of Life', 'Values Clarity']
+      features: ['Wheel of Life', 'Values Clarity'],
+      routes: ['/wheel-of-life', '/values']
     },
     { 
       id: 'vision', 
       icon: Eye, 
       title: 'Vision', 
-      progress: 85, 
+      progress: dashboardData.visionProgress, 
       active: true,
-      features: ['Vision Board']
+      features: ['Vision Board'],
+      routes: ['/vision-board']
     },
     { 
       id: 'plan', 
       icon: CheckSquare, 
       title: 'Plan', 
-      progress: 45, 
+      progress: dashboardData.planProgress, 
       active: false,
-      features: ['Goal Setting']
+      features: ['Goal Setting'],
+      routes: ['/goal-setting']
     },
     { 
       id: 'stress', 
@@ -37,7 +44,8 @@ const CoachPackLifeStoryReimagined = () => {
       progress: 0, 
       active: false,
       comingSoon: true,
-      features: ['Goal Stress Testing']
+      features: ['Goal Stress Testing'],
+      routes: []
     },
     { 
       id: 'track', 
@@ -46,53 +54,26 @@ const CoachPackLifeStoryReimagined = () => {
       progress: 30, 
       active: false,
       external: true,
-      features: ['Mobile App']
+      features: ['Mobile App'],
+      routes: ['/calendar']
     }
   ];
 
-  // User's life story data
-  const lifeStory = {
-    name: "Alex",
-    daysIntoJourney: 28,
-    totalDays: 84, // 12 weeks
-    coreValues: ["Growth", "Connection", "Purpose"],
-    visionStatement: "Building a life of impact, growth, and deep connection",
-    currentFocus: "Establishing daily habits that align with my values",
+  const handleSectionClick = (section: any) => {
+    if (section.comingSoon) return;
     
-    // Vision board images - could be any colors/styles
-    visionBoard: [
-      { quadrant: 'Business', title: 'Leading innovative team', imageUrl: 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=400' },
-      { quadrant: 'Health', title: 'Peak physical fitness', imageUrl: 'https://images.pexels.com/photos/416778/pexels-photo-416778.jpeg?auto=compress&cs=tinysrgb&w=400' },
-      { quadrant: 'Balance', title: 'Peaceful mornings', imageUrl: 'https://images.pexels.com/photos/3060275/pexels-photo-3060275.jpeg?auto=compress&cs=tinysrgb&w=400' },
-      { quadrant: 'Connection', title: 'Deep relationships', imageUrl: 'https://images.pexels.com/photos/1128318/pexels-photo-1128318.jpeg?auto=compress&cs=tinysrgb&w=400' }
-    ],
-    
-    // Life areas with current and vision state
-    lifeAreas: [
-      { area: 'Career', now: 6, vision: 9, gap: 3 },
-      { area: 'Health', now: 7, vision: 9, gap: 2 },
-      { area: 'Relationships', now: 8, vision: 9, gap: 1 },
-      { area: 'Growth', now: 5, vision: 8, gap: 3 },
-      { area: 'Recreation', now: 4, vision: 7, gap: 3 },
-      { area: 'Money', now: 6, vision: 8, gap: 2 },
-      { area: 'Environment', now: 7, vision: 8, gap: 1 },
-      { area: 'Contribution', now: 8, vision: 9, gap: 1 }
-    ],
-    
-    nextMilestones: [
-      { title: "Complete 10K Run", date: "Feb 5", daysAway: 8 },
-      { title: "Launch Product Beta", date: "Feb 15", daysAway: 18 },
-      { title: "Family Weekend Trip", date: "Mar 1", daysAway: 32 }
-    ]
+    if (section.routes && section.routes.length > 0) {
+      // Navigate to the first route for now
+      navigate(section.routes[0]);
+    }
   };
 
-  const progressPercentage = (lifeStory.daysIntoJourney / lifeStory.totalDays) * 100;
-
-  const SidebarSection = ({ section }) => (
+  const SidebarSection = ({ section }: { section: any }) => (
     <div 
+      onClick={() => handleSectionClick(section)}
       className={`flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-all duration-200
         ${section.active ? 'bg-purple-100 border-l-4 border-purple-500' : 'hover:bg-slate-100'}
-        ${section.comingSoon ? 'opacity-60' : ''}
+        ${section.comingSoon ? 'opacity-60 cursor-not-allowed' : ''}
       `}
     >
       <section.icon className={`w-5 h-5 ${section.active ? 'text-purple-600' : 'text-slate-600'}`} />
@@ -124,6 +105,8 @@ const CoachPackLifeStoryReimagined = () => {
     </div>
   );
 
+  const progressPercentage = (dashboardData.daysIntoJourney / dashboardData.totalDays) * 100;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex">
       
@@ -137,19 +120,19 @@ const CoachPackLifeStoryReimagined = () => {
           <div className="text-center mb-12">
             <div className="inline-flex items-center space-x-2 bg-purple-500/20 px-4 py-2 rounded-full mb-6">
               <Sparkles className="w-5 h-5 text-purple-400" />
-              <span className="text-purple-300 font-medium">Day {lifeStory.daysIntoJourney} of Your Journey</span>
+              <span className="text-purple-300 font-medium">Day {dashboardData.daysIntoJourney} of Your Journey</span>
             </div>
             <h1 className="text-5xl font-bold text-white mb-6 leading-tight">
-              {lifeStory.visionStatement}
+              {dashboardData.visionStatement}
             </h1>
             <p className="text-xl text-slate-300 max-w-3xl mx-auto">
-              {lifeStory.currentFocus}
+              {dashboardData.currentFocus}
             </p>
           </div>
 
           {/* Core Values */}
           <div className="flex justify-center space-x-6 mb-12">
-            {lifeStory.coreValues.map((value, i) => (
+            {dashboardData.coreValues.map((value, i) => (
               <div key={i} className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-6 py-4">
                 <div className="flex items-center space-x-3">
                   <Heart className="w-5 h-5 text-purple-400" />
@@ -170,24 +153,33 @@ const CoachPackLifeStoryReimagined = () => {
             <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-1 shadow-2xl">
               {/* Vision board content */}
               <div className="grid grid-cols-2 gap-1 aspect-[5/4] overflow-hidden rounded-xl">
-                {lifeStory.visionBoard.map((item, i) => (
-                  <div key={i} className="relative overflow-hidden group">
-                    <img 
-                      src={item.imageUrl} 
-                      alt={item.title}
-                      className="w-full h-full object-cover transition-all duration-700 group-hover:scale-102"
-                    />
-                    
-                    {/* Minimal overlay on hover only */}
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300">
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-                        <span className="text-white text-sm font-medium px-3 py-1 bg-black/40 backdrop-blur-sm rounded-full">
-                          {item.quadrant}
-                        </span>
+                {dashboardData.visionBoard.length > 0 ? (
+                  dashboardData.visionBoard.map((item, i) => (
+                    <div key={i} className="relative overflow-hidden group">
+                      <img 
+                        src={item.imageUrl} 
+                        alt={item.title}
+                        className="w-full h-full object-cover transition-all duration-700 group-hover:scale-102"
+                      />
+                      
+                      {/* Minimal overlay on hover only */}
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300">
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
+                          <span className="text-white text-sm font-medium px-3 py-1 bg-black/40 backdrop-blur-sm rounded-full">
+                            {item.quadrant}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  // Fallback when no vision board items
+                  Array.from({ length: 4 }, (_, i) => (
+                    <div key={i} className="bg-slate-700/50 flex items-center justify-center">
+                      <span className="text-slate-400 text-sm">Add Vision Item</span>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
             
@@ -231,9 +223,9 @@ const CoachPackLifeStoryReimagined = () => {
               <h3 className="text-xl font-semibold text-slate-300 mb-6">Today</h3>
               <div className="relative mb-4">
                 <svg width="200" height="200" className="transform -rotate-90">
-                  {lifeStory.lifeAreas.map((area, index) => {
-                    const startAngle = (index * 360) / lifeStory.lifeAreas.length;
-                    const endAngle = ((index + 1) * 360) / lifeStory.lifeAreas.length;
+                  {dashboardData.lifeAreas.map((area, index) => {
+                    const startAngle = (index * 360) / dashboardData.lifeAreas.length;
+                    const endAngle = ((index + 1) * 360) / dashboardData.lifeAreas.length;
                     const radius = (area.now / 10) * 80;
                     
                     const startAngleRad = (startAngle * Math.PI) / 180;
@@ -273,7 +265,7 @@ const CoachPackLifeStoryReimagined = () => {
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-slate-300">
-                      {Math.round(lifeStory.lifeAreas.reduce((sum, area) => sum + area.now, 0) / 8 * 10) / 10}
+                      {Math.round(dashboardData.lifeAreas.reduce((sum, area) => sum + area.now, 0) / 8 * 10) / 10}
                     </div>
                     <div className="text-xs text-slate-400">Avg</div>
                   </div>
@@ -292,9 +284,9 @@ const CoachPackLifeStoryReimagined = () => {
               <h3 className="text-xl font-semibold text-green-300 mb-6">Your Vision</h3>
               <div className="relative mb-4">
                 <svg width="200" height="200" className="transform -rotate-90">
-                  {lifeStory.lifeAreas.map((area, index) => {
-                    const startAngle = (index * 360) / lifeStory.lifeAreas.length;
-                    const endAngle = ((index + 1) * 360) / lifeStory.lifeAreas.length;
+                  {dashboardData.lifeAreas.map((area, index) => {
+                    const startAngle = (index * 360) / dashboardData.lifeAreas.length;
+                    const endAngle = ((index + 1) * 360) / dashboardData.lifeAreas.length;
                     const radius = (area.vision / 10) * 80;
                     
                     const startAngleRad = (startAngle * Math.PI) / 180;
@@ -334,7 +326,7 @@ const CoachPackLifeStoryReimagined = () => {
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-green-300">
-                      {Math.round(lifeStory.lifeAreas.reduce((sum, area) => sum + area.vision, 0) / 8 * 10) / 10}
+                      {Math.round(dashboardData.lifeAreas.reduce((sum, area) => sum + area.vision, 0) / 8 * 10) / 10}
                     </div>
                     <div className="text-xs text-green-400">Target</div>
                   </div>
@@ -345,7 +337,7 @@ const CoachPackLifeStoryReimagined = () => {
           
           {/* Legend */}
           <div className="flex justify-center space-x-8 mt-8 text-sm">
-            {lifeStory.lifeAreas.slice(0, 4).map((area, i) => (
+            {dashboardData.lifeAreas.slice(0, 4).map((area, i) => (
               <div key={i} className="text-slate-400">{area.area}</div>
             ))}
           </div>
@@ -359,8 +351,8 @@ const CoachPackLifeStoryReimagined = () => {
               <h3 className="text-2xl font-bold text-white">Your 90-Day Journey</h3>
             </div>
             <div className="text-right">
-              <div className="text-sm text-slate-400">Day {lifeStory.daysIntoJourney} of 90</div>
-              <div className="text-lg font-semibold text-purple-400">{90 - lifeStory.daysIntoJourney} days remaining</div>
+              <div className="text-sm text-slate-400">Day {dashboardData.daysIntoJourney} of 90</div>
+              <div className="text-lg font-semibold text-purple-400">{90 - dashboardData.daysIntoJourney} days remaining</div>
             </div>
           </div>
           
@@ -368,11 +360,11 @@ const CoachPackLifeStoryReimagined = () => {
           <div className="grid grid-cols-10 gap-1 mb-6">
             {Array.from({ length: 90 }, (_, i) => {
               const dayNumber = i + 1;
-              const isPast = dayNumber <= lifeStory.daysIntoJourney;
-              const isToday = dayNumber === lifeStory.daysIntoJourney;
+              const isPast = dayNumber <= dashboardData.daysIntoJourney;
+              const isToday = dayNumber === dashboardData.daysIntoJourney;
               
               // Sample goals and milestones positioned on specific days
-              const events = {
+              const events: { [key: number]: { type: string; title: string; color: string } } = {
                 5: { type: 'milestone', title: '10K Run', color: 'bg-blue-500' },
                 15: { type: 'milestone', title: 'Beta Launch', color: 'bg-purple-500' },
                 30: { type: 'goal', title: 'Health Review', color: 'bg-green-500' },
@@ -424,12 +416,12 @@ const CoachPackLifeStoryReimagined = () => {
             <div className="w-full bg-slate-700/50 rounded-full h-3 overflow-hidden">
               <div 
                 className="h-full bg-gradient-to-r from-slate-400 via-purple-500 to-green-500 rounded-full transition-all duration-1000"
-                style={{ width: `${(lifeStory.daysIntoJourney / 90) * 100}%` }}
+                style={{ width: `${(dashboardData.daysIntoJourney / 90) * 100}%` }}
               ></div>
             </div>
             <div className="flex justify-between mt-2 text-sm">
               <span className="text-slate-400">Start</span>
-              <span className="text-purple-400 font-medium">Day {lifeStory.daysIntoJourney}</span>
+              <span className="text-purple-400 font-medium">Day {dashboardData.daysIntoJourney}</span>
               <span className="text-green-400">Vision Achieved</span>
             </div>
           </div>
@@ -437,9 +429,9 @@ const CoachPackLifeStoryReimagined = () => {
           {/* Upcoming Events */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             {[
-              { title: "Beta Launch", date: "Day 15", daysAway: 15 - lifeStory.daysIntoJourney, type: "milestone", color: "purple" },
-              { title: "Health Review", date: "Day 30", daysAway: 30 - lifeStory.daysIntoJourney, type: "goal", color: "green" },
-              { title: "Product Launch", date: "Day 45", daysAway: 45 - lifeStory.daysIntoJourney, type: "milestone", color: "yellow" }
+              { title: "Beta Launch", date: "Day 15", daysAway: 15 - dashboardData.daysIntoJourney, type: "milestone", color: "purple" },
+              { title: "Health Review", date: "Day 30", daysAway: 30 - dashboardData.daysIntoJourney, type: "goal", color: "green" },
+              { title: "Product Launch", date: "Day 45", daysAway: 45 - dashboardData.daysIntoJourney, type: "milestone", color: "yellow" }
             ].filter(event => event.daysAway > 0).map((event, i) => (
               <div key={i} className="bg-slate-700/50 rounded-xl p-4 border border-slate-600/30">
                 <div className="flex items-center space-x-2 mb-2">
@@ -449,7 +441,7 @@ const CoachPackLifeStoryReimagined = () => {
                     </svg>
                   ) : (
                     <svg className="w-4 h-4 text-blue-400" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8 8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
                     </svg>
                   )}
                   <span className="text-xs text-slate-400 uppercase font-medium">{event.type}</span>
@@ -484,7 +476,7 @@ const CoachPackLifeStoryReimagined = () => {
               <span className="text-slate-400">Milestones</span>
             </div>
             <div className="flex items-center space-x-2">
-              <svg className="w-3 h-3 text-blue-400" fill="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-blue-400" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
               </svg>
               <span className="text-slate-400">Goals</span>
@@ -499,7 +491,7 @@ const CoachPackLifeStoryReimagined = () => {
             <div>
               <div className="text-lg font-semibold text-white">You're Building Momentum</div>
               <div className="text-slate-400 text-sm">
-                {84 - lifeStory.daysIntoJourney} days remaining to achieve your vision
+                {84 - dashboardData.daysIntoJourney} days remaining to achieve your vision
               </div>
             </div>
           </div>
@@ -508,7 +500,7 @@ const CoachPackLifeStoryReimagined = () => {
       </div>
 
       {/* Right Sidebar Navigation */}
-      <div className={`${sidebarOpen ? 'w-80' : 'w-16'} bg-white border-l border-slate-200 transition-all duration-300 flex flex-col`}>
+      <div className={`${sidebarOpen ? 'w-80' : 'w-16'} bg-white border-l border-slate-200 transition-all duration-300 flex flex-col relative`}>
         
         {/* Top Section - Always visible */}
         <div className="p-4">
@@ -525,7 +517,10 @@ const CoachPackLifeStoryReimagined = () => {
         <div className="flex-1 p-2">
           <div className="space-y-3">
             {/* Dashboard Icon */}
-            <div className="w-10 h-10 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center cursor-pointer">
+            <div 
+              onClick={() => navigate('/dashboard')}
+              className="w-10 h-10 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center cursor-pointer hover:bg-purple-200 transition-colors"
+            >
               <Home className="w-5 h-5" />
             </div>
             
@@ -533,9 +528,10 @@ const CoachPackLifeStoryReimagined = () => {
             {sections.map(section => (
               <div 
                 key={section.id}
+                onClick={() => handleSectionClick(section)}
                 className={`w-10 h-10 rounded-lg flex items-center justify-center cursor-pointer transition-colors relative
                   ${section.active ? 'bg-purple-100 text-purple-600' : 'hover:bg-slate-100 text-slate-600'}
-                  ${section.comingSoon ? 'opacity-60' : ''}
+                  ${section.comingSoon ? 'opacity-60 cursor-not-allowed' : ''}
                 `}
               >
                 <section.icon className="w-5 h-5" />
@@ -549,7 +545,7 @@ const CoachPackLifeStoryReimagined = () => {
 
         {/* Expanded Menu Content - Only when sidebar is open */}
         {sidebarOpen && (
-          <div className="absolute left-0 top-0 w-80 h-full bg-white border-l border-slate-200 shadow-xl">
+          <div className="absolute left-0 top-0 w-80 h-full bg-white border-l border-slate-200 shadow-xl z-10">
             <div className="p-6">
               <div className="mb-8">
                 <h2 className="text-xl font-bold text-slate-900 mb-2">Your Journey</h2>
@@ -565,7 +561,7 @@ const CoachPackLifeStoryReimagined = () => {
               {/* Overall Progress */}
               <div className="mt-8 p-4 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl text-white">
                 <h3 className="font-semibold mb-2">Overall Progress</h3>
-                <div className="text-2xl font-bold">49%</div>
+                <div className="text-2xl font-bold">{dashboardData.overallProgress}%</div>
                 <p className="text-purple-100 text-sm">Keep building momentum</p>
               </div>
             </div>
@@ -576,4 +572,4 @@ const CoachPackLifeStoryReimagined = () => {
   );
 };
 
-export default CoachPackLifeStoryReimagined;
+export default Dashboard;
