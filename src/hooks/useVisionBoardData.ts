@@ -88,8 +88,8 @@ const defaultTextElements: TextElement[] = [
 ];
 
 export const useVisionBoardData = () => {
-  const [visionItems, setVisionItems] = useState<VisionItem[]>([]);
-  const [textElements, setTextElements] = useState<TextElement[]>([]);
+  const [visionItems, setVisionItems] = useState<VisionItem[]>(defaultVisionItems);
+  const [textElements, setTextElements] = useState<TextElement[]>(defaultTextElements);
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [isCollageEditMode, setIsCollageEditMode] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -101,24 +101,21 @@ export const useVisionBoardData = () => {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const data: VisionBoardData = JSON.parse(stored);
-        // Use stored data, or fall back to defaults if stored data is empty/invalid
-        setVisionItems(data.visionItems && Array.isArray(data.visionItems) ? data.visionItems : defaultVisionItems);
-        setTextElements(data.textElements && Array.isArray(data.textElements) ? data.textElements : defaultTextElements);
+        // Only replace defaults if stored data has actual content
+        if (data.visionItems && Array.isArray(data.visionItems) && data.visionItems.length > 0) {
+          setVisionItems(data.visionItems);
+        }
+        if (data.textElements && Array.isArray(data.textElements) && data.textElements.length > 0) {
+          setTextElements(data.textElements);
+        }
         setUploadedImages(data.uploadedImages || []);
         setIsCollageEditMode(data.isCollageEditMode || false);
         setLastSaved(new Date(data.lastUpdated));
-      } else {
-        // If no stored data, use initial defaults
-        setVisionItems(defaultVisionItems);
-        setTextElements(defaultTextElements);
       }
+      // If no stored data or stored data is empty, keep the default items
     } catch (error) {
       console.error('Failed to load vision board data:', error);
-      // Fallback to initial defaults if loading fails
-      setVisionItems(defaultVisionItems);
-      setTextElements(defaultTextElements);
-      setUploadedImages([]);
-      setIsCollageEditMode(false);
+      // Keep defaults on error
     }
     setIsLoaded(true);
   }, []);
