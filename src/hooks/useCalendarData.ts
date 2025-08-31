@@ -133,7 +133,7 @@ export const useCalendarData = () => {
               
               if (actionTitle) {
                 newActionPool.push({
-                  id: `${category}-goal-action-${index}`, // Unique ID for goal-generated a
+                  id: \`${category}-goal-action-${index}`, // Unique ID for goal-generated a
                   title: actionTitle,
                   duration: actionDuration,
                   category: calendarCategory as 'business' | 'body' | 'balance' | 'personal',
@@ -202,7 +202,7 @@ export const useCalendarData = () => {
   const addEvent = useCallback((event: Omit<Event, 'id'>) => {
     const newEvent: Event = {
       ...event,
-      id: `event-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      id: \`event-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     };
     
     setData(prev => ({
@@ -243,7 +243,7 @@ export const useCalendarData = () => {
   const addActionToPool = useCallback((action: Omit<ActionPoolItem, 'id'>) => {
     const newAction: ActionPoolItem = {
       ...action,
-      id: `action-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      id: \`action-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     };
     
     setData(prev => ({
@@ -282,7 +282,7 @@ export const useCalendarData = () => {
     end.setMinutes(end.getMinutes() + action.duration);
     
     const newEvent: Event = {
-      id: `scheduled-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: \`scheduled-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       title: action.title,
       start,
       end,
@@ -334,7 +334,7 @@ export const useCalendarData = () => {
         eventEnd.setMinutes(eventEnd.getMinutes() + action.duration);
         
         const newEvent: Event = {
-          id: `daily-auto-${action.id}-${currentDate.toISOString().split('T')[0]}`,
+          id: \`daily-auto-${action.id}-${currentDate.toISOString().split('T')[0]}`,
           title: action.title,
           start: eventStart,
           end: eventEnd,
