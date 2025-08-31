@@ -1,3 +1,4 @@
+```typescript
 import { useState, useEffect, useMemo } from 'react';
 import { useWheelData } from './useWheelData';
 import { useValuesData } from './useValuesData';
@@ -53,7 +54,7 @@ export const useDashboardData = (): DashboardData => {
   
   const { data: wheelData, isLoaded: wheelLoaded } = useWheelData();
   const { data: valuesData, isLoaded: valuesLoaded } = useValuesData();
-  const { visionItems, textElements, isLoaded: visionLoaded } = useVisionBoardData();
+  const { visionItems, textElements, isLoaded: visionLoaded } = useVisionBoardData(); // Get textElements too
   const { data: goalsData, isLoaded: goalsLoaded } = useGoalSettingData();
 
   const [journeyStartDate, setJourneyStartDate] = useState<Date | null>(null);
@@ -91,7 +92,7 @@ export const useDashboardData = (): DashboardData => {
     
     // Check if wheel of life has been completed
     if (wheelData && Array.isArray(wheelData) && wheelData.length > 0) {
-      const hasReflections = Object.keys(wheelData).length > 0;
+      const hasReflections = Object.keys(wheelData).length > 0; // Check if any area has a score
       if (hasReflections) completed++;
     }
     
@@ -129,16 +130,48 @@ export const useDashboardData = (): DashboardData => {
   const visionBoard = useMemo(() => {
     if (!visionLoaded || !visionItems || !Array.isArray(visionItems)) return [];
     
-    return visionItems.slice(0, 4).map(item => ({
-      quadrant: item.quadrant ? 
-        (item.quadrant === 'feelings' ? 'Emotions' : 
-         item.quadrant.charAt(0).toUpperCase() + item.quadrant.slice(1)) : 'Unknown',
-      title: item.title || 'Untitled',
-      imageUrl: item.imageUrl || '',
-      meaning: item.meaning || '',
-      feeling: item.feeling || ''
+    // Combine vision items and text elements for display
+    const combinedElements: Array<{
+      quadrant?: string;
+      title: string;
+      imageUrl?: string;
+      text?: string;
+      type: 'image' | 'text';
+    }> = [];
+
+    visionItems.forEach(item => {
+      combinedElements.push({
+        quadrant: item.quadrant ? 
+          (item.quadrant === 'feelings' ? 'Emotions' : 
+           item.quadrant.charAt(0).toUpperCase() + item.quadrant.slice(1)) : 'Unknown',
+        title: item.title || 'Untitled',
+        imageUrl: item.imageUrl || '',
+        type: 'image'
+      });
+    });
+
+    textElements.filter(t => t.text !== 'New Text').forEach(textEl => { // Filter out default 'New Text'
+      combinedElements.push({
+        title: textEl.text,
+        text: textEl.text,
+        type: 'text'
+      });
+    });
+
+    // Sort by position or just take the first few for display
+    return combinedElements.sort((a, b) => {
+      // Simple sort for display, could be more complex based on actual positions
+      if (a.type === 'image' && b.type === 'image') {
+        return (a.quadrant || '').localeCompare(b.quadrant || '');
+      }
+      return 0;
+    }).slice(0, 4).map(el => ({ // Limit to 4 for dashboard display
+      quadrant: el.quadrant || '',
+      title: el.title,
+      imageUrl: el.imageUrl || '',
+      text: el.text || ''
     }));
-  }, [visionLoaded, visionItems]);
+  }, [visionLoaded, visionItems, textElements]);
 
   // Transform life areas data
   const lifeAreas = useMemo(() => {
@@ -274,3 +307,4 @@ export const useDashboardData = (): DashboardData => {
     journeyStartDate
   };
 };
+```

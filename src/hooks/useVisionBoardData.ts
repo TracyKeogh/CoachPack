@@ -1,3 +1,4 @@
+```typescript
 import { useState, useEffect, useCallback } from 'react';
 
 export interface VisionItem {
@@ -7,10 +8,10 @@ export interface VisionItem {
   imageUrl: string;
   quadrant: 'business' | 'body' | 'balance' | 'feelings';
   position?: { x: number; y: number };
-  meaning?: string;
-  feeling?: string;
-  isFlipped?: boolean;
-  size?: 'small' | 'medium' | 'large';
+  meaning?: string; // Added meaning
+  feeling?: string; // Added feeling
+  isFlipped?: boolean; // Added isFlipped
+  size?: 'small' | 'medium' | 'large'; // Added size
 }
 
 export interface TextElement {
@@ -18,6 +19,7 @@ export interface TextElement {
   text: string;
   position: { x: number; y: number };
   className: string;
+  color?: string; // Added color
 }
 
 export interface VisionBoardData {
@@ -35,7 +37,7 @@ const defaultVisionItems: VisionItem[] = [
     id: '1',
     title: 'Dream Office Space',
     description: 'A inspiring workspace that fuels creativity',
-    imageUrl: 'https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg?auto=compress&cs=tinysrgb&w=400',
+    imageUrl: 'https://images.pexels.com/photos/3184292/pexels-photo-3184292.jpeg?auto=compress&cs=tinysrgb&w=400',
     quadrant: 'business',
     position: { x: 50, y: 80 },
     meaning: '',
@@ -87,8 +89,8 @@ const defaultTextElements: TextElement[] = [
 ];
 
 export const useVisionBoardData = () => {
-  const [visionItems, setVisionItems] = useState<VisionItem[]>(defaultVisionItems);
-  const [textElements, setTextElements] = useState<TextElement[]>(defaultTextElements);
+  const [visionItems, setVisionItems] = useState<VisionItem[]>([]); // Initialize as empty
+  const [textElements, setTextElements] = useState<TextElement[]>([]); // Initialize as empty
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [isCollageEditMode, setIsCollageEditMode] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -100,17 +102,24 @@ export const useVisionBoardData = () => {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const data: VisionBoardData = JSON.parse(stored);
-        setVisionItems(data.visionItems || defaultVisionItems);
-        setTextElements(data.textElements || defaultTextElements);
+        // Use stored data, or fall back to defaults if stored data is empty/invalid
+        setVisionItems(data.visionItems && Array.isArray(data.visionItems) ? data.visionItems : defaultVisionItems);
+        setTextElements(data.textElements && Array.isArray(data.textElements) ? data.textElements : defaultTextElements);
         setUploadedImages(data.uploadedImages || []);
         setIsCollageEditMode(data.isCollageEditMode || false);
         setLastSaved(new Date(data.lastUpdated));
+      } else {
+        // If no stored data, use initial defaults
+        setVisionItems(defaultVisionItems);
+        setTextElements(defaultTextElements);
       }
     } catch (error) {
       console.error('Failed to load vision board data:', error);
-      // Use defaults if loading fails
+      // Fallback to initial defaults if loading fails
       setVisionItems(defaultVisionItems);
       setTextElements(defaultTextElements);
+      setUploadedImages([]);
+      setIsCollageEditMode(false);
     }
     setIsLoaded(true);
   }, []);
@@ -133,7 +142,7 @@ export const useVisionBoardData = () => {
     } catch (error) {
       console.error('Failed to save vision board data:', error);
     }
-  }, [visionItems, textElements, isCollageEditMode, isLoaded]);
+  }, [visionItems, textElements, uploadedImages, isCollageEditMode, isLoaded]);
 
   // Auto-save whenever data changes (with debouncing)
   useEffect(() => {
@@ -170,17 +179,6 @@ export const useVisionBoardData = () => {
 
   const removeVisionItem = useCallback((itemId: string) => {
     setVisionItems(prev => prev.filter(item => item.id !== itemId));
-  }, []);
-
-  // Uploaded images operations
-  const addUploadedImage = useCallback((imageUrl: string) => {
-    setUploadedImages(prev => [...prev, imageUrl]);
-  }, []);
-
-  const removeUploadedImage = useCallback((imageUrl: string) => {
-    setUploadedImages(prev => prev.filter(img => img !== imageUrl));
-    // Also remove any vision items using this image
-    setVisionItems(prev => prev.filter(item => item.imageUrl !== imageUrl));
   }, []);
 
   const moveVisionItem = useCallback((dragIndex: number, hoverIndex: number, sourceQuadrant: string, targetQuadrant: string) => {
@@ -223,13 +221,25 @@ export const useVisionBoardData = () => {
     ));
   }, []);
 
+  // Uploaded images operations
+  const addUploadedImage = useCallback((imageUrl: string) => {
+    setUploadedImages(prev => [...prev, imageUrl]);
+  }, []);
+
+  const removeUploadedImage = useCallback((imageUrl: string) => {
+    setUploadedImages(prev => prev.filter(img => img !== imageUrl));
+    // Also remove any vision items using this image
+    setVisionItems(prev => prev.filter(item => item.imageUrl !== imageUrl));
+  }, []);
+
   // Text Elements operations
   const addTextElement = useCallback(() => {
     const newText: TextElement = {
       id: `text-${Date.now()}`,
       text: 'New Text',
       position: { x: Math.random() * 300 + 50, y: Math.random() * 100 + 150 },
-      className: 'text-base'
+      className: 'text-base',
+      color: '#1e293b' // Default color
     };
     setTextElements(prev => [...prev, newText]);
   }, []);
@@ -277,11 +287,12 @@ export const useVisionBoardData = () => {
     const data: VisionBoardData = {
       visionItems,
       textElements,
+      uploadedImages,
       isCollageEditMode,
       lastUpdated: new Date().toISOString()
     };
     return JSON.stringify(data, null, 2);
-  }, [visionItems, textElements, isCollageEditMode]);
+  }, [visionItems, textElements, uploadedImages, isCollageEditMode]);
 
   const importData = useCallback((jsonString: string): boolean => {
     try {
@@ -350,3 +361,4 @@ export const useVisionBoardData = () => {
     clearAllData
   };
 };
+```

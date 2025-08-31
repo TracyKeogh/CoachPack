@@ -1,6 +1,7 @@
+```typescript
 import { useState, useEffect, useCallback } from 'react';
 // Import the storage key directly
-import { STORAGE_KEY as GOALS_STORAGE_KEY } from './useGoalSettingData';
+import { STORAGE_KEY as GOALS_STORAGE_KEY, useGoalSettingData } from './useGoalSettingData';
 import { ActionItem, Milestone, GoalSettingData } from '../types/goals';
 
 export interface Event {
@@ -53,6 +54,9 @@ export const useCalendarData = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
+  // Import goals data
+  const { data: goalsData, isLoaded: goalsLoaded } = useGoalSettingData();
+
   // Load data on mount
   useEffect(() => {
     try {
@@ -82,8 +86,6 @@ export const useCalendarData = () => {
         setData(defaultCalendarData);
       }
       
-      // Then load goals data to populate action pool
-      loadGoalsIntoActionPool();
     } catch (error) {
       console.error('Failed to load calendar data:', error);
       setData(defaultCalendarData);
@@ -91,122 +93,85 @@ export const useCalendarData = () => {
     setIsLoaded(true);
   }, []);
 
-  // Load goals data into action pool
+  // Load goals data into action pool whenever goalsData changes
   const loadGoalsIntoActionPool = useCallback(() => {
+    if (!goalsLoaded) {
+      console.log("Goals data not yet loaded, skipping action pool refresh.");
+      return;
+    }
+
     try {
-      console.log("Loading goals into action pool");
-      const stored = localStorage.getItem(GOALS_STORAGE_KEY);
-      if (!stored) {
-        console.log("No goals data found");
-        return;
-      }
-      
-      const parsedGoalsData = JSON.parse(stored);
-      console.log("Parsed goals data:", parsedGoalsData);
+      console.log("Refreshing action pool from goals data.");
       
       const newActionPool: ActionPoolItem[] = [];
       
-      if (parsedGoalsData && parsedGoalsData.categoryGoals) {
-        console.log("Found categoryGoals:", parsedGoalsData.categoryGoals);
-        
-        try {
-          Object.entries(parsedGoalsData.categoryGoals).forEach(([category, categoryData]: [string, any]) => {
-            console.log(`Processing category: ${category}`);
-            
-            // Map categories to calendar categories
-            const calendarCategory = category === 'health' ? 'body' : 
-                                   category === 'relationships' ? 'balance' :
-                                   category === 'fun' ? 'personal' : 
-                                   category; // business stays as business
-            
-            // Process different goal structures
-            if (categoryData && typeof categoryData === 'object') {
-              // Look for actions in various possible structures
-              let actions: any[] = [];
+      if (goalsData && goalsData.categoryGoals) {
+        Object.entries(goalsData.categoryGoals).forEach(([category, categoryData]: [string, any]) => {
+          // Map categories to calendar categories
+          const calendarCategory = category === 'health' ? 'body' : 
+                                 category === 'relationships' ? 'balance' :
+                                 category === 'fun' ? 'personal' : 
+                                 category; // business stays as business
+          
+          if (categoryData && typeof categoryData === 'object' && categoryData.actions && Array.isArray(categoryData.actions)) {
+            categoryData.actions.forEach((action: any, index: number) => {
+              let actionTitle = '';
+              let actionFrequency: 'daily' | 'weekly' | '3x-week' = '3x-week';
+              let actionDuration = 60; // Default duration
               
-              if (categoryData.actions && Array.isArray(categoryData.actions)) {
-                actions = categoryData.actions;
-              } else if (categoryData.weeklyActions && Array.isArray(categoryData.weeklyActions)) {
-                actions = categoryData.weeklyActions.map((action: any) => ({ ...action, frequency: 'weekly' }));
-              } else if (categoryData.dailyActions && Array.isArray(categoryData.dailyActions)) {
-                actions = categoryData.dailyActions.map((action: any) => ({ ...action, frequency: 'daily' }));
+              if (typeof action === 'string') {
+                actionTitle = action;
+              } else if (typeof action === 'object' && action !== null) {
+                actionTitle = action.text || ''; // Use 'text' property for action title
+                if (action.frequency) {
+                  actionFrequency = action.frequency as 'daily' | 'weekly' | '3x-week';
+                }
+                if (action.duration && typeof action.duration === 'number') {
+                  actionDuration = action.duration;
+                }
               }
               
-              if (actions.length > 0) {
-                console.log(`Found ${actions.length} actions for ${category}`);
-                
-                actions.forEach((action: any, index: number) => {
-                  let actionTitle = '';
-                  let actionFrequency: 'daily' | 'weekly' | '3x-week' = '3x-week';
-                  let actionDuration = 60; // Default duration
-                  
-                  if (typeof action === 'string') {
-                    actionTitle = action;
-                  } else if (typeof action === 'object' && action !== null) {
-                    // New format with title property
-                    if (action.title) {
-                      actionTitle = action.title;
-                    } 
-                    // Old format with text property
-                    else if (action.text) {
-                      actionTitle = action.text;
-                    }
-                    
-                    // Get frequency if available
-                    if (action.frequency) {
-                      actionFrequency = action.frequency as 'daily' | 'weekly' | '3x-week';
-                    }
-                    
-                    // Get duration if available
-                    if (action.duration && typeof action.duration === 'number') {
-                      actionDuration = action.duration;
-                    }
-                  }
-                  
-                  if (actionTitle) {
-                    console.log(`Adding action to pool: ${actionTitle}`);
-                    // Create action pool item
-                    newActionPool.push({
-                      id: `${category}-action-${index}-${Date.now()}`,
-                      title: actionTitle,
-                      duration: actionDuration,
-                      category: calendarCategory as 'business' | 'body' | 'balance' | 'personal',
-                      frequency: actionFrequency,
-                      relatedGoal: categoryData.title || categoryData.goal || (typeof categoryData === 'string' ? categoryData : 'Goal'),
-                      priority: action.priority || 'medium'
-                    });
-                  }
+              if (actionTitle) {
+                newActionPool.push({
+                  id: `${category}-goal-action-${index}`, // Unique ID for goal-generated actions
+                  title: actionTitle,
+                  duration: actionDuration,
+                  category: calendarCategory as 'business' | 'body' | 'balance' | 'personal',
+                  frequency: actionFrequency,
+                  relatedGoal: categoryData.goal || categoryData.title || 'Goal',
+                  priority: action.priority || 'medium'
                 });
-              } else {
-                console.log(`No actions found for category: ${category}`);
               }
-            }
-          });
-        } catch (err) {
-          console.error("Error processing goals data:", err);
-        }
-      } else {
-        console.log("No categoryGoals found in parsed data:", parsedGoalsData);
+            });
+          }
+        });
       }
       
-      // Replace action pool completely to ensure synchronization
       setData(prev => {
-        // Keep only manually added actions (those not generated from goals)
+        // Filter out old goal-generated actions and keep only manually added ones
         const manualActions = prev.actionPool.filter(action => 
-          !action.id.includes('-action-') || action.id.includes('manual-')
+          !action.id.includes('-goal-action-') // Keep actions not generated from goals
         );
         
         return {
           ...prev,
-          actionPool: [...manualActions, ...newActionPool]
+          actionPool: [...manualActions, ...newActionPool] // Combine manual with fresh goal actions
         };
       });
       
-      console.log("Final action pool:", newActionPool);
+      console.log("Action pool refreshed. Total actions:", newActionPool.length);
     } catch (error) {
       console.error('Failed to load goals into action pool:', error);
     }
-  }, []);
+  }, [goalsData, goalsLoaded]);
+
+  // Effect to trigger action pool refresh when goals data changes
+  useEffect(() => {
+    if (isLoaded && goalsLoaded) {
+      loadGoalsIntoActionPool();
+    }
+  }, [isLoaded, goalsLoaded, loadGoalsIntoActionPool]);
+
 
   // Auto-save function
   const saveData = useCallback(() => {
@@ -496,3 +461,4 @@ export const useCalendarData = () => {
     saveData
   };
 };
+```

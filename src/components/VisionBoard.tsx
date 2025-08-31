@@ -1,3 +1,4 @@
+```typescript
 import React, { useState, useCallback, useRef } from 'react';
 import { Camera, Type, Upload, X, FlipHorizontal, Save, Download, RotateCcw } from 'lucide-react';
 import { useVisionBoardData } from '../hooks/useVisionBoardData';
@@ -68,6 +69,7 @@ const VisionBoard: React.FC = () => {
     removeUploadedImage,
     addTextElement,
     updateTextContent,
+    updateTextPosition, // Added for text element dragging
     removeTextElement,
     saveData,
     getCompletionStats,
@@ -127,6 +129,7 @@ const VisionBoard: React.FC = () => {
         }
       }
       
+      // Automatically add the first uploaded image as a new vision card
       if (newImages.length > 0) {
         addVisionCard(newImages[0]);
       }
@@ -137,7 +140,7 @@ const VisionBoard: React.FC = () => {
     } finally {
       setIsUploading(false);
     }
-  }, [addUploadedImage]);
+  }, [addUploadedImage, addVisionItem]); // Added addVisionItem to dependencies
 
   const addVisionCard = useCallback((imageUrl: string) => {
     const newItemId = addVisionItem(imageUrl);
@@ -146,12 +149,12 @@ const VisionBoard: React.FC = () => {
   }, [addVisionItem]);
 
   const addText = useCallback((text: string) => {
-    const colors = ['#1e293b', '#7c3aed', '#dc2626', '#059669', '#ea580c'];
-    addTextElement();
-    // Update the text content immediately after adding
-    setTimeout(() => {
-      updateTextContent(`text-${Date.now()}`, text);
-    }, 100);
+    // Generate a unique ID for the new text element
+    const newTextId = `text-${Date.now()}`;
+    // Call the hook function to add the text element
+    addTextElement(); // This adds a default 'New Text' element
+    // Then update its content
+    updateTextContent(newTextId, text);
     setNewText('');
   }, [addTextElement, updateTextContent]);
 
@@ -181,14 +184,10 @@ const VisionBoard: React.FC = () => {
     if (draggedItem.type === 'card') {
       updateVisionItem(draggedItem.id, { position: { x, y } });
     } else {
-      // Find the text element and update its position
-      const textElement = textElements.find(t => t.id === draggedItem.id);
-      if (textElement) {
-        updateTextContent(draggedItem.id, textElement.text);
-        // Note: We need to add position update for text elements
-      }
+      // Update position for text elements
+      updateTextPosition(draggedItem.id, { x, y });
     }
-  }, [draggedItem, updateVisionItem, textElements, updateTextContent]);
+  }, [draggedItem, updateVisionItem, updateTextPosition]); // Added updateTextPosition to dependencies
 
   const handleMouseUp = useCallback(() => {
     setDraggedItem(null);
@@ -716,7 +715,7 @@ const VisionBoard: React.FC = () => {
       )}
 
       {/* Quick Text Suggestions */}
-      {newText === '' && visionItems.length > 0 && textElements.length === 0 && (
+      {newText === '' && visionItems.length > 0 && textElements.filter(text => text.text !== 'New Text').length === 0 && (
         <div className="text-center">
           <p className="text-sm text-slate-500 mb-3">Quick add inspiring text:</p>
           <div className="flex flex-wrap justify-center gap-2">
@@ -760,3 +759,4 @@ const VisionBoard: React.FC = () => {
 };
 
 export default VisionBoard;
+```
