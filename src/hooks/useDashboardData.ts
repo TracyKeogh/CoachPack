@@ -263,10 +263,10 @@ export const useDashboardData = (): DashboardData => {
   const visionStatement = useMemo(() => {
     if (valuesData && valuesData.rankedCoreValues && Array.isArray(valuesData.rankedCoreValues) && valuesData.rankedCoreValues.length > 0) {
       const topValues = valuesData.rankedCoreValues.slice(0, 3).map(v => v.name || 'Unknown').join(', ');
-      return \`Building a life of ${topValues.toLowerCase()}`;
+      return `Building a life of ${topValues.toLowerCase()}`;
     } else if (valuesData && valuesData.coreValues && Array.isArray(valuesData.coreValues) && valuesData.coreValues.length > 0) {
       const values = valuesData.coreValues.slice(0, 3).map(v => v.name || 'Unknown').join(', ');
-      return \`Building a life of ${values.toLowerCase()}`;
+      return `Building a life of ${values.toLowerCase()}`;
     }
     return "Building a life of impact, growth, and deep connection";
   }, [valuesData]);
@@ -282,7 +282,7 @@ export const useDashboardData = (): DashboardData => {
     // Otherwise, use the first available category goal
     const activeGoal = Object.values(goalsData.categoryGoals).find(goal => goal?.goal?.trim());
     if (activeGoal) {
-      return \`Focusing on: ${activeGoal.goal}`;
+      return `Focusing on: ${activeGoal.goal}`;
     }
     
     return "Establishing daily habits that align with my values";
