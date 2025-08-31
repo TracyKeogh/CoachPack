@@ -133,7 +133,7 @@ export const useCalendarData = () => {
               
               if (actionTitle) {
                 newActionPool.push({
-                  id: \`${category}-goal-action-${index}`, // Unique ID for goal-generated a
+                  id: `${category}-goal-action-${index}`, // Unique ID for goal-generated a
                   title: actionTitle,
                   duration: actionDuration,
                   category: calendarCategory as 'business' | 'body' | 'balance' | 'personal',
