@@ -326,6 +326,8 @@ const VisionBoard: React.FC = () => {
 
       {/* Data Management Panel */}
       {showDataManagement && (
+          )
+          }
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
           <h3 className="text-lg font-semibold text-slate-900 mb-4">Data Management</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -372,3 +374,6 @@ const VisionBoard: React.FC = () => {
             <div className="text-center">
               <div className="text-slate-500 text-sm">Completion</div>
               <div className="font-semibold text-slate-900">{stats.completionPercentage}%</div>
+
+  )
+}
