@@ -96,7 +96,6 @@ const VisionBoard: React.FC = () => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }, [visionItems, textElements]);
 
   // Import JSON
   const handleImportData = useCallback(
