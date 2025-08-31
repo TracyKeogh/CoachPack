@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
-// import { useAuth } from './useAuth';
 import { useWheelData } from './useWheelData';
 import { useValuesData } from './useValuesData';
 import { useVisionBoardData } from './useVisionBoardData';
+import { useGoalSettingData } from './useGoalSettingData';
+import { GOAL_CATEGORIES } from '../types/goals';
 
 export interface DashboardData {
   // User info
@@ -48,12 +49,12 @@ export interface DashboardData {
 }
 
 export const useDashboardData = (): DashboardData => {
-  // const { user } = useAuth();
   const mockUser = { name: 'Test User' }; // Temporary mock user
   
   const { data: wheelData, isLoaded: wheelLoaded } = useWheelData();
   const { data: valuesData, isLoaded: valuesLoaded } = useValuesData();
   const { visionItems, isLoaded: visionLoaded } = useVisionBoardData();
+  const { data: goalsData, isLoaded: goalsLoaded } = useGoalSettingData();
 
   const [journeyStartDate, setJourneyStartDate] = useState<Date | null>(null);
 
@@ -113,10 +114,23 @@ export const useDashboardData = (): DashboardData => {
   }, [visionLoaded, visionItems]);
 
   const planProgress = useMemo(() => {
-    // For now, return a default value since goals data is not available
-    // This can be updated when the goals system is properly implemented
-    return 0;
-  }, []);
+    if (!goalsLoaded) return 0;
+    
+    let totalSteps = 1; // Annual snapshot
+    totalSteps += Object.keys(GOAL_CATEGORIES).length; // Category goals
+    
+    let completedSteps = 0;
+
+    // Count annual snapshot
+    if (goalsData.annualSnapshot?.snapshot?.trim()) completedSteps++;
+
+    // Count completed category goals
+    Object.keys(GOAL_CATEGORIES).forEach(category => {
+      if (goalsData.categoryGoals[category]?.goal?.trim()) completedSteps++;
+    });
+
+    return totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
+  }, [goalsLoaded, goalsData]);
 
   const overallProgress = useMemo(() => {
     return Math.round((baselineProgress + visionProgress + planProgress) / 3);
@@ -181,13 +195,43 @@ export const useDashboardData = (): DashboardData => {
 
   // Generate next milestones from goals (placeholder for now)
   const nextMilestones = useMemo(() => {
-    // Return placeholder milestones since goals data is not available
-    return [
-      { title: "Complete Wheel of Life", date: "Today", daysAway: 0 },
-      { title: "Set Your Values", date: "This Week", daysAway: 7 },
-      { title: "Create Vision Board", date: "Next Week", daysAway: 14 }
-    ];
-  }, []);
+    if (!goalsLoaded) return [];
+    
+    const milestones: Array<{
+      title: string;
+      date: string;
+      daysAway: number;
+      type: string;
+      color: string;
+    }> = [];
+    
+    // Extract milestones from category goals
+    Object.entries(goalsData.categoryGoals).forEach(([categoryKey, categoryGoal]) => {
+      if (categoryGoal && categoryGoal.milestones) {
+        categoryGoal.milestones.forEach(milestone => {
+          const dueDate = new Date(milestone.dueDate);
+          const today = new Date();
+          const daysAway = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (daysAway >= 0 && !milestone.completed) {
+            const categoryInfo = GOAL_CATEGORIES[categoryKey];
+            milestones.push({
+              title: milestone.title,
+              date: dueDate.toLocaleDateString(),
+              daysAway,
+              type: 'milestone',
+              color: categoryInfo?.color || 'purple'
+            });
+          }
+        });
+      }
+    });
+    
+    // Sort by days away and return top 3
+    return milestones
+      .sort((a, b) => a.daysAway - b.daysAway)
+      .slice(0, 3);
+  }, [goalsLoaded, goalsData]);
 
   // Generate vision statement and current focus
   const visionStatement = useMemo(() => {
@@ -199,9 +243,21 @@ export const useDashboardData = (): DashboardData => {
   }, [valuesData]);
 
   const currentFocus = useMemo(() => {
-    // Return default focus since goals data is not available
+    if (!goalsLoaded) return "Establishing daily habits that align with my values";
+    
+    // Use annual snapshot if available
+    if (goalsData.annualSnapshot?.snapshot?.trim()) {
+      return goalsData.annualSnapshot.snapshot;
+    }
+    
+    // Otherwise, use the first available category goal
+    const activeGoal = Object.values(goalsData.categoryGoals).find(goal => goal?.goal?.trim());
+    if (activeGoal) {
+      return `Focusing on: ${activeGoal.goal}`;
+    }
+    
     return "Establishing daily habits that align with my values";
-  }, []);
+  }, [goalsLoaded, goalsData]);
 
   return {
     name: mockUser.name,
