@@ -149,14 +149,9 @@ const VisionBoard: React.FC = () => {
   }, [addVisionItem]);
 
   const addText = useCallback((text: string) => {
-    // Generate a unique ID for the new text element
-    const newTextId = \`text-${Date.now()}`;
-    // Call the hook function to add the text element
-    addTextElement(); // This adds a default 'New Text' element
-    // Then update its content
-    updateTextContent(newTextId, text);
+    addTextElement(text);
     setNewText('');
-  }, [addTextElement, updateTextContent]);
+  }, [addTextElement]);
 
   const flipCard = useCallback((cardId: string) => {
     const card = visionItems.find(item => item.id === cardId);
