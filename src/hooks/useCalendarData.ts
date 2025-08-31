@@ -104,7 +104,7 @@ export const useCalendarData = () => {
       const parsedGoalsData = JSON.parse(stored);
       console.log("Parsed goals data:", parsedGoalsData);
       
-      const actionPool: ActionPoolItem[] = [];
+      const newActionPool: ActionPoolItem[] = [];
       
       if (parsedGoalsData && parsedGoalsData.categoryGoals) {
         console.log("Found categoryGoals:", parsedGoalsData.categoryGoals);
@@ -166,7 +166,7 @@ export const useCalendarData = () => {
                   if (actionTitle) {
                     console.log(`Adding action to pool: ${actionTitle}`);
                     // Create action pool item
-                    actionPool.push({
+                    newActionPool.push({
                       id: `${category}-action-${index}-${Date.now()}`,
                       title: actionTitle,
                       duration: actionDuration,
@@ -189,18 +189,20 @@ export const useCalendarData = () => {
         console.log("No categoryGoals found in parsed data:", parsedGoalsData);
       }
       
-      // Update action pool, but preserve existing actions that might have been manually added or modified
+      // Replace action pool completely to ensure synchronization
       setData(prev => {
-        const existingActionIds = new Set(prev.actionPool.map(action => action.id));
-        const newActions = actionPool.filter(action => !existingActionIds.has(action.id));
+        // Keep only manually added actions (those not generated from goals)
+        const manualActions = prev.actionPool.filter(action => 
+          !action.id.includes('-action-') || action.id.includes('manual-')
+        );
         
         return {
           ...prev,
-          actionPool: [...prev.actionPool, ...newActions]
+          actionPool: [...manualActions, ...newActionPool]
         };
       });
       
-      console.log("Final action pool:", actionPool);
+      console.log("Final action pool:", newActionPool);
     } catch (error) {
       console.error('Failed to load goals into action pool:', error);
     }

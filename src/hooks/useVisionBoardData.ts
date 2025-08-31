@@ -7,6 +7,10 @@ export interface VisionItem {
   imageUrl: string;
   quadrant: 'business' | 'body' | 'balance' | 'feelings';
   position?: { x: number; y: number };
+  meaning?: string;
+  feeling?: string;
+  isFlipped?: boolean;
+  size?: 'small' | 'medium' | 'large';
 }
 
 export interface TextElement {
@@ -19,6 +23,7 @@ export interface TextElement {
 export interface VisionBoardData {
   visionItems: VisionItem[];
   textElements: TextElement[];
+  uploadedImages: string[];
   lastUpdated: string;
   isCollageEditMode: boolean;
 }
@@ -32,7 +37,11 @@ const defaultVisionItems: VisionItem[] = [
     description: 'A inspiring workspace that fuels creativity',
     imageUrl: 'https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg?auto=compress&cs=tinysrgb&w=400',
     quadrant: 'business',
-    position: { x: 50, y: 80 }
+    position: { x: 50, y: 80 },
+    meaning: '',
+    feeling: '',
+    isFlipped: false,
+    size: 'medium'
   },
   {
     id: '2',
@@ -40,7 +49,11 @@ const defaultVisionItems: VisionItem[] = [
     description: 'Conquering peaks and pushing physical limits',
     imageUrl: 'https://images.pexels.com/photos/618833/pexels-photo-618833.jpeg?auto=compress&cs=tinysrgb&w=400',
     quadrant: 'body',
-    position: { x: 150, y: 80 }
+    position: { x: 150, y: 80 },
+    meaning: '',
+    feeling: '',
+    isFlipped: false,
+    size: 'medium'
   },
   {
     id: '3',
@@ -48,7 +61,11 @@ const defaultVisionItems: VisionItem[] = [
     description: 'Quality moments with loved ones',
     imageUrl: 'https://images.pexels.com/photos/1128318/pexels-photo-1128318.jpeg?auto=compress&cs=tinysrgb&w=400',
     quadrant: 'balance',
-    position: { x: 250, y: 80 }
+    position: { x: 250, y: 80 },
+    meaning: '',
+    feeling: '',
+    isFlipped: false,
+    size: 'medium'
   },
   {
     id: '4',
@@ -56,7 +73,11 @@ const defaultVisionItems: VisionItem[] = [
     description: 'Finding calm and contentment within',
     imageUrl: 'https://images.pexels.com/photos/1051838/pexels-photo-1051838.jpeg?auto=compress&cs=tinysrgb&w=400',
     quadrant: 'feelings',
-    position: { x: 350, y: 80 }
+    position: { x: 350, y: 80 },
+    meaning: '',
+    feeling: '',
+    isFlipped: false,
+    size: 'medium'
   }
 ];
 
@@ -68,6 +89,7 @@ const defaultTextElements: TextElement[] = [
 export const useVisionBoardData = () => {
   const [visionItems, setVisionItems] = useState<VisionItem[]>(defaultVisionItems);
   const [textElements, setTextElements] = useState<TextElement[]>(defaultTextElements);
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [isCollageEditMode, setIsCollageEditMode] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -80,6 +102,7 @@ export const useVisionBoardData = () => {
         const data: VisionBoardData = JSON.parse(stored);
         setVisionItems(data.visionItems || defaultVisionItems);
         setTextElements(data.textElements || defaultTextElements);
+        setUploadedImages(data.uploadedImages || []);
         setIsCollageEditMode(data.isCollageEditMode || false);
         setLastSaved(new Date(data.lastUpdated));
       }
@@ -100,6 +123,7 @@ export const useVisionBoardData = () => {
       const data: VisionBoardData = {
         visionItems,
         textElements,
+        uploadedImages,
         isCollageEditMode,
         lastUpdated: new Date().toISOString()
       };
@@ -111,33 +135,31 @@ export const useVisionBoardData = () => {
     }
   }, [visionItems, textElements, isCollageEditMode, isLoaded]);
 
-  // Auto-save whenever data changes
+  // Auto-save whenever data changes (with debouncing)
   useEffect(() => {
     if (isLoaded) {
       const timeoutId = setTimeout(saveData, 1000); // Debounce saves
       return () => clearTimeout(timeoutId);
     }
-  }, [visionItems, textElements, isCollageEditMode, saveData, isLoaded]);
+  }, [visionItems, textElements, uploadedImages, isCollageEditMode, saveData, isLoaded]);
 
-  // Vision Items operations
-  const addVisionItem = useCallback((quadrant: string) => {
-    const stockPhotos = {
-      business: 'https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg?auto=compress&cs=tinysrgb&w=400',
-      body: 'https://images.pexels.com/photos/618833/pexels-photo-618833.jpeg?auto=compress&cs=tinysrgb&w=400',
-      balance: 'https://images.pexels.com/photos/1128318/pexels-photo-1128318.jpeg?auto=compress&cs=tinysrgb&w=400',
-      feelings: 'https://images.pexels.com/photos/1051838/pexels-photo-1051838.jpeg?auto=compress&cs=tinysrgb&w=400'
-    };
-
+  // Vision Items operations - enhanced for Vision Board component
+  const addVisionItem = useCallback((imageUrl: string, quadrant?: string) => {
     const newItem: VisionItem = {
       id: Date.now().toString(),
       title: 'New Vision Item',
       description: 'Click to edit description',
-      imageUrl: stockPhotos[quadrant as keyof typeof stockPhotos],
-      quadrant: quadrant as any,
-      position: { x: Math.random() * 300, y: Math.random() * 200 + 100 }
+      imageUrl,
+      quadrant: (quadrant as any) || 'business',
+      position: { x: Math.random() * 300, y: Math.random() * 200 + 100 },
+      meaning: '',
+      feeling: '',
+      isFlipped: false,
+      size: 'medium'
     };
     
     setVisionItems(prev => [...prev, newItem]);
+    return newItem.id;
   }, []);
 
   const updateVisionItem = useCallback((itemId: string, updates: Partial<VisionItem>) => {
@@ -148,6 +170,17 @@ export const useVisionBoardData = () => {
 
   const removeVisionItem = useCallback((itemId: string) => {
     setVisionItems(prev => prev.filter(item => item.id !== itemId));
+  }, []);
+
+  // Uploaded images operations
+  const addUploadedImage = useCallback((imageUrl: string) => {
+    setUploadedImages(prev => [...prev, imageUrl]);
+  }, []);
+
+  const removeUploadedImage = useCallback((imageUrl: string) => {
+    setUploadedImages(prev => prev.filter(img => img !== imageUrl));
+    // Also remove any vision items using this image
+    setVisionItems(prev => prev.filter(item => item.imageUrl !== imageUrl));
   }, []);
 
   const moveVisionItem = useCallback((dragIndex: number, hoverIndex: number, sourceQuadrant: string, targetQuadrant: string) => {
@@ -261,6 +294,7 @@ export const useVisionBoardData = () => {
       
       setVisionItems(data.visionItems);
       setTextElements(data.textElements);
+      setUploadedImages(data.uploadedImages || []);
       setIsCollageEditMode(data.isCollageEditMode || false);
       
       return true;
@@ -273,6 +307,7 @@ export const useVisionBoardData = () => {
   const clearAllData = useCallback(() => {
     setVisionItems(defaultVisionItems);
     setTextElements(defaultTextElements);
+    setUploadedImages([]);
     setIsCollageEditMode(false);
     localStorage.removeItem(STORAGE_KEY);
   }, []);
@@ -281,6 +316,7 @@ export const useVisionBoardData = () => {
     // Data
     visionItems,
     textElements,
+    uploadedImages,
     isCollageEditMode,
     isLoaded,
     lastSaved,
@@ -292,6 +328,10 @@ export const useVisionBoardData = () => {
     moveVisionItem,
     updateItemPosition,
     getQuadrantItems,
+    
+    // Uploaded images operations
+    addUploadedImage,
+    removeUploadedImage,
     
     // Text Elements operations
     addTextElement,

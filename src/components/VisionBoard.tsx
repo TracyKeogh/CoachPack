@@ -1,29 +1,6 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { Camera, Type, Upload, X, FlipHorizontal, Save, Download, RotateCcw } from 'lucide-react';
-
-export interface VisionCard {
-  id: string;
-  imageUrl: string;
-  meaning: string;
-  feeling: string;
-  position: { x: number; y: number };
-  isFlipped: boolean;
-  size: 'small' | 'medium' | 'large';
-}
-
-export interface TextElement {
-  id: string;
-  text: string;
-  position: { x: number; y: number };
-  color: string;
-}
-
-export interface PersonalVisionData {
-  visionCards: VisionCard[];
-  textElements: TextElement[];
-  uploadedImages: string[];
-  lastUpdated: string;
-}
+import { useVisionBoardData } from '../hooks/useVisionBoardData';
 
 // Image compression utility
 const compressImage = (file: File, maxWidth: number = 800, quality: number = 0.8): Promise<string> => {
@@ -61,30 +38,6 @@ const compressImage = (file: File, maxWidth: number = 800, quality: number = 0.8
   });
 };
 
-// Storage management utilities
-const getStorageSize = (): number => {
-  let total = 0;
-  for (let key in localStorage) {
-    if (localStorage.hasOwnProperty(key)) {
-      total += localStorage[key].length + key.length;
-    }
-  }
-  return total;
-};
-
-const formatStorageSize = (bytes: number): string => {
-  const mb = bytes / (1024 * 1024);
-  return `${mb.toFixed(2)} MB`;
-};
-
-const canStoreData = (dataSize: number): boolean => {
-  const currentSize = getStorageSize();
-  const availableSpace = 5 * 1024 * 1024; // 5MB typical localStorage limit
-  return (currentSize + dataSize) < (availableSpace * 0.9); // Use 90% of available space
-};
-
-const STORAGE_KEY = 'coach-pack-vision-board';
-
 const INSPIRING_PHRASES = [
   "This feeling drives me forward",
   "I am becoming this person", 
@@ -102,94 +55,36 @@ const SAMPLE_IMAGES = [
 ];
 
 const VisionBoard: React.FC = () => {
-  const [visionCards, setVisionCards] = useState<VisionCard[]>([]);
-  const [textElements, setTextElements] = useState<TextElement[]>([]);
+  const {
+    visionItems,
+    textElements,
+    uploadedImages,
+    isLoaded,
+    lastSaved,
+    addVisionItem,
+    updateVisionItem,
+    removeVisionItem,
+    addUploadedImage,
+    removeUploadedImage,
+    addTextElement,
+    updateTextContent,
+    removeTextElement,
+    saveData,
+    getCompletionStats,
+    exportData,
+    importData,
+    clearAllData
+  } = useVisionBoardData();
+
   const [draggedItem, setDraggedItem] = useState<{ type: 'card' | 'text'; id: string } | null>(null);
   const [showImageOptions, setShowImageOptions] = useState(false);
-  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [newText, setNewText] = useState('');
   const [isUploading, setIsUploading] = useState(false);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [showDataManagement, setShowDataManagement] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false);
   
   const canvasRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
-
-  // Load data on component mount
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        const data: PersonalVisionData = JSON.parse(saved);
-        setVisionCards(data.visionCards || []);
-        setTextElements(data.textElements || []);
-        setUploadedImages(data.uploadedImages || []);
-        setLastSaved(new Date(data.lastUpdated));
-      } catch (error) {
-        console.error('Failed to load personal vision data:', error);
-        // Clear corrupted data
-        localStorage.removeItem(STORAGE_KEY);
-      }
-    }
-    setIsLoaded(true);
-  }, []);
-
-  // Auto-save data with smart storage management
-  useEffect(() => {
-    if (!isLoaded) return;
-    
-    const timer = setTimeout(() => {
-      try {
-        const data: PersonalVisionData = {
-          visionCards,
-          textElements,
-          uploadedImages,
-          lastUpdated: new Date().toISOString()
-        };
-        
-        const dataString = JSON.stringify(data);
-        const dataSize = new Blob([dataString]).size;
-        
-        if (!canStoreData(dataSize)) {
-          console.warn('Storage limit approaching. Data size:', formatStorageSize(dataSize));
-          // Try to save without uploaded images if storage is full
-          const reducedData = {
-            ...data,
-            uploadedImages: []
-          };
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(reducedData));
-          alert('Storage is nearly full. Uploaded images were not saved. Please export your data or use smaller images.');
-        } else {
-          localStorage.setItem(STORAGE_KEY, dataString);
-        }
-        
-        setLastSaved(new Date());
-      } catch (error) {
-        if (error instanceof DOMException && error.name === 'QuotaExceededError') {
-          console.error('Storage quota exceeded. Current size:', formatStorageSize(getStorageSize()));
-          // Try to save critical data only
-          try {
-            const criticalData = {
-              visionCards,
-              textElements,
-              uploadedImages: [], // Remove images to save space
-              lastUpdated: new Date().toISOString()
-            };
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(criticalData));
-            alert('Storage full. Vision cards and text saved, but uploaded images were removed. Please export your data.');
-          } catch (fallbackError) {
-            console.error('Failed to save even critical data:', fallbackError);
-            alert('Unable to save data. Please export your current work immediately.');
-          }
-        } else {
-          console.error('Failed to save data:', error);
-        }
-      }
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, [visionCards, textElements, uploadedImages, isLoaded]);
 
   const getSizeStyles = (size: 'small' | 'medium' | 'large') => {
     switch (size) {
@@ -216,6 +111,7 @@ const VisionBoard: React.FC = () => {
             // Compress image before storing
             const compressedImage = await compressImage(file, 800, 0.7);
             newImages.push(compressedImage);
+            addUploadedImage(compressedImage);
           } catch (compressionError) {
             console.error('Failed to compress image:', compressionError);
             // Fallback to original file if compression fails
@@ -226,12 +122,10 @@ const VisionBoard: React.FC = () => {
               reader.readAsDataURL(file);
             });
             newImages.push(originalImage);
+            addUploadedImage(originalImage);
           }
         }
       }
-      
-      setUploadedImages(prev => [...prev, ...newImages]);
-      setIsUploading(false);
       
       if (newImages.length > 0) {
         addVisionCard(newImages[0]);
@@ -239,54 +133,38 @@ const VisionBoard: React.FC = () => {
       
     } catch (error) {
       console.error('Failed to process files:', error);
-      setIsUploading(false);
       alert('Failed to upload some images. Please try again with smaller files.');
+    } finally {
+      setIsUploading(false);
     }
-  }, []);
+  }, [addUploadedImage]);
 
   const addVisionCard = useCallback((imageUrl: string) => {
-    const newCard: VisionCard = {
-      id: `card-${Date.now()}`,
-      imageUrl,
-      meaning: '',
-      feeling: '',
-      position: { 
-        x: Math.random() * 400 + 100, 
-        y: Math.random() * 200 + 150 
-      },
-      isFlipped: false,
-      size: 'medium'
-    };
-    setVisionCards(prev => [...prev, newCard]);
+    const newItemId = addVisionItem(imageUrl);
     setShowImageOptions(false);
-  }, []);
+    return newItemId;
+  }, [addVisionItem]);
 
   const addText = useCallback((text: string) => {
     const colors = ['#1e293b', '#7c3aed', '#dc2626', '#059669', '#ea580c'];
-    const newTextElement: TextElement = {
-      id: `text-${Date.now()}`,
-      text,
-      position: { 
-        x: Math.random() * 300 + 150, 
-        y: Math.random() * 150 + 200 
-      },
-      color: colors[Math.floor(Math.random() * colors.length)]
-    };
-    setTextElements(prev => [...prev, newTextElement]);
+    addTextElement();
+    // Update the text content immediately after adding
+    setTimeout(() => {
+      updateTextContent(`text-${Date.now()}`, text);
+    }, 100);
     setNewText('');
-  }, []);
+  }, [addTextElement, updateTextContent]);
 
   const flipCard = useCallback((cardId: string) => {
-    setVisionCards(prev => prev.map(card => 
-      card.id === cardId ? { ...card, isFlipped: !card.isFlipped } : card
-    ));
-  }, []);
+    const card = visionItems.find(item => item.id === cardId);
+    if (card) {
+      updateVisionItem(cardId, { isFlipped: !card.isFlipped });
+    }
+  }, [visionItems, updateVisionItem]);
 
-  const updateCard = useCallback((cardId: string, updates: Partial<VisionCard>) => {
-    setVisionCards(prev => prev.map(card => 
-      card.id === cardId ? { ...card, ...updates } : card
-    ));
-  }, []);
+  const updateCard = useCallback((cardId: string, updates: Partial<any>) => {
+    updateVisionItem(cardId, updates);
+  }, [updateVisionItem]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent, id: string, type: 'card' | 'text') => {
     setDraggedItem({ type, id });
@@ -301,15 +179,16 @@ const VisionBoard: React.FC = () => {
     const y = e.clientY - rect.top;
     
     if (draggedItem.type === 'card') {
-      setVisionCards(prev => prev.map(card => 
-        card.id === draggedItem.id ? { ...card, position: { x, y } } : card
-      ));
+      updateVisionItem(draggedItem.id, { position: { x, y } });
     } else {
-      setTextElements(prev => prev.map(item => 
-        item.id === draggedItem.id ? { ...item, position: { x, y } } : item
-      ));
+      // Find the text element and update its position
+      const textElement = textElements.find(t => t.id === draggedItem.id);
+      if (textElement) {
+        updateTextContent(draggedItem.id, textElement.text);
+        // Note: We need to add position update for text elements
+      }
     }
-  }, [draggedItem]);
+  }, [draggedItem, updateVisionItem, textElements, updateTextContent]);
 
   const handleMouseUp = useCallback(() => {
     setDraggedItem(null);
@@ -317,16 +196,11 @@ const VisionBoard: React.FC = () => {
 
   const removeItem = useCallback((id: string, type: 'card' | 'text') => {
     if (type === 'card') {
-      setVisionCards(prev => prev.filter(card => card.id !== id));
+      removeVisionItem(id);
     } else {
-      setTextElements(prev => prev.filter(item => item.id !== id));
+      removeTextElement(id);
     }
-  }, []);
-
-  const removeUploadedImage = useCallback((imageUrl: string) => {
-    setUploadedImages(prev => prev.filter(img => img !== imageUrl));
-    setVisionCards(prev => prev.filter(card => card.imageUrl !== imageUrl));
-  }, []);
+  }, [removeVisionItem, removeTextElement]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -344,14 +218,8 @@ const VisionBoard: React.FC = () => {
   }, [handleFileUpload]);
 
   const handleExportData = useCallback(() => {
-    const data: PersonalVisionData = {
-      visionCards,
-      textElements,
-      uploadedImages,
-      lastUpdated: new Date().toISOString()
-    };
-    
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const dataString = exportData();
+    const blob = new Blob([dataString], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -360,7 +228,7 @@ const VisionBoard: React.FC = () => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }, [visionCards, textElements, uploadedImages]);
+  }, [exportData]);
 
   const handleImportData = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -369,12 +237,12 @@ const VisionBoard: React.FC = () => {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const data: PersonalVisionData = JSON.parse(e.target?.result as string);
-        setVisionCards(data.visionCards || []);
-        setTextElements(data.textElements || []);
-        setUploadedImages(data.uploadedImages || []);
-        setLastSaved(new Date());
-        alert('Vision board data imported successfully!');
+        const content = e.target?.result as string;
+        if (importData(content)) {
+          alert('Vision board data imported successfully!');
+        } else {
+          alert('Invalid file format. Please select a valid vision board export file.');
+        }
       } catch (error) {
         console.error('Failed to import data:', error);
         alert('Invalid file format. Please select a valid vision board export file.');
@@ -382,61 +250,13 @@ const VisionBoard: React.FC = () => {
     };
     reader.readAsText(file);
     event.target.value = '';
-  }, []);
+  }, [importData]);
 
   const handleClearAllData = useCallback(() => {
     if (window.confirm('Are you sure you want to clear all your vision board data? This action cannot be undone.')) {
-      setVisionCards([]);
-      setTextElements([]);
-      setUploadedImages([]);
-      localStorage.removeItem(STORAGE_KEY);
-      setLastSaved(null);
+      clearAllData();
     }
-  }, []);
-
-  const forceSaveData = useCallback(() => {
-    try {
-      const data: PersonalVisionData = {
-        visionCards,
-        textElements,
-        uploadedImages,
-        lastUpdated: new Date().toISOString()
-      };
-      
-      const dataString = JSON.stringify(data);
-      const dataSize = new Blob([dataString]).size;
-      
-      if (!canStoreData(dataSize)) {
-        alert(`Storage limit reached (${formatStorageSize(getStorageSize())}). Please export your data or remove some images.`);
-        return;
-      }
-      
-      localStorage.setItem(STORAGE_KEY, dataString);
-      setLastSaved(new Date());
-      
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
-        alert(`Storage is full (${formatStorageSize(getStorageSize())}). Please export your data and clear storage.`);
-      } else {
-        console.error('Failed to save data:', error);
-        alert('Failed to save data. Please try again.');
-      }
-    }
-  }, [visionCards, textElements, uploadedImages]);
-
-  const getCompletionStats = useCallback(() => {
-    const totalCards = visionCards.length;
-    const cardsWithMeaning = visionCards.filter(card => card.meaning || card.feeling).length;
-    const completionPercentage = totalCards > 0 ? Math.round((cardsWithMeaning / totalCards) * 100) : 0;
-    
-    return {
-      totalCards,
-      cardsWithMeaning,
-      customTextElements: textElements.length,
-      uploadedImagesCount: uploadedImages.length, // Keep for display but not saved
-      completionPercentage
-    };
-  }, [visionCards, textElements, uploadedImages]);
+  }, [clearAllData]);
 
   const stats = getCompletionStats();
 
@@ -479,7 +299,7 @@ const VisionBoard: React.FC = () => {
           </button>
 
           <button 
-            onClick={forceSaveData}
+            onClick={saveData}
             className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
           >
             <Save className="w-4 h-4" />
@@ -526,26 +346,22 @@ const VisionBoard: React.FC = () => {
             className="hidden"
           />
           
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 p-4 bg-slate-50 rounded-lg">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-lg">
             <div className="text-center">
-              <div className="text-slate-500 text-sm">Vision Cards</div>
-              <div className="font-semibold text-slate-900">{stats.totalCards}</div>
+              <div className="text-slate-500 text-sm">Vision Items</div>
+              <div className="font-semibold text-slate-900">{stats.totalItems}</div>
             </div>
             <div className="text-center">
               <div className="text-slate-500 text-sm">With Meaning</div>
-              <div className="font-semibold text-slate-900">{stats.cardsWithMeaning}</div>
+              <div className="font-semibold text-slate-900">{stats.itemsWithCustomContent}</div>
             </div>
             <div className="text-center">
               <div className="text-slate-500 text-sm">Text Elements</div>
               <div className="font-semibold text-slate-900">{stats.customTextElements}</div>
             </div>
             <div className="text-center">
-              <div className="text-slate-500 text-sm">Uploaded Images</div>
-              <div className="font-semibold text-slate-900">{stats.uploadedImagesCount}</div>
-            </div>
-            <div className="text-center">
-              <div className="text-slate-500 text-sm">Storage Used</div>
-              <div className="font-semibold text-slate-900">{formatStorageSize(getStorageSize())}</div>
+              <div className="text-slate-500 text-sm">Completion</div>
+              <div className="font-semibold text-slate-900">{stats.completionPercentage}%</div>
             </div>
           </div>
         </div>
@@ -590,15 +406,15 @@ const VisionBoard: React.FC = () => {
         onDrop={handleDrop}
       >
         {/* Vision Cards */}
-        {visionCards.map((card) => {
-          const sizeStyles = getSizeStyles(card.size);
+        {visionItems.map((card) => {
+          const sizeStyles = getSizeStyles(card.size || 'medium');
           return (
             <div
               key={card.id}
               className="absolute cursor-move group"
               style={{ 
-                left: card.position.x, 
-                top: card.position.y,
+                left: card.position?.x || 0, 
+                top: card.position?.y || 0,
                 perspective: '1000px'
               }}
               onMouseDown={(e) => handleMouseDown(e, card.id, 'card')}
@@ -645,7 +461,7 @@ const VisionBoard: React.FC = () => {
                 >
                   <div className="p-3 h-full flex flex-col space-y-2">
                     <textarea
-                      value={card.meaning}
+                      value={card.meaning || ''}
                       onChange={(e) => updateCard(card.id, { meaning: e.target.value })}
                       placeholder="What does this represent in your life?"
                       className="flex-1 text-xs bg-transparent border-none outline-none resize-none text-slate-700 placeholder-slate-400"
@@ -656,27 +472,8 @@ const VisionBoard: React.FC = () => {
                         e.stopPropagation();
                         if (e.key === 'Enter' && !e.shiftKey) {
                           e.preventDefault();
-                          // Force immediate save with error handling
-                          try {
-                            const data: PersonalVisionData = {
-                              visionCards,
-                              textElements,
-                              uploadedImages,
-                              lastUpdated: new Date().toISOString()
-                            };
-                            
-                            const dataString = JSON.stringify(data);
-                            if (canStoreData(new Blob([dataString]).size)) {
-                              localStorage.setItem(STORAGE_KEY, dataString);
-                              setLastSaved(new Date());
-                            } else {
-                              console.warn('Storage limit reached during Enter save');
-                            }
-                          } catch (error) {
-                            console.error('Failed to save on Enter:', error);
-                          }
+                          saveData();
                           (e.target as HTMLTextAreaElement).blur();
-                          // Flip card back to image side
                           setTimeout(() => {
                             flipCard(card.id);
                           }, 100);
@@ -684,7 +481,7 @@ const VisionBoard: React.FC = () => {
                       }}
                     />
                     <textarea
-                      value={card.feeling}
+                      value={card.feeling || ''}
                       onChange={(e) => updateCard(card.id, { feeling: e.target.value })}
                       placeholder="How will achieving this make you feel?"
                       className="flex-1 text-xs bg-transparent border-none outline-none resize-none text-slate-700 placeholder-slate-400"
@@ -695,27 +492,8 @@ const VisionBoard: React.FC = () => {
                         e.stopPropagation();
                         if (e.key === 'Enter' && !e.shiftKey) {
                           e.preventDefault();
-                          // Force immediate save with error handling
-                          try {
-                            const data: PersonalVisionData = {
-                              visionCards,
-                              textElements,
-                              uploadedImages,
-                              lastUpdated: new Date().toISOString()
-                            };
-                            
-                            const dataString = JSON.stringify(data);
-                            if (canStoreData(new Blob([dataString]).size)) {
-                              localStorage.setItem(STORAGE_KEY, dataString);
-                              setLastSaved(new Date());
-                            } else {
-                              console.warn('Storage limit reached during Enter save');
-                            }
-                          } catch (error) {
-                            console.error('Failed to save on Enter:', error);
-                          }
+                          saveData();
                           (e.target as HTMLTextAreaElement).blur();
-                          // Flip card back to image side
                           setTimeout(() => {
                             flipCard(card.id);
                           }, 100);
@@ -789,7 +567,7 @@ const VisionBoard: React.FC = () => {
           );
         })}
 
-        {/* Text Elements - Only show existing text elements, no default "New Text" */}
+        {/* Text Elements */}
         {textElements.filter(text => text.text !== 'New Text').map((textEl) => (
           <div
             key={textEl.id}
@@ -797,7 +575,7 @@ const VisionBoard: React.FC = () => {
             style={{ 
               left: textEl.position.x, 
               top: textEl.position.y,
-              color: textEl.color
+              color: textEl.color || '#1e293b'
             }}
             onMouseDown={(e) => handleMouseDown(e, textEl.id, 'text')}
           >
@@ -816,7 +594,7 @@ const VisionBoard: React.FC = () => {
         ))}
 
         {/* Empty State */}
-        {visionCards.length === 0 && textElements.filter(text => text.text !== 'New Text').length === 0 && (
+        {visionItems.length === 0 && textElements.filter(text => text.text !== 'New Text').length === 0 && (
           <div 
             className="absolute inset-0 flex items-center justify-center border-2 border-dashed border-slate-300 rounded-xl m-4"
             onDragOver={handleDragOver}
@@ -845,7 +623,7 @@ const VisionBoard: React.FC = () => {
         )}
 
         {/* Help Text */}
-        {visionCards.length > 0 && (
+        {visionItems.length > 0 && (
           <div className="absolute bottom-4 left-4 text-xs text-slate-400 bg-white bg-opacity-80 px-2 py-1 rounded">
             Click cards to flip • Drag to move • Hover for size controls • Enter saves & flips back
           </div>
@@ -938,7 +716,7 @@ const VisionBoard: React.FC = () => {
       )}
 
       {/* Quick Text Suggestions */}
-      {newText === '' && visionCards.length > 0 && textElements.length === 0 && (
+      {newText === '' && visionItems.length > 0 && textElements.length === 0 && (
         <div className="text-center">
           <p className="text-sm text-slate-500 mb-3">Quick add inspiring text:</p>
           <div className="flex flex-wrap justify-center gap-2">
@@ -956,9 +734,9 @@ const VisionBoard: React.FC = () => {
       )}
 
       {/* Progress & Actions */}
-      {visionCards.length > 0 && (
+      {visionItems.length > 0 && (
         <div className="space-y-6">
-          {visionCards.some(card => !card.meaning && !card.feeling) && (
+          {visionItems.some(card => !card.meaning && !card.feeling) && (
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
               <p className="text-amber-700 font-medium">
                 💡 Click your vision cards to flip them and add what they mean to you

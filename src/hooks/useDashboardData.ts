@@ -53,7 +53,7 @@ export const useDashboardData = (): DashboardData => {
   
   const { data: wheelData, isLoaded: wheelLoaded } = useWheelData();
   const { data: valuesData, isLoaded: valuesLoaded } = useValuesData();
-  const { visionItems, isLoaded: visionLoaded } = useVisionBoardData();
+  const { visionItems, textElements, isLoaded: visionLoaded } = useVisionBoardData();
   const { data: goalsData, isLoaded: goalsLoaded } = useGoalSettingData();
 
   const [journeyStartDate, setJourneyStartDate] = useState<Date | null>(null);
@@ -116,20 +116,9 @@ export const useDashboardData = (): DashboardData => {
   const planProgress = useMemo(() => {
     if (!goalsLoaded) return 0;
     
-    let totalSteps = 1; // Annual snapshot
-    totalSteps += Object.keys(GOAL_CATEGORIES).length; // Category goals
-    
-    let completedSteps = 0;
-
-    // Count annual snapshot
-    if (goalsData.annualSnapshot?.snapshot?.trim()) completedSteps++;
-
-    // Count completed category goals
-    Object.keys(GOAL_CATEGORIES).forEach(category => {
-      if (goalsData.categoryGoals[category]?.goal?.trim()) completedSteps++;
-    });
-
-    return totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
+    // Use the actual progress calculation from the goals data hook
+    const progress = goalsData.getProgress ? goalsData.getProgress() : { percentage: 0 };
+    return progress.percentage;
   }, [goalsLoaded, goalsData]);
 
   const overallProgress = useMemo(() => {
@@ -141,9 +130,13 @@ export const useDashboardData = (): DashboardData => {
     if (!visionLoaded || !visionItems || !Array.isArray(visionItems)) return [];
     
     return visionItems.slice(0, 4).map(item => ({
-      quadrant: item.quadrant ? (item.quadrant.charAt(0).toUpperCase() + item.quadrant.slice(1)) : 'Unknown',
+      quadrant: item.quadrant ? 
+        (item.quadrant === 'feelings' ? 'Emotions' : 
+         item.quadrant.charAt(0).toUpperCase() + item.quadrant.slice(1)) : 'Unknown',
       title: item.title || 'Untitled',
-      imageUrl: item.imageUrl || ''
+      imageUrl: item.imageUrl || '',
+      meaning: item.meaning || '',
+      feeling: item.feeling || ''
     }));
   }, [visionLoaded, visionItems]);
 
@@ -235,8 +228,11 @@ export const useDashboardData = (): DashboardData => {
 
   // Generate vision statement and current focus
   const visionStatement = useMemo(() => {
-    if (valuesData && valuesData.coreValues && Array.isArray(valuesData.coreValues) && valuesData.coreValues.length > 0) {
-      const values = valuesData.coreValues.map(v => v.name || 'Unknown').join(', ');
+    if (valuesData && valuesData.rankedCoreValues && Array.isArray(valuesData.rankedCoreValues) && valuesData.rankedCoreValues.length > 0) {
+      const topValues = valuesData.rankedCoreValues.slice(0, 3).map(v => v.name || 'Unknown').join(', ');
+      return `Building a life of ${topValues.toLowerCase()}`;
+    } else if (valuesData && valuesData.coreValues && Array.isArray(valuesData.coreValues) && valuesData.coreValues.length > 0) {
+      const values = valuesData.coreValues.slice(0, 3).map(v => v.name || 'Unknown').join(', ');
       return `Building a life of ${values.toLowerCase()}`;
     }
     return "Building a life of impact, growth, and deep connection";
@@ -263,7 +259,9 @@ export const useDashboardData = (): DashboardData => {
     name: mockUser.name,
     daysIntoJourney,
     totalDays: 84,
-    coreValues: valuesData?.coreValues?.map(v => v.name || 'Unknown') || [],
+    coreValues: valuesData?.rankedCoreValues?.slice(0, 3).map(v => v.name || 'Unknown') || 
+                valuesData?.coreValues?.slice(0, 3).map(v => v.name || 'Unknown') || 
+                ['Excellence', 'Growth', 'Connection'],
     visionStatement,
     currentFocus,
     visionBoard,
