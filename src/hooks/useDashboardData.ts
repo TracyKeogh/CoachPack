@@ -1,3 +1,4 @@
+```typescript
 import { useState, useEffect, useMemo } from 'react';
 import { useWheelData } from './useWheelData';
 import { useValuesData } from './useValuesData';
@@ -306,3 +307,4 @@ export const useDashboardData = (): DashboardData => {
     journeyStartDate
   };
 };
+```
