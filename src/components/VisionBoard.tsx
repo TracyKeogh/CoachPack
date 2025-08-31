@@ -68,7 +68,7 @@ const VisionBoard: React.FC = () => {
     removeUploadedImage,
     addTextElement,
     updateTextContent,
-    updateTextPosition, // for text element dragging
+    updateTextPosition, // Added for text element dragging
     removeTextElement,
     saveData,
     getCompletionStats,
@@ -140,7 +140,7 @@ const VisionBoard: React.FC = () => {
         setIsUploading(false);
       }
     },
-    [addUploadedImage, addVisionItem] // addVisionItem dependency kept (used via addVisionCard)
+    [addUploadedImage, addVisionItem] // using addVisionItem via addVisionCard
   );
 
   const addVisionCard = useCallback(
@@ -154,11 +154,10 @@ const VisionBoard: React.FC = () => {
 
   const addText = useCallback(
     (text: string) => {
-      // Prefer adding with initial text if the hook supports it
-      const maybeId = addTextElement(text as any);
-      // If your hook doesn't accept initial text, fallback:
-      if (maybeId === undefined || maybeId === null) {
-        const id = addTextElement() as unknown as string;
+      // Use hook API: if it accepts text, pass it; else add then update.
+      const idOrVoid = (addTextElement as any)(text);
+      if (typeof idOrVoid !== 'string') {
+        const id = (addTextElement as any)() as string;
         if (id) updateTextContent(id, text);
       }
       setNewText('');
@@ -199,7 +198,6 @@ const VisionBoard: React.FC = () => {
       if (draggedItem.type === 'card') {
         updateVisionItem(draggedItem.id, { position: { x, y } });
       } else {
-        // Update position for text elements
         updateTextPosition(draggedItem.id, { x, y });
       }
     },
@@ -230,7 +228,6 @@ const VisionBoard: React.FC = () => {
     (e: React.DragEvent) => {
       e.preventDefault();
       e.stopPropagation();
-
       const files = e.dataTransfer.files;
       if (files.length > 0) {
         handleFileUpload(files);
@@ -306,9 +303,7 @@ const VisionBoard: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Vision Board</h1>
           <p className="text-slate-600 mt-2">Create visual representations of your goals across four key life areas</p>
-          {lastSaved && (
-            <p className="text-sm text-green-600 mt-1">✓ Last saved: {lastSaved.toLocaleTimeString()}</p>
-          )}
+          {lastSaved && <p className="text-sm text-green-600 mt-1">✓ Last saved: {lastSaved.toLocaleTimeString()}</p>}
         </div>
         <div className="flex items-center space-x-3">
           <button
@@ -324,12 +319,56 @@ const VisionBoard: React.FC = () => {
             className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
           >
             <Save className="w-4 h-4" />
-            <span>Save</span>
+            <span>Save Now</span>
           </button>
         </div>
       </div>
-    </div>
-  );
-};
 
-export default VisionBoard;
+      {/* Data Management Panel */}
+      {showDataManagement && (
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">Data Management</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <button
+              onClick={handleExportData}
+              className="flex items-center justify-center space-x-2 px-4 py-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors border border-blue-200"
+            >
+              <Download className="w-4 h-4" />
+              <span>Export Data</span>
+            </button>
+
+            <button
+              onClick={() => importInputRef.current?.click()}
+              className="flex items-center justify-center space-x-2 px-4 py-3 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors border border-green-200"
+            >
+              <Upload className="w-4 h-4" />
+              <span>Import Data</span>
+            </button>
+
+            <button
+              onClick={handleClearAllData}
+              className="flex items-center justify-center space-x-2 px-4 py-3 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors border border-red-200"
+            >
+              <RotateCcw className="w-4 h-4" />
+              <span>Reset Board</span>
+            </button>
+          </div>
+
+          <input ref={importInputRef} type="file" accept=".json" onChange={handleImportData} className="hidden" />
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-lg">
+            <div className="text-center">
+              <div className="text-slate-500 text-sm">Vision Items</div>
+              <div className="font-semibold text-slate-900">{stats.totalItems}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-slate-500 text-sm">With Meaning</div>
+              <div className="font-semibold text-slate-900">{stats.itemsWithCustomContent}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-slate-500 text-sm">Text Elements</div>
+              <div className="font-semibold text-slate-900">{stats.customTextElements}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-slate-500 text-sm">Completion</div>
+              <div className="font-semibold text-slate-900">{stats.completionPercentage}%</div>
