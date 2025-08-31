@@ -233,15 +233,16 @@ export const useVisionBoardData = () => {
   }, []);
 
   // Text Elements operations
-  const addTextElement = useCallback(() => {
+  const addTextElement = useCallback((initialText: string = 'New Text') => {
     const newText: TextElement = {
       id: \`text-${Date.now()}`,
-      text: 'New Text',
+      text: initialText,
       position: { x: Math.random() * 300 + 50, y: Math.random() * 100 + 150 },
       className: 'text-base',
       color: '#1e293b' // Default color
     };
     setTextElements(prev => [...prev, newText]);
+    return newText.id;
   }, []);
 
   const updateTextPosition = useCallback((textId: string, position: { x: number; y: number }) => {
