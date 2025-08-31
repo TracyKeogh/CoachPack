@@ -321,4 +321,4 @@ const VisionBoard: React.FC = () => {
 
           <button
             onClick={saveData}
-            className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover
+            className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
