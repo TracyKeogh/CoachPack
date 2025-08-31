@@ -533,84 +533,92 @@ const GoalSetting = () => {
 
   if (currentFlow === 'review') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-slate-900 mb-4">Goals Summary</h1>
-            <p className="text-lg text-slate-600">Review your complete goal-setting plan</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-4">
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">Goals Summary</h1>
+            <p className="text-base text-slate-600">Review your complete goal-setting plan</p>
           </div>
 
-          <div className="space-y-8">
+          <div className="space-y-4">
             {/* Annual Vision */}
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
-              <h2 className="text-2xl font-bold text-slate-900 mb-4">Annual Vision</h2>
-              <p className="text-slate-700 leading-relaxed">{annualVision.snapshot}</p>
-              <p className="text-slate-500 mt-4">Target Date: {annualVision.targetDate}</p>
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+              <h2 className="text-xl font-bold text-slate-900 mb-2">Annual Vision</h2>
+              <p className="text-slate-700 text-sm leading-relaxed">{annualVision.snapshot}</p>
+              <p className="text-slate-500 mt-2 text-sm">Target Date: {annualVision.targetDate}</p>
             </div>
 
             {/* Category Goals */}
-            {categories.map((category) => {
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {categories.map((category) => {
               const data = goalsData[category.id];
               return (
-                <div key={category.id} className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
-                  <div className="flex items-center space-x-3 mb-6">
-                    <category.icon className="w-8 h-8 text-purple-600" />
-                    <h2 className="text-2xl font-bold text-slate-900">{category.title}</h2>
+                <div key={category.id} className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <category.icon className="w-6 h-6 text-purple-600" />
+                    <h2 className="text-lg font-bold text-slate-900">{category.title}</h2>
                   </div>
 
-                  <div className="space-y-6">
+                  <div className="space-y-3">
                     <div>
-                      <h3 className="font-semibold text-slate-900 mb-2">Goal</h3>
-                      <p className="text-slate-700">{data.goalText}</p>
+                      <h3 className="font-semibold text-slate-900 mb-1 text-sm">Goal</h3>
+                      <p className="text-slate-700 text-sm">{data.goalText}</p>
                     </div>
 
                     <div>
-                      <h3 className="font-semibold text-slate-900 mb-2">Success Metrics</h3>
-                      <p className="text-slate-700">{data.measureText}</p>
+                      <h3 className="font-semibold text-slate-900 mb-1 text-sm">Success Metrics</h3>
+                      <p className="text-slate-700 text-sm">{data.measureText}</p>
                     </div>
 
                     <div>
-                      <h3 className="font-semibold text-slate-900 mb-2">Target Date</h3>
-                      <p className="text-slate-700">{data.targetDate}</p>
+                      <h3 className="font-semibold text-slate-900 mb-1 text-sm">Target Date</h3>
+                      <p className="text-slate-700 text-sm">{data.targetDate}</p>
                     </div>
 
                     {data.habits.length > 0 && (
                       <div>
-                        <h3 className="font-semibold text-slate-900 mb-2">Habits</h3>
-                        <ul className="space-y-1">
-                          {data.habits.map((habit, index) => (
-                            <li key={index} className="text-slate-700">• {habit}</li>
+                        <h3 className="font-semibold text-slate-900 mb-1 text-sm">Habits</h3>
+                        <ul className="space-y-0.5">
+                          {data.habits.slice(0, 3).map((habit, index) => (
+                            <li key={index} className="text-slate-700 text-sm">• {habit}</li>
                           ))}
+                          {data.habits.length > 3 && (
+                            <li className="text-slate-500 text-sm italic">... and {data.habits.length - 3} more</li>
+                          )}
                         </ul>
                       </div>
                     )}
 
                     {data.milestones.length > 0 && (
                       <div>
-                        <h3 className="font-semibold text-slate-900 mb-2">Milestones</h3>
-                        <ul className="space-y-2">
-                          {data.milestones.map((milestone, index) => (
-                            <li key={index} className="flex justify-between items-center text-slate-700">
-                              <span>• {milestone.title}</span>
-                              <span className="text-slate-500 text-sm">{milestone.date}</span>
+                        <h3 className="font-semibold text-slate-900 mb-1 text-sm">Milestones</h3>
+                        <ul className="space-y-1">
+                          {data.milestones.slice(0, 3).map((milestone, index) => (
+                            <li key={index} className="flex justify-between items-center text-slate-700 text-sm">
+                              <span className="truncate">• {milestone.title}</span>
+                              <span className="text-slate-500 text-xs ml-2 flex-shrink-0">{milestone.date}</span>
                             </li>
                           ))}
+                          {data.milestones.length > 3 && (
+                            <li className="text-slate-500 text-sm italic">... and {data.milestones.length - 3} more</li>
+                          )}
                         </ul>
                       </div>
                     )}
                   </div>
                 </div>
               );
-            })}
+              })}
+            </div>
           </div>
 
-          <div className="flex justify-center mt-8">
+          <div className="flex justify-center mt-4">
             <button
               onClick={() => {
                 saveGoalsData();
                 alert('Your goals have been saved successfully!');
               }}
-              className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
             >
               Complete Goal Setting
             </button>
