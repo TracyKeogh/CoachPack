@@ -150,7 +150,7 @@ const VisionBoard: React.FC = () => {
 
   const addText = useCallback((text: string) => {
     // Generate a unique ID for the new text element
-    const newTextId = `text-${Date.now()}`;
+    const newTextId = \`text-${Date.now()}`;
     // Call the hook function to add the text element
     addTextElement(); // This adds a default 'New Text' element
     // Then update its content
@@ -222,7 +222,7 @@ const VisionBoard: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `vision-board-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = \`vision-board-${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -521,7 +521,7 @@ const VisionBoard: React.FC = () => {
                       e.stopPropagation();
                       updateCard(card.id, { size: 'small' });
                     }}
-                    className={`px-2 py-1 text-xs rounded-l-full transition-colors ${
+                    className={\`px-2 py-1 text-xs rounded-l-full transition-colors ${
                       card.size === 'small' ? 'bg-blue-500 text-white' : 'text-slate-600 hover:bg-slate-100'
                     }`}
                   >
@@ -532,7 +532,7 @@ const VisionBoard: React.FC = () => {
                       e.stopPropagation();
                       updateCard(card.id, { size: 'medium' });
                     }}
-                    className={`px-2 py-1 text-xs transition-colors ${
+                    className={\`px-2 py-1 text-xs transition-colors ${
                       card.size === 'medium' ? 'bg-blue-500 text-white' : 'text-slate-600 hover:bg-slate-100'
                     }`}
                   >
@@ -543,7 +543,7 @@ const VisionBoard: React.FC = () => {
                       e.stopPropagation();
                       updateCard(card.id, { size: 'large' });
                     }}
-                    className={`px-2 py-1 text-xs rounded-r-full transition-colors ${
+                    className={\`px-2 py-1 text-xs rounded-r-full transition-colors ${
                       card.size === 'large' ? 'bg-blue-500 text-white' : 'text-slate-600 hover:bg-slate-100'
                     }`}
                   >
@@ -681,7 +681,7 @@ const VisionBoard: React.FC = () => {
                         onClick={() => addVisionCard(imageUrl)}
                         className="aspect-square rounded-xl overflow-hidden hover:scale-105 hover:shadow-lg transition-all duration-200 border-2 border-transparent hover:border-blue-300 w-full"
                       >
-                        <img src={imageUrl} alt={`Uploaded ${index + 1}`} className="w-full h-full object-cover" />
+                        <img src={imageUrl} alt={\`Uploaded ${index + 1}`} className="w-full h-full object-cover" />
                       </button>
                       <button
                         onClick={() => removeUploadedImage(imageUrl)}
@@ -705,7 +705,7 @@ const VisionBoard: React.FC = () => {
                     onClick={() => addVisionCard(url)}
                     className="aspect-square rounded-xl overflow-hidden hover:scale-105 hover:shadow-lg transition-all duration-200 border-2 border-transparent hover:border-blue-300"
                   >
-                    <img src={url} alt={`Sample ${index + 1}`} className="w-full h-full object-cover" />
+                    <img src={url} alt={\`Sample ${index + 1}`} className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>

@@ -235,7 +235,7 @@ export const useVisionBoardData = () => {
   // Text Elements operations
   const addTextElement = useCallback(() => {
     const newText: TextElement = {
-      id: `text-${Date.now()}`,
+      id: \`text-${Date.now()}`,
       text: 'New Text',
       position: { x: Math.random() * 300 + 50, y: Math.random() * 100 + 150 },
       className: 'text-base',
