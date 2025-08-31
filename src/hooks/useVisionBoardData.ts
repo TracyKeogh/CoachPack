@@ -1,4 +1,3 @@
-```typescript
 import { useState, useEffect, useCallback } from 'react';
 
 export interface VisionItem {
@@ -8,10 +7,10 @@ export interface VisionItem {
   imageUrl: string;
   quadrant: 'business' | 'body' | 'balance' | 'feelings';
   position?: { x: number; y: number };
-  meaning?: string; // Added meaning
-  feeling?: string; // Added feeling
-  isFlipped?: boolean; // Added isFlipped
-  size?: 'small' | 'medium' | 'large'; // Added size
+  meaning?: string;
+  feeling?: string;
+  isFlipped?: boolean;
+  size?: 'small' | 'medium' | 'large';
 }
 
 export interface TextElement {
@@ -19,7 +18,7 @@ export interface TextElement {
   text: string;
   position: { x: number; y: number };
   className: string;
-  color?: string; // Added color
+  color?: string;
 }
 
 export interface VisionBoardData {
@@ -89,8 +88,8 @@ const defaultTextElements: TextElement[] = [
 ];
 
 export const useVisionBoardData = () => {
-  const [visionItems, setVisionItems] = useState<VisionItem[]>([]); // Initialize as empty
-  const [textElements, setTextElements] = useState<TextElement[]>([]); // Initialize as empty
+  const [visionItems, setVisionItems] = useState<VisionItem[]>([]);
+  const [textElements, setTextElements] = useState<TextElement[]>([]);
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [isCollageEditMode, setIsCollageEditMode] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -147,12 +146,12 @@ export const useVisionBoardData = () => {
   // Auto-save whenever data changes (with debouncing)
   useEffect(() => {
     if (isLoaded) {
-      const timeoutId = setTimeout(saveData, 1000); // Debounce saves
+      const timeoutId = setTimeout(saveData, 1000);
       return () => clearTimeout(timeoutId);
     }
   }, [visionItems, textElements, uploadedImages, isCollageEditMode, saveData, isLoaded]);
 
-  // Vision Items operations - enhanced for Vision Board component
+  // Vision Items operations
   const addVisionItem = useCallback((imageUrl: string, quadrant?: string) => {
     const newItem: VisionItem = {
       id: Date.now().toString(),
@@ -239,7 +238,7 @@ export const useVisionBoardData = () => {
       text: initialText,
       position: { x: Math.random() * 300 + 50, y: Math.random() * 100 + 150 },
       className: 'text-base',
-      color: '#1e293b' // Default color
+      color: '#1e293b'
     };
     setTextElements(prev => [...prev, newText]);
     return newText.id;
@@ -362,4 +361,3 @@ export const useVisionBoardData = () => {
     clearAllData
   };
 };
-```
