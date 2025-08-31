@@ -1,300 +1,324 @@
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useState, useCallback, useRef } from 'react';
+import { Camera, Type, Upload, X, FlipHorizontal, Save, Download, RotateCcw } from 'lucide-react';
+import { useVisionBoardData } from '../hooks/useVisionBoardData';
 
-type VisionItem = {
-  id: string;
-  imageUrl: string;
-  title?: string;
-  description?: string;
-};
+// Image compression utility
+const compressImage = (file: File, maxWidth: number = 800, quality: number = 0.8): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
 
-type TextElement = {
-  id: string;
-  text: string;
-};
-
-type ExportPayload = {
-  visionItems: VisionItem[];
-  textElements: TextElement[];
-};
-
-function makeId() {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-  return `id_${Date.now()}_${Math.random().toString(16).slice(2)}`;
-}
-
-const VisionBoard: React.FC = () => {
-  const [visionItems, setVisionItems] = useState<VisionItem[]>([]);
-  const [textElements, setTextElements] = useState<TextElement[]>([]);
-  const [newText, setNewText] = useState("");
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const importInputRef = useRef<HTMLInputElement | null>(null);
-
-  // Add images
-  const handleAddImages = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const files = Array.from(e.target.files ?? []);
-      if (!files.length) return;
-
-      const next: VisionItem[] = files.map((file) => {
-        const url = URL.createObjectURL(file);
-        return { id: makeId(), imageUrl: url, title: file.name };
-      });
-
-      setVisionItems((prev) => [...prev, ...next]);
-
-      // clear value so selecting the same file again triggers change
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    },
-    []
-  );
-
-  // Add simple text sticky
-  const handleAddText = useCallback(() => {
-    const trimmed = newText.trim();
-    if (!trimmed) return;
-    const item: TextElement = { id: makeId(), text: trimmed };
-    setTextElements((prev) => [item, ...prev]);
-    setNewText("");
-  }, [newText]);
-
-  // Remove an image card
-  const removeVisionItem = useCallback((id: string) => {
-    setVisionItems((prev) => {
-      const item = prev.find((x) => x.id === id);
-      if (item?.imageUrl?.startsWith("blob:")) {
-        // Revoke object URL when removing
-        try {
-          URL.revokeObjectURL(item.imageUrl);
-        } catch {
-          /* noop */
+    img.onload = () => {
+      // Calculate new dimensions
+      let { width, height } = img;
+      if (width > height) {
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+      } else {
+        if (height > maxWidth) {
+          width = (width * maxWidth) / height;
+          height = maxWidth;
         }
       }
-      return prev.filter((x) => x.id !== id);
-    });
+
+      canvas.width = width;
+      canvas.height = height;
+
+      // Draw and compress
+      ctx?.drawImage(img, 0, 0, width, height);
+      const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+      resolve(compressedDataUrl);
+    };
+
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
+  });
+};
+
+const INSPIRING_PHRASES = [
+  'This feeling drives me forward',
+  'I am becoming this person',
+  'This is my daily reality',
+  'I live this truth',
+  'This energy flows through me',
+  'I embody this vision',
+];
+
+const SAMPLE_IMAGES = [
+  'https://images.pexels.com/photos/3184292/pexels-photo-3184292.jpeg?auto=compress&cs=tinysrgb&w=400',
+  'https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg?auto=compress&cs=tinysrgb&w=400',
+  'https://images.pexels.com/photos/618833/pexels-photo-618833.jpeg?auto=compress&cs=tinysrgb&w=400',
+  'https://images.pexels.com/photos/1128318/pexels-photo-1128318.jpeg?auto=compress&cs=tinysrgb&w=400',
+];
+
+const VisionBoard: React.FC = () => {
+  const {
+    visionItems,
+    textElements,
+    uploadedImages,
+    isLoaded,
+    lastSaved,
+    addVisionItem,
+    updateVisionItem,
+    removeVisionItem,
+    addUploadedImage,
+    removeUploadedImage,
+    addTextElement,
+    updateTextContent,
+    updateTextPosition, // for text element dragging
+    removeTextElement,
+    saveData,
+    getCompletionStats,
+    exportData,
+    importData,
+    clearAllData,
+  } = useVisionBoardData();
+
+  const [draggedItem, setDraggedItem] = useState<{ type: 'card' | 'text'; id: string } | null>(null);
+  const [showImageOptions, setShowImageOptions] = useState(false);
+  const [newText, setNewText] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+  const [showDataManagement, setShowDataManagement] = useState(false);
+
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
+
+  const getSizeStyles = (size: 'small' | 'medium' | 'large') => {
+    switch (size) {
+      case 'small':
+        return { width: '120px', height: '96px' };
+      case 'medium':
+        return { width: '160px', height: '128px' };
+      case 'large':
+        return { width: '200px', height: '160px' };
+      default:
+        return { width: '160px', height: '128px' };
+    }
+  };
+
+  const handleFileUpload = useCallback(
+    async (files: FileList) => {
+      setIsUploading(true);
+      const newImages: string[] = [];
+
+      try {
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          if (file.type.startsWith('image/')) {
+            try {
+              // Compress image before storing
+              const compressedImage = await compressImage(file, 800, 0.7);
+              newImages.push(compressedImage);
+              addUploadedImage(compressedImage);
+            } catch (compressionError) {
+              console.error('Failed to compress image:', compressionError);
+              // Fallback to original file if compression fails
+              const reader = new FileReader();
+              const originalImage = await new Promise<string>((resolve, reject) => {
+                reader.onload = (e) => resolve(e.target?.result as string);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+              });
+              newImages.push(originalImage);
+              addUploadedImage(originalImage);
+            }
+          }
+        }
+
+        // Automatically add the first uploaded image as a new vision card
+        if (newImages.length > 0) {
+          addVisionCard(newImages[0]);
+        }
+      } catch (error) {
+        console.error('Failed to process files:', error);
+        alert('Failed to upload some images. Please try again with smaller files.');
+      } finally {
+        setIsUploading(false);
+      }
+    },
+    [addUploadedImage, addVisionItem] // addVisionItem dependency kept (used via addVisionCard)
+  );
+
+  const addVisionCard = useCallback(
+    (imageUrl: string) => {
+      const newItemId = addVisionItem(imageUrl);
+      setShowImageOptions(false);
+      return newItemId;
+    },
+    [addVisionItem]
+  );
+
+  const addText = useCallback(
+    (text: string) => {
+      // Prefer adding with initial text if the hook supports it
+      const maybeId = addTextElement(text as any);
+      // If your hook doesn't accept initial text, fallback:
+      if (maybeId === undefined || maybeId === null) {
+        const id = addTextElement() as unknown as string;
+        if (id) updateTextContent(id, text);
+      }
+      setNewText('');
+    },
+    [addTextElement, updateTextContent]
+  );
+
+  const flipCard = useCallback(
+    (cardId: string) => {
+      const card = visionItems.find((item) => item.id === cardId);
+      if (card) {
+        updateVisionItem(cardId, { isFlipped: !card.isFlipped });
+      }
+    },
+    [visionItems, updateVisionItem]
+  );
+
+  const updateCard = useCallback(
+    (cardId: string, updates: Partial<any>) => {
+      updateVisionItem(cardId, updates);
+    },
+    [updateVisionItem]
+  );
+
+  const handleMouseDown = useCallback((e: React.MouseEvent, id: string, type: 'card' | 'text') => {
+    setDraggedItem({ type, id });
+    e.preventDefault();
   }, []);
 
-  // Remove a text sticky
-  const removeTextElement = useCallback((id: string) => {
-    setTextElements((prev) => prev.filter((x) => x.id !== id));
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (!draggedItem || !canvasRef.current) return;
+
+      const rect = canvasRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      if (draggedItem.type === 'card') {
+        updateVisionItem(draggedItem.id, { position: { x, y } });
+      } else {
+        // Update position for text elements
+        updateTextPosition(draggedItem.id, { x, y });
+      }
+    },
+    [draggedItem, updateVisionItem, updateTextPosition]
+  );
+
+  const handleMouseUp = useCallback(() => {
+    setDraggedItem(null);
   }, []);
 
-  // Export JSON
+  const removeItem = useCallback(
+    (id: string, type: 'card' | 'text') => {
+      if (type === 'card') {
+        removeVisionItem(id);
+      } else {
+        removeTextElement(id);
+      }
+    },
+    [removeVisionItem, removeTextElement]
+  );
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        handleFileUpload(files);
+      }
+    },
+    [handleFileUpload]
+  );
+
   const handleExportData = useCallback(() => {
-    const payload: ExportPayload = { visionItems, textElements };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], {
-      type: "application/json",
-    });
+    const dataString = exportData();
+    const blob = new Blob([dataString], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
+    const a = document.createElement('a');
     a.href = url;
-    a.download = `vision-board-${new Date()
-      .toISOString()
-      .split("T")[0]}.json`;
+    a.download = `vision-board-${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }, [visionItems, textElements]);
+  }, [exportData]);
 
-  // Import JSON
   const handleImportData = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
       if (!file) return;
 
       const reader = new FileReader();
-      reader.onload = () => {
+      reader.onload = (e) => {
         try {
-          const parsed = JSON.parse(String(reader.result ?? "{}")) as Partial<ExportPayload>;
-          const importedImages = Array.isArray(parsed.visionItems)
-            ? parsed.visionItems.map((v) => ({
-                id: v.id ?? makeId(),
-                imageUrl: v.imageUrl ?? "",
-                title: v.title ?? "",
-                description: v.description ?? "",
-              }))
-            : [];
-
-          const importedTexts = Array.isArray(parsed.textElements)
-            ? parsed.textElements.map((t) => ({
-                id: t.id ?? makeId(),
-                text: t.text ?? "",
-              }))
-            : [];
-
-          setVisionItems(importedImages);
-          setTextElements(importedTexts);
-        } catch (err) {
-          console.error("Import failed:", err);
-          alert("Import failed: invalid JSON.");
+          const content = e.target?.result as string;
+          if (importData(content)) {
+            alert('Vision board data imported successfully!');
+          } else {
+            alert('Invalid file format. Please select a valid vision board export file.');
+          }
+        } catch (error) {
+          console.error('Failed to import data:', error);
+          alert('Invalid file format. Please select a valid vision board export file.');
         }
       };
       reader.readAsText(file);
-
-      // clear value so selecting the same file again triggers change
-      if (importInputRef.current) importInputRef.current.value = "";
+      event.target.value = '';
     },
-    []
+    [importData]
   );
 
-  // Clear all
-  const handleClearAll = useCallback(() => {
-    // Revoke any object URLs to avoid leaks
-    visionItems.forEach((it) => {
-      if (it.imageUrl?.startsWith("blob:")) {
-        try {
-          URL.revokeObjectURL(it.imageUrl);
-        } catch {
-          /* noop */
-        }
-      }
-    });
-    setVisionItems([]);
-    setTextElements([]);
-  }, [visionItems]);
+  const handleClearAllData = useCallback(() => {
+    if (window.confirm('Are you sure you want to clear all your vision board data? This action cannot be undone.')) {
+      clearAllData();
+    }
+  }, [clearAllData]);
 
-  const hasContent = useMemo(
-    () => visionItems.length > 0 || textElements.length > 0,
-    [visionItems.length, textElements.length]
-  );
+  const stats = getCompletionStats();
+
+  if (!isLoaded) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-center min-h-96">
+          <div className="text-center">
+            <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-slate-900 mb-2">Loading Your Vision Board...</h2>
+            <p className="text-slate-600">Retrieving your saved progress...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-4 md:p-6 max-w-6xl mx-auto">
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Vision Board</h1>
-          <p className="text-sm text-gray-500">
-            Add images and short statements. Export/Import as JSON to back up or reuse.
-          </p>
+          <h1 className="text-3xl font-bold text-slate-900">Vision Board</h1>
+          <p className="text-slate-600 mt-2">Create visual representations of your goals across four key life areas</p>
+          {lastSaved && (
+            <p className="text-sm text-green-600 mt-1">✓ Last saved: {lastSaved.toLocaleTimeString()}</p>
+          )}
         </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <label className="inline-flex items-center px-3 py-2 rounded border border-gray-300 text-sm cursor-pointer hover:bg-gray-50">
-            Add images
-            <input
-              ref={fileInputRef}
-              className="hidden"
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleAddImages}
-            />
-          </label>
-
+        <div className="flex items-center space-x-3">
           <button
-            type="button"
-            onClick={handleExportData}
-            className="px-3 py-2 rounded border border-gray-300 text-sm hover:bg-gray-50"
-            disabled={!hasContent}
-            title={hasContent ? "Export your vision board to JSON" : "Nothing to export"}
+            onClick={() => setShowDataManagement(!showDataManagement)}
+            className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
           >
-            Export
+            <Download className="w-4 h-4" />
+            <span>Data</span>
           </button>
 
-          <label className="inline-flex items-center px-3 py-2 rounded border border-gray-300 text-sm cursor-pointer hover:bg-gray-50">
-            Import
-            <input
-              ref={importInputRef}
-              className="hidden"
-              type="file"
-              accept="application/json"
-              onChange={handleImportData}
-            />
-          </label>
-
           <button
-            type="button"
-            onClick={handleClearAll}
-            className="px-3 py-2 rounded border border-red-300 text-sm text-red-700 hover:bg-red-50"
-            disabled={!hasContent}
-            title={hasContent ? "Clear all items" : "Board is already empty"}
-          >
-            Clear All
-          </button>
-        </div>
-      </div>
-
-      <div className="mt-4 flex items-center gap-2">
-        <input
-          type="text"
-          value={newText}
-          onChange={(e) => setNewText(e.target.value)}
-          placeholder="Add a short vision statement..."
-          className="flex-1 rounded border border-gray-300 px-3 py-2 text-sm"
-        />
-        <button
-          type="button"
-          onClick={handleAddText}
-          className="px-3 py-2 rounded border border-gray-300 text-sm hover:bg-gray-50"
-          disabled={!newText.trim()}
-        >
-          Add Text
-        </button>
-      </div>
-
-      {/* Board */}
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {/* Text elements */}
-        {textElements.map((t) => (
-          <div
-            key={t.id}
-            className="rounded-lg border border-gray-200 p-3 bg-yellow-50 shadow-sm flex items-start justify-between"
-          >
-            <p className="text-sm whitespace-pre-wrap">{t.text}</p>
-            <button
-              type="button"
-              onClick={() => removeTextElement(t.id)}
-              className="ml-3 text-xs text-gray-500 hover:text-red-600"
-              title="Remove"
-            >
-              ✕
-            </button>
-          </div>
-        ))}
-
-        {/* Image cards */}
-        {visionItems.map((card) => (
-          <div key={card.id} className="rounded-lg overflow-hidden border border-gray-200 bg-white shadow-sm">
-            <div className="aspect-video bg-gray-100">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={card.imageUrl}
-                alt={card.title ?? "Vision image"}
-                className="h-full w-full object-cover"
-              />
-            </div>
-            <div className="p-3">
-              <div className="flex items-start justify-between">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium truncate">{card.title ?? "Untitled"}</p>
-                  {card.description ? (
-                    <p className="mt-1 text-xs text-gray-500 line-clamp-2">{card.description}</p>
-                  ) : null}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => removeVisionItem(card.id)}
-                  className="ml-3 text-xs text-gray-500 hover:text-red-600"
-                  title="Remove"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
-
-        {/* Empty state */}
-        {!hasContent && (
-          <div className="col-span-full rounded-lg border border-dashed border-gray-300 p-6 text-center text-gray-500">
-            Add images or a short statement to start building your vision board.
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-export default VisionBoard;
+            onClick={saveData}
+            className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover
