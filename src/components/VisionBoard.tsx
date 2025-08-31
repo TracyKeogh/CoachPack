@@ -376,3 +376,8 @@ const VisionBoard: React.FC = () => {
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+export default VisionBoard;
