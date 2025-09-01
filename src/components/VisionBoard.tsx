@@ -1,6 +1,6 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { Camera, Type, Upload, X, FlipHorizontal, Save, Download, RotateCcw } from 'lucide-react';
-import { useVisionBoardData } from '../hooks/useVisionBoardData';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { Camera, Type, Upload, X, FlipHorizontal, Save, Download, RotateCcw, ArrowLeft, StickyNote } from 'lucide-react';
+import NotesPanel from './NotesPanel';
 
 // Image compression utility
 const compressImage = (file: File, maxWidth: number = 800, quality: number = 0.8): Promise<string> => {
@@ -54,38 +54,135 @@ const SAMPLE_IMAGES = [
   'https://images.pexels.com/photos/1128318/pexels-photo-1128318.jpeg?auto=compress&cs=tinysrgb&w=400'
 ];
 
-const VisionBoard: React.FC = () => {
-  const {
-    visionItems,
-    textElements,
-    uploadedImages,
-    isLoaded,
-    lastSaved,
-    addVisionItem,
-    updateVisionItem,
-    removeVisionItem,
-    addUploadedImage,
-    removeUploadedImage,
-    addTextElement,
-    updateTextContent,
-    updateTextPosition, // Added for text element dragging
-    removeTextElement,
-    saveData,
-    getCompletionStats,
-    exportData,
-    importData,
-    clearAllData
-  } = useVisionBoardData();
+interface VisionCard {
+  id: string;
+  imageUrl: string;
+  position: { x: number; y: number };
+  meaning: string;
+  feeling: string;
+  isFlipped: boolean;
+  size: 'small' | 'medium' | 'large';
+}
 
+interface TextElement {
+  id: string;
+  text: string;
+  position: { x: number; y: number };
+  color: string;
+}
+
+interface PersonalVisionData {
+  visionCards: VisionCard[];
+  textElements: TextElement[];
+  uploadedImages: string[];
+  lastUpdated: string;
+}
+
+const STORAGE_KEY = 'personal-vision-board';
+
+const VisionBoard: React.FC = () => {
+  const [visionCards, setVisionCards] = useState<VisionCard[]>([]);
+  const [textElements, setTextElements] = useState<TextElement[]>([]);
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [draggedItem, setDraggedItem] = useState<{ type: 'card' | 'text'; id: string } | null>(null);
   const [showImageOptions, setShowImageOptions] = useState(false);
   const [newText, setNewText] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [showDataManagement, setShowDataManagement] = useState(false);
+  const [showNotes, setShowNotes] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
   
   const canvasRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
+
+  // Storage utilities
+  const getStorageSize = useCallback(() => {
+    let total = 0;
+    try {
+      const data = localStorage.getItem(STORAGE_KEY);
+      if (data) {
+        total = new Blob([data]).size;
+      }
+    } catch (error) {
+      console.error('Error calculating storage size:', error);
+    }
+    return total;
+  }, []);
+
+  const formatStorageSize = useCallback((bytes: number) => {
+    const mb = bytes / (1024 * 1024);
+    if (mb > 1) {
+      return `${mb.toFixed(1)} MB`;
+    }
+    return `${(bytes / 1024).toFixed(1)} KB`;
+  }, []);
+
+  // Load data on mount
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          const data: PersonalVisionData = JSON.parse(stored);
+          setVisionCards(data.visionCards || []);
+          setTextElements(data.textElements || []);
+          setUploadedImages(data.uploadedImages || []);
+          setLastSaved(new Date(data.lastUpdated));
+        }
+        setIsLoaded(true);
+      } catch (error) {
+        console.error('Failed to load vision board data:', error);
+        setIsLoaded(true);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadData();
+  }, []);
+
+  // Auto-save with storage management
+  useEffect(() => {
+    if (!isLoaded) return;
+    
+    const timer = setTimeout(() => {
+      try {
+        const data: PersonalVisionData = {
+          visionCards,
+          textElements,
+          uploadedImages,
+          lastUpdated: new Date().toISOString()
+        };
+        
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        setLastSaved(new Date());
+      } catch (error) {
+        if (error instanceof Error && error.name === 'QuotaExceededError') {
+          console.warn('Storage quota exceeded. Current size:', formatStorageSize(getStorageSize()));
+          // Try to save critical data only
+          try {
+            const criticalData = {
+              visionCards,
+              textElements,
+              uploadedImages: [], // Remove images to save space
+              lastUpdated: new Date().toISOString()
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(criticalData));
+            alert('Storage full. Vision cards and text saved, but uploaded images were removed. Please export your data.');
+          } catch (fallbackError) {
+            console.error('Failed to save even critical data:', fallbackError);
+            alert('Unable to save data. Please export your current work immediately.');
+          }
+        } else {
+          console.error('Failed to save data:', error);
+        }
+      }
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [visionCards, textElements, uploadedImages, isLoaded, formatStorageSize, getStorageSize]);
 
   const getSizeStyles = (size: 'small' | 'medium' | 'large') => {
     switch (size) {
@@ -112,7 +209,6 @@ const VisionBoard: React.FC = () => {
             // Compress image before storing
             const compressedImage = await compressImage(file, 800, 0.7);
             newImages.push(compressedImage);
-            addUploadedImage(compressedImage);
           } catch (compressionError) {
             console.error('Failed to compress image:', compressionError);
             // Fallback to original file if compression fails
@@ -123,45 +219,60 @@ const VisionBoard: React.FC = () => {
               reader.readAsDataURL(file);
             });
             newImages.push(originalImage);
-            addUploadedImage(originalImage);
           }
         }
       }
       
-      // Automatically add the first uploaded image as a new vision card
+      setUploadedImages(prev => [...prev, ...newImages]);
+      setIsUploading(false);
+      
       if (newImages.length > 0) {
         addVisionCard(newImages[0]);
       }
       
     } catch (error) {
       console.error('Failed to process files:', error);
-      alert('Failed to upload some images. Please try again with smaller files.');
-    } finally {
       setIsUploading(false);
+      alert('Failed to upload some images. Please try again with smaller files.');
     }
-  }, [addUploadedImage, addVisionItem]); // Added addVisionItem to dependencies
+  }, []);
 
   const addVisionCard = useCallback((imageUrl: string) => {
-    const newItemId = addVisionItem(imageUrl);
+    const newCard: VisionCard = {
+      id: Date.now().toString(),
+      imageUrl,
+      position: { x: Math.random() * 600 + 100, y: Math.random() * 400 + 100 },
+      meaning: '',
+      feeling: '',
+      isFlipped: false,
+      size: 'medium'
+    };
+    setVisionCards(prev => [...prev, newCard]);
     setShowImageOptions(false);
-    return newItemId;
-  }, [addVisionItem]);
+  }, []);
 
   const addText = useCallback((text: string) => {
-    addTextElement(text);
+    const newText: TextElement = {
+      id: Date.now().toString(),
+      text,
+      position: { x: Math.random() * 600 + 100, y: Math.random() * 400 + 100 },
+      color: '#1e293b'
+    };
+    setTextElements(prev => [...prev, newText]);
     setNewText('');
-  }, [addTextElement, updateTextContent]);
+  }, []);
 
   const flipCard = useCallback((cardId: string) => {
-    const card = visionItems.find(item => item.id === cardId);
-    if (card) {
-      updateVisionItem(cardId, { isFlipped: !card.isFlipped });
-    }
-  }, [visionItems, updateVisionItem]);
+    setVisionCards(prev => prev.map(card => 
+      card.id === cardId ? { ...card, isFlipped: !card.isFlipped } : card
+    ));
+  }, []);
 
-  const updateCard = useCallback((cardId: string, updates: Partial<any>) => {
-    updateVisionItem(cardId, updates);
-  }, [updateVisionItem]);
+  const updateCard = useCallback((cardId: string, updates: Partial<VisionCard>) => {
+    setVisionCards(prev => prev.map(card => 
+      card.id === cardId ? { ...card, ...updates } : card
+    ));
+  }, []);
 
   const handleMouseDown = useCallback((e: React.MouseEvent, id: string, type: 'card' | 'text') => {
     setDraggedItem({ type, id });
@@ -176,12 +287,15 @@ const VisionBoard: React.FC = () => {
     const y = e.clientY - rect.top;
     
     if (draggedItem.type === 'card') {
-      updateVisionItem(draggedItem.id, { position: { x, y } });
+      setVisionCards(prev => prev.map(card => 
+        card.id === draggedItem.id ? { ...card, position: { x, y } } : card
+      ));
     } else {
-      // Update position for text elements
-      updateTextPosition(draggedItem.id, { x, y });
+      setTextElements(prev => prev.map(item => 
+        item.id === draggedItem.id ? { ...item, position: { x, y } } : item
+      ));
     }
-  }, [draggedItem, updateVisionItem, updateTextPosition]); // Added updateTextPosition to dependencies
+  }, [draggedItem]);
 
   const handleMouseUp = useCallback(() => {
     setDraggedItem(null);
@@ -189,11 +303,16 @@ const VisionBoard: React.FC = () => {
 
   const removeItem = useCallback((id: string, type: 'card' | 'text') => {
     if (type === 'card') {
-      removeVisionItem(id);
+      setVisionCards(prev => prev.filter(card => card.id !== id));
     } else {
-      removeTextElement(id);
+      setTextElements(prev => prev.filter(item => item.id !== id));
     }
-  }, [removeVisionItem, removeTextElement]);
+  }, []);
+
+  const removeUploadedImage = useCallback((imageUrl: string) => {
+    setUploadedImages(prev => prev.filter(img => img !== imageUrl));
+    setVisionCards(prev => prev.filter(card => card.imageUrl !== imageUrl));
+  }, []);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -211,8 +330,14 @@ const VisionBoard: React.FC = () => {
   }, [handleFileUpload]);
 
   const handleExportData = useCallback(() => {
-    const dataString = exportData();
-    const blob = new Blob([dataString], { type: 'application/json' });
+    const data: PersonalVisionData = {
+      visionCards,
+      textElements,
+      uploadedImages,
+      lastUpdated: new Date().toISOString()
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -221,7 +346,7 @@ const VisionBoard: React.FC = () => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }, [exportData]);
+  }, [visionCards, textElements, uploadedImages]);
 
   const handleImportData = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -230,12 +355,12 @@ const VisionBoard: React.FC = () => {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const content = e.target?.result as string;
-        if (importData(content)) {
-          alert('Vision board data imported successfully!');
-        } else {
-          alert('Invalid file format. Please select a valid vision board export file.');
-        }
+        const data: PersonalVisionData = JSON.parse(e.target?.result as string);
+        setVisionCards(data.visionCards || []);
+        setTextElements(data.textElements || []);
+        setUploadedImages(data.uploadedImages || []);
+        setLastSaved(new Date());
+        alert('Vision board data imported successfully!');
       } catch (error) {
         console.error('Failed to import data:', error);
         alert('Invalid file format. Please select a valid vision board export file.');
@@ -243,17 +368,44 @@ const VisionBoard: React.FC = () => {
     };
     reader.readAsText(file);
     event.target.value = '';
-  }, [importData]);
+  }, []);
 
   const handleClearAllData = useCallback(() => {
     if (window.confirm('Are you sure you want to clear all your vision board data? This action cannot be undone.')) {
-      clearAllData();
+      setVisionCards([]);
+      setTextElements([]);
+      setUploadedImages([]);
+      localStorage.removeItem(STORAGE_KEY);
+      setLastSaved(null);
     }
-  }, [clearAllData]);
+  }, []);
 
-  const stats = getCompletionStats();
+  const handleSaveNow = useCallback(() => {
+    try {
+      const data: PersonalVisionData = {
+        visionCards,
+        textElements,
+        uploadedImages,
+        lastUpdated: new Date().toISOString()
+      };
+      
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      setLastSaved(new Date());
+      alert('Vision board saved successfully!');
+    } catch (error) {
+      console.error('Failed to save data:', error);
+      alert('Failed to save vision board. Please try exporting your data.');
+    }
+  }, [visionCards, textElements, uploadedImages]);
 
-  if (!isLoaded) {
+  const stats = {
+    totalCards: visionCards.length,
+    cardsWithMeaning: visionCards.filter(card => card.meaning.trim() !== '').length,
+    customTextElements: textElements.length,
+    uploadedImagesCount: uploadedImages.length
+  };
+
+  if (isLoading) {
     return (
       <div className="space-y-8">
         <div className="flex items-center justify-center min-h-96">
@@ -292,11 +444,19 @@ const VisionBoard: React.FC = () => {
           </button>
 
           <button 
-            onClick={saveData}
+            onClick={handleSaveNow}
             className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
           >
             <Save className="w-4 h-4" />
             <span>Save Now</span>
+          </button>
+
+          <button
+            onClick={() => setShowNotes(!showNotes)}
+            className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            <StickyNote className="w-4 h-4" />
+            <span>Notes</span>
           </button>
         </div>
       </div>
@@ -339,22 +499,26 @@ const VisionBoard: React.FC = () => {
             className="hidden"
           />
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-lg">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 p-4 bg-slate-50 rounded-lg">
             <div className="text-center">
-              <div className="text-slate-500 text-sm">Vision Items</div>
-              <div className="font-semibold text-slate-900">{stats.totalItems}</div>
+              <div className="text-slate-500 text-sm">Vision Cards</div>
+              <div className="font-semibold text-slate-900">{stats.totalCards}</div>
             </div>
             <div className="text-center">
               <div className="text-slate-500 text-sm">With Meaning</div>
-              <div className="font-semibold text-slate-900">{stats.itemsWithCustomContent}</div>
+              <div className="font-semibold text-slate-900">{stats.cardsWithMeaning}</div>
             </div>
             <div className="text-center">
               <div className="text-slate-500 text-sm">Text Elements</div>
               <div className="font-semibold text-slate-900">{stats.customTextElements}</div>
             </div>
             <div className="text-center">
-              <div className="text-slate-500 text-sm">Completion</div>
-              <div className="font-semibold text-slate-900">{stats.completionPercentage}%</div>
+              <div className="text-slate-500 text-sm">Uploaded Images</div>
+              <div className="font-semibold text-slate-900">{stats.uploadedImagesCount}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-slate-500 text-sm">Storage Used</div>
+              <div className="font-semibold text-slate-900">{formatStorageSize(getStorageSize())}</div>
             </div>
           </div>
         </div>
@@ -399,15 +563,15 @@ const VisionBoard: React.FC = () => {
         onDrop={handleDrop}
       >
         {/* Vision Cards */}
-        {visionItems.map((card) => {
-          const sizeStyles = getSizeStyles(card.size || 'medium');
+        {visionCards.map((card) => {
+          const sizeStyles = getSizeStyles(card.size);
           return (
             <div
               key={card.id}
               className="absolute cursor-move group"
               style={{ 
-                left: card.position?.x || 0, 
-                top: card.position?.y || 0,
+                left: card.position.x, 
+                top: card.position.y,
                 perspective: '1000px'
               }}
               onMouseDown={(e) => handleMouseDown(e, card.id, 'card')}
@@ -452,47 +616,10 @@ const VisionBoard: React.FC = () => {
                   }}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <div className="p-3 h-full flex flex-col space-y-2">
-                    <textarea
-                      value={card.meaning || ''}
-                      onChange={(e) => updateCard(card.id, { meaning: e.target.value })}
-                      placeholder="What does this represent in your life?"
-                      className="flex-1 text-xs bg-transparent border-none outline-none resize-none text-slate-700 placeholder-slate-400"
-                      onClick={(e) => e.stopPropagation()}
-                      onFocus={(e) => e.stopPropagation()}
-                      onMouseDown={(e) => e.stopPropagation()}
-                      onKeyDown={(e) => {
-                        e.stopPropagation();
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          saveData();
-                          (e.target as HTMLTextAreaElement).blur();
-                          setTimeout(() => {
-                            flipCard(card.id);
-                          }, 100);
-                        }
-                      }}
-                    />
-                    <textarea
-                      value={card.feeling || ''}
-                      onChange={(e) => updateCard(card.id, { feeling: e.target.value })}
-                      placeholder="How will achieving this make you feel?"
-                      className="flex-1 text-xs bg-transparent border-none outline-none resize-none text-slate-700 placeholder-slate-400"
-                      onClick={(e) => e.stopPropagation()}
-                      onFocus={(e) => e.stopPropagation()}
-                      onMouseDown={(e) => e.stopPropagation()}
-                      onKeyDown={(e) => {
-                        e.stopPropagation();
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          saveData();
-                          (e.target as HTMLTextAreaElement).blur();
-                          setTimeout(() => {
-                            flipCard(card.id);
-                          }, 100);
-                        }
-                      }}
-                    />
+                  <div className="p-3 h-full flex flex-col items-center justify-center">
+                    <p className="text-center text-slate-600 text-lg font-medium">
+                      Tell me more
+                    </p>
                     
                     {/* Flip Back Button */}
                     <button
@@ -500,7 +627,7 @@ const VisionBoard: React.FC = () => {
                         e.stopPropagation();
                         flipCard(card.id);
                       }}
-                      className="self-center mt-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors text-xs flex items-center space-x-1"
+                      className="mt-4 px-3 py-1 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors text-xs flex items-center space-x-1"
                     >
                       <FlipHorizontal className="w-3 h-3" />
                       <span>Flip Back</span>
@@ -561,14 +688,14 @@ const VisionBoard: React.FC = () => {
         })}
 
         {/* Text Elements */}
-        {textElements.filter(text => text.text !== 'New Text').map((textEl) => (
+        {textElements.map((textEl) => (
           <div
             key={textEl.id}
             className="absolute cursor-move group select-none"
             style={{ 
               left: textEl.position.x, 
               top: textEl.position.y,
-              color: textEl.color || '#1e293b'
+              color: textEl.color
             }}
             onMouseDown={(e) => handleMouseDown(e, textEl.id, 'text')}
           >
@@ -587,7 +714,7 @@ const VisionBoard: React.FC = () => {
         ))}
 
         {/* Empty State */}
-        {visionItems.length === 0 && textElements.filter(text => text.text !== 'New Text').length === 0 && (
+        {visionCards.length === 0 && textElements.length === 0 && (
           <div 
             className="absolute inset-0 flex items-center justify-center border-2 border-dashed border-slate-300 rounded-xl m-4"
             onDragOver={handleDragOver}
@@ -616,7 +743,7 @@ const VisionBoard: React.FC = () => {
         )}
 
         {/* Help Text */}
-        {visionItems.length > 0 && (
+        {visionCards.length > 0 && (
           <div className="absolute bottom-4 left-4 text-xs text-slate-400 bg-white bg-opacity-80 px-2 py-1 rounded">
             Click cards to flip • Drag to move • Hover for size controls • Enter saves & flips back
           </div>
@@ -675,17 +802,13 @@ const VisionBoard: React.FC = () => {
                         onClick={() => addVisionCard(imageUrl)}
                         className="aspect-square rounded-xl overflow-hidden hover:scale-105 hover:shadow-lg transition-all duration-200 border-2 border-transparent hover:border-blue-300 w-full"
                       >
-                        <img
-                          src={imageUrl}
-                          alt="Uploaded"
-                          className="w-full h-full object-cover"
-                        />
+                        <img src={imageUrl} alt={`Uploaded ${index + 1}`} className="w-full h-full object-cover" />
                       </button>
                       <button
                         onClick={() => removeUploadedImage(imageUrl)}
                         className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center text-sm font-bold hover:bg-red-600"
                       >
-                        ×
+                        <X className="w-3 h-3" />
                       </button>
                     </div>
                   ))}
@@ -695,25 +818,71 @@ const VisionBoard: React.FC = () => {
 
             {/* Sample Images */}
             <div>
-              <h4 className="text-lg font-medium text-slate-900 mb-4">Sample Images</h4>
+              <h4 className="text-lg font-medium text-slate-900 mb-4">Or Choose from Samples</h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {SAMPLE_IMAGES.map((imageUrl, index) => (
+                {SAMPLE_IMAGES.map((url, index) => (
                   <button
                     key={index}
-                    onClick={() => addVisionCard(imageUrl)}
+                    onClick={() => addVisionCard(url)}
                     className="aspect-square rounded-xl overflow-hidden hover:scale-105 hover:shadow-lg transition-all duration-200 border-2 border-transparent hover:border-blue-300"
                   >
-                    <img
-                      src={imageUrl}
-                      alt="Sample"
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={url} alt={`Sample ${index + 1}`} className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Quick Text Suggestions */}
+      {newText === '' && visionCards.length > 0 && textElements.length === 0 && (
+        <div className="text-center">
+          <p className="text-sm text-slate-500 mb-3">Quick add inspiring text:</p>
+          <div className="flex flex-wrap justify-center gap-2">
+            {INSPIRING_PHRASES.map((phrase, index) => (
+              <button
+                key={index}
+                onClick={() => addText(phrase)}
+                className="px-4 py-2 bg-white border border-slate-200 rounded-full text-sm text-slate-600 hover:border-purple-300 hover:text-purple-600 transition-colors"
+              >
+                {phrase}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Progress & Actions */}
+      {visionCards.length > 0 && (
+        <div className="space-y-6">
+          {visionCards.some(card => !card.meaning && !card.feeling) && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
+              <p className="text-amber-700 font-medium">
+                💡 Click your vision cards to flip them and add what they mean to you
+              </p>
+              <p className="text-amber-600 text-sm mt-1">
+                Personal meaning is what transforms images into powerful motivation
+              </p>
+            </div>
+          )}
+
+          <div className="text-center bg-blue-50 rounded-xl p-6 border border-blue-200">
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">Turn Vision into Action</h3>
+            <p className="text-slate-600 leading-relaxed max-w-2xl mx-auto">
+              Your vision cards represent the life you're creating. Use Coach Pack's Goals section to break these dreams into specific weekly actions.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Notes Panel */}
+      {showNotes && (
+        <NotesPanel
+          isOpen={showNotes}
+          onClose={() => setShowNotes(false)}
+          feature="vision"
+        />
       )}
     </div>
   );
