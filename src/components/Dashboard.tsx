@@ -250,7 +250,6 @@ const Dashboard = () => {
                 </div>
                 {!hasWhyContent && (
                   <p className="text-purple-200 text-sm mt-2 opacity-75">Click to add your motivation</p>
-                </p>
                 )}
               </div>
             )}
