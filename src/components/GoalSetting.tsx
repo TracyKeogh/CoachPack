@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { ArrowRight, Target, Repeat, MapPin, Sparkles, TrendingUp, Dumbbell, Scale, CheckCircle, Calendar } from 'lucide-react';
 import { useGoalSettingData } from '../hooks/useGoalSettingData';
 import { GOAL_CATEGORIES } from '../types/goals';
+import Header from './Header';
+import Navigation from './Navigation';
 
 const GoalSetting = () => {
   const {

@@ -298,56 +298,58 @@ const WheelOfLife: React.FC = () => {
       />
       <div className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-80'} p-6`}>
         <div className="space-y-8">
-          {/* Header with signup info */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-slate-900">Wheel of Life Assessment</h1>
-              <p className="text-slate-600 mt-2">
-                Click anywhere in the rings to rate each life area from 1-10. Inner rings = lower scores, outer rings = higher scores.
-              </p>
-              {signup && (
-                <div className="mt-2 flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full" />
-                  <p className="text-sm text-green-600">
-                    Signed up as {signup.email} • Your progress is automatically saved
-                  </p>
-                </div>
-              )}
-              {lastSaved && (
-                <p className="text-sm text-green-600 mt-1">
-                  ✓ Last saved: {lastSaved.toLocaleTimeString()}
+          {/* Header */}
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className="text-3xl font-bold text-slate-900">Wheel of Life Assessment</h1>
+                <p className="text-slate-600 mt-2">
+                  Click anywhere in the rings to rate each life area from 1-10. Inner rings = lower scores, outer rings = higher scores.
                 </p>
-              )}
-            </div>
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={() => setShowNotes(!showNotes)}
-                className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
-              >
-                <StickyNote className="w-4 h-4" />
-                <span>Notes</span>
-              </button>
-              <button
-                onClick={() => setShowDataManagement(!showDataManagement)}
-                className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
-              >
-                <Download className="w-4 h-4" />
-                <span>Data</span>
-              </button>
-              <button
-                onClick={resetScores}
-                className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
-              >
-                <RotateCcw className="w-4 h-4" />
-                <span>Reset</span>
-              </button>
-              <button 
-                onClick={saveData}
-                className="flex items-center space-x-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-              >
-                <Save className="w-4 h-4" />
-                <span>Save Now</span>
-              </button>
+                {signup && (
+                  <div className="mt-2 flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full" />
+                    <p className="text-sm text-green-600">
+                      Signed up as {signup.email} • Your progress is automatically saved
+                    </p>
+                  </div>
+                )}
+                {lastSaved && (
+                  <p className="text-sm text-green-600 mt-1">
+                    ✓ Last saved: {lastSaved.toLocaleTimeString()}
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => setShowNotes(!showNotes)}
+                  className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  <StickyNote className="w-4 h-4" />
+                  <span>Notes</span>
+                </button>
+                <button 
+                  onClick={() => setShowDataManagement(!showDataManagement)}
+                  className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Data</span>
+                </button>
+                <button
+                  onClick={resetScores}
+                  className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  <span>Reset</span>
+                </button>
+                <button 
+                  onClick={saveData}
+                  className="flex items-center space-x-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Save Now</span>
+                </button>
+              </div>
             </div>
           </div>
 
