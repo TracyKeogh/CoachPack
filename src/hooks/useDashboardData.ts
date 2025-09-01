@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useWheelData } from './useWheelData';
 import { useValuesData } from './useValuesData';
-import { useVisionBoardData } from './useVisionBoardData';
+import { useVisionBoardData, VisionItem } from './useVisionBoardData';
 
 export interface DashboardData {
   // User info
@@ -179,12 +179,18 @@ export const useDashboardData = (): DashboardData => {
 
   // Transform vision board data
   const visionBoard = useMemo(() => {
-    if (!visionLoaded || !visionItems || !Array.isArray(visionItems)) return [];
+    if (!visionLoaded || !visionItems || !Array.isArray(visionItems)) {
+      // Return empty array if no vision data is loaded yet
+      return [];
+    }
     
-    return visionItems.slice(0, 4).map(item => ({
-      quadrant: item.quadrant ? (item.quadrant.charAt(0).toUpperCase() + item.quadrant.slice(1)) : 'Unknown',
+    // Filter out any invalid items and map to dashboard format
+    const validItems = visionItems.filter(item => item && item.imageUrl && item.title);
+    
+    return validItems.slice(0, 4).map(item => ({
+      quadrant: item.quadrant ? (item.quadrant.charAt(0).toUpperCase() + item.quadrant.slice(1)) : 'Vision',
       title: item.title || 'Untitled',
-      imageUrl: item.imageUrl || ''
+      imageUrl: item.imageUrl
     }));
   }, [visionLoaded, visionItems]);
 
