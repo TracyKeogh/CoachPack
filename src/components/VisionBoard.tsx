@@ -674,3 +674,4 @@ const VisionBoard: React.FC = () => {
                       <button
                         onClick={() => addVisionCard(imageUrl)}
                         className="aspect-square rounded-xl overflow-hidden hover:scale-105 hover:shadow-lg transition-all duration-200 border-2 border-transparent hover:border-blue-300 w-full"
+                      >
