@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { 
   BarChart3, 
   Heart, 
@@ -11,6 +11,10 @@ import {
   X,
   ArrowLeft
 } from 'lucide-react';
+import { useValuesData } from '../hooks/useValuesData';
+import { useWheelData } from '../hooks/useWheelData';
+import { useVisionBoardData } from '../hooks/useVisionBoardData';
+import { useGoalSettingData } from '../hooks/useGoalSettingData';
 
 export type ViewType = 'dashboard' | 'wheel-of-life' | 'values' | 'vision' | 'goals' | 'calendar' | 'templates';
 
@@ -27,71 +31,32 @@ const Navigation: React.FC<NavigationProps> = ({
   isCollapsed, 
   onToggleCollapse 
 }) => {
-  // Load user progress data
-  const [valuesData, setValuesData] = useState({ rankedCoreValues: [] });
-  const [wheelData, setWheelData] = useState([]);
-  const [reflectionData, setReflectionData] = useState({});
-  const [visionItems, setVisionItems] = useState([]);
-  const [goalsData, setGoalsData] = useState({ categoryGoals: {}, annualSnapshot: {} });
-
-  useEffect(() => {
-    try {
-      const storedValues = localStorage.getItem('coach-pack-values-clarity');
-      if (storedValues) {
-        setValuesData(JSON.parse(storedValues));
-      }
-    } catch (error) {
-      console.error('Failed to load values data:', error);
-    }
-
-    try {
-      const storedWheel = localStorage.getItem('coach-pack-wheel-of-life');
-      if (storedWheel) {
-        const wheelDataParsed = JSON.parse(storedWheel);
-        setWheelData(wheelDataParsed.lifeAreas || []);
-        setReflectionData(wheelDataParsed.reflections || {});
-      }
-    } catch (error) {
-      console.error('Failed to load wheel data:', error);
-    }
-
-    try {
-      const storedVision = localStorage.getItem('coach-pack-vision-board');
-      if (storedVision) {
-        const visionDataParsed = JSON.parse(storedVision);
-        setVisionItems(visionDataParsed.visionItems || []);
-      }
-    } catch (error) {
-      console.error('Failed to load vision data:', error);
-    }
-
-    try {
-      const storedGoals = localStorage.getItem('coach-pack-goal-setting');
-      if (storedGoals) {
-        setGoalsData(JSON.parse(storedGoals));
-      }
-    } catch (error) {
-      console.error('Failed to load goals data:', error);
-    }
-  }, []);
+  // Use proper data hooks instead of managing state directly
+  const { data: valuesData } = useValuesData();
+  const { data: wheelData } = useWheelData();
+  const { data: visionData } = useVisionBoardData();
+  const { data: goalsData } = useGoalSettingData();
 
   const getCompletionStats = () => {
-    const completedReflections = Object.values(reflectionData).filter(
+    const lifeAreas = wheelData?.lifeAreas || [];
+    const reflections = wheelData?.reflections || {};
+    
+    const completedReflections = Object.values(reflections).filter(
       (reflection: any) => 
         reflection?.goingWell?.length > 0 || 
         reflection?.needsImprovement?.length > 0 || 
         reflection?.idealVision?.trim() !== ''
     ).length;
 
-    const averageScore = wheelData.length > 0 ? 
-      wheelData.reduce((sum, item: any) => sum + (item?.score || 0), 0) / wheelData.length : 0;
+    const averageScore = lifeAreas.length > 0 ? 
+      lifeAreas.reduce((sum, item: any) => sum + (item?.score || 0), 0) / lifeAreas.length : 0;
     
     return {
       averageScore,
       completedReflections,
-      totalAreas: wheelData.length,
-      wheelCompleted: wheelData.every((area: any) => (area?.score || 0) > 0),
-      allReflectionsCompleted: completedReflections === wheelData.length
+      totalAreas: lifeAreas.length,
+      wheelCompleted: lifeAreas.every((area: any) => (area?.score || 0) > 0),
+      allReflectionsCompleted: completedReflections === lifeAreas.length
     };
   };
 
@@ -113,8 +78,9 @@ const Navigation: React.FC<NavigationProps> = ({
 
   const wheelStats = getCompletionStats();
   const goalsProgress = getGoalsProgress();
+  const visionItems = visionData?.visionItems || [];
 
-  // Journey sections with real progress data - using correct icons
+  // Journey sections with real progress data
   const sections = [
     { 
       id: 'wheel-of-life' as ViewType, 
@@ -127,7 +93,7 @@ const Navigation: React.FC<NavigationProps> = ({
       id: 'values' as ViewType, 
       icon: Heart, 
       title: 'Values', 
-      progress: valuesData.rankedCoreValues ? Math.min(100, (valuesData.rankedCoreValues.length / 6) * 100) : 0,
+      progress: valuesData?.rankedCoreValues ? Math.min(100, (valuesData.rankedCoreValues.length / 6) * 100) : 0,
       active: currentView === 'values'
     },
     { 
