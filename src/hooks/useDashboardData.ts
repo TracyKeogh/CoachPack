@@ -44,6 +44,12 @@ export interface DashboardData {
   
   // Journey start date
   journeyStartDate: Date | null;
+  
+  // 90-day milestone calendar
+  milestoneCalendar: Record<number, {
+    title: string;
+    category: 'business' | 'body' | 'balance';
+  }>;
 }
 
 export const useDashboardData = (): DashboardData => {
@@ -307,10 +313,39 @@ export const useDashboardData = (): DashboardData => {
     return sortedMilestones;
   }, [goalsLoaded, goalsData, wheelLoaded, wheelData]);
 
+  // Generate milestone calendar for 90-day view
+  const milestoneCalendar = useMemo(() => {
+    const calendar: Record<number, { title: string; category: 'business' | 'body' | 'balance' }> = {};
+    
+    if (!goalsLoaded || !goalsData || !journeyStartDate) return calendar;
+    
+    // Process each category goal
+    Object.entries(goalsData.categoryGoals || {}).forEach(([category, categoryGoal]) => {
+      if (categoryGoal && categoryGoal.milestones && Array.isArray(categoryGoal.milestones)) {
+        categoryGoal.milestones.forEach(milestone => {
+          if (!milestone.completed && milestone.dueDate) {
+            const dueDate = new Date(milestone.dueDate);
+            const timeDiff = dueDate.getTime() - journeyStartDate.getTime();
+            const dayNumber = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+            
+            // Only include milestones within the 90-day window
+            if (dayNumber >= 1 && dayNumber <= 90) {
+              calendar[dayNumber] = {
+                title: milestone.title,
+                category: category as 'business' | 'body' | 'balance'
+              };
+            }
+          }
+        });
+      }
+    });
+    
+    return calendar;
+  }, [goalsLoaded, goalsData, journeyStartDate]);
   return {
     name: 'Coach', // Simple name since no auth yet
     daysIntoJourney,
-    totalDays: 84, // 12 weeks
+    totalDays: 90, // 90 days
     coreValues,
     visionStatement,
     currentFocus,
@@ -321,6 +356,7 @@ export const useDashboardData = (): DashboardData => {
     planProgress,
     overallProgress,
     nextMilestones,
-    journeyStartDate
+    journeyStartDate,
+    milestoneCalendar
   };
 };

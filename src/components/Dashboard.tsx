@@ -388,6 +388,107 @@ const Dashboard = () => {
           </div>
         </div>
 
+        {/* 90-Day Journey Section */}
+        <div className="bg-slate-800/30 backdrop-blur-sm border border-slate-700/30 rounded-3xl p-8 mb-12">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-purple-500/20 rounded-full flex items-center justify-center">
+                <Target className="w-6 h-6 text-purple-400" />
+              </div>
+              <h3 className="text-2xl font-bold text-white">Your 90-Day Journey</h3>
+            </div>
+            <div className="text-right">
+              <div className="text-sm text-slate-400">Day {dashboardData.daysIntoJourney} of 90</div>
+              <div className="text-lg font-semibold text-purple-400">{90 - dashboardData.daysIntoJourney} days remaining</div>
+            </div>
+          </div>
+          
+          {/* 90-Day Calendar Grid */}
+          <div className="grid grid-cols-10 gap-1 mb-6">
+            {Array.from({ length: 90 }, (_, i) => {
+              const day = i + 1;
+              const isCurrentDay = day === dashboardData.daysIntoJourney;
+              const isPastDay = day < dashboardData.daysIntoJourney;
+              const isMilestoneDay = dashboardData.milestoneCalendar && dashboardData.milestoneCalendar[day];
+              
+              let bgColor = 'bg-slate-700/50'; // Default future day
+              let textColor = 'text-slate-400';
+              
+              if (isPastDay) {
+                bgColor = 'bg-slate-600/70';
+                textColor = 'text-slate-300';
+              } else if (isCurrentDay) {
+                bgColor = 'bg-purple-500';
+                textColor = 'text-white';
+              }
+              
+              if (isMilestoneDay) {
+                const milestone = dashboardData.milestoneCalendar[day];
+                if (milestone.category === 'business') {
+                  bgColor = isPastDay ? 'bg-blue-600/70' : 'bg-blue-500';
+                } else if (milestone.category === 'body') {
+                  bgColor = isPastDay ? 'bg-green-600/70' : 'bg-green-500';
+                } else if (milestone.category === 'balance') {
+                  bgColor = isPastDay ? 'bg-orange-600/70' : 'bg-orange-500';
+                }
+                textColor = 'text-white';
+              }
+              
+              return (
+                <div
+                  key={day}
+                  className={`aspect-square ${bgColor} ${textColor} rounded-lg flex items-center justify-center text-xs font-medium transition-all duration-200 hover:scale-110 relative group cursor-pointer`}
+                  title={isMilestoneDay ? `Day ${day}: ${dashboardData.milestoneCalendar[day].title}` : `Day ${day}`}
+                >
+                  {isMilestoneDay ? (
+                    <div className="w-3 h-3 text-yellow-400">
+                      <svg fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                      </svg>
+                    </div>
+                  ) : (
+                    day
+                  )}
+                  
+                  {/* Tooltip on hover */}
+                  {isMilestoneDay && (
+                    <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                      {dashboardData.milestoneCalendar[day].title}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          
+          {/* Legend */}
+          <div className="flex items-center justify-center space-x-6 text-sm">
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-slate-600/70 rounded"></div>
+              <span className="text-slate-400">Completed</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-purple-500 rounded"></div>
+              <span className="text-purple-400">Today</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-blue-500 rounded"></div>
+              <span className="text-blue-400">Business</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-green-500 rounded"></div>
+              <span className="text-green-400">Health</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-orange-500 rounded"></div>
+              <span className="text-orange-400">Balance</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-yellow-400 rounded"></div>
+              <span className="text-yellow-400">Milestone</span>
+            </div>
+          </div>
+        </div>
         {/* Progress Momentum Indicator */}
         <div className="mt-12 text-center">
           <div className="inline-flex items-center space-x-4 bg-gradient-to-r from-purple-600/20 to-green-600/20 border border-purple-500/30 rounded-2xl px-8 py-6">
@@ -395,7 +496,7 @@ const Dashboard = () => {
             <div>
               <div className="text-lg font-semibold text-white">Overall Progress: {dashboardData.overallProgress}%</div>
               <div className="text-slate-400 text-sm">
-                {dashboardData.totalDays - dashboardData.daysIntoJourney} days remaining to achieve your vision
+                {90 - dashboardData.daysIntoJourney} days remaining in your 90-day journey
               </div>
             </div>
           </div>
