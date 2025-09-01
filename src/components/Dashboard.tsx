@@ -11,6 +11,8 @@ const Dashboard = () => {
   const { data: goalsData, updateAnnualSnapshot } = useGoalSettingData();
   const [isEditingVision, setIsEditingVision] = useState(false);
   const [editVisionText, setEditVisionText] = useState('');
+  const [isEditingWhy, setIsEditingWhy] = useState(false);
+  const [editWhyText, setEditWhyText] = useState('');
 
   // Left sidebar sections with proper feature mapping and navigation
   const sections = [
@@ -89,6 +91,28 @@ const Dashboard = () => {
     setIsEditingVision(false);
     setEditVisionText('');
   };
+
+  const startEditingWhy = () => {
+    setEditWhyText(goalsData.annualSnapshot?.mantra || '');
+    setIsEditingWhy(true);
+  };
+
+  const saveWhyEdit = () => {
+    updateAnnualSnapshot({
+      ...goalsData.annualSnapshot,
+      mantra: editWhyText
+    });
+    setIsEditingWhy(false);
+  };
+
+  const cancelWhyEdit = () => {
+    setIsEditingWhy(false);
+    setEditWhyText('');
+  };
+
+  // Check if vision statement has been edited
+  const hasVisionContent = goalsData.annualSnapshot?.snapshot?.trim();
+  const hasWhyContent = goalsData.annualSnapshot?.mantra?.trim();
   const SidebarSection = ({ section }: { section: any }) => (
     <div 
       onClick={() => handleSectionClick(section)}
@@ -149,7 +173,7 @@ const Dashboard = () => {
                   <textarea
                     value={editVisionText}
                     onChange={(e) => setEditVisionText(e.target.value)}
-                    placeholder="A one line summary of the vision"
+                    placeholder="a one line summary of the vision"
                     className="w-full bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl p-6 text-white placeholder-white/60 text-4xl font-bold text-center resize-none focus:outline-none focus:ring-2 focus:ring-white/50"
                     rows={2}
                     autoFocus
@@ -175,19 +199,61 @@ const Dashboard = () => {
                 <div className="group cursor-pointer" onClick={startEditingVision}>
                   <div className="flex items-center justify-center space-x-3">
                     <span>
-                      {goalsData.annualSnapshot?.snapshot || 'A one line summary of the vision'}
+                      {goalsData.annualSnapshot?.snapshot || 'a one line summary of the vision'}
                     </span>
-                    <Edit3 className="w-6 h-6 text-white/60 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    {!hasVisionContent && (
+                      <Edit3 className="w-6 h-6 text-white/60 transition-opacity" />
+                    )}
                   </div>
-                  {!goalsData.annualSnapshot?.snapshot && (
-                    <p className="text-purple-200 text-lg mt-2 opacity-75">Click to edit your vision statement</p>
+                  {!hasVisionContent && (
+                    <p className="text-purple-200 text-lg mt-2 opacity-75">Click to add your vision statement</p>
                   )}
                 </div>
               )}
             </h1>
-            <p className="text-xl text-slate-300 max-w-3xl mx-auto">
-              {dashboardData.currentFocus}
-            </p>
+            {isEditingWhy ? (
+              <div className="max-w-3xl mx-auto">
+                <textarea
+                  value={editWhyText}
+                  onChange={(e) => setEditWhyText(e.target.value)}
+                  placeholder="my big why"
+                  className="w-full bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl p-4 text-white placeholder-white/60 text-xl text-center resize-none focus:outline-none focus:ring-2 focus:ring-white/50"
+                  rows={1}
+                  autoFocus
+                />
+                <div className="flex items-center justify-center space-x-4 mt-4">
+                  <button
+                    onClick={saveWhyEdit}
+                    className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    <Check className="w-4 h-4" />
+                    <span>Save</span>
+                  </button>
+                  <button
+                    onClick={cancelWhyEdit}
+                    className="flex items-center space-x-2 px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                    <span>Cancel</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="group cursor-pointer max-w-3xl mx-auto" onClick={startEditingWhy}>
+                <div className="flex items-center justify-center space-x-3">
+                  <p className="text-xl text-slate-300">
+                    {goalsData.annualSnapshot?.mantra || 'my big why'}
+                  </p>
+                  {!hasWhyContent && (
+                    <Edit3 className="w-5 h-5 text-white/60 transition-opacity" />
+                  )}
+                </div>
+                {!hasWhyContent && (
+                  <p className="text-purple-200 text-sm mt-2 opacity-75">Click to add your motivation</p>
+                </p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Core Values */}
