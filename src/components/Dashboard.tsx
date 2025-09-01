@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Heart, Target, Calendar, Sparkles, ChevronRight, Clock, BarChart3, Eye, CheckSquare, TrendingUp, User, Menu, Home, ExternalLink, Edit3, Check, X } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Heart, Target, Calendar, Sparkles, ChevronRight, Clock, BarChart3, Eye, CheckSquare, TrendingUp, User, Menu, Home, ExternalLink, Edit3, Check, X, CircleDot } from 'lucide-react';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { useGoalSettingData } from '../hooks/useGoalSettingData';
 
 const Dashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const dashboardData = useDashboardData();
   const { data: goalsData, updateAnnualSnapshot } = useGoalSettingData();
   const [isEditingVision, setIsEditingVision] = useState(false);
@@ -18,10 +19,8 @@ const Dashboard = () => {
   const sections = [
     { 
       id: 'baseline', 
-      icon: User, 
+      icon: CircleDot, 
       title: 'Baseline', 
-      progress: dashboardData.baselineProgress, 
-      active: false,
       features: ['Wheel of Life', 'Values Clarity'],
       routes: ['/wheel-of-life', '/values']
     },
@@ -29,8 +28,6 @@ const Dashboard = () => {
       id: 'vision', 
       icon: Eye, 
       title: 'Vision', 
-      progress: dashboardData.visionProgress, 
-      active: true,
       features: ['Vision Board'],
       routes: ['/vision-board']
     },
@@ -38,17 +35,13 @@ const Dashboard = () => {
       id: 'plan', 
       icon: CheckSquare, 
       title: 'Plan', 
-      progress: dashboardData.planProgress, 
-      active: false,
       features: ['Goal Setting'],
       routes: ['/goal-setting']
     },
     { 
       id: 'stress', 
-      icon: TrendingUp, 
+      icon: Target, 
       title: 'Stress Test', 
-      progress: 0, 
-      active: false,
       comingSoon: true,
       features: ['Goal Stress Testing'],
       routes: []
@@ -57,13 +50,24 @@ const Dashboard = () => {
       id: 'track', 
       icon: Calendar, 
       title: 'Track', 
-      progress: 30, 
-      active: false,
       external: true,
       features: ['Mobile App'],
       routes: ['/calendar']
     }
   ];
+
+  // Determine which section is currently active based on the route
+  const getActiveSection = () => {
+    const path = location.pathname;
+    if (path === '/dashboard') return 'dashboard';
+    if (path === '/wheel-of-life' || path === '/values') return 'baseline';
+    if (path === '/vision-board') return 'vision';
+    if (path === '/goal-setting' || path === '/goals') return 'plan';
+    if (path === '/calendar') return 'track';
+    return null;
+  };
+
+  const activeSection = getActiveSection();
 
   const handleSectionClick = (section: any) => {
     if (section.comingSoon) return;
@@ -153,10 +157,62 @@ const Dashboard = () => {
   const progressPercentage = (dashboardData.daysIntoJourney / dashboardData.totalDays) * 100;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      
+      {/* Left Sidebar - Fixed Position */}
+      <div className="fixed left-0 top-0 h-full w-16 bg-white border-r border-slate-200 z-50 flex flex-col">
+        
+        {/* Top Section */}
+        <div className="p-4">
+          <button 
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors"
+          >
+            <Menu className="w-5 h-5 text-slate-600" />
+          </button>
+        </div>
+
+        {/* Navigation Icons */}
+        <div className="flex-1 p-2">
+          <div className="space-y-3">
+            {/* Dashboard Icon */}
+            <div 
+              onClick={() => navigate('/dashboard')}
+              className={`w-10 h-10 rounded-lg flex items-center justify-center cursor-pointer transition-colors relative
+                ${activeSection === 'dashboard' ? 'bg-purple-100 text-purple-600' : 'hover:bg-slate-100 text-slate-600'}
+              `}
+            >
+              <Home className="w-5 h-5" />
+              {activeSection === 'dashboard' && (
+                <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-purple-500 rounded-r-full -ml-2"></div>
+              )}
+            </div>
+            
+            {/* Journey Section Icons */}
+            {sections.map(section => {
+              const isActive = activeSection === section.id;
+              return (
+                <div 
+                  key={section.id}
+                  onClick={() => handleSectionClick(section)}
+                  className={`w-10 h-10 rounded-lg flex items-center justify-center cursor-pointer transition-colors relative
+                    ${isActive ? 'bg-purple-100 text-purple-600' : 'hover:bg-slate-100 text-slate-600'}
+                    ${section.comingSoon ? 'opacity-60 cursor-not-allowed' : ''}
+                  `}
+                >
+                  <section.icon className="w-5 h-5" />
+                  {isActive && (
+                    <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-purple-500 rounded-r-full -ml-2"></div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
       
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="ml-16 overflow-y-auto">
       
       {/* Hero Section - Their Vision */}
       <div className="relative overflow-hidden">
@@ -178,20 +234,20 @@ const Dashboard = () => {
                     rows={2}
                     autoFocus
                   />
-                  <div className="flex items-center justify-center space-x-2 mt-3">
+                  <div className="flex items-center justify-center space-x-1 mt-2">
                     <button
                       onClick={saveVisionEdit}
-                      className="p-2 bg-green-500/80 text-white rounded-full hover:bg-green-500 transition-colors"
+                      className="p-1.5 bg-green-500/80 text-white rounded-full hover:bg-green-500 transition-colors"
                       title="Save changes"
                     >
-                      <Check className="w-4 h-4" />
+                      <Check className="w-3 h-3" />
                     </button>
                     <button
                       onClick={cancelVisionEdit}
-                      className="p-2 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors"
+                      className="p-1.5 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors"
                       title="Cancel editing"
                     >
-                      <X className="w-4 h-4" />
+                      <X className="w-3 h-3" />
                     </button>
                   </div>
                 </div>
@@ -221,20 +277,20 @@ const Dashboard = () => {
                   rows={1}
                   autoFocus
                 />
-                <div className="flex items-center justify-center space-x-2 mt-2">
+                <div className="flex items-center justify-center space-x-1 mt-1">
                   <button
                     onClick={saveWhyEdit}
-                    className="p-2 bg-green-500/80 text-white rounded-full hover:bg-green-500 transition-colors"
+                    className="p-1.5 bg-green-500/80 text-white rounded-full hover:bg-green-500 transition-colors"
                     title="Save changes"
                   >
-                    <Check className="w-3 h-3" />
+                    <Check className="w-2.5 h-2.5" />
                   </button>
                   <button
                     onClick={cancelWhyEdit}
-                    className="p-2 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors"
+                    className="p-1.5 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors"
                     title="Cancel editing"
                   >
-                    <X className="w-3 h-3" />
+                    <X className="w-2.5 h-2.5" />
                   </button>
                 </div>
               </div>
@@ -631,76 +687,6 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
-      </div>
-
-      {/* Right Sidebar Navigation */}
-      <div className={`${sidebarOpen ? 'w-80' : 'w-16'} bg-white border-l border-slate-200 transition-all duration-300 flex flex-col relative`}>
-        
-        {/* Top Section - Always visible */}
-        <div className="p-4">
-          {/* Hamburger Menu - Top */}
-          <button 
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors mb-6"
-          >
-            <Menu className="w-5 h-5 text-slate-600" />
-          </button>
-        </div>
-
-        {/* Navigation Icons - Always visible */}
-        <div className="flex-1 p-2">
-          <div className="space-y-3">
-            {/* Dashboard Icon */}
-            <div 
-              onClick={() => navigate('/dashboard')}
-              className="w-10 h-10 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center cursor-pointer hover:bg-purple-200 transition-colors"
-            >
-              <Home className="w-5 h-5" />
-            </div>
-            
-            {/* Journey Section Icons */}
-            {sections.map(section => (
-              <div 
-                key={section.id}
-                onClick={() => handleSectionClick(section)}
-                className={`w-10 h-10 rounded-lg flex items-center justify-center cursor-pointer transition-colors relative
-                  ${section.active ? 'bg-purple-100 text-purple-600' : 'hover:bg-slate-100 text-slate-600'}
-                  ${section.comingSoon ? 'opacity-60 cursor-not-allowed' : ''}
-                `}
-              >
-                <section.icon className="w-5 h-5" />
-                {section.active && (
-                  <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-purple-500 rounded-r-full -ml-2"></div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Expanded Menu Content - Only when sidebar is open */}
-        {sidebarOpen && (
-          <div className="absolute left-0 top-0 w-80 h-full bg-white border-l border-slate-200 shadow-xl z-10">
-            <div className="p-6">
-              <div className="mb-8">
-                <h2 className="text-xl font-bold text-slate-900 mb-2">Your Journey</h2>
-                <p className="text-slate-600 text-sm">From values to daily action</p>
-              </div>
-              
-              <div className="space-y-3">
-                {sections.map(section => (
-                  <SidebarSection key={section.id} section={section} />
-                ))}
-              </div>
-
-              {/* Overall Progress */}
-              <div className="mt-8 p-4 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl text-white">
-                <h3 className="font-semibold mb-2">Overall Progress</h3>
-                <div className="text-2xl font-bold">{dashboardData.overallProgress}%</div>
-                <p className="text-purple-100 text-sm">Keep building momentum</p>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
