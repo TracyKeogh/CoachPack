@@ -128,6 +128,13 @@ const Navigation: React.FC<NavigationProps> = ({
       active: currentView === 'wheel'
     },
     { 
+      id: 'values' as ViewType, 
+      icon: Heart, 
+      title: 'Values', 
+      progress: valuesData.rankedCoreValues ? Math.min(100, (valuesData.rankedCoreValues.length / 6) * 100) : 0,
+      active: currentView === 'values'
+    },
+    { 
       id: 'vision' as ViewType, 
       icon: Eye, 
       title: 'Vision', 
@@ -144,7 +151,7 @@ const Navigation: React.FC<NavigationProps> = ({
     { 
       id: 'calendar' as ViewType, 
       icon: CalendarIcon, 
-      title: 'Track', 
+      title: 'Calendar', 
       progress: 0, // Add tracking completion logic when implemented
       active: currentView === 'calendar'
     }
@@ -156,7 +163,6 @@ const Navigation: React.FC<NavigationProps> = ({
   // Traditional nav items (for reference/fallback)
   const traditionalNavItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home, color: 'text-slate-600' },
-    { id: 'values', label: 'Values Clarity', icon: Heart, color: 'text-red-500' },
     { id: 'templates', label: 'Templates', icon: Download, color: 'text-purple-500' },
   ];
 
@@ -173,13 +179,11 @@ const Navigation: React.FC<NavigationProps> = ({
       {!isCollapsed && (
         <>
           <div className="flex-1">
-            <div className="flex items-center space-x-2">
-              <span className={`text-sm font-medium ${
-                section.active ? 'text-purple-900' : section.progress > 0 ? 'text-slate-700' : 'text-slate-500'
-              }`}>
-                {section.title}
-              </span>
-            </div>
+            <span className={`text-sm font-medium ${
+              section.active ? 'text-purple-900' : section.progress > 0 ? 'text-slate-700' : 'text-slate-500'
+            }`}>
+              {section.title}
+            </span>
             <div className="w-full bg-slate-200 rounded-full h-1.5 mt-1">
               <div 
                 className={`h-1.5 rounded-full transition-all duration-300 ${
