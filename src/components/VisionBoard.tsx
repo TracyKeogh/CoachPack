@@ -675,3 +675,48 @@ const VisionBoard: React.FC = () => {
                         onClick={() => addVisionCard(imageUrl)}
                         className="aspect-square rounded-xl overflow-hidden hover:scale-105 hover:shadow-lg transition-all duration-200 border-2 border-transparent hover:border-blue-300 w-full"
                       >
+                        <img
+                          src={imageUrl}
+                          alt="Uploaded"
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                      <button
+                        onClick={() => removeUploadedImage(imageUrl)}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center text-sm font-bold hover:bg-red-600"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Sample Images */}
+            <div>
+              <h4 className="text-lg font-medium text-slate-900 mb-4">Sample Images</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {SAMPLE_IMAGES.map((imageUrl, index) => (
+                  <button
+                    key={index}
+                    onClick={() => addVisionCard(imageUrl)}
+                    className="aspect-square rounded-xl overflow-hidden hover:scale-105 hover:shadow-lg transition-all duration-200 border-2 border-transparent hover:border-blue-300"
+                  >
+                    <img
+                      src={imageUrl}
+                      alt="Sample"
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default VisionBoard;
