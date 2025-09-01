@@ -37,6 +37,7 @@ const Goals: React.FC = () => {
   const [newMantra, setNewMantra] = useState('');
   const [newActionText, setNewActionText] = useState('');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [showCompleted, setShowCompleted] = useState(false);
 
   if (!isLoaded) {
     return (
@@ -412,11 +413,25 @@ const Goals: React.FC = () => {
       <div className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-80'} p-6`}>
         <div className="space-y-8">
           {/* Header */}
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900">Goal Setting</h1>
-            <p className="text-slate-600 mt-2">
-              Define your goals from annual vision to weekly actions
-            </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900">Goal Setting</h1>
+              <p className="text-slate-600 mt-2">
+                Define your goals from annual vision to weekly actions
+              </p>
+            </div>
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => setShowCompleted(!showCompleted)}
+                className={`px-4 py-2 rounded-lg transition-colors ${
+                  showCompleted 
+                    ? 'bg-green-100 text-green-700 border border-green-200' 
+                    : 'bg-slate-100 text-slate-700 border border-slate-200'
+                }`}
+              >
+                {showCompleted ? 'Hide Completed' : 'Show All Goals'}
+              </button>
+            </div>
           </div>
 
           {/* Annual Goals Section */}

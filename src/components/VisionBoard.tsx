@@ -290,42 +290,44 @@ const VisionBoard: React.FC = () => {
       <div className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-80'} p-6`}>
         <div className="space-y-8">
           {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-slate-900">Vision Board</h1>
-              <p className="text-slate-600 mt-2">
-                Create visual representations of your goals across four key life areas
-              </p>
-              {lastSaved && (
-                <p className="text-sm text-green-600 mt-1">
-                  ✓ Last saved: {lastSaved.toLocaleTimeString()}
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className="text-3xl font-bold text-slate-900">Vision Board</h1>
+                <p className="text-slate-600 mt-2">
+                  Create visual representations of your goals across four key life areas
                 </p>
-              )}
-            </div>
-            <div className="flex items-center space-x-3">
-              <button 
-                onClick={() => setShowDataManagement(!showDataManagement)}
-                className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
-              >
-                <Download className="w-4 h-4" />
-                <span>Data</span>
-              </button>
+                {lastSaved && (
+                  <p className="text-sm text-green-600 mt-1">
+                    ✓ Last saved: {lastSaved.toLocaleTimeString()}
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center space-x-3">
+                <button 
+                  onClick={() => setShowDataManagement(!showDataManagement)}
+                  className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Data</span>
+                </button>
 
-              <button 
-                onClick={handleSaveNow}
-                className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-              >
-                <Save className="w-4 h-4" />
-                <span>Save Now</span>
-              </button>
+                <button 
+                  onClick={handleSaveNow}
+                  className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Save Now</span>
+                </button>
 
-              <button
-                onClick={() => setShowNotes(!showNotes)}
-                className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-              >
-                <StickyNote className="w-4 h-4" />
-                <span>Notes</span>
-              </button>
+                <button
+                  onClick={() => setShowNotes(!showNotes)}
+                  className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  <StickyNote className="w-4 h-4" />
+                  <span>Notes</span>
+                </button>
+              </div>
             </div>
           </div>
 

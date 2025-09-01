@@ -183,18 +183,17 @@ const ValuesClarity: React.FC = () => {
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
       <div className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-80'} p-6`}>
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Values Clarification</h1>
-          <p className="text-slate-600 mt-2">
-            Discover your core values through guided reflection and structured exploration
-          </p>
-        </div>
-      </div>
+        <div className="space-y-8">
+          {/* Header */}
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">Values Clarification</h1>
+            <p className="text-slate-600 mt-2">
+              Discover your core values through guided reflection and structured exploration
+            </p>
+          </div>
 
-      <div className="text-center">
-        <div className="flex justify-center space-x-4 mb-6">
+          <div className="text-center">
+            <div className="flex justify-center space-x-4 mb-6">
           {[1, 2, 3, 4, 5].map((step) => (
             <div
               key={step}
