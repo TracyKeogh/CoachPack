@@ -38,7 +38,6 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [initialized, setInitialized] = useState<boolean>(false);
 
   // Clear error
   const clearError = useCallback(() => {
@@ -312,8 +311,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.error('AuthProvider: Session check error:', err);
         // Don't set error state for session check failures
       } finally {
-        console.log('AuthProvider: Session check complete, setting initialized=true, loading=false');
-        setInitialized(true);
+        console.log('AuthProvider: Session check complete, setting loading=false');
         setLoading(false);
       }
     };
@@ -334,13 +332,10 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             name: session.user.user_metadata.full_name,
             avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.email}`
           });
+          setLoading(false);
         } else if (event === 'SIGNED_OUT') {
           console.log('AuthProvider: Processing SIGNED_OUT event');
           setUser(null);
-        }
-        
-        if (initialized) {
-          console.log('AuthProvider: Setting loading=false (initialized=true)');
           setLoading(false);
         }
       }
@@ -350,7 +345,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('AuthProvider: Cleaning up auth state listener');
       subscription.unsubscribe();
     };
-  }, [initialized]);
+  }, []);
 
   const value: AuthContextType = {
     user,
