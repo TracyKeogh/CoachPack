@@ -405,7 +405,7 @@ const VisionBoard: React.FC = () => {
     uploadedImagesCount: uploadedImages.length
   };
 
-  if (isLoading) {
+  if (!isLoaded) {
     return (
       <div className="space-y-8">
         <div className="flex items-center justify-center min-h-96">
@@ -502,11 +502,11 @@ const VisionBoard: React.FC = () => {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 p-4 bg-slate-50 rounded-lg">
             <div className="text-center">
               <div className="text-slate-500 text-sm">Vision Cards</div>
-              <div className="font-semibold text-slate-900">{stats.totalCards}</div>
+              <div className="font-semibold text-slate-900">{stats.totalItems}</div>
             </div>
             <div className="text-center">
               <div className="text-slate-500 text-sm">With Meaning</div>
-              <div className="font-semibold text-slate-900">{stats.cardsWithMeaning}</div>
+              <div className="font-semibold text-slate-900">{stats.itemsWithCustomContent}</div>
             </div>
             <div className="text-center">
               <div className="text-slate-500 text-sm">Text Elements</div>
@@ -514,11 +514,11 @@ const VisionBoard: React.FC = () => {
             </div>
             <div className="text-center">
               <div className="text-slate-500 text-sm">Uploaded Images</div>
-              <div className="font-semibold text-slate-900">{stats.uploadedImagesCount}</div>
+              <div className="font-semibold text-slate-900">{uploadedImages.length}</div>
             </div>
             <div className="text-center">
               <div className="text-slate-500 text-sm">Storage Used</div>
-              <div className="font-semibold text-slate-900">{formatStorageSize(getStorageSize())}</div>
+              <div className="font-semibold text-slate-900">Auto-managed</div>
             </div>
           </div>
         </div>
@@ -539,11 +539,13 @@ const VisionBoard: React.FC = () => {
           <input
             type="text"
             placeholder="Add inspiring text..."
-            value={newText}
-            onChange={(e) => setNewText(e.target.value)}
+            value=""
+            onChange={() => {}}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && newText.trim()) {
-                addText(newText.trim());
+              const target = e.target as HTMLInputElement;
+              if (e.key === 'Enter' && target.value.trim()) {
+                addTextElement(target.value.trim());
+                target.value = '';
               }
             }}
             className="bg-transparent outline-none placeholder-slate-400 font-medium text-slate-700 w-48"
@@ -563,24 +565,24 @@ const VisionBoard: React.FC = () => {
         onDrop={handleDrop}
       >
         {/* Vision Cards */}
-        {visionCards.map((card) => {
-          const sizeStyles = getSizeStyles(card.size);
+        {visionItems.map((item) => {
+          const sizeStyles = getSizeStyles(item.size || 'medium');
           return (
             <div
-              key={card.id}
+              key={item.id}
               className="absolute cursor-move group"
               style={{ 
-                left: card.position.x, 
-                top: card.position.y,
-                perspective: '1000px'
+                left: item.position?.x || 0, 
+                top: item.position?.y || 0,
+                color: textEl.color || '#1e293b'
               }}
-              onMouseDown={(e) => handleMouseDown(e, card.id, 'card')}
+              onMouseDown={(e) => handleMouseDown(e, item.id, 'item')}
             >
               <div 
                 className="relative transition-transform duration-700"
                 style={{
                   transformStyle: 'preserve-3d',
-                  transform: card.isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+                  transform: item.isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
                   ...sizeStyles
                 }}
               >
@@ -590,11 +592,11 @@ const VisionBoard: React.FC = () => {
                   style={{ backfaceVisibility: 'hidden' }}
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (!draggedItem) flipCard(card.id);
+                    if (!draggedItem) updateVisionItem(item.id, { isFlipped: !item.isFlipped });
                   }}
                 >
                   <img
-                    src={card.imageUrl}
+                    src={item.imageUrl}
                     alt="Vision"
                     className="w-full h-full object-cover rounded-lg"
                   />
@@ -625,7 +627,7 @@ const VisionBoard: React.FC = () => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        flipCard(card.id);
+                        updateVisionItem(item.id, { isFlipped: !item.isFlipped });
                       }}
                       className="mt-4 px-3 py-1 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors text-xs flex items-center space-x-1"
                     >
@@ -640,10 +642,10 @@ const VisionBoard: React.FC = () => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      updateCard(card.id, { size: 'small' });
+                      updateVisionItem(item.id, { size: 'small' });
                     }}
                     className={`px-2 py-1 text-xs rounded-l-full transition-colors ${
-                      card.size === 'small' ? 'bg-blue-500 text-white' : 'text-slate-600 hover:bg-slate-100'
+                      (item.size || 'medium') === 'small' ? 'bg-blue-500 text-white' : 'text-slate-600 hover:bg-slate-100'
                     }`}
                   >
                     S
@@ -651,10 +653,10 @@ const VisionBoard: React.FC = () => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      updateCard(card.id, { size: 'medium' });
+                      updateVisionItem(item.id, { size: 'medium' });
                     }}
                     className={`px-2 py-1 text-xs transition-colors ${
-                      card.size === 'medium' ? 'bg-blue-500 text-white' : 'text-slate-600 hover:bg-slate-100'
+                      (item.size || 'medium') === 'medium' ? 'bg-blue-500 text-white' : 'text-slate-600 hover:bg-slate-100'
                     }`}
                   >
                     M
@@ -662,10 +664,10 @@ const VisionBoard: React.FC = () => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      updateCard(card.id, { size: 'large' });
+                      updateVisionItem(item.id, { size: 'large' });
                     }}
                     className={`px-2 py-1 text-xs rounded-r-full transition-colors ${
-                      card.size === 'large' ? 'bg-blue-500 text-white' : 'text-slate-600 hover:bg-slate-100'
+                      (item.size || 'medium') === 'large' ? 'bg-blue-500 text-white' : 'text-slate-600 hover:bg-slate-100'
                     }`}
                   >
                     L
@@ -676,7 +678,7 @@ const VisionBoard: React.FC = () => {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    removeItem(card.id, 'card');
+                    removeItem(item.id, 'item');
                   }}
                   className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center text-sm font-bold hover:bg-red-600 z-10"
                 >
@@ -878,11 +880,9 @@ const VisionBoard: React.FC = () => {
 
       {/* Notes Panel */}
       {showNotes && (
-        <NotesPanel
-          isOpen={showNotes}
-          onClose={() => setShowNotes(false)}
-          feature="vision"
-        />
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+          <NotesPanel feature="vision" />
+        </div>
       )}
     </div>
   );
