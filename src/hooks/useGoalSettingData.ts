@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { GoalSettingData, defaultGoalSettingData, AnnualSnapshot, CategoryGoal, getTwelveWeeksFromNow, ActionItem, Milestone } from '../types/goals';
+import { supabase } from '../lib/supabase';
+import { useAuth } from './useAuth';
 
-// Export the storage key so other components can access it directly
+// Export the storage key for reference
 export const STORAGE_KEY = 'coach-pack-goal-setting';
 
 // Deep merge function to ensure all nested properties exist
@@ -21,6 +23,8 @@ const deepMerge = (target: any, source: any): any => {
 
 // Migration function to convert old action format to new format
 const migrateActions = (actions: any[]): ActionItem[] => {
+  if (!Array.isArray(actions)) return [];
+  
   return actions.map(action => {
     if (typeof action === 'string') {
       // Old format: just a string
@@ -64,81 +68,142 @@ export const useGoalSettingData = () => {
   const [data, setData] = useState<GoalSettingData>(defaultGoalSettingData);
   const [isLoaded, setIsLoaded] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const { user } = useAuth();
 
-  // Load data on mount
+  // Load data from Supabase on mount or when user changes
   useEffect(() => {
-    try {
-      console.log("Loading goal setting data from localStorage");
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        console.log("Found stored goal setting data:", stored);
-        const parsedData = JSON.parse(stored);
-        
-        // Migrate old formats to new formats
-        if (parsedData.categoryGoals) {
-          Object.keys(parsedData.categoryGoals).forEach(category => {
-            const goal = parsedData.categoryGoals[category];
-            
-            // Migrate actions
-            if (goal.actions) {
-              goal.actions = migrateActions(goal.actions);
-            }
-            
-            // Migrate milestones (add if missing)
-            if (!goal.milestones) {
-              goal.milestones = [];
-            } else {
-              goal.milestones = migrateMilestones(goal.milestones);
-            }
-            
-            // Ensure deadline exists
-            if (!goal.deadline) {
-              goal.deadline = getTwelveWeeksFromNow();
-            }
-          });
-        }
-        
-        // Deep merge with default data to ensure all properties exist
-        const mergedData: GoalSettingData = deepMerge(defaultGoalSettingData, parsedData);
-        setData(mergedData);
-        console.log("Merged goal setting data:", mergedData);
-        setLastSaved(new Date(mergedData.lastUpdated));
-      } else {
-        console.log("No stored goal setting data found");
+    const loadGoalsData = async () => {
+      if (!user) {
+        console.log("No user authenticated, using default goal setting data");
+        setData(defaultGoalSettingData);
+        setIsLoaded(true);
+        return;
       }
-    } catch (error) {
-      console.error('Failed to load goal setting data:', error);
-      setData(defaultGoalSettingData);
-    }
-    setIsLoaded(true);
-  }, []);
 
-  // Auto-save function
-  const saveData = useCallback(() => {
-    if (!isLoaded) return;
-    console.log("Saving goal setting data");
+      try {
+        console.log("Loading goal setting data from Supabase for user:", user.id);
+        
+        const { data: goalsData, error } = await supabase
+          .from('user_goals_data')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error loading goals data:', error);
+          setData(defaultGoalSettingData);
+          setIsLoaded(true);
+          return;
+        }
+
+        if (goalsData) {
+          console.log("Found stored goal setting data:", goalsData);
+          
+          // Parse and migrate the data
+          let parsedData = defaultGoalSettingData;
+          
+          try {
+            // Map Supabase columns to our data structure
+            parsedData = {
+              currentStep: goalsData.current_step || 'annual',
+              currentCategoryIndex: goalsData.current_category_index || 0,
+              categories: goalsData.categories || ['business', 'body', 'balance'],
+              annualSnapshot: goalsData.annual_snapshot || { snapshot: '', mantra: '' },
+              categoryGoals: goalsData.category_goals || {},
+              lastUpdated: goalsData.last_updated || new Date().toISOString()
+            };
+            
+            // Migrate old formats to new formats
+            if (parsedData.categoryGoals) {
+              Object.keys(parsedData.categoryGoals).forEach(category => {
+                const goal = parsedData.categoryGoals[category];
+                
+                // Migrate actions
+                if (goal.actions) {
+                  goal.actions = migrateActions(goal.actions);
+                }
+                
+                // Migrate milestones (add if missing)
+                if (!goal.milestones) {
+                  goal.milestones = [];
+                } else {
+                  goal.milestones = migrateMilestones(goal.milestones);
+                }
+                
+                // Ensure deadline exists
+                if (!goal.deadline) {
+                  goal.deadline = getTwelveWeeksFromNow();
+                }
+              });
+            }
+            
+            // Deep merge with default data to ensure all properties exist
+            const mergedData: GoalSettingData = deepMerge(defaultGoalSettingData, parsedData);
+            setData(mergedData);
+            console.log("Merged goal setting data:", mergedData);
+            setLastSaved(new Date(mergedData.lastUpdated));
+          } catch (parseError) {
+            console.error('Error parsing goals data:', parseError);
+            setData(defaultGoalSettingData);
+          }
+        } else {
+          console.log("No stored goal setting data found, using defaults");
+          setData(defaultGoalSettingData);
+        }
+      } catch (error) {
+        console.error('Failed to load goal setting data:', error);
+        setData(defaultGoalSettingData);
+      }
+      
+      setIsLoaded(true);
+    };
+
+    loadGoalsData();
+  }, [user]);
+
+  // Save data to Supabase
+  const saveData = useCallback(async () => {
+    if (!isLoaded || !user) {
+      console.log("Cannot save: not loaded or no user");
+      return;
+    }
 
     try {
-      const dataToSave: GoalSettingData = {
-        ...data,
-        lastUpdated: new Date().toISOString()
+      console.log("Saving goal setting data to Supabase");
+      
+      const dataToSave = {
+        user_id: user.id,
+        current_step: data.currentStep,
+        current_category_index: data.currentCategoryIndex,
+        categories: data.categories,
+        annual_snapshot: data.annualSnapshot,
+        category_goals: data.categoryGoals,
+        last_updated: new Date().toISOString()
       };
       
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
-      console.log("Saved goal setting data to localStorage");
+      const { error } = await supabase
+        .from('user_goals_data')
+        .upsert(dataToSave, { onConflict: 'user_id' });
+      
+      if (error) {
+        console.error('Failed to save goal setting data:', error);
+        throw error;
+      }
+      
+      console.log("Successfully saved goal setting data to Supabase");
       setLastSaved(new Date());
     } catch (error) {
       console.error('Failed to save goal setting data:', error);
     }
-  }, [data, isLoaded]);
+  }, [data, isLoaded, user]);
 
   // Auto-save whenever data changes
   useEffect(() => {
-    if (isLoaded) {
+    if (isLoaded && user) {
       const timeoutId = setTimeout(saveData, 1000);
       return () => clearTimeout(timeoutId);
     }
-  }, [data, saveData, isLoaded]);
+  }, [data, saveData, isLoaded, user]);
 
   // Initialize from Wheel of Life data
   const initializeFromWheelData = useCallback((wheelData: any[]) => {
