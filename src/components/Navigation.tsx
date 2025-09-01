@@ -2,7 +2,7 @@ import React from 'react';
 import { MdDashboard, MdCalendarToday } from 'react-icons/md';
 import { FaHeart } from 'react-icons/fa';
 import { IoEye } from 'react-icons/io5';
-import { RiTargetLine } from 'react-icons/ri';
+import { FaTarget } from 'react-icons/fa';
 import { HiMenu, HiX, HiHome, HiDownload, HiArrowLeft } from 'react-icons/hi';
 import { useValuesData } from '../hooks/useValuesData';
 import { useWheelData } from '../hooks/useWheelData';
@@ -97,9 +97,9 @@ const Navigation: React.FC<NavigationProps> = ({
       active: currentView === 'vision'
     },
     { 
-      id: 'goals' as ViewType, 
-      icon: RiTargetLine, 
-      title: 'Plan', 
+      id: 'goals' as ViewType,
+      icon: FaTarget,
+      title: 'Plan',
       progress: goalsProgress.percentage,
       active: currentView === 'goals'
     },
