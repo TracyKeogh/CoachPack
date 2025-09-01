@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, Target, Calendar, Sparkles, ChevronRight, Clock, BarChart3, Eye, CheckSquare, TrendingUp, User, Menu, Home, ExternalLink } from 'lucide-react';
+import { Heart, Target, Calendar, Sparkles, ChevronRight, Clock, BarChart3, Eye, CheckSquare, TrendingUp, User, Menu, Home, ExternalLink, Edit3, Check, X } from 'lucide-react';
 import { useDashboardData } from '../hooks/useDashboardData';
+import { useGoalSettingData } from '../hooks/useGoalSettingData';
 
 const Dashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
   const dashboardData = useDashboardData();
+  const { data: goalsData, updateAnnualSnapshot } = useGoalSettingData();
+  const [isEditingVision, setIsEditingVision] = useState(false);
+  const [editVisionText, setEditVisionText] = useState('');
 
   // Left sidebar sections with proper feature mapping and navigation
   const sections = [
@@ -68,6 +72,23 @@ const Dashboard = () => {
     }
   };
 
+  const startEditingVision = () => {
+    setEditVisionText(goalsData.annualSnapshot?.snapshot || '');
+    setIsEditingVision(true);
+  };
+
+  const saveVisionEdit = () => {
+    updateAnnualSnapshot({
+      ...goalsData.annualSnapshot,
+      snapshot: editVisionText
+    });
+    setIsEditingVision(false);
+  };
+
+  const cancelVisionEdit = () => {
+    setIsEditingVision(false);
+    setEditVisionText('');
+  };
   const SidebarSection = ({ section }: { section: any }) => (
     <div 
       onClick={() => handleSectionClick(section)}
@@ -123,7 +144,46 @@ const Dashboard = () => {
               <span className="text-purple-300 font-medium">Day {dashboardData.daysIntoJourney} of Your Journey</span>
             </div>
             <h1 className="text-5xl font-bold text-white mb-6 leading-tight">
-              {dashboardData.visionStatement}
+              {isEditingVision ? (
+                <div className="max-w-4xl mx-auto">
+                  <textarea
+                    value={editVisionText}
+                    onChange={(e) => setEditVisionText(e.target.value)}
+                    placeholder="A one line summary of the vision"
+                    className="w-full bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl p-6 text-white placeholder-white/60 text-4xl font-bold text-center resize-none focus:outline-none focus:ring-2 focus:ring-white/50"
+                    rows={2}
+                    autoFocus
+                  />
+                  <div className="flex items-center justify-center space-x-4 mt-4">
+                    <button
+                      onClick={saveVisionEdit}
+                      className="flex items-center space-x-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                      <Check className="w-5 h-5" />
+                      <span>Save</span>
+                    </button>
+                    <button
+                      onClick={cancelVisionEdit}
+                      className="flex items-center space-x-2 px-6 py-3 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                      <span>Cancel</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="group cursor-pointer" onClick={startEditingVision}>
+                  <div className="flex items-center justify-center space-x-3">
+                    <span>
+                      {goalsData.annualSnapshot?.snapshot || 'A one line summary of the vision'}
+                    </span>
+                    <Edit3 className="w-6 h-6 text-white/60 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                  {!goalsData.annualSnapshot?.snapshot && (
+                    <p className="text-purple-200 text-lg mt-2 opacity-75">Click to edit your vision statement</p>
+                  )}
+                </div>
+              )}
             </h1>
             <p className="text-xl text-slate-300 max-w-3xl mx-auto">
               {dashboardData.currentFocus}
