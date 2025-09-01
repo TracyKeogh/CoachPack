@@ -19,6 +19,7 @@ import {
 import { useCalendarData, Event, ActionPoolItem } from '../hooks/useCalendarData';
 import { useGoalSettingData } from '../hooks/useGoalSettingData';
 import NotesPanel from './NotesPanel';
+import Header from './Header';
 
 const Calendar: React.FC = () => {
   // Your existing hooks
@@ -281,6 +282,9 @@ const Calendar: React.FC = () => {
   const daysOfWeek = getDaysOfWeek(firstDayOfWeek);
 
   return (
+    <>
+      <Header />
+      <div className="ml-16">
     <div className="max-w-7xl mx-auto p-6">
       {/* YOUR EXISTING CALENDAR HEADER AND NAVIGATION */}
       
