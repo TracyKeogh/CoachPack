@@ -49,13 +49,13 @@ const Goals: React.FC = () => {
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         />
         <div className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-80'}`}>
-      <div className="flex items-center justify-center min-h-96">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-slate-900 mb-2">Loading Your Goals...</h2>
-          <p className="text-slate-600">Retrieving your saved progress...</p>
-        </div>
-      </div>
+          <div className="flex items-center justify-center min-h-96">
+            <div className="text-center">
+              <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+              <h2 className="text-xl font-semibold text-slate-900 mb-2">Loading Your Goals...</h2>
+              <p className="text-slate-600">Retrieving your saved progress...</p>
+            </div>
+          </div>
         </div>
       </>
     );
@@ -410,87 +410,87 @@ const Goals: React.FC = () => {
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
       <div className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-80'} p-6`}>
-    <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">Goal Setting</h1>
-        <p className="text-slate-600 mt-2">
-          Define your goals from annual vision to weekly actions
-        </p>
-      </div>
+        <div className="space-y-8">
+          {/* Header */}
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">Goal Setting</h1>
+            <p className="text-slate-600 mt-2">
+              Define your goals from annual vision to weekly actions
+            </p>
+          </div>
 
-      {/* Annual Goals Section */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-              <Target className="w-6 h-6" />
+          {/* Annual Goals Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                  <Target className="w-6 h-6" />
+                </div>
+                <h2 className="text-2xl font-bold text-slate-900">Annual Vision</h2>
+              </div>
+              <button
+                onClick={() => toggleSection('annual')}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+              >
+                {expandedSections.annual ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+              </button>
             </div>
-            <h2 className="text-2xl font-bold text-slate-900">Annual Vision</h2>
+            
+            {expandedSections.annual && (
+              <div className="grid grid-cols-1 gap-6">
+                {renderGoalsByCategory('annual')}
+              </div>
+            )}
           </div>
-          <button
-            onClick={() => toggleSection('annual')}
-            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
-          >
-            {expandedSections.annual ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-          </button>
-        </div>
-        
-        {expandedSections.annual && (
-          <div className="grid grid-cols-1 gap-6">
-            {renderGoalsByCategory('annual')}
-          </div>
-        )}
-      </div>
 
-      {/* 90-Day Focus Section */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-              <Flag className="w-6 h-6" />
+          {/* 90-Day Focus Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                  <Flag className="w-6 h-6" />
+                </div>
+                <h2 className="text-2xl font-bold text-slate-900">90-Day Focus</h2>
+              </div>
+              <button
+                onClick={() => toggleSection('quarter')}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+              >
+                {expandedSections.quarter ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+              </button>
             </div>
-            <h2 className="text-2xl font-bold text-slate-900">90-Day Focus</h2>
+            
+            {expandedSections.quarter && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {renderGoalsByCategory('quarter')}
+              </div>
+            )}
           </div>
-          <button
-            onClick={() => toggleSection('quarter')}
-            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
-          >
-            {expandedSections.quarter ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-          </button>
-        </div>
-        
-        {expandedSections.quarter && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {renderGoalsByCategory('quarter')}
-          </div>
-        )}
-      </div>
 
-      {/* Weekly Actions Section */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-              <CalendarIcon className="w-6 h-6" />
+          {/* Weekly Actions Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                  <CalendarIcon className="w-6 h-6" />
+                </div>
+                <h2 className="text-2xl font-bold text-slate-900">Weekly Actions</h2>
+              </div>
+              <button
+                onClick={() => toggleSection('weekly')}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+              >
+                {expandedSections.weekly ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+              </button>
             </div>
-            <h2 className="text-2xl font-bold text-slate-900">Weekly Actions</h2>
+            
+            {expandedSections.weekly && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {renderGoalsByCategory('weekly')}
+              </div>
+            )}
           </div>
-          <button
-            onClick={() => toggleSection('weekly')}
-            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
-          >
-            {expandedSections.weekly ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-          </button>
         </div>
-        
-        {expandedSections.weekly && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {renderGoalsByCategory('weekly')}
-          </div>
-        )}
-      </div>
-    </div>
       </div>
     </>
   );
