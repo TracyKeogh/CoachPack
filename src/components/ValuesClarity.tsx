@@ -35,7 +35,7 @@ const ValuesClarity: React.FC = () => {
   const [showDataManagement, setShowDataManagement] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
 
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [shuffledValues] = useState(() => 
     allValues.map(v => v.name).sort(() => Math.random() - 0.5)
   );

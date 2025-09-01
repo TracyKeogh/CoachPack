@@ -36,7 +36,7 @@ const Goals: React.FC = () => {
   const [newGoalText, setNewGoalText] = useState('');
   const [newMantra, setNewMantra] = useState('');
   const [newActionText, setNewActionText] = useState('');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
   if (!isLoaded) {
     return (

@@ -18,11 +18,18 @@ const Dashboard = () => {
   // Left sidebar sections with proper feature mapping and navigation
   const sections = [
     { 
-      id: 'wheel', 
+      id: 'wheel-of-life', 
       icon: PieChart, 
-      title: 'Wheel of Life', 
+      title: 'Baseline', 
       description: 'Life assessment across 8 areas',
       routes: ['/wheel-of-life', '/values']
+    },
+    { 
+      id: 'values', 
+      icon: Heart, 
+      title: 'Values', 
+      description: 'Discover what matters most',
+      routes: ['/values']
     },
     { 
       id: 'vision', 
@@ -39,13 +46,6 @@ const Dashboard = () => {
       routes: ['/goal-setting']
     },
     { 
-      id: 'values', 
-      icon: Heart, 
-      title: 'Values', 
-      description: 'Discover what matters most',
-      routes: ['/values']
-    },
-    { 
       id: 'calendar', 
       icon: Calendar, 
       title: 'Calendar', 
@@ -58,7 +58,7 @@ const Dashboard = () => {
   const getActiveSection = () => {
     const path = location.pathname;
     if (path === '/dashboard') return 'dashboard';
-    if (path === '/wheel-of-life') return 'wheel';
+    if (path === '/wheel-of-life') return 'wheel-of-life';
     if (path === '/vision-board') return 'vision';
     if (path === '/goal-setting' || path === '/goals') return 'goals';
     if (path === '/values') return 'values';

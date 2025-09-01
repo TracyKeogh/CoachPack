@@ -31,7 +31,7 @@ const WheelOfLife: React.FC = () => {
   const [showDataManagement, setShowDataManagement] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const svgRef = useRef<SVGSVGElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 

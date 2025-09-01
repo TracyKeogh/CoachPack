@@ -83,7 +83,7 @@ const VisionBoard: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [showDataManagement, setShowDataManagement] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   
   const canvasRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);

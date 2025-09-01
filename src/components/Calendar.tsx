@@ -55,7 +55,7 @@ const Calendar: React.FC = () => {
   const [draggedEvent, setDraggedEvent] = useState<Event | null>(null);
   const [hoveredColumn, setHoveredColumn] = useState<string | null>(null);
   const [hoveredTimeSlot, setHoveredTimeSlot] = useState<string | null>(null);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
   // Your existing helper functions (getFirstDayOfWeek, getDaysOfWeek, etc.)
   const getFirstDayOfWeek = useCallback((date: Date): Date => {
