@@ -121,11 +121,11 @@ const Navigation: React.FC<NavigationProps> = ({
   // Journey sections with real progress data
   const sections = [
     { 
-      id: 'wheel' as ViewType, 
+      id: 'wheel-of-life' as ViewType, 
       icon: User, 
       title: 'Baseline', 
       progress: wheelStats.wheelCompleted ? (wheelStats.allReflectionsCompleted ? 100 : 75) : (wheelStats.averageScore > 0 ? 50 : 0),
-      active: currentView === 'wheel'
+      active: currentView === 'wheel-of-life'
     },
     { 
       id: 'values' as ViewType, 
