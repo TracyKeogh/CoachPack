@@ -5,7 +5,6 @@ export interface VisionItem {
   title: string;
   description: string;
   imageUrl: string;
-  quadrant: 'business' | 'body' | 'balance' | 'feelings';
   position?: { x: number; y: number };
   meaning?: string;
   feeling?: string;
@@ -37,7 +36,6 @@ const defaultVisionItems: VisionItem[] = [
     title: 'Dream Office Space',
     description: 'A inspiring workspace that fuels creativity',
     imageUrl: 'https://images.pexels.com/photos/3184292/pexels-photo-3184292.jpeg?auto=compress&cs=tinysrgb&w=400',
-    quadrant: 'business',
     position: { x: 50, y: 80 },
     meaning: '',
     feeling: '',
@@ -49,7 +47,6 @@ const defaultVisionItems: VisionItem[] = [
     title: 'Mountain Adventure',
     description: 'Conquering peaks and pushing physical limits',
     imageUrl: 'https://images.pexels.com/photos/618833/pexels-photo-618833.jpeg?auto=compress&cs=tinysrgb&w=400',
-    quadrant: 'body',
     position: { x: 150, y: 80 },
     meaning: '',
     feeling: '',
@@ -61,7 +58,6 @@ const defaultVisionItems: VisionItem[] = [
     title: 'Family Time',
     description: 'Quality moments with loved ones',
     imageUrl: 'https://images.pexels.com/photos/1128318/pexels-photo-1128318.jpeg?auto=compress&cs=tinysrgb&w=400',
-    quadrant: 'balance',
     position: { x: 250, y: 80 },
     meaning: '',
     feeling: '',
@@ -73,7 +69,6 @@ const defaultVisionItems: VisionItem[] = [
     title: 'Inner Peace',
     description: 'Finding calm and contentment within',
     imageUrl: 'https://images.pexels.com/photos/1051838/pexels-photo-1051838.jpeg?auto=compress&cs=tinysrgb&w=400',
-    quadrant: 'feelings',
     position: { x: 350, y: 80 },
     meaning: '',
     feeling: '',
@@ -148,13 +143,12 @@ export const useVisionBoardData = () => {
   }, [visionItems, textElements, uploadedImages, isCollageEditMode, saveData, isLoaded]);
 
   // Vision Items operations
-  const addVisionItem = useCallback((imageUrl: string, quadrant?: string) => {
+  const addVisionItem = useCallback((imageUrl: string) => {
     const newItem: VisionItem = {
       id: Date.now().toString(),
       title: 'New Vision Item',
       description: 'Click to edit description',
       imageUrl,
-      quadrant: (quadrant as any) || 'business',
       position: { x: Math.random() * 300, y: Math.random() * 200 + 100 },
       meaning: '',
       feeling: '',
@@ -175,40 +169,6 @@ export const useVisionBoardData = () => {
   const removeVisionItem = useCallback((itemId: string) => {
     setVisionItems(prev => prev.filter(item => item.id !== itemId));
   }, []);
-
-  const moveVisionItem = useCallback((dragIndex: number, hoverIndex: number, sourceQuadrant: string, targetQuadrant: string) => {
-    const getQuadrantItems = (quadrantId: string) => {
-      return visionItems.filter(item => item.quadrant === quadrantId);
-    };
-
-    if (sourceQuadrant === targetQuadrant) {
-      // Reordering within the same quadrant
-      const quadrantItems = getQuadrantItems(sourceQuadrant);
-      const draggedItem = quadrantItems[dragIndex];
-      const newItems = [...visionItems];
-      
-      // Remove the dragged item
-      const draggedItemIndex = newItems.findIndex(item => item.id === draggedItem.id);
-      newItems.splice(draggedItemIndex, 1);
-      
-      // Find the new position
-      const targetItems = newItems.filter(item => item.quadrant === targetQuadrant);
-      const targetItem = targetItems[hoverIndex];
-      const targetItemIndex = targetItem ? newItems.findIndex(item => item.id === targetItem.id) : newItems.length;
-      
-      // Insert at new position
-      newItems.splice(targetItemIndex, 0, draggedItem);
-      setVisionItems(newItems);
-    } else {
-      // Moving between quadrants
-      const sourceItems = getQuadrantItems(sourceQuadrant);
-      const draggedItem = { ...sourceItems[dragIndex], quadrant: targetQuadrant as any };
-      
-      setVisionItems(prev => prev.map(item => 
-        item.id === draggedItem.id ? draggedItem : item
-      ));
-    }
-  }, [visionItems]);
 
   const updateItemPosition = useCallback((itemId: string, position: { x: number; y: number }) => {
     setVisionItems(prev => prev.map(item => 
@@ -255,11 +215,6 @@ export const useVisionBoardData = () => {
   const removeTextElement = useCallback((textId: string) => {
     setTextElements(prev => prev.filter(text => text.id !== textId));
   }, []);
-
-  // Utility functions
-  const getQuadrantItems = useCallback((quadrantId: string) => {
-    return visionItems.filter(item => item.quadrant === quadrantId);
-  }, [visionItems]);
 
   const getCompletionStats = useCallback(() => {
     const totalItems = visionItems.length;
@@ -332,9 +287,7 @@ export const useVisionBoardData = () => {
     addVisionItem,
     updateVisionItem,
     removeVisionItem,
-    moveVisionItem,
     updateItemPosition,
-    getQuadrantItems,
     
     // Uploaded images operations
     addUploadedImage,

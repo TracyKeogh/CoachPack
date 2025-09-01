@@ -16,7 +16,6 @@ export interface DashboardData {
   
   // Vision board
   visionBoard: Array<{
-    quadrant: string;
     title: string;
     imageUrl: string;
   }>;
@@ -188,7 +187,6 @@ export const useDashboardData = (): DashboardData => {
     const validItems = visionItems.filter(item => item && item.imageUrl && item.title);
     
     return validItems.slice(0, 4).map(item => ({
-      quadrant: item.quadrant ? (item.quadrant.charAt(0).toUpperCase() + item.quadrant.slice(1)) : 'Vision',
       title: item.title || 'Untitled',
       imageUrl: item.imageUrl
     }));
