@@ -379,7 +379,7 @@ const Dashboard = () => {
               <div className="w-full h-3 bg-slate-700/50 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-gradient-to-r from-purple-500 via-blue-500 to-green-500 rounded-full transition-all duration-2000 ease-out"
-                  style={{ width: \`${progressPercentage}%` }}
+                  style={{ width: `${progressPercentage}%` }}
                 ></div>
               </div>
               <div className="flex justify-between mt-3 text-sm">
