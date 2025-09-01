@@ -486,7 +486,7 @@ const Dashboard = () => {
                     return (
                       <path
                         key={index}
-                        d={\`M 100 100 L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
+                        d={`M 100 100 L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
                         fill="rgba(34, 197, 94, 0.6)"
                         stroke="rgba(34, 197, 94, 0.8)"
                         strokeWidth="1"
@@ -570,7 +570,7 @@ const Dashboard = () => {
             <div className="w-full bg-slate-700/50 rounded-full h-3 overflow-hidden">
               <div 
                 className="h-full bg-gradient-to-r from-slate-400 via-purple-500 to-green-500 rounded-full transition-all duration-1000"
-                style={{ width: \`${progressPercentage}%` }}
+                style={{ width: `${progressPercentage}%` }}
               ></div>
             </div>
             <div className="flex justify-between mt-2 text-sm">
