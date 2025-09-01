@@ -293,7 +293,20 @@ const Calendar: React.FC = () => {
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
       <div className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-80'} p-6`}>
-    <div className="max-w-7xl mx-auto p-6">
+        <div className="space-y-8">
+          {/* Header */}
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className="text-3xl font-bold text-slate-900">Action Calendar</h1>
+                <p className="text-slate-600 mt-2">
+                  Schedule time for what matters most and track your progress
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="max-w-7xl mx-auto">
       {/* YOUR EXISTING CALENDAR HEADER AND NAVIGATION */}
       
       {/* Action Pool with Enhanced Drag & Drop */}
@@ -561,7 +574,7 @@ const Calendar: React.FC = () => {
           ))}
         </div>
       </div>
-          </div>
+    </div>
         </div>
       </div>
     </>
