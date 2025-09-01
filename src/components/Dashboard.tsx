@@ -177,7 +177,7 @@ const Dashboard = () => {
             {/* Dashboard Icon */}
             <div 
               onClick={() => navigate('/dashboard')}
-              className={`w-12 h-12 rounded-lg flex items-center justify-center cursor-pointer transition-colors relative
+              className={`w-12 h-12 rounded-lg flex items-center cursor-pointer transition-colors relative
                 ${activeSection === 'dashboard' ? 'bg-purple-100 text-purple-600' : 'hover:bg-slate-100 text-slate-600'} ${
                 sidebarOpen ? 'justify-start pl-4' : 'justify-center'
               }`}
@@ -188,9 +188,6 @@ const Dashboard = () => {
                   <div className="font-medium text-slate-700">Dashboard</div>
                   <div className="text-xs text-slate-500">Overview and progress</div>
                 </div>
-              )}
-              {sidebarOpen && (
-                <span className="ml-3 font-medium text-slate-700">Dashboard</span>
               )}
               {activeSection === 'dashboard' && (
                 <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-purple-500 rounded-r-full -ml-2"></div>
@@ -210,12 +207,6 @@ const Dashboard = () => {
                   }`}
                 >
                   <section.icon className="w-5 h-5" />
-                  {sidebarOpen && (
-                    <div className="ml-3">
-                      <div className="font-medium text-slate-700">{section.title}</div>
-                      <div className="text-xs text-slate-500">{section.description}</div>
-                    </div>
-                  )}
                   {sidebarOpen && (
                     <div className="ml-3">
                       <div className="font-medium text-slate-700">{section.title}</div>
@@ -320,133 +311,7 @@ const Dashboard = () => {
                 <div className="flex items-center justify-center space-x-3">
                   <p className="text-xl text-slate-300">
                     {hasWhyContent ? goalsData.annualSnapshot.mantra : 'my big why'}
-                  </p>
-                  {!hasWhyContent && (
-                    <Edit3 className="w-5 h-5 text-white/60 group-hover:text-white/80 transition-colors" />
-                  )}
-                </div>
-                {!hasWhyContent && (
-                  <p className="text-purple-200 text-sm mt-1 opacity-75">Click to edit</p>
-              `}
-            >
-              <Home className="w-5 h-5" />
-              {activeSection === 'dashboard' && (
-                <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-purple-500 rounded-r-full -ml-2"></div>
-              )}
-            </div>
-            
-            {/* Journey Section Icons */}
-            {sections.map(section => {
-              const isActive = activeSection === section.id;
-              return (
-                <div 
-                  key={section.id}
-                  onClick={() => handleSectionClick(section)}
-                  className={`w-10 h-10 rounded-lg flex items-center justify-center cursor-pointer transition-colors relative
-                    ${isActive ? 'bg-purple-100 text-purple-600' : 'hover:bg-slate-100 text-slate-600'}
-                    ${section.comingSoon ? 'opacity-60 cursor-not-allowed' : ''}
-                  `}
-                >
-                  <section.icon className="w-5 h-5" />
-                  {isActive && (
-                    <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-purple-500 rounded-r-full -ml-2"></div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-      
-      {/* Main Content */}
-      <div className={`transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'} overflow-y-auto`}>
-      
-      {/* Hero Section - Their Vision */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-blue-600/20"></div>
-        <div className="relative max-w-6xl mx-auto px-8 py-16">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center space-x-2 bg-purple-500/20 px-4 py-2 rounded-full mb-6">
-              <Sparkles className="w-5 h-5 text-purple-400" />
-              <span className="text-purple-300 font-medium">Day {dashboardData.daysIntoJourney} of Your Journey</span>
-            </div>
-            <h1 className="text-5xl font-bold text-white mb-6 leading-tight">
-              {isEditingVision ? (
-                <div className="max-w-4xl mx-auto">
-                  <textarea
-                    value={editVisionText}
-                    onChange={(e) => setEditVisionText(e.target.value)}
-                    placeholder="a one line summary of the vision"
-                    className="w-full bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl p-6 text-white placeholder-white/60 text-4xl font-bold text-center resize-none focus:outline-none focus:ring-2 focus:ring-white/50"
-                    rows={2}
-                    autoFocus
-                  />
-                  <div className="flex items-center justify-center space-x-1 mt-2">
-                    <button
-                      onClick={saveVisionEdit}
-                      className="p-1.5 bg-green-500/80 text-white rounded-full hover:bg-green-500 transition-colors"
-                      title="Save changes"
-                    >
-                      <Check className="w-3 h-3" />
-                    </button>
-                    <button
-                      onClick={cancelVisionEdit}
-                      className="p-1.5 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors"
-                      title="Cancel editing"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="group cursor-pointer" onClick={startEditingVision}>
-                  <div className="flex items-center justify-center space-x-3">
-                    <span>
-                      {hasVisionContent ? goalsData.annualSnapshot.snapshot : 'a one line summary of the vision'}
-                    </span>
-                    {!hasVisionContent && (
-                      <Edit3 className="w-6 h-6 text-white/60 group-hover:text-white/80 transition-colors" />
-                    )}
-                  </div>
-                  {!hasVisionContent && (
-                    <p className="text-purple-200 text-sm mt-2 opacity-75">Click to edit</p>
-                  )}
-                </div>
-              )}
-            </h1>
-            {isEditingWhy ? (
-              <div className="max-w-3xl mx-auto">
-                <textarea
-                  value={editWhyText}
-                  onChange={(e) => setEditWhyText(e.target.value)}
-                  placeholder="my big why"
-                  className="w-full bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl p-4 text-white placeholder-white/60 text-xl text-center resize-none focus:outline-none focus:ring-2 focus:ring-white/50"
-                  rows={1}
-                  autoFocus
-                />
-                <div className="flex items-center justify-center space-x-1 mt-1">
-                  <button
-                    onClick={saveWhyEdit}
-                    className="p-1.5 bg-green-500/80 text-white rounded-full hover:bg-green-500 transition-colors"
-                    title="Save changes"
-                  >
-                    <Check className="w-2.5 h-2.5" />
-                  </button>
-                  <button
-                    onClick={cancelWhyEdit}
-                    className="p-1.5 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors"
-                    title="Cancel editing"
-                  >
-                    <X className="w-2.5 h-2.5" />
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="group cursor-pointer max-w-3xl mx-auto" onClick={startEditingWhy}>
-                <div className="flex items-center justify-center space-x-3">
-                  <p className="text-xl text-slate-300">
-                    {hasWhyContent ? goalsData.annualSnapshot.mantra : 'my big why'}
-                  </p>
+   \               </p>
                   {!hasWhyContent && (
                     <Edit3 className="w-5 h-5 text-white/60 group-hover:text-white/80 transition-colors" />
                   )}
@@ -458,7 +323,7 @@ const Dashboard = () => {
             )}
           </div>
 
-          {/* Core Values */}
+          {/* \Core Values */}
           <div className="flex justify-center space-x-6 mb-12">
             {dashboardData.coreValues.map((value, i) => (
               <div key={i} className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-6 py-4">
@@ -514,7 +379,7 @@ const Dashboard = () => {
               <div className="w-full h-3 bg-slate-700/50 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-gradient-to-r from-purple-500 via-blue-500 to-green-500 rounded-full transition-all duration-2000 ease-out"
-                  style={{ width: `${progressPercentage}%` }}
+                  style={{ width: \`${progressPercentage}%` }}
                 ></div>
               </div>
               <div className="flex justify-between mt-3 text-sm">
@@ -560,7 +425,7 @@ const Dashboard = () => {
                     return (
                       <path
                         key={index}
-                        d={`M 100 100 L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
+                        d={\`M 100 100 L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
                         fill="rgba(147, 51, 234, 0.6)"
                         stroke="rgba(147, 51, 234, 0.8)"
                         strokeWidth="1"
@@ -621,7 +486,7 @@ const Dashboard = () => {
                     return (
                       <path
                         key={index}
-                        d={`M 100 100 L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
+                        d={\`M 100 100 L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
                         fill="rgba(34, 197, 94, 0.6)"
                         stroke="rgba(34, 197, 94, 0.8)"
                         strokeWidth="1"
@@ -705,7 +570,7 @@ const Dashboard = () => {
             <div className="w-full bg-slate-700/50 rounded-full h-3 overflow-hidden">
               <div 
                 className="h-full bg-gradient-to-r from-slate-400 via-purple-500 to-green-500 rounded-full transition-all duration-1000"
-                style={{ width: `${progressPercentage}%` }}
+                style={{ width: \`${progressPercentage}%` }}
               ></div>
             </div>
             <div className="flex justify-between mt-2 text-sm">
@@ -769,8 +634,8 @@ const Dashboard = () => {
               return (
                 <div
                   key={day}
-                  className={`aspect-square ${bgColor} ${textColor} rounded-lg flex items-center justify-center text-xs font-medium transition-all duration-200 hover:scale-110 relative group cursor-pointer`}
-                  title={isMilestoneDay ? `Day ${day}: ${dashboardData.milestoneCalendar[day].title}` : `Day ${day}`}
+                  className={\`aspect-square ${bgColor} ${textColor} rounded-lg flex items-center justify-center text-xs font-medium transition-all duration-200 hover:scale-110 relative group cursor-pointer`}
+                  title={isMilestoneDay ? \`Day ${day}: ${dashboardData.milestoneCalendar[day].title}` : \`Day ${day}`}
                 >
                   {showStar ? (
                     <div className="w-3 h-3 text-yellow-400">
