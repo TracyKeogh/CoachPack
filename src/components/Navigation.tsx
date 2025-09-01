@@ -1,16 +1,5 @@
 import React from 'react';
-import { 
-  BarChart3, 
-  Heart, 
-  Eye,
-  CheckSquare,
-  Calendar as CalendarIcon,
-  Home,
-  Download,
-  Menu,
-  X,
-  ArrowLeft
-} from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 import { useValuesData } from '../hooks/useValuesData';
 import { useWheelData } from '../hooks/useWheelData';
 import { useVisionBoardData } from '../hooks/useVisionBoardData';
@@ -84,35 +73,35 @@ const Navigation: React.FC<NavigationProps> = ({
   const sections = [
     { 
       id: 'wheel-of-life' as ViewType, 
-      icon: BarChart3, 
+      icon: LucideIcons.BarChart3, 
       title: 'Baseline', 
       progress: wheelStats.wheelCompleted ? (wheelStats.allReflectionsCompleted ? 100 : 75) : (wheelStats.averageScore > 0 ? 50 : 0),
       active: currentView === 'wheel-of-life'
     },
     { 
       id: 'values' as ViewType, 
-      icon: Heart, 
+      icon: LucideIcons.Heart, 
       title: 'Values', 
       progress: valuesData?.rankedCoreValues ? Math.min(100, (valuesData.rankedCoreValues.length / 6) * 100) : 0,
       active: currentView === 'values'
     },
     { 
       id: 'vision' as ViewType, 
-      icon: Eye, 
+      icon: LucideIcons.Eye, 
       title: 'Vision', 
       progress: visionItems.length > 0 ? Math.min(100, (visionItems.length / 4) * 100) : 0,
       active: currentView === 'vision'
     },
     { 
       id: 'goals' as ViewType, 
-      icon: CheckSquare, 
+      icon: LucideIcons.CheckSquare, 
       title: 'Plan', 
       progress: goalsProgress.percentage,
       active: currentView === 'goals'
     },
     { 
       id: 'calendar' as ViewType, 
-      icon: CalendarIcon, 
+      icon: LucideIcons.Calendar, 
       title: 'Calendar', 
       progress: 0,
       active: currentView === 'calendar'
@@ -121,8 +110,8 @@ const Navigation: React.FC<NavigationProps> = ({
 
   // Additional nav items
   const additionalNavItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home, color: 'text-slate-600' },
-    { id: 'templates', label: 'Templates', icon: Download, color: 'text-purple-500' },
+    { id: 'dashboard', label: 'Dashboard', icon: LucideIcons.Home, color: 'text-slate-600' },
+    { id: 'templates', label: 'Templates', icon: LucideIcons.Download, color: 'text-purple-500' },
   ];
 
   const JourneySection = ({ section }: { section: typeof sections[0] }) => (
@@ -140,6 +129,7 @@ const Navigation: React.FC<NavigationProps> = ({
           <div className="flex-1">
             <span className={`text-sm font-medium ${
               section.active ? 'text-purple-900' : section.progress > 0 ? 'text-slate-700' : 'text-slate-500'
+              <LucideIcons.Heart className="w-5 h-5 text-purple-400" />
             }`}>
               {section.title}
             </span>
@@ -188,7 +178,7 @@ const Navigation: React.FC<NavigationProps> = ({
                   className="flex items-center space-x-2 text-slate-600 hover:text-slate-900 transition-colors"
                 >
                   <ArrowLeft className="w-4 h-4" />
-                  <span className="text-xs font-semibold uppercase tracking-wider">Dashboard</span>
+                <LucideIcons.ArrowLeft className="w-4 h-4" />
                 </button>
               </div>
             )}
@@ -200,9 +190,9 @@ const Navigation: React.FC<NavigationProps> = ({
               title={isCollapsed ? "Open navigation" : "Collapse navigation"}
             >
               {isCollapsed ? (
-                <Menu className="w-4 h-4 text-slate-600" />
+                <LucideIcons.Menu className="w-4 h-4 text-slate-600" />
               ) : (
-                <X className="w-4 h-4 text-slate-600" />
+                <LucideIcons.X className="w-4 h-4 text-slate-600" />
               )}
             </button>
           </div>
