@@ -13,83 +13,11 @@ export interface VisionItem {
   size?: 'small' | 'medium' | 'large';
 }
 
-export interface TextElement {
-  id: string;
-  text: string;
-  position: { x: number; y: number };
-  className: string;
-  color?: string;
-}
-
-export interface VisionBoardData {
-  visionItems: VisionItem[];
-  textElements: TextElement[];
-  uploadedImages: string[];
-  lastUpdated: string;
-  isCollageEditMode: boolean;
-}
-
 const STORAGE_KEY = 'coach-pack-vision-board';
-
-const defaultVisionItems: VisionItem[] = [
-  {
-    id: '1',
-    title: 'Dream Office Space',
-    description: 'A inspiring workspace that fuels creativity',
-    imageUrl: 'https://images.pexels.com/photos/3184292/pexels-photo-3184292.jpeg?auto=compress&cs=tinysrgb&w=400',
-    quadrant: 'business',
-    position: { x: 50, y: 80 },
-    meaning: '',
-    feeling: '',
-    isFlipped: false,
-    size: 'medium'
-  },
-  {
-    id: '2',
-    title: 'Mountain Adventure',
-    description: 'Conquering peaks and pushing physical limits',
-    imageUrl: 'https://images.pexels.com/photos/618833/pexels-photo-618833.jpeg?auto=compress&cs=tinysrgb&w=400',
-    quadrant: 'body',
-    position: { x: 150, y: 80 },
-    meaning: '',
-    feeling: '',
-    isFlipped: false,
-    size: 'medium'
-  },
-  {
-    id: '3',
-    title: 'Family Time',
-    description: 'Quality moments with loved ones',
-    imageUrl: 'https://images.pexels.com/photos/1128318/pexels-photo-1128318.jpeg?auto=compress&cs=tinysrgb&w=400',
-    quadrant: 'balance',
-    position: { x: 250, y: 80 },
-    meaning: '',
-    feeling: '',
-    isFlipped: false,
-    size: 'medium'
-  },
-  {
-    id: '4',
-    title: 'Inner Peace',
-    description: 'Finding calm and contentment within',
-    imageUrl: 'https://images.pexels.com/photos/1051838/pexels-photo-1051838.jpeg?auto=compress&cs=tinysrgb&w=400',
-    quadrant: 'feelings',
-    position: { x: 350, y: 80 },
-    meaning: '',
-    feeling: '',
-    isFlipped: false,
-    size: 'medium'
-  }
-];
-
-const defaultTextElements: TextElement[] = [
-  { id: 'title-1', text: 'My Vision Board', position: { x: 50, y: 20 }, className: 'text-2xl font-bold' },
-  { id: 'subtitle-1', text: '2025 Goals', position: { x: 200, y: 20 }, className: 'text-lg' }
-];
 
 export const useVisionBoardData = () => {
   const [visionItems, setVisionItems] = useState<VisionItem[]>([]);
-  const [textElements, setTextElements] = useState<TextElement[]>(defaultTextElements);
+  const [textElements, setTextElements] = useState<TextElement[]>([]);
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [isCollageEditMode, setIsCollageEditMode] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -357,3 +285,19 @@ export const useVisionBoardData = () => {
     clearAllData
   };
 };
+
+export interface TextElement {
+  id: string;
+  text: string;
+  position: { x: number; y: number };
+  className: string;
+  color?: string;
+}
+
+export interface VisionBoardData {
+  visionItems: VisionItem[];
+  textElements: TextElement[];
+  uploadedImages: string[];
+  lastUpdated: string;
+  isCollageEditMode: boolean;
+}
