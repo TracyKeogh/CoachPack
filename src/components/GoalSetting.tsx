@@ -201,7 +201,7 @@ const GoalSetting = () => {
     Object.keys(categoryData).forEach(category => {
       const formData = categoryData[category];
       const existingGoal = goalsData.categoryGoals[category] || {
-        category: category as any,
+        category: category,
         goal: '',
         actions: [],
         milestones: [],
@@ -216,7 +216,7 @@ const GoalSetting = () => {
         deadline: formData.targetDate,
         actions: formData.habits.map(habit => ({
           text: habit,
-          frequency: 'weekly' as const,
+          frequency: 'weekly',
           specificDays: []
         })),
         milestones: formData.milestones.map(milestone => ({
@@ -245,61 +245,72 @@ const GoalSetting = () => {
 
   if (currentFlow === 'annual') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-slate-900 mb-4">Annual Vision Setting</h1>
-            <p className="text-lg text-slate-600">Define your one-year vision to guide your quarterly goals</p>
-          </div>
-
-          <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
-            <div className="space-y-8">
-              <div>
-                <label className="block text-lg font-semibold text-slate-900 mb-4">
-                  Your Annual Vision Snapshot
-                </label>
-                <textarea
-                  value={goalsData.annualSnapshot?.snapshot || ''}
-                  onChange={(e) => updateAnnualSnapshot({
-                    ...goalsData.annualSnapshot,
-                    snapshot: e.target.value
-                  })}
-                  placeholder="Describe where you want to be in one year. What does your ideal life look like? How do you feel? What have you accomplished?"
-                  className="w-full h-32 p-4 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-                />
+      <>
+        <Header />
+        <Navigation 
+          currentView="goals" 
+          onNavigate={(view) => window.location.href = `/${view}`}
+          isCollapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        />
+        <div className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-80'} p-6`}>
+          <div className="bg-gradient-to-br from-slate-50 to-blue-50 min-h-[calc(100vh-8rem)] p-6 rounded-2xl">
+            <div className="max-w-4xl mx-auto">
+              <div className="text-center mb-8">
+                <h1 className="text-4xl font-bold text-slate-900 mb-4">Annual Vision Setting</h1>
+                <p className="text-lg text-slate-600">Define your one-year vision to guide your quarterly goals</p>
               </div>
+            </div>
 
-              <div>
-                <label className="block text-lg font-semibold text-slate-900 mb-4">
-                  Target Date
-                </label>
-                <input
-                  type="date"
-                  value={getOneYearFromNow()}
-                  onChange={() => {}} // Read-only for now
-                  className="px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  readOnly
-                />
-              </div>
+            <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
+              <div className="space-y-8">
+                <div>
+                  <label className="block text-lg font-semibold text-slate-900 mb-4">
+                    Your Annual Vision Snapshot
+                  </label>
+                  <textarea
+                    value={goalsData.annualSnapshot?.snapshot || ''}
+                    onChange={(e) => updateAnnualSnapshot({
+                      ...goalsData.annualSnapshot,
+                      snapshot: e.target.value
+                    })}
+                    placeholder="Describe where you want to be in one year. What does your ideal life look like? How do you feel? What have you accomplished?"
+                    className="w-full h-32 p-4 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                  />
+                </div>
 
-              <div className="flex justify-between pt-6">
-                <div></div>
-                <button
-                  onClick={() => {
-                    setCurrentFlow('category');
-                    saveData();
-                  }}
-                  disabled={!goalsData.annualSnapshot?.snapshot?.trim()}
-                  className="flex items-center space-x-2 px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <span>Continue to Goals</span>
-                  <ArrowRight className="w-5 h-5" />
-                </button>
+                <div>
+                  <label className="block text-lg font-semibold text-slate-900 mb-4">
+                    Target Date
+                  </label>
+                  <input
+                    type="date"
+                    value={getOneYearFromNow()}
+                    onChange={() => {}} // Read-only for now
+                    className="px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    readOnly
+                  />
+                </div>
+
+                <div className="flex justify-between pt-6">
+                  <div></div>
+                  <button
+                    onClick={() => {
+                      setCurrentFlow('category');
+                      saveData();
+                    }}
+                    disabled={!goalsData.annualSnapshot?.snapshot?.trim()}
+                    className="flex items-center space-x-2 px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <span>Continue to Goals</span>
+                    <ArrowRight className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </>
     );
   }
 
@@ -508,110 +519,99 @@ const GoalSetting = () => {
 
   if (currentFlow === 'review') {
     return (
-      <>
-        <Header />
-        <Navigation 
-          currentView="goals" 
-          onNavigate={(view) => window.location.href = `/${view}`}
-          isCollapsed={sidebarCollapsed}
-          onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-        />
-        <div className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-80'} p-6`}>
-          <div className="bg-gradient-to-br from-slate-50 to-blue-50 min-h-[calc(100vh-8rem)] p-6 rounded-2xl">
-            <div className="max-w-5xl mx-auto">
-              <div className="text-center mb-3">
-                <h1 className="text-2xl font-bold text-slate-900 mb-1">Goals Summary</h1>
-                <p className="text-sm text-slate-600">Review your complete goal-setting plan</p>
-              </div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-3">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-3">
+            <h1 className="text-2xl font-bold text-slate-900 mb-1">Goals Summary</h1>
+            <p className="text-sm text-slate-600">Review your complete goal-setting plan</p>
+          </div>
 
-              <div className="space-y-3">
-                {/* Annual Vision */}
-                <div className="bg-white rounded-xl p-3 shadow-sm border border-slate-200">
-                  <h2 className="text-lg font-bold text-slate-900 mb-1">Annual Vision</h2>
-                  <p className="text-slate-700 text-xs leading-relaxed">{goalsData.annualSnapshot?.snapshot}</p>
-                  <p className="text-slate-500 mt-1 text-xs">Target Date: {getOneYearFromNow()}</p>
-                </div>
+          <div className="space-y-3">
+            {/* Annual Vision */}
+            <div className="bg-white rounded-xl p-3 shadow-sm border border-slate-200">
+              <h2 className="text-lg font-bold text-slate-900 mb-1">Annual Vision</h2>
+              <p className="text-slate-700 text-xs leading-relaxed">{goalsData.annualSnapshot?.snapshot}</p>
+              <p className="text-slate-500 mt-1 text-xs">Target Date: {getOneYearFromNow()}</p>
+            </div>
 
-                {/* Category Goals */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-                  {categories.map((category) => {
-                    const data = categoryData[category.id];
-                    return (
-                      <div key={category.id} className="bg-white rounded-xl p-3 shadow-sm border border-slate-200">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <category.icon className="w-6 h-6 text-purple-600" />
-                          <h2 className="text-base font-bold text-slate-900">{category.title}</h2>
-                        </div>
+            {/* Category Goals */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+              {categories.map((category) => {
+                const data = categoryData[category.id];
+                return (
+                  <div key={category.id} className="bg-white rounded-xl p-3 shadow-sm border border-slate-200">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <category.icon className="w-6 h-6 text-purple-600" />
+                      <h2 className="text-base font-bold text-slate-900">{category.title}</h2>
+                    </div>
 
-                        <div className="space-y-2">
-                          <div>
-                            <h3 className="font-semibold text-slate-900 mb-0.5 text-xs">Goal</h3>
-                            <p className="text-slate-700 text-xs">{data.goalText}</p>
-                          </div>
-
-                          <div>
-                            <h3 className="font-semibold text-slate-900 mb-0.5 text-xs">Success Metrics</h3>
-                            <p className="text-slate-700 text-xs">{data.measureText}</p>
-                          </div>
-
-                          <div>
-                            <h3 className="font-semibold text-slate-900 mb-0.5 text-xs">Target Date</h3>
-                            <p className="text-slate-700 text-xs">{data.targetDate}</p>
-                          </div>
-
-                          {data.habits.length > 0 && (
-                            <div>
-                              <h3 className="font-semibold text-slate-900 mb-0.5 text-xs">Habits</h3>
-                              <ul className="space-y-0">
-                                {data.habits.slice(0, 3).map((habit, index) => (
-                                  <li key={index} className="text-slate-700 text-xs">• {habit}</li>
-                                ))}
-                                {data.habits.length > 3 && (
-                                  <li className="text-slate-500 text-xs italic">... and {data.habits.length - 3} more</li>
-                                )}
-                              </ul>
-                            </div>
-                          )}
-
-                          {data.milestones.length > 0 && (
-                            <div>
-                              <h3 className="font-semibold text-slate-900 mb-0.5 text-xs">Milestones</h3>
-                              <ul className="space-y-1">
-                                {data.milestones.slice(0, 3).map((milestone, index) => (
-                                  <li key={index} className="flex justify-between items-center text-slate-700 text-xs">
-                                    <span className="truncate">• {milestone.title}</span>
-                                    <span className="text-slate-500 text-xs ml-1 flex-shrink-0">{milestone.date}</span>
-                                  </li>
-                                ))}
-                                {data.milestones.length > 3 && (
-                                  <li className="text-slate-500 text-xs italic">... and {data.milestones.length - 3} more</li>
-                                )}
-                              </ul>
-                            </div>
-                          )}
-                        </div>
+                    <div className="space-y-2">
+                      <div>
+                        <h3 className="font-semibold text-slate-900 mb-0.5 text-xs">Goal</h3>
+                        <p className="text-slate-700 text-xs">{data.goalText}</p>
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
 
-              <div className="flex justify-center mt-3">
-                <button
-                  onClick={() => {
-                    syncFormDataToGoals();
-                    saveData();
-                    alert('Your goals have been saved successfully!');
-                  }}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"
-                >
-                  Complete Goal Setting
-                </button>
-              </div>
+                      <div>
+                        <h3 className="font-semibold text-slate-900 mb-0.5 text-xs">Success Metrics</h3>
+                        <p className="text-slate-700 text-xs">{data.measureText}</p>
+                      </div>
+
+                      <div>
+                        <h3 className="font-semibold text-slate-900 mb-0.5 text-xs">Target Date</h3>
+                        <p className="text-slate-700 text-xs">{data.targetDate}</p>
+                      </div>
+
+                      {data.habits.length > 0 && (
+                        <div>
+                          <h3 className="font-semibold text-slate-900 mb-0.5 text-xs">Habits</h3>
+                          <ul className="space-y-0">
+                            {data.habits.slice(0, 3).map((habit, index) => (
+                              <li key={index} className="text-slate-700 text-xs">• {habit}</li>
+                            ))}
+                            {data.habits.length > 3 && (
+                              <li className="text-slate-500 text-xs italic">... and {data.habits.length - 3} more</li>
+                            )}
+                          </ul>
+                        </div>
+                      )}
+
+                      {data.milestones.length > 0 && (
+                        <div>
+                          <h3 className="font-semibold text-slate-900 mb-0.5 text-xs">Milestones</h3>
+                          <ul className="space-y-1">
+                            {data.milestones.slice(0, 3).map((milestone, index) => (
+                              <li key={index} className="flex justify-between items-center text-slate-700 text-xs">
+                                <span className="truncate">• {milestone.title}</span>
+                                <span className="text-slate-500 text-xs ml-1 flex-shrink-0">{milestone.date}</span>
+                              </li>
+                            ))}
+                            {data.milestones.length > 3 && (
+                              <li className="text-slate-500 text-xs italic">... and {data.milestones.length - 3} more</li>
+                            )}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
+
+          <div className="flex justify-center mt-3">
+            <button
+              onClick={() => {
+                syncFormDataToGoals();
+                saveData();
+                alert('Your goals have been saved successfully!');
+              }}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"
+            >
+              Complete Goal Setting
+            </button>
+          </div>
         </div>
-      </>
+      </div>
     );
   }
 
