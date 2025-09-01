@@ -411,11 +411,11 @@ const Dashboard = () => {
               const isPastDay = day < dashboardData.daysIntoJourney;
               const isMilestoneDay = dashboardData.milestoneCalendar && dashboardData.milestoneCalendar[day];
               
-              let bgColor = 'bg-slate-700/50'; // Default future day
+              let bgColor = 'bg-slate-700/30'; // Default future day
               let textColor = 'text-slate-400';
               
               if (isPastDay) {
-                bgColor = 'bg-slate-600/70';
+                bgColor = 'bg-slate-600/50';
                 textColor = 'text-slate-300';
               } else if (isCurrentDay) {
                 bgColor = 'bg-purple-500';
@@ -425,11 +425,11 @@ const Dashboard = () => {
               if (isMilestoneDay) {
                 const milestone = dashboardData.milestoneCalendar[day];
                 if (milestone.category === 'business') {
-                  bgColor = isPastDay ? 'bg-blue-600/70' : 'bg-blue-500';
+                  bgColor = isPastDay ? 'bg-purple-600/70' : 'bg-purple-500';
                 } else if (milestone.category === 'body') {
                   bgColor = isPastDay ? 'bg-green-600/70' : 'bg-green-500';
                 } else if (milestone.category === 'balance') {
-                  bgColor = isPastDay ? 'bg-orange-600/70' : 'bg-orange-500';
+                  bgColor = isPastDay ? 'bg-blue-600/70' : 'bg-blue-500';
                 }
                 textColor = 'text-white';
               }
@@ -464,7 +464,7 @@ const Dashboard = () => {
           {/* Legend */}
           <div className="flex items-center justify-center space-x-6 text-sm">
             <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-slate-600/70 rounded"></div>
+              <div className="w-3 h-3 bg-slate-600/50 rounded"></div>
               <span className="text-slate-400">Completed</span>
             </div>
             <div className="flex items-center space-x-2">
@@ -472,16 +472,16 @@ const Dashboard = () => {
               <span className="text-purple-400">Today</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-blue-500 rounded"></div>
-              <span className="text-blue-400">Business</span>
+              <div className="w-3 h-3 bg-purple-500 rounded"></div>
+              <span className="text-purple-400">Business</span>
             </div>
             <div className="flex items-center space-x-2">
               <div className="w-3 h-3 bg-green-500 rounded"></div>
               <span className="text-green-400">Health</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-orange-500 rounded"></div>
-              <span className="text-orange-400">Balance</span>
+              <div className="w-3 h-3 bg-blue-500 rounded"></div>
+              <span className="text-blue-400">Balance</span>
             </div>
             <div className="flex items-center space-x-2">
               <div className="w-3 h-3 bg-yellow-400 rounded"></div>

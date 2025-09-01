@@ -332,13 +332,23 @@ export const useDashboardData = (): DashboardData => {
             if (dayNumber >= 1 && dayNumber <= 90) {
               calendar[dayNumber] = {
                 title: milestone.title,
-                category: category as 'business' | 'body' | 'balance'
+                category: category === 'business' ? 'business' : 
+                         category === 'body' ? 'body' : 'balance'
               };
             }
           }
         });
       }
     });
+    
+    // Add some sample milestones for demonstration if no real ones exist
+    if (Object.keys(calendar).length === 0) {
+      calendar[15] = { title: 'Business Milestone', category: 'business' };
+      calendar[30] = { title: 'Health Check-in', category: 'body' };
+      calendar[45] = { title: 'Balance Review', category: 'balance' };
+      calendar[60] = { title: 'Business Review', category: 'business' };
+      calendar[75] = { title: 'Fitness Goal', category: 'body' };
+    }
     
     return calendar;
   }, [goalsLoaded, goalsData, journeyStartDate]);
