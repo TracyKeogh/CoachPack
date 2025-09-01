@@ -128,6 +128,7 @@ const Navigation: React.FC<NavigationProps> = ({
         <>
           <div className="flex-1">
             <span className={`text-sm font-medium ${
+              section.active ? 'text-purple-900' : section.progress > 0 ? 'text-slate-700' : 'text-slate-500'
             }`}>
               {section.title}
             </span>
