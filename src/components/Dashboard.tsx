@@ -425,7 +425,7 @@ const Dashboard = () => {
                     return (
                       <path
                         key={index}
-                        d={\`M 100 100 L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
+                        d={`M 100 100 L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
                         fill="rgba(147, 51, 234, 0.6)"
                         stroke="rgba(147, 51, 234, 0.8)"
                         strokeWidth="1"
