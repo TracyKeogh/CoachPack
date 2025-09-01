@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { allValues, type Value } from '../data/values';
 import { useValuesData } from '../hooks/useValuesData';
+import Header from './Header';
 
 const ValuesClarity: React.FC = () => {
   const {
@@ -171,6 +172,9 @@ const ValuesClarity: React.FC = () => {
   }
 
   return (
+    <>
+      <Header />
+      <div className="ml-16">
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
@@ -384,6 +388,8 @@ const ValuesClarity: React.FC = () => {
         </button>
       </div>
     </div>
+      </div>
+    </>
   );
 };
 

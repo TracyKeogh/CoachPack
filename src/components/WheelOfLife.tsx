@@ -6,6 +6,7 @@ import { useWheelSignup } from '../hooks/useWheelSignup';
 import { exportWheelData, importWheelData, clearWheelData } from '../utils/storage';
 import WheelSignupModal from './WheelSignupModal';
 import NotesPanel from './NotesPanel';
+import Header from './Header';
 
 const WheelOfLife: React.FC = () => {
   const {
@@ -285,6 +286,9 @@ const WheelOfLife: React.FC = () => {
   }
 
   return (
+    <>
+      <Header />
+      <div className="ml-16">
     <div className="space-y-8">
       {/* Header with signup info */}
       <div className="flex items-center justify-between">
@@ -742,6 +746,8 @@ const WheelOfLife: React.FC = () => {
         </div>
       </div>
     </div>
+      </div>
+    </>
   );
 };
 

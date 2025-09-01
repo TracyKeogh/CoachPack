@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Camera, Type, Upload, X, FlipHorizontal, Save, Download, RotateCcw, ArrowLeft, StickyNote } from 'lucide-react';
 import NotesPanel from './NotesPanel';
 import { useVisionBoardData, VisionItem, TextElement } from '../hooks/useVisionBoardData';
+import Header from './Header';
 
 // Image compression utility
 const compressImage = (file: File, maxWidth: number = 800, quality: number = 0.8): Promise<string> => {
@@ -276,6 +277,9 @@ const VisionBoard: React.FC = () => {
   }
 
   return (
+    <>
+      <Header />
+      <div className="ml-16">
     <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -739,6 +743,8 @@ const VisionBoard: React.FC = () => {
         </div>
       )}
     </div>
+      </div>
+    </>
   );
 };
 

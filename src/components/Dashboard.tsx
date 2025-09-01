@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Heart, Target, Calendar, Sparkles, ChevronRight, Clock, BarChart3, Eye, CheckSquare, TrendingUp, User, Menu, Home, ExternalLink, Edit3, Check, X, CircleDot } from 'lucide-react';
+import { Heart, Target, Calendar, Sparkles, ChevronRight, Clock, BarChart3, Eye, CheckSquare, TrendingUp, User, Menu, Home, ExternalLink, Edit3, Check, X, CircleDot, PieChart } from 'lucide-react';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { useGoalSettingData } from '../hooks/useGoalSettingData';
 
@@ -18,40 +18,38 @@ const Dashboard = () => {
   // Left sidebar sections with proper feature mapping and navigation
   const sections = [
     { 
-      id: 'baseline', 
-      icon: CircleDot, 
-      title: 'Baseline', 
-      features: ['Wheel of Life', 'Values Clarity'],
+      id: 'wheel', 
+      icon: PieChart, 
+      title: 'Wheel of Life', 
+      description: 'Life assessment across 8 areas',
       routes: ['/wheel-of-life', '/values']
     },
     { 
       id: 'vision', 
       icon: Eye, 
-      title: 'Vision', 
-      features: ['Vision Board'],
+      title: 'Vision Board', 
+      description: 'Visual representation of your goals',
       routes: ['/vision-board']
     },
     { 
-      id: 'plan', 
-      icon: CheckSquare, 
-      title: 'Plan', 
-      features: ['Goal Setting'],
+      id: 'goals', 
+      icon: Target, 
+      title: 'Goals', 
+      description: 'Set and track your objectives',
       routes: ['/goal-setting']
     },
     { 
-      id: 'stress', 
-      icon: Target, 
-      title: 'Stress Test', 
-      comingSoon: true,
-      features: ['Goal Stress Testing'],
-      routes: []
+      id: 'values', 
+      icon: Heart, 
+      title: 'Values', 
+      description: 'Discover what matters most',
+      routes: ['/values']
     },
     { 
-      id: 'track', 
+      id: 'calendar', 
       icon: Calendar, 
-      title: 'Track', 
-      external: true,
-      features: ['Mobile App'],
+      title: 'Calendar', 
+      description: 'Schedule your actions',
       routes: ['/calendar']
     }
   ];
@@ -60,18 +58,17 @@ const Dashboard = () => {
   const getActiveSection = () => {
     const path = location.pathname;
     if (path === '/dashboard') return 'dashboard';
-    if (path === '/wheel-of-life' || path === '/values') return 'baseline';
+    if (path === '/wheel-of-life') return 'wheel';
     if (path === '/vision-board') return 'vision';
-    if (path === '/goal-setting' || path === '/goals') return 'plan';
-    if (path === '/calendar') return 'track';
+    if (path === '/goal-setting' || path === '/goals') return 'goals';
+    if (path === '/values') return 'values';
+    if (path === '/calendar') return 'calendar';
     return null;
   };
 
   const activeSection = getActiveSection();
 
   const handleSectionClick = (section: any) => {
-    if (section.comingSoon) return;
-    
     if (section.routes && section.routes.length > 0) {
       // Navigate to the first route for now
       navigate(section.routes[0]);
@@ -160,26 +157,176 @@ const Dashboard = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       
       {/* Left Sidebar - Fixed Position */}
-      <div className="fixed left-0 top-0 h-full w-16 bg-white border-r border-slate-200 z-50 flex flex-col">
+      <div className={`fixed left-0 top-0 h-full bg-white border-r border-slate-200 z-50 flex flex-col transition-all duration-300 ${
+        sidebarOpen ? 'w-64' : 'w-16'
+      }`}>
         
         {/* Top Section */}
         <div className="p-4">
           <button 
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors mb-4"
           >
             <Menu className="w-5 h-5 text-slate-600" />
           </button>
         </div>
 
         {/* Navigation Icons */}
-        <div className="flex-1 p-2">
+        <div className="flex-1 px-2">
           <div className="space-y-3">
             {/* Dashboard Icon */}
             <div 
               onClick={() => navigate('/dashboard')}
-              className={`w-10 h-10 rounded-lg flex items-center justify-center cursor-pointer transition-colors relative
-                ${activeSection === 'dashboard' ? 'bg-purple-100 text-purple-600' : 'hover:bg-slate-100 text-slate-600'}
+              className={`w-12 h-12 rounded-lg flex items-center justify-center cursor-pointer transition-colors relative
+                ${activeSection === 'dashboard' ? 'bg-purple-100 text-purple-600' : 'hover:bg-slate-100 text-slate-600'} ${
+                sidebarOpen ? 'justify-start pl-4' : 'justify-center'
+              }`}
+            >
+              <Home className="w-5 h-5" />
+              {sidebarOpen && (
+                <div className="ml-3">
+                  <div className="font-medium text-slate-700">Dashboard</div>
+                  <div className="text-xs text-slate-500">Overview and progress</div>
+                </div>
+              )}
+              {sidebarOpen && (
+                <span className="ml-3 font-medium text-slate-700">Dashboard</span>
+              )}
+              {activeSection === 'dashboard' && (
+                <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-purple-500 rounded-r-full -ml-2"></div>
+              )}
+            </div>
+            
+            {/* Journey Section Icons */}
+            {sections.map(section => {
+              const isActive = activeSection === section.id;
+              return (
+                <div 
+                  key={section.id}
+                  onClick={() => handleSectionClick(section)}
+                  className={`w-12 h-12 rounded-lg flex items-center cursor-pointer transition-colors relative
+                    ${isActive ? 'bg-purple-100 text-purple-600' : 'hover:bg-slate-100 text-slate-600'} ${
+                    sidebarOpen ? 'justify-start pl-4' : 'justify-center'
+                  }`}
+                >
+                  <section.icon className="w-5 h-5" />
+                  {sidebarOpen && (
+                    <div className="ml-3">
+                      <div className="font-medium text-slate-700">{section.title}</div>
+                      <div className="text-xs text-slate-500">{section.description}</div>
+                    </div>
+                  )}
+                  {sidebarOpen && (
+                    <div className="ml-3">
+                      <div className="font-medium text-slate-700">{section.title}</div>
+                      <div className="text-xs text-slate-500">{section.description}</div>
+                    </div>
+                  )}
+                  {isActive && (
+                    <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-purple-500 rounded-r-full -ml-2"></div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+      
+      {/* Main Content */}
+      <div className={`transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'} overflow-y-auto`}>
+      
+      {/* Hero Section - Their Vision */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-blue-600/20"></div>
+        <div className="relative max-w-6xl mx-auto px-8 py-16">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center space-x-2 bg-purple-500/20 px-4 py-2 rounded-full mb-6">
+              <Sparkles className="w-5 h-5 text-purple-400" />
+              <span className="text-purple-300 font-medium">Day {dashboardData.daysIntoJourney} of Your Journey</span>
+            </div>
+            <h1 className="text-5xl font-bold text-white mb-6 leading-tight">
+              {isEditingVision ? (
+                <div className="max-w-4xl mx-auto">
+                  <textarea
+                    value={editVisionText}
+                    onChange={(e) => setEditVisionText(e.target.value)}
+                    placeholder="a one line summary of the vision"
+                    className="w-full bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl p-6 text-white placeholder-white/60 text-4xl font-bold text-center resize-none focus:outline-none focus:ring-2 focus:ring-white/50"
+                    rows={2}
+                    autoFocus
+                  />
+                  <div className="flex items-center justify-center space-x-2 mt-3">
+                    <button
+                      onClick={saveVisionEdit}
+                      className="w-8 h-8 bg-green-500/80 text-white rounded-full hover:bg-green-500 transition-colors flex items-center justify-center"
+                      title="Save changes"
+                    >
+                      <Check className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={cancelVisionEdit}
+                      className="w-8 h-8 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors flex items-center justify-center"
+                      title="Cancel editing"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="group cursor-pointer" onClick={startEditingVision}>
+                  <div className="flex items-center justify-center space-x-3">
+                    <span>
+                      {hasVisionContent ? goalsData.annualSnapshot.snapshot : 'a one line summary of the vision'}
+                    </span>
+                    {!hasVisionContent && (
+                      <Edit3 className="w-6 h-6 text-white/60 group-hover:text-white/80 transition-colors" />
+                    )}
+                  </div>
+                  {!hasVisionContent && (
+                    <p className="text-purple-200 text-sm mt-2 opacity-75">Click to edit</p>
+                  )}
+                </div>
+              )}
+            </h1>
+            {isEditingWhy ? (
+              <div className="max-w-3xl mx-auto">
+                <textarea
+                  value={editWhyText}
+                  onChange={(e) => setEditWhyText(e.target.value)}
+                  placeholder="my big why"
+                  className="w-full bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl p-4 text-white placeholder-white/60 text-xl text-center resize-none focus:outline-none focus:ring-2 focus:ring-white/50"
+                  rows={1}
+                  autoFocus
+                />
+                <div className="flex items-center justify-center space-x-2 mt-2">
+                  <button
+                    onClick={saveWhyEdit}
+                    className="w-6 h-6 bg-green-500/80 text-white rounded-full hover:bg-green-500 transition-colors flex items-center justify-center"
+                    title="Save changes"
+                  >
+                    <Check className="w-3 h-3" />
+                  </button>
+                  <button
+                    onClick={cancelWhyEdit}
+                    className="w-6 h-6 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors flex items-center justify-center"
+                    title="Cancel editing"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="group cursor-pointer max-w-3xl mx-auto" onClick={startEditingWhy}>
+                <div className="flex items-center justify-center space-x-3">
+                  <p className="text-xl text-slate-300">
+                    {hasWhyContent ? goalsData.annualSnapshot.mantra : 'my big why'}
+                  </p>
+                  {!hasWhyContent && (
+                    <Edit3 className="w-5 h-5 text-white/60 group-hover:text-white/80 transition-colors" />
+                  )}
+                </div>
+                {!hasWhyContent && (
+                  <p className="text-purple-200 text-sm mt-1 opacity-75">Click to edit</p>
               `}
             >
               <Home className="w-5 h-5" />
@@ -212,7 +359,7 @@ const Dashboard = () => {
       </div>
       
       {/* Main Content */}
-      <div className="ml-16 overflow-y-auto">
+      <div className={`transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'} overflow-y-auto`}>
       
       {/* Hero Section - Their Vision */}
       <div className="relative overflow-hidden">
