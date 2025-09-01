@@ -265,7 +265,7 @@ const Dashboard = () => {
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-slate-300">
-                      {Math.round(dashboardData.lifeAreas.reduce((sum, area) => sum + area.now, 0) / 8 * 10) / 10}
+                      {Math.round(dashboardData.lifeAreas.reduce((sum, area) => sum + area.now, 0) / dashboardData.lifeAreas.length * 10) / 10}
                     </div>
                     <div className="text-xs text-slate-400">Avg</div>
                   </div>
@@ -326,7 +326,7 @@ const Dashboard = () => {
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-green-300">
-                      {Math.round(dashboardData.lifeAreas.reduce((sum, area) => sum + area.vision, 0) / 8 * 10) / 10}
+                      {Math.round(dashboardData.lifeAreas.reduce((sum, area) => sum + area.vision, 0) / dashboardData.lifeAreas.length * 10) / 10}
                     </div>
                     <div className="text-xs text-green-400">Target</div>
                   </div>
@@ -343,80 +343,50 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* 90-Day Calendar Journey */}
+        {/* Next Milestones from Real Data */}
         <div className="bg-slate-800/30 backdrop-blur-sm border border-slate-700/30 rounded-3xl p-8">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-3">
               <Target className="w-8 h-8 text-purple-400" />
-              <h3 className="text-2xl font-bold text-white">Your 90-Day Journey</h3>
+              <h3 className="text-2xl font-bold text-white">Your Next Milestones</h3>
             </div>
             <div className="text-right">
-              <div className="text-sm text-slate-400">Day {dashboardData.daysIntoJourney} of 90</div>
-              <div className="text-lg font-semibold text-purple-400">{90 - dashboardData.daysIntoJourney} days remaining</div>
+              <div className="text-sm text-slate-400">Day {dashboardData.daysIntoJourney} of {dashboardData.totalDays}</div>
+              <div className="text-lg font-semibold text-purple-400">{dashboardData.totalDays - dashboardData.daysIntoJourney} days remaining</div>
             </div>
           </div>
           
-          {/* Calendar Grid */}
-          <div className="grid grid-cols-10 gap-1 mb-6">
-            {Array.from({ length: 90 }, (_, i) => {
-              const dayNumber = i + 1;
-              const isPast = dayNumber <= dashboardData.daysIntoJourney;
-              const isToday = dayNumber === dashboardData.daysIntoJourney;
-              
-              // Sample goals and milestones positioned on specific days
-              const events: { [key: number]: { type: string; title: string; color: string } } = {
-                5: { type: 'milestone', title: '10K Run', color: 'bg-blue-500' },
-                15: { type: 'milestone', title: 'Beta Launch', color: 'bg-purple-500' },
-                30: { type: 'goal', title: 'Health Review', color: 'bg-green-500' },
-                45: { type: 'milestone', title: 'Product Launch', color: 'bg-yellow-500' },
-                60: { type: 'goal', title: 'Career Review', color: 'bg-indigo-500' },
-                75: { type: 'milestone', title: 'Marathon', color: 'bg-red-500' },
-                90: { type: 'goal', title: 'Vision Complete', color: 'bg-emerald-500' }
-              };
-              
-              const event = events[dayNumber];
-              
-              return (
-                <div
-                  key={i}
-                  className={`
-                    aspect-square rounded-sm flex items-center justify-center text-xs font-medium relative
-                    ${isPast 
-                      ? 'bg-slate-600/60 text-slate-400' 
-                      : isToday 
-                        ? 'bg-purple-500 text-white animate-pulse ring-2 ring-purple-400' 
-                        : 'bg-slate-700/30 text-slate-500 hover:bg-slate-600/40'
-                    }
-                  `}
-                >
-                  {event ? (
-                    <div className={`absolute inset-0 ${event.color} rounded-sm flex items-center justify-center text-white`}>
-                      {event.type === 'milestone' ? (
-                        // Star icon for milestones
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                        </svg>
-                      ) : (
-                        // Target icon for goals
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
-                        </svg>
-                      )}
-                    </div>
-                  ) : (
-                    dayNumber
-                  )}
+          {/* Real Milestones */}
+          {dashboardData.nextMilestones && dashboardData.nextMilestones.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              {dashboardData.nextMilestones.slice(0, 3).map((milestone, i) => (
+                <div key={i} className="bg-slate-700/50 rounded-xl p-4 border border-slate-600/30">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                    <span className="text-xs text-slate-400 uppercase font-medium">milestone</span>
+                  </div>
+                  <h4 className="text-lg font-semibold text-white mb-1">{milestone.title}</h4>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400 text-sm">{milestone.date}</span>
+                    <span className="text-purple-400 text-sm font-medium">{milestone.daysAway} days</span>
+                  </div>
                 </div>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-slate-400">No upcoming milestones. Complete your Goals section to see your progress here.</p>
+            </div>
+          )}
 
-          {/* Timeline Progress Bar */}
+          {/* Overall Progress Bar */}
           <div className="mb-6">
             <div className="w-full bg-slate-700/50 rounded-full h-3 overflow-hidden">
               <div 
                 className="h-full bg-gradient-to-r from-slate-400 via-purple-500 to-green-500 rounded-full transition-all duration-1000"
-                style={{ width: `${(dashboardData.daysIntoJourney / 90) * 100}%` }}
+                style={{ width: `${progressPercentage}%` }}
               ></div>
             </div>
             <div className="flex justify-between mt-2 text-sm">
@@ -425,73 +395,16 @@ const Dashboard = () => {
               <span className="text-green-400">Vision Achieved</span>
             </div>
           </div>
-
-          {/* Upcoming Events */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            {[
-              { title: "Beta Launch", date: "Day 15", daysAway: 15 - dashboardData.daysIntoJourney, type: "milestone", color: "purple" },
-              { title: "Health Review", date: "Day 30", daysAway: 30 - dashboardData.daysIntoJourney, type: "goal", color: "green" },
-              { title: "Product Launch", date: "Day 45", daysAway: 45 - dashboardData.daysIntoJourney, type: "milestone", color: "yellow" }
-            ].filter(event => event.daysAway > 0).map((event, i) => (
-              <div key={i} className="bg-slate-700/50 rounded-xl p-4 border border-slate-600/30">
-                <div className="flex items-center space-x-2 mb-2">
-                  {event.type === 'milestone' ? (
-                    <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                    </svg>
-                  ) : (
-                    <svg className="w-4 h-4 text-blue-400" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
-                    </svg>
-                  )}
-                  <span className="text-xs text-slate-400 uppercase font-medium">{event.type}</span>
-                </div>
-                <h4 className="text-lg font-semibold text-white mb-1">{event.title}</h4>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-400 text-sm">{event.date}</span>
-                  <span className="text-purple-400 text-sm font-medium">{event.daysAway} days</span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Legend */}
-          <div className="flex justify-center space-x-6 text-xs">
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-slate-600 rounded-sm"></div>
-              <span className="text-slate-400">Past</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-purple-500 rounded-sm"></div>
-              <span className="text-slate-400">Today</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-slate-700 rounded-sm"></div>
-              <span className="text-slate-400">Future</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <svg className="w-3 h-3 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-              </svg>
-              <span className="text-slate-400">Milestones</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <svg className="w-4 h-4 text-blue-400" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
-              </svg>
-              <span className="text-slate-400">Goals</span>
-            </div>
-          </div>
         </div>
 
-        {/* Momentum Indicator */}
+        {/* Progress Momentum Indicator */}
         <div className="mt-12 text-center">
           <div className="inline-flex items-center space-x-4 bg-gradient-to-r from-purple-600/20 to-green-600/20 border border-purple-500/30 rounded-2xl px-8 py-6">
             <div className="text-3xl">🚀</div>
             <div>
-              <div className="text-lg font-semibold text-white">You're Building Momentum</div>
+              <div className="text-lg font-semibold text-white">Overall Progress: {dashboardData.overallProgress}%</div>
               <div className="text-slate-400 text-sm">
-                {84 - dashboardData.daysIntoJourney} days remaining to achieve your vision
+                {dashboardData.totalDays - dashboardData.daysIntoJourney} days remaining to achieve your vision
               </div>
             </div>
           </div>
