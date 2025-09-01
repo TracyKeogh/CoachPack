@@ -88,7 +88,7 @@ const defaultTextElements: TextElement[] = [
 ];
 
 export const useVisionBoardData = () => {
-  const [visionItems, setVisionItems] = useState<VisionItem[]>(defaultVisionItems);
+  const [visionItems, setVisionItems] = useState<VisionItem[]>([]);
   const [textElements, setTextElements] = useState<TextElement[]>(defaultTextElements);
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [isCollageEditMode, setIsCollageEditMode] = useState(false);
@@ -101,8 +101,8 @@ export const useVisionBoardData = () => {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const data: VisionBoardData = JSON.parse(stored);
-        // Only replace defaults if stored data has actual content
-        if (data.visionItems && Array.isArray(data.visionItems) && data.visionItems.length > 0) {
+        // Load stored vision items (even if empty array)
+        if (data.visionItems && Array.isArray(data.visionItems)) {
           setVisionItems(data.visionItems);
         }
         if (data.textElements && Array.isArray(data.textElements) && data.textElements.length > 0) {
@@ -112,10 +112,9 @@ export const useVisionBoardData = () => {
         setIsCollageEditMode(data.isCollageEditMode || false);
         setLastSaved(new Date(data.lastUpdated));
       }
-      // If no stored data or stored data is empty, keep the default items
     } catch (error) {
       console.error('Failed to load vision board data:', error);
-      // Keep defaults on error
+      // Keep empty array on error
     }
     setIsLoaded(true);
   }, []);
