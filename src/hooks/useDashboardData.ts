@@ -2,51 +2,61 @@ import { useState, useEffect, useMemo } from 'react';
 import { useWheelData } from './useWheelData';
 import { useValuesData } from './useValuesData';
 import { useVisionBoardData } from './useVisionBoardData';
-import { useGoalSettingData } from './useGoalSettingData';
 
 export interface DashboardData {
+  // User info
   name: string;
   daysIntoJourney: number;
   totalDays: number;
+  
+  // Core values
   coreValues: string[];
   visionStatement: string;
   currentFocus: string;
+  
+  // Vision board
   visionBoard: Array<{
     quadrant: string;
     title: string;
     imageUrl: string;
   }>;
+  
+  // Life areas with current and vision state
   lifeAreas: Array<{
     area: string;
     now: number;
     vision: number;
     gap: number;
   }>;
+  
+  // Progress tracking
   baselineProgress: number;
   visionProgress: number;
   planProgress: number;
   overallProgress: number;
+  
+  // Next milestones
   nextMilestones: Array<{
     title: string;
     date: string;
     daysAway: number;
   }>;
+  
+  // Journey start date
   journeyStartDate: Date | null;
 }
 
 export const useDashboardData = (): DashboardData => {
-  const mockUser = { name: 'Test User' };
-  
   const { data: wheelData, isLoaded: wheelLoaded } = useWheelData();
   const { data: valuesData, isLoaded: valuesLoaded } = useValuesData();
-  const { visionItems, textElements, isLoaded: visionLoaded } = useVisionBoardData();
-  const { data: goalsData, isLoaded: goalsLoaded } = useGoalSettingData();
+  const { visionItems, isLoaded: visionLoaded } = useVisionBoardData();
 
   const [journeyStartDate, setJourneyStartDate] = useState<Date | null>(null);
 
-  // Calculate journey start date
+  // Calculate journey start date (first time user completed wheel of life)
   useEffect(() => {
     if (wheelLoaded && wheelData && Array.isArray(wheelData) && wheelData.length > 0) {
+      // Check if we have stored journey start date, otherwise use current date
       const stored = localStorage.getItem('coach-pack-journey-start');
       if (stored) {
         setJourneyStartDate(new Date(stored));
@@ -60,232 +70,205 @@ export const useDashboardData = (): DashboardData => {
 
   // Calculate days into journey
   const daysIntoJourney = useMemo(() => {
-    if (!journeyStartDate) return 0;
+    if (!journeyStartDate) return 1; // Default to day 1
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - journeyStartDate.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return Math.min(diffDays, 84);
+    return Math.min(diffDays, 84); // Cap at 84 days (12 weeks)
   }, [journeyStartDate]);
+
+  // Extract core values from values data
+  const coreValues = useMemo(() => {
+    if (!valuesLoaded || !valuesData) return ['Self-Discovery', 'Growth', 'Purpose'];
+    
+    // Try to get core values from different steps of values process
+    if (valuesData.rankedCoreValues && valuesData.rankedCoreValues.length > 0) {
+      return valuesData.rankedCoreValues.slice(0, 3).map(v => v.name);
+    }
+    if (valuesData.coreValues && valuesData.coreValues.length > 0) {
+      return valuesData.coreValues.slice(0, 3).map(v => v.name);
+    }
+    if (valuesData.selectedValues && valuesData.selectedValues.length > 0) {
+      return valuesData.selectedValues.slice(0, 3).map(v => v.name);
+    }
+    
+    return ['Self-Discovery', 'Growth', 'Purpose']; // Fallback values
+  }, [valuesLoaded, valuesData]);
+
+  // Generate vision statement from user's data
+  const visionStatement = useMemo(() => {
+    if (!wheelLoaded || !wheelData || !Array.isArray(wheelData)) {
+      return "Building an intentional life aligned with my values";
+    }
+    
+    // Find the highest scoring areas to create a personalized vision statement
+    const sortedAreas = [...wheelData].sort((a, b) => (b.score || 0) - (a.score || 0));
+    const topAreas = sortedAreas.slice(0, 2);
+    
+    if (topAreas.length >= 2) {
+      return `Excelling in ${topAreas[0].area.toLowerCase()} while growing in ${topAreas[1].area.toLowerCase()}`;
+    } else if (topAreas.length === 1) {
+      return `Building strength in ${topAreas[0].area.toLowerCase()} and beyond`;
+    }
+    
+    return "Creating a balanced and fulfilling life";
+  }, [wheelLoaded, wheelData]);
+
+  // Generate current focus from lowest scoring areas
+  const currentFocus = useMemo(() => {
+    if (!wheelLoaded || !wheelData || !Array.isArray(wheelData)) {
+      return "Taking the first steps toward intentional living";
+    }
+    
+    // Find the lowest scoring areas for focus
+    const sortedAreas = [...wheelData].sort((a, b) => (a.score || 0) - (b.score || 0));
+    const lowestArea = sortedAreas[0];
+    
+    if (lowestArea) {
+      return `Currently focusing on improving ${lowestArea.area.toLowerCase()}`;
+    }
+    
+    return "Focusing on overall life balance and growth";
+  }, [wheelLoaded, wheelData]);
 
   // Calculate progress percentages
   const baselineProgress = useMemo(() => {
     if (!wheelLoaded || !valuesLoaded) return 0;
     
     let completed = 0;
-    let total = 2;
+    let total = 2; // Wheel of Life + Values Clarity
     
+    // Check if wheel of life has been completed (has data with scores)
     if (wheelData && Array.isArray(wheelData) && wheelData.length > 0) {
-      completed += 1;
+      const hasValidScores = wheelData.some(area => area.score && area.score > 0);
+      if (hasValidScores) completed++;
     }
     
-    if (valuesData && valuesData.coreValues && Array.isArray(valuesData.coreValues) && valuesData.coreValues.length > 0) {
-      completed += 1;
+    // Check if values have been selected
+    if (valuesData && (
+      (valuesData.coreValues && valuesData.coreValues.length > 0) ||
+      (valuesData.selectedValues && valuesData.selectedValues.length > 0)
+    )) {
+      completed++;
     }
     
     return Math.round((completed / total) * 100);
-  }, [wheelLoaded, wheelData, valuesLoaded, valuesData]);
+  }, [wheelLoaded, valuesLoaded, wheelData, valuesData]);
 
   const visionProgress = useMemo(() => {
     if (!visionLoaded) return 0;
     
-    let completed = 0;
-    let total = 1;
+    if (!visionItems || !Array.isArray(visionItems) || visionItems.length === 0) return 0;
     
-    if (visionItems && visionItems.length > 0) {
-      completed += 1;
-    }
+    // Calculate based on number of vision items and their completeness
+    const totalPossible = 4; // 4 quadrants
+    const completed = Math.min(visionItems.length, totalPossible);
     
-    return Math.round((completed / total) * 100);
+    return Math.round((completed / totalPossible) * 100);
   }, [visionLoaded, visionItems]);
 
   const planProgress = useMemo(() => {
-    if (!goalsLoaded || !goalsData) return 0;
-    
-    try {
-      return goalsData.getProgress ? goalsData.getProgress() : 0;
-    } catch (error) {
-      console.error('Error calculating plan progress:', error);
-      return 0;
-    }
-  }, [goalsLoaded, goalsData]);
+    // For now, return a default value since goals data is not available
+    // This can be updated when the goals system is properly implemented
+    return 0;
+  }, []);
 
   const overallProgress = useMemo(() => {
-    const weights = { baseline: 0.3, vision: 0.2, plan: 0.5 };
-    return Math.round(
-      baselineProgress * weights.baseline +
-      visionProgress * weights.vision +
-      planProgress * weights.plan
-    );
+    return Math.round((baselineProgress + visionProgress + planProgress) / 3);
   }, [baselineProgress, visionProgress, planProgress]);
-
-  // Transform wheel data for dashboard
-  const lifeAreas = useMemo(() => {
-    const transformedAreas: Record<string, { now: number; vision: number }> = {};
-
-    if (wheelData && Array.isArray(wheelData)) {
-      wheelData.forEach(area => {
-        if (area && area.name && typeof area.score === 'number') {
-          const mappedArea = area.name === 'Career' ? 'Career' :
-                           area.name === 'Health' ? 'Health' :
-                           area.name === 'Relationships' ? 'Relationships' :
-                           area.name === 'Personal Growth' ? 'Growth' :
-                           area.name === 'Fun & Recreation' ? 'Recreation' :
-                           area.name === 'Finances' ? 'Money' :
-                           area.name === 'Physical Environment' ? 'Environment' :
-                           area.name === 'Contribution' ? 'Contribution' :
-                           area.name;
-          
-          if (mappedArea) {
-            if (!transformedAreas[mappedArea]) {
-              transformedAreas[mappedArea] = { now: 0, vision: 8 };
-            }
-            transformedAreas[mappedArea].now = Math.max(transformedAreas[mappedArea].now, area.score);
-            transformedAreas[mappedArea].vision = Math.min(10, area.score + Math.floor(Math.random() * 3) + 2);
-          }
-        }
-      });
-    }
-    
-    const allAreas = ['Career', 'Health', 'Relationships', 'Growth', 'Recreation', 'Money', 'Environment', 'Contribution'];
-    
-    return allAreas.map(area => {
-      const data = transformedAreas[area] || { now: 5, vision: 8 };
-      return {
-        area,
-        now: data.now,
-        vision: data.vision,
-        gap: data.vision - data.now
-      };
-    });
-  }, [wheelLoaded, wheelData]);
-
-  // Generate next milestones from goals
-  const nextMilestones = useMemo(() => {
-    if (!goalsLoaded || !goalsData || !goalsData.categoryGoals) {
-      return [
-        { title: "Complete Wheel of Life", date: "Today", daysAway: 0 },
-        { title: "Set Your Values", date: "This Week", daysAway: 7 },
-        { title: "Create Vision Board", date: "Next Week", daysAway: 14 }
-      ];
-    }
-
-    const milestones: Array<{ title: string; date: string; daysAway: number }> = [];
-    const now = new Date();
-
-    Object.values(goalsData.categoryGoals).forEach(categoryGoal => {
-      if (categoryGoal.milestones && Array.isArray(categoryGoal.milestones)) {
-        categoryGoal.milestones.forEach(milestone => {
-          if (milestone.dueDate && !milestone.completed) {
-            const dueDate = new Date(milestone.dueDate);
-            const diffTime = dueDate.getTime() - now.getTime();
-            const daysAway = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            
-            if (daysAway >= 0) {
-              milestones.push({
-                title: milestone.title,
-                date: dueDate.toLocaleDateString(),
-                daysAway
-              });
-            }
-          }
-        });
-      }
-    });
-
-    return milestones
-      .sort((a, b) => a.daysAway - b.daysAway)
-      .slice(0, 3);
-  }, [goalsLoaded, goalsData]);
-
-  // Generate vision statement and current focus
-  const visionStatement = useMemo(() => {
-    if (valuesData && valuesData.rankedCoreValues && Array.isArray(valuesData.rankedCoreValues) && valuesData.rankedCoreValues.length > 0) {
-      const topValues = valuesData.rankedCoreValues.slice(0, 3).map(v => v.name || 'Unknown').join(', ');
-      return `Building a life of ${topValues.toLowerCase()}`;
-    } else if (valuesData && valuesData.coreValues && Array.isArray(valuesData.coreValues) && valuesData.coreValues.length > 0) {
-      const values = valuesData.coreValues.slice(0, 3).map(v => v.name || 'Unknown').join(', ');
-      return `Building a life of ${values.toLowerCase()}`;
-    }
-    return "Building a life of impact, growth, and deep connection";
-  }, [valuesData]);
-
-  const currentFocus = useMemo(() => {
-    if (goalsData && goalsData.annualSnapshot && goalsData.annualSnapshot.snapshot) {
-      return goalsData.annualSnapshot.snapshot.slice(0, 100) + (goalsData.annualSnapshot.snapshot.length > 100 ? '...' : '');
-    }
-    
-    if (goalsData && goalsData.categoryGoals) {
-      const activeGoals = Object.values(goalsData.categoryGoals);
-      if (activeGoals.length > 0) {
-        const firstGoal = activeGoals[0];
-        if (firstGoal.goal) {
-          return firstGoal.goal.slice(0, 100) + (firstGoal.goal.length > 100 ? '...' : '');
-        }
-      }
-    }
-    
-    return "Establishing daily habits that align with my values";
-  }, [goalsData]);
 
   // Transform vision board data
   const visionBoard = useMemo(() => {
-    const boardItems: Array<{ quadrant: string; title: string; imageUrl: string }> = [];
+    if (!visionLoaded || !visionItems || !Array.isArray(visionItems)) return [];
+    
+    return visionItems.slice(0, 4).map(item => ({
+      quadrant: item.quadrant ? (item.quadrant.charAt(0).toUpperCase() + item.quadrant.slice(1)) : 'Unknown',
+      title: item.title || 'Untitled',
+      imageUrl: item.imageUrl || ''
+    }));
+  }, [visionLoaded, visionItems]);
 
-    if (visionItems && Array.isArray(visionItems)) {
-      visionItems.forEach(item => {
-        if (item.imageUrl) {
-          boardItems.push({
-            quadrant: item.quadrant || 'Personal',
-            title: item.title || 'Vision Item',
-            imageUrl: item.imageUrl
-          });
+  // Transform life areas data
+  const lifeAreas = useMemo(() => {
+    if (!wheelLoaded || !wheelData || !Array.isArray(wheelData)) {
+      // Return default structure if no data
+      return [
+        { area: 'Career', now: 5, vision: 8, gap: 3 },
+        { area: 'Health', now: 6, vision: 9, gap: 3 },
+        { area: 'Relationships', now: 7, vision: 9, gap: 2 },
+        { area: 'Growth', now: 5, vision: 8, gap: 3 }
+      ];
+    }
+    
+    // Map wheel areas to dashboard format
+    const areaMapping: Record<string, string> = {
+      'Career': 'Career',
+      'Finances': 'Money',
+      'Health': 'Health',
+      'Family': 'Relationships',
+      'Romance': 'Relationships',
+      'Personal Growth': 'Growth',
+      'Fun & Recreation': 'Recreation',
+      'Environment': 'Environment'
+    };
+    
+    const transformedAreas: Record<string, { now: number; vision: number }> = {};
+    
+    wheelData.forEach(area => {
+      if (area && area.area && typeof area.score === 'number') {
+        const mappedArea = areaMapping[area.area];
+        if (mappedArea) {
+          if (!transformedAreas[mappedArea]) {
+            transformedAreas[mappedArea] = { now: 0, vision: 0 };
+          }
+          // Use current score for 'now', assume vision is 2-3 points higher
+          transformedAreas[mappedArea].now = Math.max(transformedAreas[mappedArea].now, area.score);
+          transformedAreas[mappedArea].vision = Math.min(10, area.score + 3);
         }
+      }
+    });
+    
+    // Convert to array format
+    return Object.entries(transformedAreas).map(([area, data]) => ({
+      area,
+      now: data.now,
+      vision: data.vision,
+      gap: data.vision - data.now
+    }));
+  }, [wheelLoaded, wheelData]);
+
+  // Generate next milestones based on real data
+  const nextMilestones = useMemo(() => {
+    if (!wheelLoaded || !wheelData || !Array.isArray(wheelData)) return [];
+    
+    // Find areas with biggest gaps (lowest scores) and create milestones
+    const sortedByScore = [...wheelData]
+      .filter(area => area.score && area.score > 0)
+      .sort((a, b) => (a.score || 0) - (b.score || 0));
+    
+    const today = new Date();
+    const milestones = [];
+    
+    // Create milestones for the 3 lowest scoring areas
+    sortedByScore.slice(0, 3).forEach((area, index) => {
+      const daysAway = 7 + (index * 14); // 1 week, 3 weeks, 5 weeks
+      const date = new Date(today);
+      date.setDate(date.getDate() + daysAway);
+      
+      milestones.push({
+        title: `Improve ${area.area}`,
+        date: date.toLocaleDateString(),
+        daysAway
       });
-    }
-
-    if (textElements && Array.isArray(textElements)) {
-      textElements.forEach(text => {
-        if (text.content) {
-          boardItems.push({
-            quadrant: 'Text',
-            title: text.content.slice(0, 20) + (text.content.length > 20 ? '...' : ''),
-            imageUrl: 'data:image/svg+xml;base64,' + btoa(`
-              <svg xmlns="http://www.w3.org/2000/svg" width="200" height="150" viewBox="0 0 200 150">
-                <rect width="200" height="150" fill="${text.color || '#8B5CF6'}"/>
-                <text x="100" y="75" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="14" font-family="Arial">${text.content.slice(0, 30)}</text>
-              </svg>
-            `)
-          });
-        }
-      });
-    }
-
-    // Fill with default items if empty
-    while (boardItems.length < 4) {
-      boardItems.push({
-        quadrant: 'Personal',
-        title: 'Add Vision Item',
-        imageUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=200&h=150&fit=crop'
-      });
-    }
-
-    return boardItems.slice(0, 4);
-  }, [visionItems, textElements]);
-
-  // Core values for dashboard
-  const coreValues = useMemo(() => {
-    if (valuesData && valuesData.rankedCoreValues && Array.isArray(valuesData.rankedCoreValues) && valuesData.rankedCoreValues.length > 0) {
-      return valuesData.rankedCoreValues.slice(0, 4).map(v => v.name || 'Unknown');
-    } else if (valuesData && valuesData.coreValues && Array.isArray(valuesData.coreValues) && valuesData.coreValues.length > 0) {
-      return valuesData.coreValues.slice(0, 4).map(v => v.name || 'Unknown');
-    }
-    return ['Growth', 'Connection', 'Impact', 'Balance'];
-  }, [valuesData]);
+    });
+    
+    return milestones;
+  }, [wheelLoaded, wheelData]);
 
   return {
-    name: mockUser.name,
+    name: 'Coach', // Simple name since no auth yet
     daysIntoJourney,
-    totalDays: 84,
+    totalDays: 84, // 12 weeks
     coreValues,
     visionStatement,
     currentFocus,
