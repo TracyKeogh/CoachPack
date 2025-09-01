@@ -178,20 +178,20 @@ const Dashboard = () => {
                     rows={2}
                     autoFocus
                   />
-                  <div className="flex items-center justify-center space-x-4 mt-4">
+                  <div className="flex items-center justify-center space-x-2 mt-3">
                     <button
                       onClick={saveVisionEdit}
-                      className="flex items-center space-x-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                      className="p-2 bg-green-500/80 text-white rounded-full hover:bg-green-500 transition-colors"
+                      title="Save changes"
                     >
-                      <Check className="w-5 h-5" />
-                      <span>Save</span>
+                      <Check className="w-4 h-4" />
                     </button>
                     <button
                       onClick={cancelVisionEdit}
-                      className="flex items-center space-x-2 px-6 py-3 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors"
+                      className="p-2 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors"
+                      title="Cancel editing"
                     >
-                      <X className="w-5 h-5" />
-                      <span>Cancel</span>
+                      <X className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -199,14 +199,14 @@ const Dashboard = () => {
                 <div className="group cursor-pointer" onClick={startEditingVision}>
                   <div className="flex items-center justify-center space-x-3">
                     <span>
-                      {goalsData.annualSnapshot?.snapshot || 'a one line summary of the vision'}
+                      {hasVisionContent ? goalsData.annualSnapshot.snapshot : 'a one line summary of the vision'}
                     </span>
                     {!hasVisionContent && (
-                      <Edit3 className="w-6 h-6 text-white/60 transition-opacity" />
+                      <Edit3 className="w-6 h-6 text-white/60 group-hover:text-white/80 transition-colors" />
                     )}
                   </div>
                   {!hasVisionContent && (
-                    <p className="text-purple-200 text-lg mt-2 opacity-75">Click to add your vision statement</p>
+                    <p className="text-purple-200 text-sm mt-2 opacity-75">Click to edit</p>
                   )}
                 </div>
               )}
@@ -221,20 +221,20 @@ const Dashboard = () => {
                   rows={1}
                   autoFocus
                 />
-                <div className="flex items-center justify-center space-x-4 mt-4">
+                <div className="flex items-center justify-center space-x-2 mt-2">
                   <button
                     onClick={saveWhyEdit}
-                    className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    className="p-2 bg-green-500/80 text-white rounded-full hover:bg-green-500 transition-colors"
+                    title="Save changes"
                   >
-                    <Check className="w-4 h-4" />
-                    <span>Save</span>
+                    <Check className="w-3 h-3" />
                   </button>
                   <button
                     onClick={cancelWhyEdit}
-                    className="flex items-center space-x-2 px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors"
+                    className="p-2 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors"
+                    title="Cancel editing"
                   >
-                    <X className="w-4 h-4" />
-                    <span>Cancel</span>
+                    <X className="w-3 h-3" />
                   </button>
                 </div>
               </div>
@@ -242,14 +242,14 @@ const Dashboard = () => {
               <div className="group cursor-pointer max-w-3xl mx-auto" onClick={startEditingWhy}>
                 <div className="flex items-center justify-center space-x-3">
                   <p className="text-xl text-slate-300">
-                    {goalsData.annualSnapshot?.mantra || 'my big why'}
+                    {hasWhyContent ? goalsData.annualSnapshot.mantra : 'my big why'}
                   </p>
                   {!hasWhyContent && (
-                    <Edit3 className="w-5 h-5 text-white/60 transition-opacity" />
+                    <Edit3 className="w-5 h-5 text-white/60 group-hover:text-white/80 transition-colors" />
                   )}
                 </div>
                 {!hasWhyContent && (
-                  <p className="text-purple-200 text-sm mt-2 opacity-75">Click to add your motivation</p>
+                  <p className="text-purple-200 text-sm mt-1 opacity-75">Click to edit</p>
                 )}
               </div>
             )}
