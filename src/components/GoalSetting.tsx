@@ -604,6 +604,8 @@ const GoalSetting = () => {
     );
   }
 
+      </div>
+    </>
   return null;
 };
 
