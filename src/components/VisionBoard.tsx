@@ -3,6 +3,7 @@ import { Camera, Type, Upload, X, FlipHorizontal, Save, Download, RotateCcw, Arr
 import NotesPanel from './NotesPanel';
 import { useVisionBoardData, VisionItem, TextElement } from '../hooks/useVisionBoardData';
 import Header from './Header';
+import Navigation from './Navigation';
 
 // Image compression utility
 const compressImage = (file: File, maxWidth: number = 800, quality: number = 0.8): Promise<string> => {
@@ -82,6 +83,7 @@ const VisionBoard: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [showDataManagement, setShowDataManagement] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   
   const canvasRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -279,7 +281,13 @@ const VisionBoard: React.FC = () => {
   return (
     <>
       <Header />
-      <div className="ml-16">
+      <Navigation 
+        currentView="vision" 
+        onNavigate={(view) => window.location.href = `/${view}`}
+        isCollapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+      />
+      <div className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-80'} p-6`}>
         <div className="space-y-8">
           {/* Header */}
           <div className="flex items-center justify-between">

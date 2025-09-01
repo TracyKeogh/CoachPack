@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { useGoalSettingData } from '../hooks/useGoalSettingData';
 import { GOAL_CATEGORIES, ActionItem, Milestone } from '../types/goals';
+import Header from './Header';
+import Navigation from './Navigation';
 
 const Goals: React.FC = () => {
   const { 
@@ -34,9 +36,19 @@ const Goals: React.FC = () => {
   const [newGoalText, setNewGoalText] = useState('');
   const [newMantra, setNewMantra] = useState('');
   const [newActionText, setNewActionText] = useState('');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   if (!isLoaded) {
     return (
+      <>
+        <Header />
+        <Navigation 
+          currentView="goals" 
+          onNavigate={(view) => window.location.href = `/${view}`}
+          isCollapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        />
+        <div className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-80'}`}>
       <div className="flex items-center justify-center min-h-96">
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
@@ -44,6 +56,8 @@ const Goals: React.FC = () => {
           <p className="text-slate-600">Retrieving your saved progress...</p>
         </div>
       </div>
+        </div>
+      </>
     );
   }
 
@@ -387,6 +401,15 @@ const Goals: React.FC = () => {
   };
 
   return (
+    <>
+      <Header />
+      <Navigation 
+        currentView="goals" 
+        onNavigate={(view) => window.location.href = `/${view}`}
+        isCollapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+      />
+      <div className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-80'} p-6`}>
     <div className="space-y-8">
       {/* Header */}
       <div>
@@ -468,6 +491,8 @@ const Goals: React.FC = () => {
         )}
       </div>
     </div>
+      </div>
+    </>
   );
 };
 

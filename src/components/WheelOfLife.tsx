@@ -7,6 +7,7 @@ import { exportWheelData, importWheelData, clearWheelData } from '../utils/stora
 import WheelSignupModal from './WheelSignupModal';
 import NotesPanel from './NotesPanel';
 import Header from './Header';
+import Navigation from './Navigation';
 
 const WheelOfLife: React.FC = () => {
   const {
@@ -30,6 +31,7 @@ const WheelOfLife: React.FC = () => {
   const [showDataManagement, setShowDataManagement] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const svgRef = useRef<SVGSVGElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -288,7 +290,13 @@ const WheelOfLife: React.FC = () => {
   return (
     <>
       <Header />
-      <div className="ml-16">
+      <Navigation 
+        currentView="wheel" 
+        onNavigate={(view) => window.location.href = `/${view}`}
+        isCollapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+      />
+      <div className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-80'} p-6`}>
         <div className="space-y-8">
           {/* Header with signup info */}
           <div className="flex items-center justify-between">

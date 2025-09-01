@@ -20,6 +20,7 @@ import { useCalendarData, Event, ActionPoolItem } from '../hooks/useCalendarData
 import { useGoalSettingData } from '../hooks/useGoalSettingData';
 import NotesPanel from './NotesPanel';
 import Header from './Header';
+import Navigation from './Navigation';
 
 const Calendar: React.FC = () => {
   // Your existing hooks
@@ -54,6 +55,7 @@ const Calendar: React.FC = () => {
   const [draggedEvent, setDraggedEvent] = useState<Event | null>(null);
   const [hoveredColumn, setHoveredColumn] = useState<string | null>(null);
   const [hoveredTimeSlot, setHoveredTimeSlot] = useState<string | null>(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Your existing helper functions (getFirstDayOfWeek, getDaysOfWeek, etc.)
   const getFirstDayOfWeek = useCallback((date: Date): Date => {
@@ -284,7 +286,13 @@ const Calendar: React.FC = () => {
   return (
     <>
       <Header />
-      <div className="ml-16">
+      <Navigation 
+        currentView="calendar" 
+        onNavigate={(view) => window.location.href = `/${view}`}
+        isCollapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+      />
+      <div className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-80'} p-6`}>
     <div className="max-w-7xl mx-auto p-6">
       {/* YOUR EXISTING CALENDAR HEADER AND NAVIGATION */}
       

@@ -6,6 +6,7 @@ import {
 import { allValues, type Value } from '../data/values';
 import { useValuesData } from '../hooks/useValuesData';
 import Header from './Header';
+import Navigation from './Navigation';
 
 const ValuesClarity: React.FC = () => {
   const {
@@ -34,6 +35,7 @@ const ValuesClarity: React.FC = () => {
   const [showDataManagement, setShowDataManagement] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
 
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [shuffledValues] = useState(() => 
     allValues.map(v => v.name).sort(() => Math.random() - 0.5)
   );
@@ -174,7 +176,13 @@ const ValuesClarity: React.FC = () => {
   return (
     <>
       <Header />
-      <div className="ml-16">
+      <Navigation 
+        currentView="values" 
+        onNavigate={(view) => window.location.href = `/${view}`}
+        isCollapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+      />
+      <div className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-80'} p-6`}>
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
