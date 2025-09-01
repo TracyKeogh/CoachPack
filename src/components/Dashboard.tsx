@@ -634,8 +634,8 @@ const Dashboard = () => {
               return (
                 <div
                   key={day}
-                  className={\`aspect-square ${bgColor} ${textColor} rounded-lg flex items-center justify-center text-xs font-medium transition-all duration-200 hover:scale-110 relative group cursor-pointer`}
-                  title={isMilestoneDay ? \`Day ${day}: ${dashboardData.milestoneCalendar[day].title}` : \`Day ${day}`}
+                  className={`aspect-square ${bgColor} ${textColor} rounded-lg flex items-center justify-center text-xs font-medium transition-all duration-200 hover:scale-110 relative group cursor-pointer`}
+                  title={isMilestoneDay ? `Day ${day}: ${dashboardData.milestoneCalendar[day].title}` : `Day ${day}`}
                 >
                   {showStar ? (
                     <div className="w-3 h-3 text-yellow-400">
