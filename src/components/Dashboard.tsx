@@ -15,47 +15,8 @@ const Dashboard = () => {
   const [isEditingWhy, setIsEditingWhy] = useState(false);
   const [editWhyText, setEditWhyText] = useState('');
 
-  // Left sidebar sections with proper feature mapping and navigation
-  const sections = [
-    { 
-      id: 'wheel-of-life', 
-      icon: PieChart, 
-      title: 'Baseline', 
-      description: 'Life assessment across 8 areas',
-      routes: ['/wheel-of-life', '/values']
-    },
-    { 
-      id: 'values', 
-      icon: Heart, 
-      title: 'Values', 
-      description: 'Discover what matters most',
-      routes: ['/values']
-    },
-    { 
-      id: 'vision', 
-      icon: Eye, 
-      title: 'Vision Board', 
-      description: 'Visual representation of your goals',
-      routes: ['/vision-board']
-    },
-    { 
-      id: 'goals', 
-      icon: Target, 
-      title: 'Goals', 
-      description: 'Set and track your objectives',
-      routes: ['/goal-setting']
-    },
-    { 
-      id: 'calendar', 
-      icon: Calendar, 
-      title: 'Calendar', 
-      description: 'Schedule your actions',
-      routes: ['/calendar']
-    }
-  ];
-
   // Determine which section is currently active based on the route
-  const getActiveSection = () => {
+  const getActiveView = (): ViewType => {
     const path = location.pathname;
     if (path === '/dashboard') return 'dashboard';
     if (path === '/wheel-of-life') return 'wheel-of-life';
@@ -63,15 +24,32 @@ const Dashboard = () => {
     if (path === '/goal-setting' || path === '/goals') return 'goals';
     if (path === '/values') return 'values';
     if (path === '/calendar') return 'calendar';
-    return null;
+    return 'dashboard';
   };
 
-  const activeSection = getActiveSection();
-
-  const handleSectionClick = (section: any) => {
-    if (section.routes && section.routes.length > 0) {
-      // Navigate to the first route for now
-      navigate(section.routes[0]);
+  const handleNavigate = (view: ViewType) => {
+    switch (view) {
+      case 'dashboard':
+        navigate('/dashboard');
+        break;
+      case 'wheel-of-life':
+        navigate('/wheel-of-life');
+        break;
+      case 'values':
+        navigate('/values');
+        break;
+      case 'vision':
+        navigate('/vision-board');
+        break;
+      case 'goals':
+        navigate('/goal-setting');
+        break;
+      case 'calendar':
+        navigate('/calendar');
+        break;
+      case 'templates':
+        navigate('/community');
+        break;
     }
   };
 
@@ -114,117 +92,22 @@ const Dashboard = () => {
   // Check if vision statement has been edited
   const hasVisionContent = goalsData.annualSnapshot?.snapshot?.trim();
   const hasWhyContent = goalsData.annualSnapshot?.mantra?.trim();
-  const SidebarSection = ({ section }: { section: any }) => (
-    <div 
-      onClick={() => handleSectionClick(section)}
-      className={`flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-all duration-200
-        ${section.active ? 'bg-purple-100 border-l-4 border-purple-500' : 'hover:bg-slate-100'}
-        ${section.comingSoon ? 'opacity-60 cursor-not-allowed' : ''}
-      `}
-    >
-      <section.icon className={`w-5 h-5 ${section.active ? 'text-purple-600' : 'text-slate-600'}`} />
-      <div className="flex-1">
-        <div className="flex items-center space-x-2">
-          <span className={`text-sm font-medium ${section.active ? 'text-purple-900' : 'text-slate-700'}`}>
-            {section.title}
-          </span>
-          {section.comingSoon && (
-            <span className="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full">Soon</span>
-          )}
-          {section.external && (
-            <ExternalLink className="w-3 h-3 text-slate-400" />
-          )}
-        </div>
-        <div className="text-xs text-slate-500 mb-1">
-          {section.features.join(', ')}
-        </div>
-        <div className="w-full bg-slate-200 rounded-full h-1.5">
-          <div 
-            className={`h-1.5 rounded-full transition-all duration-300 ${
-              section.progress > 0 ? 'bg-purple-500' : 'bg-slate-300'
-            }`}
-            style={{ width: `${section.progress}%` }}
-          />
-        </div>
-      </div>
-      <span className="text-xs text-slate-500 font-medium">{section.progress}%</span>
-    </div>
-  );
 
   const progressPercentage = (dashboardData.daysIntoJourney / dashboardData.totalDays) * 100;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       
-      {/* Left Sidebar - Fixed Position */}
-      <div className={`fixed left-0 top-0 h-full bg-white border-r border-slate-200 z-50 flex flex-col transition-all duration-300 ${
-        sidebarOpen ? 'w-64' : 'w-16'
-      }`}>
-        
-        {/* Top Section */}
-        <div className="p-4">
-          <button 
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors mb-4"
-          >
-            <Menu className="w-5 h-5 text-slate-600" />
-          </button>
-        </div>
-
-        {/* Navigation Icons */}
-        <div className="flex-1 px-2">
-          <div className="space-y-3">
-            {/* Dashboard Icon */}
-            <div 
-              onClick={() => navigate('/dashboard')}
-              className={`w-12 h-12 rounded-lg flex items-center cursor-pointer transition-colors relative
-                ${activeSection === 'dashboard' ? 'bg-purple-100 text-purple-600' : 'hover:bg-slate-100 text-slate-600'} ${
-                sidebarOpen ? 'justify-start pl-4' : 'justify-center'
-              }`}
-            >
-              <Home className="w-5 h-5" />
-              {sidebarOpen && (
-                <div className="ml-3">
-                  <div className="font-medium text-slate-700">Dashboard</div>
-                  <div className="text-xs text-slate-500">Overview and progress</div>
-                </div>
-              )}
-              {activeSection === 'dashboard' && (
-                <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-purple-500 rounded-r-full -ml-2"></div>
-              )}
-            </div>
-            
-            {/* Journey Section Icons */}
-            {sections.map(section => {
-              const isActive = activeSection === section.id;
-              return (
-                <div 
-                  key={section.id}
-                  onClick={() => handleSectionClick(section)}
-                  className={`w-12 h-12 rounded-lg flex items-center cursor-pointer transition-colors relative
-                    ${isActive ? 'bg-purple-100 text-purple-600' : 'hover:bg-slate-100 text-slate-600'} ${
-                    sidebarOpen ? 'justify-start pl-4' : 'justify-center'
-                  }`}
-                >
-                  <section.icon className="w-5 h-5" />
-                  {sidebarOpen && (
-                    <div className="ml-3">
-                      <div className="font-medium text-slate-700">{section.title}</div>
-                      <div className="text-xs text-slate-500">{section.description}</div>
-                    </div>
-                  )}
-                  {isActive && (
-                    <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-purple-500 rounded-r-full -ml-2"></div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+      {/* Navigation Sidebar */}
+      <Navigation 
+        currentView={getActiveView()} 
+        onNavigate={handleNavigate}
+        isCollapsed={!sidebarOpen}
+        onToggleCollapse={() => setSidebarOpen(!sidebarOpen)}
+      />
       
       {/* Main Content */}
-      <div className={`transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'} overflow-y-auto`}>
+      <div className={`transition-all duration-300 ${sidebarOpen ? 'ml-80' : 'ml-16'} overflow-y-auto`}>
       
       {/* Hero Section - Their Vision */}
       <div className="relative overflow-hidden">

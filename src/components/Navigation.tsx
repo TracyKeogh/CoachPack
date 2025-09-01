@@ -2,21 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { 
   BarChart3, 
   Heart, 
-  ImageIcon,
-  Download,
-  Target, 
-  Calendar as CalendarIcon,
-  Home,
-  ChevronRight,
-  Menu,
-  X,
-  ArrowLeft,
-  User,
   Eye,
   CheckSquare,
-  TrendingUp
+  Calendar as CalendarIcon,
+  Home,
+  Download,
+  Menu,
+  X,
+  ArrowLeft
 } from 'lucide-react';
-import type { ViewType } from '../App';
+
+export type ViewType = 'dashboard' | 'wheel-of-life' | 'values' | 'vision' | 'goals' | 'calendar' | 'templates';
 
 interface NavigationProps {
   currentView: ViewType;
@@ -118,11 +114,11 @@ const Navigation: React.FC<NavigationProps> = ({
   const wheelStats = getCompletionStats();
   const goalsProgress = getGoalsProgress();
 
-  // Journey sections with real progress data
+  // Journey sections with real progress data - using correct icons
   const sections = [
     { 
       id: 'wheel-of-life' as ViewType, 
-      icon: User, 
+      icon: BarChart3, 
       title: 'Baseline', 
       progress: wheelStats.wheelCompleted ? (wheelStats.allReflectionsCompleted ? 100 : 75) : (wheelStats.averageScore > 0 ? 50 : 0),
       active: currentView === 'wheel-of-life'
@@ -152,16 +148,13 @@ const Navigation: React.FC<NavigationProps> = ({
       id: 'calendar' as ViewType, 
       icon: CalendarIcon, 
       title: 'Calendar', 
-      progress: 0, // Add tracking completion logic when implemented
+      progress: 0,
       active: currentView === 'calendar'
     }
   ];
 
-  // Calculate overall progress
-  const overallProgress = Math.round(sections.reduce((sum, section) => sum + section.progress, 0) / sections.length);
-
-  // Traditional nav items (for reference/fallback)
-  const traditionalNavItems = [
+  // Additional nav items
+  const additionalNavItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home, color: 'text-slate-600' },
     { id: 'templates', label: 'Templates', icon: Download, color: 'text-purple-500' },
   ];
@@ -213,19 +206,6 @@ const Navigation: React.FC<NavigationProps> = ({
 
   return (
     <>
-      {/* Collapsed Navigation Toggle Button */}
-      {isCollapsed && (
-        <div className="fixed left-4 top-24 z-50">
-          <button
-            onClick={onToggleCollapse}
-            className="w-10 h-10 bg-white shadow-lg border border-slate-200 rounded-lg flex items-center justify-center hover:bg-slate-50 transition-colors group"
-            title="Open navigation"
-          >
-            <Menu className="w-5 h-5 text-slate-600 group-hover:text-slate-900" />
-          </button>
-        </div>
-      )}
-
       {/* Navigation Panel */}
       <nav 
         className={`fixed left-0 top-20 h-[calc(100vh-5rem)] bg-white shadow-lg border-r border-slate-200 overflow-y-auto transition-all duration-300 z-40 ${
@@ -277,26 +257,6 @@ const Navigation: React.FC<NavigationProps> = ({
             ))}
           </div>
 
-          {/* Overall Progress */}
-          {!isCollapsed && (
-            <div className={`p-4 rounded-xl text-white mb-8 ${
-              overallProgress > 50 ? 'bg-gradient-to-r from-purple-500 to-purple-600' : 
-              overallProgress > 0 ? 'bg-gradient-to-r from-slate-500 to-slate-600' : 
-              'bg-gradient-to-r from-slate-400 to-slate-500'
-            }`}>
-              <h3 className="font-semibold mb-2">Overall Progress</h3>
-              <div className="text-2xl font-bold">{overallProgress}%</div>
-              <p className={`text-sm ${
-                overallProgress > 50 ? 'text-purple-100' : 'text-slate-100'
-              }`}>
-                {overallProgress === 0 ? 'Ready to begin' : 
-                 overallProgress < 25 ? 'Getting started' :
-                 overallProgress < 50 ? 'Building momentum' :
-                 overallProgress < 75 ? 'Making great progress' : 'Almost there!'}
-              </p>
-            </div>
-          )}
-
           {/* Additional Navigation Items */}
           {!isCollapsed ? (
             <div className="border-t border-slate-200 pt-6">
@@ -304,7 +264,7 @@ const Navigation: React.FC<NavigationProps> = ({
                 Additional Tools
               </h3>
               <ul className="space-y-2">
-                {traditionalNavItems.map((item) => {
+                {additionalNavItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = currentView === item.id;
                   
@@ -322,9 +282,6 @@ const Navigation: React.FC<NavigationProps> = ({
                           <Icon className={`w-5 h-5 ${isActive ? 'text-purple-600' : item.color}`} />
                           <span className="font-medium">{item.label}</span>
                         </div>
-                        <ChevronRight className={`w-4 h-4 transition-transform ${
-                          isActive ? 'text-purple-500 transform rotate-90' : 'text-slate-400 group-hover:text-slate-600'
-                        }`} />
                       </button>
                     </li>
                   );
@@ -334,7 +291,7 @@ const Navigation: React.FC<NavigationProps> = ({
           ) : (
             <div className="border-t border-slate-200 pt-6">
               <ul className="space-y-2">
-                {traditionalNavItems.map((item) => {
+                {additionalNavItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = currentView === item.id;
                   

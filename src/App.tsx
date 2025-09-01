@@ -20,6 +20,8 @@ import PricingPage from './components/PricingPage';
 import CompanyLandingPage from './components/CompanyLandingPage';
 import CommunityTemplates from './components/CommunityTemplates';
 
+export type ViewType = 'dashboard' | 'wheel-of-life' | 'values' | 'vision' | 'goals' | 'calendar' | 'templates';
+
 function App() {
   return (
     <Router>
