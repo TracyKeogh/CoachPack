@@ -1,488 +1,284 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Heart, Target, Calendar, Sparkles, ChevronRight, Clock, BarChart3, Eye, CheckSquare, TrendingUp, User, Menu, Home, ExternalLink } from 'lucide-react';
-import { useDashboardData } from '../hooks/useDashboardData';
+import { useState, useEffect, useMemo } from 'react';
+import { useWheelData } from './useWheelData';
+import { useValuesData } from './useValuesData';
+import { useVisionBoardData } from './useVisionBoardData';
 
-const Dashboard = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const navigate = useNavigate();
-  const dashboardData = useDashboardData();
+export interface DashboardData {
+  // User info
+  name: string;
+  daysIntoJourney: number;
+  totalDays: number;
+  
+  // Core values
+  coreValues: string[];
+  visionStatement: string;
+  currentFocus: string;
+  
+  // Vision board
+  visionBoard: Array<{
+    quadrant: string;
+    title: string;
+    imageUrl: string;
+  }>;
+  
+  // Life areas with current and vision state
+  lifeAreas: Array<{
+    area: string;
+    now: number;
+    vision: number;
+    gap: number;
+  }>;
+  
+  // Progress tracking
+  baselineProgress: number;
+  visionProgress: number;
+  planProgress: number;
+  overallProgress: number;
+  
+  // Next milestones
+  nextMilestones: Array<{
+    title: string;
+    date: string;
+    daysAway: number;
+  }>;
+  
+  // Journey start date
+  journeyStartDate: Date | null;
+}
 
-  // Left sidebar sections with proper feature mapping and navigation
-  const sections = [
-    { 
-      id: 'baseline', 
-      icon: User, 
-      title: 'Baseline', 
-      progress: dashboardData.baselineProgress, 
-      active: false,
-      features: ['Wheel of Life', 'Values Clarity'],
-      routes: ['/wheel-of-life', '/values']
-    },
-    { 
-      id: 'vision', 
-      icon: Eye, 
-      title: 'Vision', 
-      progress: dashboardData.visionProgress, 
-      active: true,
-      features: ['Vision Board'],
-      routes: ['/vision-board']
-    },
-    { 
-      id: 'plan', 
-      icon: CheckSquare, 
-      title: 'Plan', 
-      progress: dashboardData.planProgress, 
-      active: false,
-      features: ['Goal Setting'],
-      routes: ['/goal-setting']
-    },
-    { 
-      id: 'stress', 
-      icon: TrendingUp, 
-      title: 'Stress Test', 
-      progress: 0, 
-      active: false,
-      comingSoon: true,
-      features: ['Goal Stress Testing'],
-      routes: []
-    },
-    { 
-      id: 'track', 
-      icon: Calendar, 
-      title: 'Track', 
-      progress: 30, 
-      active: false,
-      external: true,
-      features: ['Mobile App'],
-      routes: ['/calendar']
+export const useDashboardData = (): DashboardData => {
+  const { data: wheelData, isLoaded: wheelLoaded } = useWheelData();
+  const { data: valuesData, isLoaded: valuesLoaded } = useValuesData();
+  const { visionItems, isLoaded: visionLoaded } = useVisionBoardData();
+
+  const [journeyStartDate, setJourneyStartDate] = useState<Date | null>(null);
+
+  // Calculate journey start date (first time user completed wheel of life)
+  useEffect(() => {
+    if (wheelLoaded && wheelData && Array.isArray(wheelData) && wheelData.length > 0) {
+      // Check if we have stored journey start date, otherwise use current date
+      const stored = localStorage.getItem('coach-pack-journey-start');
+      if (stored) {
+        setJourneyStartDate(new Date(stored));
+      } else {
+        const startDate = new Date();
+        localStorage.setItem('coach-pack-journey-start', startDate.toISOString());
+        setJourneyStartDate(startDate);
+      }
     }
-  ];
+  }, [wheelLoaded, wheelData]);
 
-  const handleSectionClick = (section: any) => {
-    if (section.comingSoon) return;
+  // Calculate days into journey
+  const daysIntoJourney = useMemo(() => {
+    if (!journeyStartDate) return 1; // Default to day 1
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - journeyStartDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return Math.min(diffDays, 84); // Cap at 84 days (12 weeks)
+  }, [journeyStartDate]);
+
+  // Extract core values from values data
+  const coreValues = useMemo(() => {
+    if (!valuesLoaded || !valuesData) return ['Self-Discovery', 'Growth', 'Purpose'];
     
-    if (section.routes && section.routes.length > 0) {
-      // Navigate to the first route for now
-      navigate(section.routes[0]);
+    // Try to get core values from different steps of values process
+    if (valuesData.rankedCoreValues && valuesData.rankedCoreValues.length > 0) {
+      return valuesData.rankedCoreValues.slice(0, 3).map(v => v.name);
     }
+    if (valuesData.coreValues && valuesData.coreValues.length > 0) {
+      return valuesData.coreValues.slice(0, 3).map(v => v.name);
+    }
+    if (valuesData.selectedValues && valuesData.selectedValues.length > 0) {
+      return valuesData.selectedValues.slice(0, 3).map(v => v.name);
+    }
+    
+    return ['Self-Discovery', 'Growth', 'Purpose']; // Fallback values
+  }, [valuesLoaded, valuesData]);
+
+  // Generate vision statement from user's data
+  const visionStatement = useMemo(() => {
+    if (!wheelLoaded || !wheelData || !Array.isArray(wheelData)) {
+      return "Building an intentional life aligned with my values";
+    }
+    
+    // Find the highest scoring areas to create a personalized vision statement
+    const sortedAreas = [...wheelData].sort((a, b) => (b.score || 0) - (a.score || 0));
+    const topAreas = sortedAreas.slice(0, 2);
+    
+    if (topAreas.length >= 2) {
+      return `Excelling in ${topAreas[0].area.toLowerCase()} while growing in ${topAreas[1].area.toLowerCase()}`;
+    } else if (topAreas.length === 1) {
+      return `Building strength in ${topAreas[0].area.toLowerCase()} and beyond`;
+    }
+    
+    return "Creating a balanced and fulfilling life";
+  }, [wheelLoaded, wheelData]);
+
+  // Generate current focus from lowest scoring areas
+  const currentFocus = useMemo(() => {
+    if (!wheelLoaded || !wheelData || !Array.isArray(wheelData)) {
+      return "Taking the first steps toward intentional living";
+    }
+    
+    // Find the lowest scoring areas for focus
+    const sortedAreas = [...wheelData].sort((a, b) => (a.score || 0) - (b.score || 0));
+    const lowestArea = sortedAreas[0];
+    
+    if (lowestArea) {
+      return `Currently focusing on improving ${lowestArea.area.toLowerCase()}`;
+    }
+    
+    return "Focusing on overall life balance and growth";
+  }, [wheelLoaded, wheelData]);
+
+  // Calculate progress percentages
+  const baselineProgress = useMemo(() => {
+    if (!wheelLoaded || !valuesLoaded) return 0;
+    
+    let completed = 0;
+    let total = 2; // Wheel of Life + Values Clarity
+    
+    // Check if wheel of life has been completed (has data with scores)
+    if (wheelData && Array.isArray(wheelData) && wheelData.length > 0) {
+      const hasValidScores = wheelData.some(area => area.score && area.score > 0);
+      if (hasValidScores) completed++;
+    }
+    
+    // Check if values have been selected
+    if (valuesData && (
+      (valuesData.coreValues && valuesData.coreValues.length > 0) ||
+      (valuesData.selectedValues && valuesData.selectedValues.length > 0)
+    )) {
+      completed++;
+    }
+    
+    return Math.round((completed / total) * 100);
+  }, [wheelLoaded, valuesLoaded, wheelData, valuesData]);
+
+  const visionProgress = useMemo(() => {
+    if (!visionLoaded) return 0;
+    
+    if (!visionItems || !Array.isArray(visionItems) || visionItems.length === 0) return 0;
+    
+    // Calculate based on number of vision items and their completeness
+    const totalPossible = 4; // 4 quadrants
+    const completed = Math.min(visionItems.length, totalPossible);
+    
+    return Math.round((completed / totalPossible) * 100);
+  }, [visionLoaded, visionItems]);
+
+  const planProgress = useMemo(() => {
+    // For now, return a default value since goals data is not available
+    // This can be updated when the goals system is properly implemented
+    return 0;
+  }, []);
+
+  const overallProgress = useMemo(() => {
+    return Math.round((baselineProgress + visionProgress + planProgress) / 3);
+  }, [baselineProgress, visionProgress, planProgress]);
+
+  // Transform vision board data
+  const visionBoard = useMemo(() => {
+    if (!visionLoaded || !visionItems || !Array.isArray(visionItems)) return [];
+    
+    return visionItems.slice(0, 4).map(item => ({
+      quadrant: item.quadrant ? (item.quadrant.charAt(0).toUpperCase() + item.quadrant.slice(1)) : 'Unknown',
+      title: item.title || 'Untitled',
+      imageUrl: item.imageUrl || ''
+    }));
+  }, [visionLoaded, visionItems]);
+
+  // Transform life areas data
+  const lifeAreas = useMemo(() => {
+    if (!wheelLoaded || !wheelData || !Array.isArray(wheelData)) {
+      // Return default structure if no data
+      return [
+        { area: 'Career', now: 5, vision: 8, gap: 3 },
+        { area: 'Health', now: 6, vision: 9, gap: 3 },
+        { area: 'Relationships', now: 7, vision: 9, gap: 2 },
+        { area: 'Growth', now: 5, vision: 8, gap: 3 }
+      ];
+    }
+    
+    // Map wheel areas to dashboard format
+    const areaMapping: Record<string, string> = {
+      'Career': 'Career',
+      'Finances': 'Money',
+      'Health': 'Health',
+      'Family': 'Relationships',
+      'Romance': 'Relationships',
+      'Personal Growth': 'Growth',
+      'Fun & Recreation': 'Recreation',
+      'Environment': 'Environment'
+    };
+    
+    const transformedAreas: Record<string, { now: number; vision: number }> = {};
+    
+    wheelData.forEach(area => {
+      if (area && area.area && typeof area.score === 'number') {
+        const mappedArea = areaMapping[area.area];
+        if (mappedArea) {
+          if (!transformedAreas[mappedArea]) {
+            transformedAreas[mappedArea] = { now: 0, vision: 0 };
+          }
+          // Use current score for 'now', assume vision is 2-3 points higher
+          transformedAreas[mappedArea].now = Math.max(transformedAreas[mappedArea].now, area.score);
+          transformedAreas[mappedArea].vision = Math.min(10, area.score + 3);
+        }
+      }
+    });
+    
+    // Convert to array format
+    return Object.entries(transformedAreas).map(([area, data]) => ({
+      area,
+      now: data.now,
+      vision: data.vision,
+      gap: data.vision - data.now
+    }));
+  }, [wheelLoaded, wheelData]);
+
+  // Generate next milestones based on real data
+  const nextMilestones = useMemo(() => {
+    if (!wheelLoaded || !wheelData || !Array.isArray(wheelData)) return [];
+    
+    // Find areas with biggest gaps (lowest scores) and create milestones
+    const sortedByScore = [...wheelData]
+      .filter(area => area.score && area.score > 0)
+      .sort((a, b) => (a.score || 0) - (b.score || 0));
+    
+    const today = new Date();
+    const milestones = [];
+    
+    // Create milestones for the 3 lowest scoring areas
+    sortedByScore.slice(0, 3).forEach((area, index) => {
+      const daysAway = 7 + (index * 14); // 1 week, 3 weeks, 5 weeks
+      const date = new Date(today);
+      date.setDate(date.getDate() + daysAway);
+      
+      milestones.push({
+        title: `Improve ${area.area}`,
+        date: date.toLocaleDateString(),
+        daysAway
+      });
+    });
+    
+    return milestones;
+  }, [wheelLoaded, wheelData]);
+
+  return {
+    name: 'Coach', // Simple name since no auth yet
+    daysIntoJourney,
+    totalDays: 84, // 12 weeks
+    coreValues,
+    visionStatement,
+    currentFocus,
+    visionBoard,
+    lifeAreas,
+    baselineProgress,
+    visionProgress,
+    planProgress,
+    overallProgress,
+    nextMilestones,
+    journeyStartDate
   };
-
-  const SidebarSection = ({ section }: { section: any }) => (
-    <div 
-      onClick={() => handleSectionClick(section)}
-      className={`flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-all duration-200
-        ${section.active ? 'bg-purple-100 border-l-4 border-purple-500' : 'hover:bg-slate-100'}
-        ${section.comingSoon ? 'opacity-60 cursor-not-allowed' : ''}
-      `}
-    >
-      <section.icon className={`w-5 h-5 ${section.active ? 'text-purple-600' : 'text-slate-600'}`} />
-      <div className="flex-1">
-        <div className="flex items-center space-x-2">
-          <span className={`text-sm font-medium ${section.active ? 'text-purple-900' : 'text-slate-700'}`}>
-            {section.title}
-          </span>
-          {section.comingSoon && (
-            <span className="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full">Soon</span>
-          )}
-          {section.external && (
-            <ExternalLink className="w-3 h-3 text-slate-400" />
-          )}
-        </div>
-        <div className="text-xs text-slate-500 mb-1">
-          {section.features.join(', ')}
-        </div>
-        <div className="w-full bg-slate-200 rounded-full h-1.5">
-          <div 
-            className={`h-1.5 rounded-full transition-all duration-300 ${
-              section.progress > 0 ? 'bg-purple-500' : 'bg-slate-300'
-            }`}
-            style={{ width: `${section.progress}%` }}
-          />
-        </div>
-      </div>
-      <span className="text-xs text-slate-500 font-medium">{section.progress}%</span>
-    </div>
-  );
-
-  const progressPercentage = (dashboardData.daysIntoJourney / dashboardData.totalDays) * 100;
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex">
-      
-      {/* Main Content */}
-      <div className="flex-1 overflow-y-auto">
-      
-      {/* Hero Section - Their Vision */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-blue-600/20"></div>
-        <div className="relative max-w-6xl mx-auto px-8 py-16">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center space-x-2 bg-purple-500/20 px-4 py-2 rounded-full mb-6">
-              <Sparkles className="w-5 h-5 text-purple-400" />
-              <span className="text-purple-300 font-medium">Day {dashboardData.daysIntoJourney} of Your Journey</span>
-            </div>
-            <h1 className="text-5xl font-bold text-white mb-6 leading-tight">
-              {dashboardData.visionStatement}
-            </h1>
-            <p className="text-xl text-slate-300 max-w-3xl mx-auto">
-              {dashboardData.currentFocus}
-            </p>
-          </div>
-
-          {/* Core Values */}
-          <div className="flex justify-center space-x-6 mb-12">
-            {dashboardData.coreValues.map((value, i) => (
-              <div key={i} className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-6 py-4">
-                <div className="flex items-center space-x-3">
-                  <Heart className="w-5 h-5 text-purple-400" />
-                  <span className="text-white font-semibold">{value}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Vision Board Integration */}
-          <div className="max-w-2xl mx-auto mb-12">
-            <div className="text-center mb-6">
-              <h3 className="text-2xl font-bold text-white mb-2">Your Vision</h3>
-              <p className="text-slate-400">The life you're creating</p>
-            </div>
-            
-            {/* Sleek vision board frame */}
-            <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-1 shadow-2xl">
-              {/* Vision board content */}
-              <div className="grid grid-cols-2 gap-1 aspect-[5/4] overflow-hidden rounded-xl">
-                {dashboardData.visionBoard.length > 0 ? (
-                  dashboardData.visionBoard.map((item, i) => (
-                    <div key={i} className="relative overflow-hidden group">
-                      <img 
-                        src={item.imageUrl} 
-                        alt={item.title}
-                        className="w-full h-full object-cover transition-all duration-700 group-hover:scale-102"
-                      />
-                      
-                      {/* Minimal overlay on hover only */}
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300">
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-                          <span className="text-white text-sm font-medium px-3 py-1 bg-black/40 backdrop-blur-sm rounded-full">
-                            {item.quadrant}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  // Fallback when no vision board items
-                  Array.from({ length: 4 }, (_, i) => (
-                    <div key={i} className="bg-slate-700/50 flex items-center justify-center">
-                      <span className="text-slate-400 text-sm">Add Vision Item</span>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-            
-            {/* Minimal description */}
-            <div className="text-center mt-4">
-              <p className="text-slate-500 text-sm">Your visual guide</p>
-            </div>
-          </div>
-
-          {/* Journey Progress Arc */}
-          <div className="max-w-2xl mx-auto">
-            <div className="relative">
-              <div className="w-full h-3 bg-slate-700/50 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-purple-500 via-blue-500 to-green-500 rounded-full transition-all duration-2000 ease-out"
-                  style={{ width: `${progressPercentage}%` }}
-                ></div>
-              </div>
-              <div className="flex justify-between mt-3 text-sm">
-                <span className="text-slate-400">Start</span>
-                <span className="text-purple-300 font-medium">{Math.round(progressPercentage)}% Complete</span>
-                <span className="text-green-400">Vision Achieved</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Life Areas - Visual Story */}
-      <div className="max-w-6xl mx-auto px-8 py-16">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-white mb-4">Your Life Today</h2>
-          <p className="text-slate-400">See how each area is evolving toward your vision</p>
-        </div>
-
-        {/* Wheel Comparison */}
-        <div className="bg-slate-800/30 backdrop-blur-sm border border-slate-700/30 rounded-3xl p-8 mb-12">
-          <div className="flex items-center justify-center space-x-16">
-            {/* Current State Wheel */}
-            <div className="text-center">
-              <h3 className="text-xl font-semibold text-slate-300 mb-6">Today</h3>
-              <div className="relative mb-4">
-                <svg width="200" height="200" className="transform -rotate-90">
-                  {dashboardData.lifeAreas.map((area, index) => {
-                    const startAngle = (index * 360) / dashboardData.lifeAreas.length;
-                    const endAngle = ((index + 1) * 360) / dashboardData.lifeAreas.length;
-                    const radius = (area.now / 10) * 80;
-                    
-                    const startAngleRad = (startAngle * Math.PI) / 180;
-                    const endAngleRad = (endAngle * Math.PI) / 180;
-                    
-                    const x1 = 100 + radius * Math.cos(startAngleRad);
-                    const y1 = 100 + radius * Math.sin(startAngleRad);
-                    const x2 = 100 + radius * Math.cos(endAngleRad);
-                    const y2 = 100 + radius * Math.sin(endAngleRad);
-                    
-                    const largeArcFlag = endAngleRad - startAngleRad <= Math.PI ? "0" : "1";
-                    
-                    return (
-                      <path
-                        key={index}
-                        d={`M 100 100 L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
-                        fill="rgba(147, 51, 234, 0.6)"
-                        stroke="rgba(147, 51, 234, 0.8)"
-                        strokeWidth="1"
-                      />
-                    );
-                  })}
-                  
-                  {/* Background rings */}
-                  {[20, 40, 60, 80].map(r => (
-                    <circle
-                      key={r}
-                      cx="100"
-                      cy="100"
-                      r={r}
-                      fill="none"
-                      stroke="rgba(148, 163, 184, 0.1)"
-                      strokeWidth="1"
-                    />
-                  ))}
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-slate-300">
-                      {Math.round(dashboardData.lifeAreas.reduce((sum, area) => sum + area.now, 0) / dashboardData.lifeAreas.length * 10) / 10}
-                    </div>
-                    <div className="text-xs text-slate-400">Avg</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Arrow */}
-            <div className="flex flex-col items-center">
-              <ChevronRight className="w-12 h-12 text-purple-400 mb-2" />
-              <div className="text-sm text-purple-400 font-medium">12 Weeks</div>
-            </div>
-
-            {/* Vision State Wheel */}
-            <div className="text-center">
-              <h3 className="text-xl font-semibold text-green-300 mb-6">Your Vision</h3>
-              <div className="relative mb-4">
-                <svg width="200" height="200" className="transform -rotate-90">
-                  {dashboardData.lifeAreas.map((area, index) => {
-                    const startAngle = (index * 360) / dashboardData.lifeAreas.length;
-                    const endAngle = ((index + 1) * 360) / dashboardData.lifeAreas.length;
-                    const radius = (area.vision / 10) * 80;
-                    
-                    const startAngleRad = (startAngle * Math.PI) / 180;
-                    const endAngleRad = (endAngle * Math.PI) / 180;
-                    
-                    const x1 = 100 + radius * Math.cos(startAngleRad);
-                    const y1 = 100 + radius * Math.sin(startAngleRad);
-                    const x2 = 100 + radius * Math.cos(endAngleRad);
-                    const y2 = 100 + radius * Math.sin(endAngleRad);
-                    
-                    const largeArcFlag = endAngleRad - startAngleRad <= Math.PI ? "0" : "1";
-                    
-                    return (
-                      <path
-                        key={index}
-                        d={`M 100 100 L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
-                        fill="rgba(34, 197, 94, 0.6)"
-                        stroke="rgba(34, 197, 94, 0.8)"
-                        strokeWidth="1"
-                      />
-                    );
-                  })}
-                  
-                  {/* Background rings */}
-                  {[20, 40, 60, 80].map(r => (
-                    <circle
-                      key={r}
-                      cx="100"
-                      cy="100"
-                      r={r}
-                      fill="none"
-                      stroke="rgba(148, 163, 184, 0.1)"
-                      strokeWidth="1"
-                    />
-                  ))}
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-300">
-                      {Math.round(dashboardData.lifeAreas.reduce((sum, area) => sum + area.vision, 0) / dashboardData.lifeAreas.length * 10) / 10}
-                    </div>
-                    <div className="text-xs text-green-400">Target</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Legend */}
-          <div className="flex justify-center space-x-8 mt-8 text-sm">
-            {dashboardData.lifeAreas.slice(0, 4).map((area, i) => (
-              <div key={i} className="text-slate-400">{area.area}</div>
-            ))}
-          </div>
-        </div>
-
-        {/* Next Milestones from Real Data */}
-        <div className="bg-slate-800/30 backdrop-blur-sm border border-slate-700/30 rounded-3xl p-8">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-3">
-              <Target className="w-8 h-8 text-purple-400" />
-              <h3 className="text-2xl font-bold text-white">Your Next Milestones</h3>
-            </div>
-            <div className="text-right">
-              <div className="text-sm text-slate-400">Day {dashboardData.daysIntoJourney} of {dashboardData.totalDays}</div>
-              <div className="text-lg font-semibold text-purple-400">{dashboardData.totalDays - dashboardData.daysIntoJourney} days remaining</div>
-            </div>
-          </div>
-          
-          {/* Real Milestones */}
-          {dashboardData.nextMilestones && dashboardData.nextMilestones.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              {dashboardData.nextMilestones.slice(0, 3).map((milestone, i) => (
-                <div key={i} className="bg-slate-700/50 rounded-xl p-4 border border-slate-600/30">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                    </svg>
-                    <span className="text-xs text-slate-400 uppercase font-medium">milestone</span>
-                  </div>
-                  <h4 className="text-lg font-semibold text-white mb-1">{milestone.title}</h4>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400 text-sm">{milestone.date}</span>
-                    <span className="text-purple-400 text-sm font-medium">{milestone.daysAway} days</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-slate-400">No upcoming milestones. Complete your Goals section to see your progress here.</p>
-            </div>
-          )}
-
-          {/* Overall Progress Bar */}
-          <div className="mb-6">
-            <div className="w-full bg-slate-700/50 rounded-full h-3 overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-slate-400 via-purple-500 to-green-500 rounded-full transition-all duration-1000"
-                style={{ width: `${progressPercentage}%` }}
-              ></div>
-            </div>
-            <div className="flex justify-between mt-2 text-sm">
-              <span className="text-slate-400">Start</span>
-              <span className="text-purple-400 font-medium">Day {dashboardData.daysIntoJourney}</span>
-              <span className="text-green-400">Vision Achieved</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Progress Momentum Indicator */}
-        <div className="mt-12 text-center">
-          <div className="inline-flex items-center space-x-4 bg-gradient-to-r from-purple-600/20 to-green-600/20 border border-purple-500/30 rounded-2xl px-8 py-6">
-            <div className="text-3xl">🚀</div>
-            <div>
-              <div className="text-lg font-semibold text-white">Overall Progress: {dashboardData.overallProgress}%</div>
-              <div className="text-slate-400 text-sm">
-                {dashboardData.totalDays - dashboardData.daysIntoJourney} days remaining to achieve your vision
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      </div>
-
-      {/* Right Sidebar Navigation */}
-      <div className={`${sidebarOpen ? 'w-80' : 'w-16'} bg-white border-l border-slate-200 transition-all duration-300 flex flex-col relative`}>
-        
-        {/* Top Section - Always visible */}
-        <div className="p-4">
-          {/* Hamburger Menu - Top */}
-          <button 
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors mb-6"
-          >
-            <Menu className="w-5 h-5 text-slate-600" />
-          </button>
-        </div>
-
-        {/* Navigation Icons - Always visible */}
-        <div className="flex-1 p-2">
-          <div className="space-y-3">
-            {/* Dashboard Icon */}
-            <div 
-              onClick={() => navigate('/dashboard')}
-              className="w-10 h-10 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center cursor-pointer hover:bg-purple-200 transition-colors"
-            >
-              <Home className="w-5 h-5" />
-            </div>
-            
-            {/* Journey Section Icons */}
-            {sections.map(section => (
-              <div 
-                key={section.id}
-                onClick={() => handleSectionClick(section)}
-                className={`w-10 h-10 rounded-lg flex items-center justify-center cursor-pointer transition-colors relative
-                  ${section.active ? 'bg-purple-100 text-purple-600' : 'hover:bg-slate-100 text-slate-600'}
-                  ${section.comingSoon ? 'opacity-60 cursor-not-allowed' : ''}
-                `}
-              >
-                <section.icon className="w-5 h-5" />
-                {section.active && (
-                  <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-purple-500 rounded-r-full -ml-2"></div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Expanded Menu Content - Only when sidebar is open */}
-        {sidebarOpen && (
-          <div className="absolute left-0 top-0 w-80 h-full bg-white border-l border-slate-200 shadow-xl z-10">
-            <div className="p-6">
-              <div className="mb-8">
-                <h2 className="text-xl font-bold text-slate-900 mb-2">Your Journey</h2>
-                <p className="text-slate-600 text-sm">From values to daily action</p>
-              </div>
-              
-              <div className="space-y-3">
-                {sections.map(section => (
-                  <SidebarSection key={section.id} section={section} />
-                ))}
-              </div>
-
-              {/* Overall Progress */}
-              <div className="mt-8 p-4 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl text-white">
-                <h3 className="font-semibold mb-2">Overall Progress</h3>
-                <div className="text-2xl font-bold">{dashboardData.overallProgress}%</div>
-                <p className="text-purple-100 text-sm">Keep building momentum</p>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
 };
-
-export default Dashboard;
