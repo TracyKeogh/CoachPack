@@ -413,25 +413,29 @@ const Dashboard = () => {
               
               let bgColor = 'bg-slate-700/30'; // Default future day
               let textColor = 'text-slate-400';
+              let showStar = false;
               
               if (isPastDay) {
                 bgColor = 'bg-slate-600/50';
                 textColor = 'text-slate-300';
               } else if (isCurrentDay) {
-                bgColor = 'bg-purple-500';
+                bgColor = 'bg-orange-500'; // Orange for current day
                 textColor = 'text-white';
               }
               
               if (isMilestoneDay) {
+                showStar = true;
                 const milestone = dashboardData.milestoneCalendar[day];
-                if (milestone.category === 'business') {
-                  bgColor = isPastDay ? 'bg-purple-600/70' : 'bg-purple-500';
-                } else if (milestone.category === 'body') {
-                  bgColor = isPastDay ? 'bg-green-600/70' : 'bg-green-500';
-                } else if (milestone.category === 'balance') {
-                  bgColor = isPastDay ? 'bg-blue-600/70' : 'bg-blue-500';
+                if (!isCurrentDay) { // Don't override current day color
+                  if (milestone.category === 'business') {
+                    bgColor = isPastDay ? 'bg-purple-600/70' : 'bg-purple-500';
+                  } else if (milestone.category === 'body') {
+                    bgColor = isPastDay ? 'bg-green-600/70' : 'bg-green-500';
+                  } else if (milestone.category === 'balance') {
+                    bgColor = isPastDay ? 'bg-blue-600/70' : 'bg-blue-500';
+                  }
+                  textColor = 'text-white';
                 }
-                textColor = 'text-white';
               }
               
               return (
@@ -440,7 +444,7 @@ const Dashboard = () => {
                   className={`aspect-square ${bgColor} ${textColor} rounded-lg flex items-center justify-center text-xs font-medium transition-all duration-200 hover:scale-110 relative group cursor-pointer`}
                   title={isMilestoneDay ? `Day ${day}: ${dashboardData.milestoneCalendar[day].title}` : `Day ${day}`}
                 >
-                  {isMilestoneDay ? (
+                  {showStar ? (
                     <div className="w-3 h-3 text-yellow-400">
                       <svg fill="currentColor" viewBox="0 0 24 24">
                         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
@@ -468,8 +472,8 @@ const Dashboard = () => {
               <span className="text-slate-400">Completed</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-purple-500 rounded"></div>
-              <span className="text-purple-400">Today</span>
+              <div className="w-3 h-3 bg-orange-500 rounded"></div>
+              <span className="text-orange-400">Today</span>
             </div>
             <div className="flex items-center space-x-2">
               <div className="w-3 h-3 bg-purple-500 rounded"></div>
