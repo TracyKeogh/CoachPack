@@ -161,15 +161,6 @@ const Dashboard = () => {
                         alt={item.title}
                         className="w-full h-full object-cover transition-all duration-700 group-hover:scale-102"
                       />
-                      
-                      {/* Minimal overlay on hover only */}
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300">
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-                          <span className="text-white text-sm font-medium px-3 py-1 bg-black/40 backdrop-blur-sm rounded-full">
-                            Vision
-                          </span>
-                        </div>
-                      </div>
                     </div>
                   ))
                 ) : (
