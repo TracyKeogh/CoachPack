@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useWheelData } from './useWheelData';
 import { useValuesData } from './useValuesData';
 import { useVisionBoardData, VisionItem } from './useVisionBoardData';
+import { useGoalSettingData } from './useGoalSettingData';
 
 export interface DashboardData {
   // User info
@@ -49,6 +50,7 @@ export const useDashboardData = (): DashboardData => {
   const { data: wheelData, isLoaded: wheelLoaded } = useWheelData();
   const { data: valuesData, isLoaded: valuesLoaded } = useValuesData();
   const { visionItems, isLoaded: visionLoaded } = useVisionBoardData();
+  const { data: goalsData, isLoaded: goalsLoaded } = useGoalSettingData();
 
   const [journeyStartDate, setJourneyStartDate] = useState<Date | null>(null);
 
@@ -243,31 +245,67 @@ export const useDashboardData = (): DashboardData => {
 
   // Generate next milestones based on real data
   const nextMilestones = useMemo(() => {
-    if (!wheelLoaded || !wheelData || !Array.isArray(wheelData)) return [];
+    if (!goalsLoaded || !goalsData) return [];
     
-    // Find areas with biggest gaps (lowest scores) and create milestones
-    const sortedByScore = [...wheelData]
-      .filter(area => area.score && area.score > 0)
-      .sort((a, b) => (a.score || 0) - (b.score || 0));
+    // Collect all milestones from category goals
+    const allMilestones: Array<{
+      title: string;
+      date: string;
+      daysAway: number;
+      category: string;
+    }> = [];
     
     const today = new Date();
-    const milestones = [];
     
-    // Create milestones for the 3 lowest scoring areas
-    sortedByScore.slice(0, 3).forEach((area, index) => {
-      const daysAway = 7 + (index * 14); // 1 week, 3 weeks, 5 weeks
-      const date = new Date(today);
-      date.setDate(date.getDate() + daysAway);
-      
-      milestones.push({
-        title: `Improve ${area.area}`,
-        date: date.toLocaleDateString(),
-        daysAway
-      });
+    // Extract milestones from each category goal
+    Object.entries(goalsData.categoryGoals || {}).forEach(([category, categoryGoal]) => {
+      if (categoryGoal && categoryGoal.milestones && Array.isArray(categoryGoal.milestones)) {
+        categoryGoal.milestones.forEach(milestone => {
+          if (!milestone.completed && milestone.dueDate) {
+            const dueDate = new Date(milestone.dueDate);
+            const timeDiff = dueDate.getTime() - today.getTime();
+            const daysAway = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+            
+            // Only include future milestones
+            if (daysAway >= 0) {
+              allMilestones.push({
+                title: milestone.title,
+                date: dueDate.toLocaleDateString(),
+                daysAway,
+                category
+              });
+            }
+          }
+        });
+      }
     });
     
-    return milestones;
-  }, [wheelLoaded, wheelData]);
+    // Sort by due date (closest first) and take the next 3
+    const sortedMilestones = allMilestones
+      .sort((a, b) => a.daysAway - b.daysAway)
+      .slice(0, 3);
+    
+    // If no real milestones, create fallback based on wheel data
+    if (sortedMilestones.length === 0 && wheelLoaded && wheelData && Array.isArray(wheelData)) {
+      const sortedByScore = [...wheelData]
+        .filter(area => area.score && area.score > 0)
+        .sort((a, b) => (a.score || 0) - (b.score || 0));
+      
+      return sortedByScore.slice(0, 3).map((area, index) => {
+        const daysAway = 7 + (index * 14); // 1 week, 3 weeks, 5 weeks
+        const date = new Date(today);
+        date.setDate(date.getDate() + daysAway);
+        
+        return {
+          title: `Improve ${area.area}`,
+          date: date.toLocaleDateString(),
+          daysAway
+        };
+      });
+    }
+    
+    return sortedMilestones;
+  }, [goalsLoaded, goalsData, wheelLoaded, wheelData]);
 
   return {
     name: 'Coach', // Simple name since no auth yet
