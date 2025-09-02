@@ -49,6 +49,7 @@ const Calendar: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showNotes, setShowNotes] = useState(false);
   const [showActionPool, setShowActionPool] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   
   // ADD THESE NEW STATE VARIABLES for drag & drop:
   const [draggedAction, setDraggedAction] = useState<ActionPoolItem | null>(null);
@@ -302,6 +303,40 @@ const Calendar: React.FC = () => {
                 <p className="text-slate-600 mt-2">
                   Schedule time for what matters most and track your progress
                 </p>
+              </div>
+              
+              {/* View Mode Switcher */}
+              <div className="flex items-center space-x-1 bg-slate-100 p-1 rounded-lg">
+                <button
+                  onClick={() => setViewMode('week')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    viewMode === 'week' 
+                      ? 'bg-white text-slate-900 shadow-sm' 
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Week
+                </button>
+                <button
+                  onClick={() => setViewMode('90day')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    viewMode === '90day' 
+                      ? 'bg-white text-slate-900 shadow-sm' 
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  90 Days
+                </button>
+                <button
+                  onClick={() => setViewMode('year')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    viewMode === 'year' 
+                      ? 'bg-white text-slate-900 shadow-sm' 
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Year
+                </button>
               </div>
             </div>
           </div>
