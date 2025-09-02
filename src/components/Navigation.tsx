@@ -1,8 +1,5 @@
 import React from 'react';
-import { MdDashboard, MdCalendarToday } from 'react-icons/md';
-import { FaHeart, FaTarget } from 'react-icons/fa';
-import { IoEye } from 'react-icons/io5';
-import { HiMenu, HiX, HiHome, HiDownload, HiArrowLeft } from 'react-icons/hi';
+import { BarChart3, Heart, Eye, Target, Calendar, Menu, X, Home, Download, ArrowLeft } from 'lucide-react';
 import { useValuesData } from '../hooks/useValuesData';
 import { useWheelData } from '../hooks/useWheelData';
 import { useVisionBoardData } from '../hooks/useVisionBoardData';
@@ -76,35 +73,35 @@ const Navigation: React.FC<NavigationProps> = ({
   const sections = [
     { 
       id: 'wheel-of-life' as ViewType, 
-      icon: MdDashboard, 
+      icon: BarChart3, 
       title: 'Baseline', 
       progress: wheelStats.wheelCompleted ? (wheelStats.allReflectionsCompleted ? 100 : 75) : (wheelStats.averageScore > 0 ? 50 : 0),
       active: currentView === 'wheel-of-life'
     },
     { 
       id: 'values' as ViewType, 
-      icon: FaHeart, 
+      icon: Heart, 
       title: 'Values', 
       progress: valuesData?.rankedCoreValues ? Math.min(100, (valuesData.rankedCoreValues.length / 6) * 100) : 0,
       active: currentView === 'values'
     },
     { 
       id: 'vision' as ViewType, 
-      icon: IoEye, 
+      icon: Eye, 
       title: 'Vision', 
       progress: visionItems.length > 0 ? Math.min(100, (visionItems.length / 4) * 100) : 0,
       active: currentView === 'vision'
     },
     { 
       id: 'goals' as ViewType,
-      icon: FaTarget,
+      icon: Target,
       title: 'Plan',
       progress: goalsProgress.percentage,
       active: currentView === 'goals'
     },
     { 
       id: 'calendar' as ViewType, 
-      icon: MdCalendarToday, 
+      icon: Calendar, 
       title: 'Calendar', 
       progress: 0,
       active: currentView === 'calendar'
@@ -113,8 +110,8 @@ const Navigation: React.FC<NavigationProps> = ({
 
   // Additional nav items
   const additionalNavItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: HiHome, color: 'text-slate-600' },
-    { id: 'templates', label: 'Templates', icon: HiDownload, color: 'text-purple-500' },
+    { id: 'dashboard', label: 'Dashboard', icon: Home, color: 'text-slate-600' },
+    { id: 'templates', label: 'Templates', icon: Download, color: 'text-purple-500' },
   ];
 
   const JourneySection = ({ section }: { section: typeof sections[0] }) => (
@@ -179,7 +176,7 @@ const Navigation: React.FC<NavigationProps> = ({
                   onClick={() => onNavigate('dashboard')}
                   className="flex items-center space-x-2 text-slate-600 hover:text-slate-900 transition-colors"
                 >
-                  <HiArrowLeft className="w-4 h-4" />
+                  <ArrowLeft className="w-4 h-4" />
                 </button>
               </div>
             )}
@@ -191,9 +188,9 @@ const Navigation: React.FC<NavigationProps> = ({
               title={isCollapsed ? "Open navigation" : "Collapse navigation"}
             >
               {isCollapsed ? (
-                <HiMenu className="w-4 h-4 text-slate-600" />
+                <Menu className="w-4 h-4 text-slate-600" />
               ) : (
-                <HiX className="w-4 h-4 text-slate-600" />
+                <X className="w-4 h-4 text-slate-600" />
               )}
             </button>
           </div>
