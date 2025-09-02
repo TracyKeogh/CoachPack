@@ -641,40 +641,38 @@ const GoalSetting = () => {
                           <h3 className="font-semibold text-slate-900 mb-0.5 text-xs">Target Date</h3>
                           <p className="text-slate-700 text-xs">{data.targetDate}</p>
                         </div>
+                        {data.habits.length > 0 && (
+                          <div>
+                            <h3 className="font-semibold text-slate-900 mb-0.5 text-xs">Habits</h3>
+                            <ul className="space-y-0">
+                              {data.habits.slice(0, 3).map((habit, index) => (
+                                <li key={index} className="text-slate-700 text-xs">• {habit}</li>
+                              ))}
+                              {data.habits.length > 3 && (
+                                <li className="text-slate-500 text-xs italic">... and {data.habits.length - 3} more</li>
+                              )}
+                            </ul>
+                          </div>
+                        )}
+
+                        {data.milestones.length > 0 && (
+                          <div>
+                            <h3 className="font-semibold text-slate-900 mb-0.5 text-xs">Milestones</h3>
+                            <ul className="space-y-1">
+                              {data.milestones.slice(0, 3).map((milestone, index) => (
+                                <li key={index} className="flex justify-between items-center text-slate-700 text-xs">
+                                  <span className="truncate">• {milestone.title}</span>
+                                  <span className="text-slate-500 text-xs ml-1 flex-shrink-0">{milestone.date}</span>
+                                </li>
+                              ))}
+                              {data.milestones.length > 3 && (
+                                <li className="text-slate-500 text-xs italic">... and {data.milestones.length - 3} more</li>
+                              )}
+                            </ul>
+                          </div>
+                        )}
                       </div>
                     )}
-
-                      {data.habits.length > 0 && (
-                        <div>
-                          <h3 className="font-semibold text-slate-900 mb-0.5 text-xs">Habits</h3>
-                          <ul className="space-y-0">
-                            {data.habits.slice(0, 3).map((habit, index) => (
-                              <li key={index} className="text-slate-700 text-xs">• {habit}</li>
-                            ))}
-                            {data.habits.length > 3 && (
-                              <li className="text-slate-500 text-xs italic">... and {data.habits.length - 3} more</li>
-                            )}
-                          </ul>
-                        </div>
-                      )}
-
-                      {data.milestones.length > 0 && (
-                        <div>
-                          <h3 className="font-semibold text-slate-900 mb-0.5 text-xs">Milestones</h3>
-                          <ul className="space-y-1">
-                            {data.milestones.slice(0, 3).map((milestone, index) => (
-                              <li key={index} className="flex justify-between items-center text-slate-700 text-xs">
-                                <span className="truncate">• {milestone.title}</span>
-                                <span className="text-slate-500 text-xs ml-1 flex-shrink-0">{milestone.date}</span>
-                              </li>
-                            ))}
-                            {data.milestones.length > 3 && (
-                              <li className="text-slate-500 text-xs italic">... and {data.milestones.length - 3} more</li>
-                            )}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
                   </div>
                 );
               })}
