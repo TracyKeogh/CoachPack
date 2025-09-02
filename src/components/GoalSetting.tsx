@@ -1,14 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowRight, Target, Repeat, MapPin, Sparkles, TrendingUp, Dumbbell, Scale, CheckCircle, Calendar } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { useGoalSettingData } from '../hooks/useGoalSettingData';
+import { GOAL_CATEGORIES } from '../types/goals';
 
 const GoalSetting = () => {
+  const {
+    data: goalsData,
+    isLoaded,
+    updateAnnualSnapshot,
+    updateCategoryGoal,
+    getCurrentCategory,
+    goToNextArea,
+    goToPreviousArea,
+    saveData
+  } = useGoalSettingData();
+
   const [currentFlow, setCurrentFlow] = useState('annual');
   const [selectedCategory, setSelectedCategory] = useState('business');
-  const [isLoading, setIsLoading] = useState(false);
-  const [user, setUser] = useState(null);
-  const [editingGoal, setEditingGoal] = useState(null);
-  const [editingField, setEditingField] = useState(null);
   
   const getOneYearFromNow = () => {
     const date = new Date();
@@ -22,39 +30,16 @@ const GoalSetting = () => {
     return date.toISOString().split('T')[0];
   };
 
-  const [annualVision, setAnnualVision] = useState({
-    snapshot: '',
-    targetDate: getOneYearFromNow()
-  });
-
   const [currentSteps, setCurrentSteps] = useState({
     business: 0,
     body: 0,
     balance: 0
   });
   
-  const [goalsData, setGoalsData] = useState({
-    business: {
-      goalText: '',
-      measureText: '',
-      targetDate: getNinetyDaysFromNow(),
-      habits: [],
-      milestones: []
-    },
-    body: {
-      goalText: '',
-      measureText: '',
-      targetDate: getNinetyDaysFromNow(),
-      habits: [],
-      milestones: []
-    },
-    balance: {
-      goalText: '',
-      measureText: '',
-      targetDate: getNinetyDaysFromNow(),
-      habits: [],
-      milestones: []
-    }
+  const [categoryData, setCategoryData] = useState({
+    business: { goalText: '', measureText: '', targetDate: getNinetyDaysFromNow(), habits: [], milestones: [] },
+    body: { goalText: '', measureText: '', targetDate: getNinetyDaysFromNow(), habits: [], milestones: [] },
+    balance: { goalText: '', measureText: '', targetDate: getNinetyDaysFromNow(), habits: [], milestones: [] }
   });
 
   const categories = [
@@ -65,108 +50,34 @@ const GoalSetting = () => {
 
   const steps = ['Define', 'Habits', 'Milestones'];
   const currentCategory = categories.find(c => c.id === selectedCategory);
-  const currentFormData = goalsData[selectedCategory];
+  const currentFormData = categoryData[selectedCategory];
   const currentStep = currentSteps[selectedCategory];
 
+  // Load data from the hook when it's available
   useEffect(() => {
-    const initializeApp = async () => {
-      try {
-        // Test Supabase connection
-        const { data: { user }, error } = await supabase.auth.getUser();
-        
-        if (error) {
-          console.error('Error getting user:', error);
-          return;
+    if (isLoaded && goalsData) {
+      setCurrentFlow(goalsData.currentStep);
+      
+      // Sync category data with goals data
+      const newCategoryData = { ...categoryData };
+      Object.keys(newCategoryData).forEach(category => {
+        const goalData = goalsData.categoryGoals[category];
+        if (goalData) {
+          newCategoryData[category] = {
+            goalText: goalData.goal || '',
+            measureText: goalData.focus || '',
+            targetDate: goalData.deadline || getNinetyDaysFromNow(),
+            habits: goalData.actions?.map(action => action.text) || [],
+            milestones: goalData.milestones || []
+          };
         }
-
-        setUser(user);
-        
-        if (user) {
-          await loadGoalsData(user.id);
-        }
-      } catch (error) {
-        console.error('Error initializing app:', error);
-      }
-    };
-
-    initializeApp();
-  }, []);
-
-  const loadGoalsData = async (userId) => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('user_goals_data')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error loading goals data:', error);
-        return;
-      }
-
-      if (data) {
-        setCurrentFlow(data.current_step || 'annual');
-        setAnnualVision(data.annual_snapshot || { snapshot: '', targetDate: getOneYearFromNow() });
-        
-        if (data.category_goals) {
-          setGoalsData(data.category_goals);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading goals data:', error);
-    } finally {
-      setIsLoading(false);
+      });
+      setCategoryData(newCategoryData);
     }
-  };
-
-  const saveGoalsData = async () => {
-    if (!user) {
-      console.error('User not available');
-      return false;
-    }
-
-    setIsLoading(true);
-    try {
-      const dataToSave = {
-        user_id: user.id,
-        current_step: currentFlow,
-        annual_snapshot: annualVision,
-        category_goals: goalsData,
-        last_updated: new Date().toISOString()
-      };
-
-      const { error } = await supabase
-        .from('user_goals_data')
-        .upsert(dataToSave, { onConflict: 'user_id' });
-
-      if (error) {
-        console.error('Error saving goals data:', error);
-        alert('Error saving data. Please try again.');
-        return false;
-      }
-
-      console.log('Goals data saved successfully');
-      return true;
-    } catch (error) {
-      console.error('Error saving goals data:', error);
-      alert('Error saving data. Please try again.');
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const updateAnnualVision = (field, value) => {
-    setAnnualVision(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
+  }, [isLoaded, goalsData]);
 
   const updateGoalData = (category, field, value) => {
-    setGoalsData(prev => ({
+    setCategoryData(prev => ({
       ...prev,
       [category]: {
         ...prev[category],
@@ -176,7 +87,7 @@ const GoalSetting = () => {
   };
 
   const addHabit = (category) => {
-    setGoalsData(prev => ({
+    setCategoryData(prev => ({
       ...prev,
       [category]: {
         ...prev[category],
@@ -186,7 +97,7 @@ const GoalSetting = () => {
   };
 
   const updateHabit = (category, index, value) => {
-    setGoalsData(prev => ({
+    setCategoryData(prev => ({
       ...prev,
       [category]: {
         ...prev[category],
@@ -196,7 +107,7 @@ const GoalSetting = () => {
   };
 
   const removeHabit = (category, index) => {
-    setGoalsData(prev => ({
+    setCategoryData(prev => ({
       ...prev,
       [category]: {
         ...prev[category],
@@ -212,7 +123,7 @@ const GoalSetting = () => {
       date: '',
       completed: false
     };
-    setGoalsData(prev => ({
+    setCategoryData(prev => ({
       ...prev,
       [category]: {
         ...prev[category],
@@ -222,7 +133,7 @@ const GoalSetting = () => {
   };
 
   const updateMilestone = (category, index, field, value) => {
-    setGoalsData(prev => ({
+    setCategoryData(prev => ({
       ...prev,
       [category]: {
         ...prev[category],
@@ -234,7 +145,7 @@ const GoalSetting = () => {
   };
 
   const removeMilestone = (category, index) => {
-    setGoalsData(prev => ({
+    setCategoryData(prev => ({
       ...prev,
       [category]: {
         ...prev[category],
@@ -276,59 +187,130 @@ const GoalSetting = () => {
     }
   };
 
+  // Save current form data to the hook's data structure
+  const syncFormDataToGoals = () => {
+    // Update annual snapshot
+    if (currentFlow === 'annual') {
+      updateAnnualSnapshot({
+        snapshot: goalsData.annualSnapshot?.snapshot || '',
+        mantra: goalsData.annualSnapshot?.mantra || ''
+      });
+    }
+    
+    // Update category goals
+    Object.keys(categoryData).forEach(category => {
+      const formData = categoryData[category];
+      const existingGoal = goalsData.categoryGoals[category] || {
+        category: category,
+        goal: '',
+        actions: [],
+        milestones: [],
+        wheelAreas: GOAL_CATEGORIES[category]?.wheelAreas || [],
+        deadline: getNinetyDaysFromNow()
+      };
+      
+      updateCategoryGoal(category, {
+        ...existingGoal,
+        goal: formData.goalText,
+        focus: formData.measureText,
+        deadline: formData.targetDate,
+        actions: formData.habits.map(habit => ({
+          text: habit,
+          frequency: 'weekly',
+          specificDays: []
+        })),
+        milestones: formData.milestones.map(milestone => ({
+          id: milestone.id,
+          title: milestone.title,
+          description: '',
+          dueDate: milestone.date,
+          completed: milestone.completed,
+          completedDate: milestone.completed ? new Date().toISOString() : undefined
+        }))
+      });
+    });
+  };
+
+  if (!isLoaded) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-slate-900 mb-2">Loading Goal Setting...</h2>
+          <p className="text-slate-600">Retrieving your saved progress...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (currentFlow === 'annual') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-slate-900 mb-4">Annual Vision Setting</h1>
-            <p className="text-lg text-slate-600">Define your one-year vision to guide your quarterly goals</p>
-          </div>
-
-          <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
-            <div className="space-y-8">
-              <div>
-                <label className="block text-lg font-semibold text-slate-900 mb-4">
-                  Your Annual Vision Snapshot
-                </label>
-                <textarea
-                  value={annualVision.snapshot}
-                  onChange={(e) => updateAnnualVision('snapshot', e.target.value)}
-                  placeholder="Describe where you want to be in one year. What does your ideal life look like? How do you feel? What have you accomplished?"
-                  className="w-full h-32 p-4 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-                />
+      <>
+        <Header />
+        <Navigation 
+          currentView="goals" 
+          onNavigate={(view) => window.location.href = `/${view}`}
+          isCollapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        />
+        <div className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-80'} p-6`}>
+          <div className="bg-gradient-to-br from-slate-50 to-blue-50 min-h-[calc(100vh-8rem)] p-6 rounded-2xl">
+            <div className="max-w-4xl mx-auto">
+              <div className="text-center mb-8">
+                <h1 className="text-4xl font-bold text-slate-900 mb-4">Annual Vision Setting</h1>
+                <p className="text-lg text-slate-600">Define your one-year vision to guide your quarterly goals</p>
               </div>
+            </div>
 
-              <div>
-                <label className="block text-lg font-semibold text-slate-900 mb-4">
-                  Target Date
-                </label>
-                <input
-                  type="date"
-                  value={annualVision.targetDate}
-                  onChange={(e) => updateAnnualVision('targetDate', e.target.value)}
-                  className="px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                />
-              </div>
+            <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
+              <div className="space-y-8">
+                <div>
+                  <label className="block text-lg font-semibold text-slate-900 mb-4">
+                    Your Annual Vision Snapshot
+                  </label>
+                  <textarea
+                    value={goalsData.annualSnapshot?.snapshot || ''}
+                    onChange={(e) => updateAnnualSnapshot({
+                      ...goalsData.annualSnapshot,
+                      snapshot: e.target.value
+                    })}
+                    placeholder="Describe where you want to be in one year. What does your ideal life look like? How do you feel? What have you accomplished?"
+                    className="w-full h-32 p-4 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                  />
+                </div>
 
-              <div className="flex justify-between pt-6">
-                <div></div>
-                <button
-                  onClick={() => {
-                    setCurrentFlow('category');
-                    saveGoalsData();
-                  }}
-                  disabled={!annualVision.snapshot.trim()}
-                  className="flex items-center space-x-2 px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <span>Continue to Goals</span>
-                  <ArrowRight className="w-5 h-5" />
-                </button>
+                <div>
+                  <label className="block text-lg font-semibold text-slate-900 mb-4">
+                    Target Date
+                  </label>
+                  <input
+                    type="date"
+                    value={getOneYearFromNow()}
+                    onChange={() => {}} // Read-only for now
+                    className="px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    readOnly
+                  />
+                </div>
+
+                <div className="flex justify-between pt-6">
+                  <div></div>
+                  <button
+                    onClick={() => {
+                      setCurrentFlow('category');
+                      saveData();
+                    }}
+                    disabled={!goalsData.annualSnapshot?.snapshot?.trim()}
+                    className="flex items-center space-x-2 px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <span>Continue to Goals</span>
+                    <ArrowRight className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </>
     );
   }
 
@@ -500,6 +482,7 @@ const GoalSetting = () => {
             <div className="flex justify-between pt-8 mt-8 border-t border-slate-200">
               <button
                 onClick={() => {
+                  syncFormDataToGoals();
                   if (currentStep === 0) {
                     prevCategory();
                   } else {
@@ -514,7 +497,8 @@ const GoalSetting = () => {
 
               <button
                 onClick={() => {
-                  saveGoalsData();
+                  syncFormDataToGoals();
+                  saveData();
                   if (currentStep === steps.length - 1) {
                     nextCategory();
                   } else {
@@ -535,283 +519,93 @@ const GoalSetting = () => {
 
   if (currentFlow === 'review') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-slate-900 mb-4">Goals Summary</h1>
-            <p className="text-lg text-slate-600">Review your complete goal-setting plan</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-3">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-3">
+            <h1 className="text-2xl font-bold text-slate-900 mb-1">Goals Summary</h1>
+            <p className="text-sm text-slate-600">Review your complete goal-setting plan</p>
           </div>
 
-          <div className="space-y-8">
+          <div className="space-y-3">
             {/* Annual Vision */}
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold text-slate-900">Annual Vision</h2>
-                <button
-                  onClick={() => setEditingField(editingField === 'annual-vision' ? null : 'annual-vision')}
-                  className="p-2 text-slate-500 hover:text-slate-700 transition-colors"
-                >
-                  <Edit3 className="w-5 h-5" />
-                </button>
-              </div>
-              {editingField === 'annual-vision' ? (
-                <div className="space-y-4">
-                  <textarea
-                    value={annualVision.snapshot}
-                    onChange={(e) => setAnnualVision({ ...annualVision, snapshot: e.target.value })}
-                    placeholder="Describe your annual vision..."
-                    className="w-full h-24 px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-                  />
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="date"
-                      value={annualVision.targetDate}
-                      onChange={(e) => setAnnualVision({ ...annualVision, targetDate: e.target.value })}
-                      className="px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                    <button
-                      onClick={() => setEditingField(null)}
-                      className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-                    >
-                      <Check className="w-4 h-4 mr-2" />
-                      Save Vision
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <p className="text-slate-700 leading-relaxed">{annualVision.snapshot}</p>
-                  <p className="text-slate-500 mt-4">Target Date: {annualVision.targetDate}</p>
-                </div>
-              )}
+            <div className="bg-white rounded-xl p-3 shadow-sm border border-slate-200">
+              <h2 className="text-lg font-bold text-slate-900 mb-1">Annual Vision</h2>
+              <p className="text-slate-700 text-xs leading-relaxed">{goalsData.annualSnapshot?.snapshot}</p>
+              <p className="text-slate-500 mt-1 text-xs">Target Date: {getOneYearFromNow()}</p>
             </div>
 
             {/* Category Goals */}
-            {categories.map((category) => {
-              const data = goalsData[category.id];
-              return (
-                <div key={category.id} className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
-                  <div className="flex items-center space-x-3 mb-6">
-                    <category.icon className="w-8 h-8 text-purple-600" />
-                    <h2 className="text-2xl font-bold text-slate-900">{category.title}</h2>
-                  </div>
-
-                  <div className="space-y-6">
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-semibold text-slate-900">Goal</h3>
-                        <button
-                          onClick={() => setEditingField(editingField === `${category.id}-goal` ? null : `${category.id}-goal`)}
-                          className="p-1 text-slate-500 hover:text-slate-700 transition-colors"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                        </button>
-                      </div>
-                      {editingField === `${category.id}-goal` ? (
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="text"
-                            value={data.goalText}
-                            onChange={(e) => updateGoalData(category.id, 'goalText', e.target.value)}
-                            className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                          />
-                          <button
-                            onClick={() => setEditingField(null)}
-                            className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-                          >
-                            <Check className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <p className="text-slate-700">{data.goalText}</p>
-                      )}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+              {categories.map((category) => {
+                const data = categoryData[category.id];
+                return (
+                  <div key={category.id} className="bg-white rounded-xl p-3 shadow-sm border border-slate-200">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <category.icon className="w-6 h-6 text-purple-600" />
+                      <h2 className="text-base font-bold text-slate-900">{category.title}</h2>
                     </div>
 
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-semibold text-slate-900">Success Metrics</h3>
-                        <button
-                          onClick={() => setEditingField(editingField === `${category.id}-metrics` ? null : `${category.id}-metrics`)}
-                          className="p-1 text-slate-500 hover:text-slate-700 transition-colors"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                        </button>
-                      </div>
-                      {editingField === `${category.id}-metrics` ? (
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="text"
-                            value={data.measureText}
-                            onChange={(e) => updateGoalData(category.id, 'measureText', e.target.value)}
-                            className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                          />
-                          <button
-                            onClick={() => setEditingField(null)}
-                            className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-                          >
-                            <Check className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <p className="text-slate-700">{data.measureText}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-semibold text-slate-900">Target Date</h3>
-                        <button
-                          onClick={() => setEditingField(editingField === `${category.id}-date` ? null : `${category.id}-date`)}
-                          className="p-1 text-slate-500 hover:text-slate-700 transition-colors"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                        </button>
-                      </div>
-                      {editingField === `${category.id}-date` ? (
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="date"
-                            value={data.targetDate}
-                            onChange={(e) => updateGoalData(category.id, 'targetDate', e.target.value)}
-                            className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                          />
-                          <button
-                            onClick={() => setEditingField(null)}
-                            className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-                          >
-                            <Check className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <p className="text-slate-700">{data.targetDate}</p>
-                      )}
-                    </div>
-
-                    {data.habits.length > 0 && (
+                    <div className="space-y-2">
                       <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <h3 className="font-semibold text-slate-900">Habits</h3>
-                          <button
-                            onClick={() => setEditingField(editingField === `${category.id}-habits` ? null : `${category.id}-habits`)}
-                            className="p-1 text-slate-500 hover:text-slate-700 transition-colors"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                          </button>
-                        </div>
-                        {editingField === `${category.id}-habits` ? (
-                          <div className="space-y-2">
-                            {data.habits.map((habit, index) => (
-                              <div key={index} className="flex items-center space-x-2">
-                                <input
-                                  type="text"
-                                  value={habit}
-                                  onChange={(e) => updateHabit(category.id, index, e.target.value)}
-                                  className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                />
-                                <button
-                                  onClick={() => removeHabit(category.id, index)}
-                                  className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                >
-                                  <X className="w-4 h-4" />
-                                </button>
-                              </div>
+                        <h3 className="font-semibold text-slate-900 mb-0.5 text-xs">Goal</h3>
+                        <p className="text-slate-700 text-xs">{data.goalText}</p>
+                      </div>
+
+                      <div>
+                        <h3 className="font-semibold text-slate-900 mb-0.5 text-xs">Success Metrics</h3>
+                        <p className="text-slate-700 text-xs">{data.measureText}</p>
+                      </div>
+
+                      <div>
+                        <h3 className="font-semibold text-slate-900 mb-0.5 text-xs">Target Date</h3>
+                        <p className="text-slate-700 text-xs">{data.targetDate}</p>
+                      </div>
+
+                      {data.habits.length > 0 && (
+                        <div>
+                          <h3 className="font-semibold text-slate-900 mb-0.5 text-xs">Habits</h3>
+                          <ul className="space-y-0">
+                            {data.habits.slice(0, 3).map((habit, index) => (
+                              <li key={index} className="text-slate-700 text-xs">• {habit}</li>
                             ))}
-                            <button
-                              onClick={() => addHabit(category.id)}
-                              className="w-full px-3 py-2 border-2 border-dashed border-slate-300 rounded-lg text-slate-600 hover:border-purple-300 hover:text-purple-600 transition-colors"
-                            >
-                              + Add Habit
-                            </button>
-                            <button
-                              onClick={() => setEditingField(null)}
-                              className="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-                            >
-                              Done Editing Habits
-                            </button>
-                          </div>
-                        ) : (
-                          <ul className="space-y-1">
-                            {data.habits.map((habit, index) => (
-                              <li key={index} className="text-slate-700">• {habit}</li>
-                            ))}
+                            {data.habits.length > 3 && (
+                              <li className="text-slate-500 text-xs italic">... and {data.habits.length - 3} more</li>
+                            )}
                           </ul>
-                        )}
-                      </div>
-                    )}
-
-                    {data.milestones.length > 0 && (
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <h3 className="font-semibold text-slate-900">Milestones</h3>
-                          <button
-                            onClick={() => setEditingField(editingField === `${category.id}-milestones` ? null : `${category.id}-milestones`)}
-                            className="p-1 text-slate-500 hover:text-slate-700 transition-colors"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                          </button>
                         </div>
-                        {editingField === `${category.id}-milestones` ? (
-                          <div className="space-y-2">
-                            {data.milestones.map((milestone, index) => (
-                              <div key={index} className="flex items-center space-x-2">
-                                <input
-                                  type="text"
-                                  value={milestone.title}
-                                  onChange={(e) => updateMilestone(category.id, index, 'title', e.target.value)}
-                                  className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                />
-                                <input
-                                  type="date"
-                                  value={milestone.date}
-                                  onChange={(e) => updateMilestone(category.id, index, 'date', e.target.value)}
-                                  className="px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                />
-                                <button
-                                  onClick={() => removeMilestone(category.id, index)}
-                                  className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                >
-                                  <X className="w-4 h-4" />
-                                </button>
-                              </div>
-                            ))}
-                            <button
-                              onClick={() => addMilestone(category.id)}
-                              className="w-full px-3 py-2 border-2 border-dashed border-slate-300 rounded-lg text-slate-600 hover:border-purple-300 hover:text-purple-600 transition-colors"
-                            >
-                              + Add Milestone
-                            </button>
-                            <button
-                              onClick={() => setEditingField(null)}
-                              className="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-                            >
-                              Done Editing Milestones
-                            </button>
-                          </div>
-                        ) : (
-                          <ul className="space-y-2">
-                            {data.milestones.map((milestone, index) => (
-                              <li key={index} className="flex justify-between items-center text-slate-700">
-                                <span>• {milestone.title}</span>
-                                <span className="text-slate-500 text-sm">{milestone.date}</span>
+                      )}
+
+                      {data.milestones.length > 0 && (
+                        <div>
+                          <h3 className="font-semibold text-slate-900 mb-0.5 text-xs">Milestones</h3>
+                          <ul className="space-y-1">
+                            {data.milestones.slice(0, 3).map((milestone, index) => (
+                              <li key={index} className="flex justify-between items-center text-slate-700 text-xs">
+                                <span className="truncate">• {milestone.title}</span>
+                                <span className="text-slate-500 text-xs ml-1 flex-shrink-0">{milestone.date}</span>
                               </li>
                             ))}
+                            {data.milestones.length > 3 && (
+                              <li className="text-slate-500 text-xs italic">... and {data.milestones.length - 3} more</li>
+                            )}
                           </ul>
-                        )}
-                      </div>
-                    )}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
 
-          <div className="flex justify-center mt-8">
+          <div className="flex justify-center mt-3">
             <button
               onClick={() => {
-                saveGoalsData();
+                syncFormDataToGoals();
+                saveData();
                 alert('Your goals have been saved successfully!');
               }}
-              className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"
             >
               Complete Goal Setting
             </button>
