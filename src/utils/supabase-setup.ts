@@ -22,8 +22,8 @@ export const validateEnvironment = (): { valid: boolean; message: string } => {
 
 // Create Supabase client with anon key (for regular operations)
 export const supabase = createClient(
-  supabaseUrl || '',
-  supabaseAnonKey || '',
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseAnonKey || 'placeholder_key',
   {
     auth: {
       persistSession: true,
