@@ -5,9 +5,18 @@ import { useVisionBoardData, VisionItem, TextElement } from '../hooks/useVisionB
 import Header from './Header';
 import Navigation from './Navigation';
 
-// Image compression utility
-const compressImage = (file: File, maxWidth: number = 800, quality: number = 0.8): Promise<string> => {
+// Optimized image compression utility
+const compressImage = (file: File, maxWidth: number = 600, quality: number = 0.7): Promise<string> => {
   return new Promise((resolve, reject) => {
+    // For small files, skip compression to improve performance
+    if (file.size < 100000) { // Less than 100KB
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+      return;
+    }
+
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const img = new Image();
