@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useDashboardData } from '../hooks/useDashboardData';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useGoalSettingData } from '../hooks/useGoalSettingData';
 
 const Dashboard = () => {
@@ -570,17 +570,6 @@ const Dashboard = () => {
         {/* Progress Momentum Indicator */}
         <div className="mt-12 text-center">
           <div className="inline-flex items-center space-x-4 bg-gradient-to-r from-purple-600/20 to-green-600/20 border border-purple-500/30 rounded-2xl px-8 py-6">
-            <div className="text-3xl">🚀</div>
-            <div>
-              <div className="text-lg font-semibold text-white">Overall Progress: {dashboardData.overallProgress}%</div>
-              <div className="text-slate-400 text-sm">
-                {90 - dashboardData.daysIntoJourney} days remaining in your 90-day journey
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      </div>
     </div>
   );
 };
