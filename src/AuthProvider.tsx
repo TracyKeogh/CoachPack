@@ -322,10 +322,8 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('AuthProvider: Auth state change:', event, session?.user?.id);
-        console.log('AuthProvider: Full auth state change details:', { event, hasSession: !!session, hasUser: !!session?.user });
         
         if (event === 'SIGNED_IN' && session?.user) {
-          console.log('AuthProvider: Processing SIGNED_IN event');
           setUser({
             id: session.user.id,
             email: session.user.email!,
@@ -334,7 +332,6 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           });
           setLoading(false);
         } else if (event === 'SIGNED_OUT') {
-          console.log('AuthProvider: Processing SIGNED_OUT event');
           setUser(null);
           setLoading(false);
         }
