@@ -1,7 +1,6 @@
 import React from 'react';
 import { MdDashboard, MdCalendarToday } from 'react-icons/md';
 import { FaHeart } from 'react-icons/fa';
-import { FaTarget } from 'react-icons/fa6';
 import { IoEye } from 'react-icons/io5';
 import { FaTarget } from 'react-icons/fa';
 import { HiMenu, HiX, HiHome, HiDownload, HiArrowLeft } from 'react-icons/hi';
