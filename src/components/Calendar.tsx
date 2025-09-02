@@ -28,6 +28,8 @@ import {
 import { useGoalSettingData } from '../hooks/useGoalSettingData';
 import { useValuesData } from '../hooks/useValuesData';
 import { useVisionBoardData } from '../hooks/useVisionBoardData';
+import Header from './Header';
+import Navigation from './Navigation';
 
 type CalendarView = 'daily' | 'weekly' | '90-day' | 'yearly';
 
@@ -60,6 +62,7 @@ const Calendar: React.FC = () => {
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [newEvent, setNewEvent] = useState<Partial<CalendarEvent>>({});
   const [filter, setFilter] = useState<string>('all');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   
   const { data: goalsData } = useGoalSettingData();
   const { data: valuesData } = useValuesData();
@@ -1209,7 +1212,16 @@ const Calendar: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8">
+    <>
+      <Header />
+      <Navigation 
+        currentView="calendar" 
+        onNavigate={(view) => window.location.href = `/${view}`}
+        isCollapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+      />
+      <div className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-80'} p-6`}>
+        <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -1433,7 +1445,9 @@ const Calendar: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+        </div>
+      </div>
+    </>
   );
 };
 
