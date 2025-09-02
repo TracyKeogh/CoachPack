@@ -7,6 +7,8 @@ const GoalSetting = () => {
   const [selectedCategory, setSelectedCategory] = useState('business');
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState(null);
+  const [editingGoal, setEditingGoal] = useState(null);
+  const [editingField, setEditingField] = useState(null);
   
   const getOneYearFromNow = () => {
     const date = new Date();
@@ -543,9 +545,45 @@ const GoalSetting = () => {
           <div className="space-y-8">
             {/* Annual Vision */}
             <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
-              <h2 className="text-2xl font-bold text-slate-900 mb-4">Annual Vision</h2>
-              <p className="text-slate-700 leading-relaxed">{annualVision.snapshot}</p>
-              <p className="text-slate-500 mt-4">Target Date: {annualVision.targetDate}</p>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold text-slate-900">Annual Vision</h2>
+                <button
+                  onClick={() => setEditingField(editingField === 'annual-vision' ? null : 'annual-vision')}
+                  className="p-2 text-slate-500 hover:text-slate-700 transition-colors"
+                >
+                  <Edit3 className="w-5 h-5" />
+                </button>
+              </div>
+              {editingField === 'annual-vision' ? (
+                <div className="space-y-4">
+                  <textarea
+                    value={annualVision.snapshot}
+                    onChange={(e) => setAnnualVision({ ...annualVision, snapshot: e.target.value })}
+                    placeholder="Describe your annual vision..."
+                    className="w-full h-24 px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                  />
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="date"
+                      value={annualVision.targetDate}
+                      onChange={(e) => setAnnualVision({ ...annualVision, targetDate: e.target.value })}
+                      className="px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                    <button
+                      onClick={() => setEditingField(null)}
+                      className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                    >
+                      <Check className="w-4 h-4 mr-2" />
+                      Save Vision
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-slate-700 leading-relaxed">{annualVision.snapshot}</p>
+                  <p className="text-slate-500 mt-4">Target Date: {annualVision.targetDate}</p>
+                </div>
+              )}
             </div>
 
             {/* Category Goals */}
@@ -560,42 +598,205 @@ const GoalSetting = () => {
 
                   <div className="space-y-6">
                     <div>
-                      <h3 className="font-semibold text-slate-900 mb-2">Goal</h3>
-                      <p className="text-slate-700">{data.goalText}</p>
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-semibold text-slate-900">Goal</h3>
+                        <button
+                          onClick={() => setEditingField(editingField === `${category.id}-goal` ? null : `${category.id}-goal`)}
+                          className="p-1 text-slate-500 hover:text-slate-700 transition-colors"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                      </div>
+                      {editingField === `${category.id}-goal` ? (
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="text"
+                            value={data.goalText}
+                            onChange={(e) => updateGoalData(category.id, 'goalText', e.target.value)}
+                            className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          />
+                          <button
+                            onClick={() => setEditingField(null)}
+                            className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                          >
+                            <Check className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="text-slate-700">{data.goalText}</p>
+                      )}
                     </div>
 
                     <div>
-                      <h3 className="font-semibold text-slate-900 mb-2">Success Metrics</h3>
-                      <p className="text-slate-700">{data.measureText}</p>
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-semibold text-slate-900">Success Metrics</h3>
+                        <button
+                          onClick={() => setEditingField(editingField === `${category.id}-metrics` ? null : `${category.id}-metrics`)}
+                          className="p-1 text-slate-500 hover:text-slate-700 transition-colors"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                      </div>
+                      {editingField === `${category.id}-metrics` ? (
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="text"
+                            value={data.measureText}
+                            onChange={(e) => updateGoalData(category.id, 'measureText', e.target.value)}
+                            className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          />
+                          <button
+                            onClick={() => setEditingField(null)}
+                            className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                          >
+                            <Check className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="text-slate-700">{data.measureText}</p>
+                      )}
                     </div>
 
                     <div>
-                      <h3 className="font-semibold text-slate-900 mb-2">Target Date</h3>
-                      <p className="text-slate-700">{data.targetDate}</p>
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-semibold text-slate-900">Target Date</h3>
+                        <button
+                          onClick={() => setEditingField(editingField === `${category.id}-date` ? null : `${category.id}-date`)}
+                          className="p-1 text-slate-500 hover:text-slate-700 transition-colors"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                      </div>
+                      {editingField === `${category.id}-date` ? (
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="date"
+                            value={data.targetDate}
+                            onChange={(e) => updateGoalData(category.id, 'targetDate', e.target.value)}
+                            className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                          />
+                          <button
+                            onClick={() => setEditingField(null)}
+                            className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                          >
+                            <Check className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="text-slate-700">{data.targetDate}</p>
+                      )}
                     </div>
 
                     {data.habits.length > 0 && (
                       <div>
-                        <h3 className="font-semibold text-slate-900 mb-2">Habits</h3>
-                        <ul className="space-y-1">
-                          {data.habits.map((habit, index) => (
-                            <li key={index} className="text-slate-700">• {habit}</li>
-                          ))}
-                        </ul>
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-semibold text-slate-900">Habits</h3>
+                          <button
+                            onClick={() => setEditingField(editingField === `${category.id}-habits` ? null : `${category.id}-habits`)}
+                            className="p-1 text-slate-500 hover:text-slate-700 transition-colors"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                        </div>
+                        {editingField === `${category.id}-habits` ? (
+                          <div className="space-y-2">
+                            {data.habits.map((habit, index) => (
+                              <div key={index} className="flex items-center space-x-2">
+                                <input
+                                  type="text"
+                                  value={habit}
+                                  onChange={(e) => updateHabit(category.id, index, e.target.value)}
+                                  className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                />
+                                <button
+                                  onClick={() => removeHabit(category.id, index)}
+                                  className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ))}
+                            <button
+                              onClick={() => addHabit(category.id)}
+                              className="w-full px-3 py-2 border-2 border-dashed border-slate-300 rounded-lg text-slate-600 hover:border-purple-300 hover:text-purple-600 transition-colors"
+                            >
+                              + Add Habit
+                            </button>
+                            <button
+                              onClick={() => setEditingField(null)}
+                              className="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                            >
+                              Done Editing Habits
+                            </button>
+                          </div>
+                        ) : (
+                          <ul className="space-y-1">
+                            {data.habits.map((habit, index) => (
+                              <li key={index} className="text-slate-700">• {habit}</li>
+                            ))}
+                          </ul>
+                        )}
                       </div>
                     )}
 
                     {data.milestones.length > 0 && (
                       <div>
-                        <h3 className="font-semibold text-slate-900 mb-2">Milestones</h3>
-                        <ul className="space-y-2">
-                          {data.milestones.map((milestone, index) => (
-                            <li key={index} className="flex justify-between items-center text-slate-700">
-                              <span>• {milestone.title}</span>
-                              <span className="text-slate-500 text-sm">{milestone.date}</span>
-                            </li>
-                          ))}
-                        </ul>
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-semibold text-slate-900">Milestones</h3>
+                          <button
+                            onClick={() => setEditingField(editingField === `${category.id}-milestones` ? null : `${category.id}-milestones`)}
+                            className="p-1 text-slate-500 hover:text-slate-700 transition-colors"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                        </div>
+                        {editingField === `${category.id}-milestones` ? (
+                          <div className="space-y-2">
+                            {data.milestones.map((milestone, index) => (
+                              <div key={index} className="flex items-center space-x-2">
+                                <input
+                                  type="text"
+                                  value={milestone.title}
+                                  onChange={(e) => updateMilestone(category.id, index, 'title', e.target.value)}
+                                  className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                />
+                                <input
+                                  type="date"
+                                  value={milestone.date}
+                                  onChange={(e) => updateMilestone(category.id, index, 'date', e.target.value)}
+                                  className="px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                />
+                                <button
+                                  onClick={() => removeMilestone(category.id, index)}
+                                  className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ))}
+                            <button
+                              onClick={() => addMilestone(category.id)}
+                              className="w-full px-3 py-2 border-2 border-dashed border-slate-300 rounded-lg text-slate-600 hover:border-purple-300 hover:text-purple-600 transition-colors"
+                            >
+                              + Add Milestone
+                            </button>
+                            <button
+                              onClick={() => setEditingField(null)}
+                              className="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                            >
+                              Done Editing Milestones
+                            </button>
+                          </div>
+                        ) : (
+                          <ul className="space-y-2">
+                            {data.milestones.map((milestone, index) => (
+                              <li key={index} className="flex justify-between items-center text-slate-700">
+                                <span>• {milestone.title}</span>
+                                <span className="text-slate-500 text-sm">{milestone.date}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
                       </div>
                     )}
                   </div>
