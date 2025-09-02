@@ -20,6 +20,7 @@ import PricingPage from './components/PricingPage';
 import CompanyLandingPage from './components/CompanyLandingPage';
 import CommunityTemplates from './components/CommunityTemplates';
 import FreeAssessmentPage from './components/FreeAssessmentPage';
+import BetaSignupPage from './components/BetaSignupPage';
 
 export type ViewType = 'dashboard' | 'wheel-of-life' | 'values' | 'vision' | 'goals' | 'calendar' | 'templates';
 
@@ -37,6 +38,7 @@ function App() {
         <Route path="/companies" element={<CompanyLandingPage />} />
         <Route path="/community" element={<CommunityTemplates />} />
         <Route path="/free-assessment" element={<FreeAssessmentPage />} />
+        <Route path="/beta-signup" element={<BetaSignupPage />} />
         
         {/* Protected routes - temporarily without authentication */}
         <Route path="/dashboard" element={<Dashboard />} />

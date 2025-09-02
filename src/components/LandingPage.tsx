@@ -27,16 +27,16 @@ const LandingPage: React.FC = () => {
             
             <div className="flex items-center space-x-4">
               <Link 
-                to="/free-wheel"
+                to="/free-assessment"
                 className="px-4 py-2 text-slate-600 hover:text-slate-900 transition-colors"
               >
                 Free Assessment
               </Link>
               <Link 
-                to="/companies"
-                className="px-4 py-2 text-slate-600 hover:text-slate-900 transition-colors"
+                to="/beta-signup"
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
               >
-                For Companies
+                Beta Signup
               </Link>
               <Link 
                 to="/login"
@@ -79,16 +79,16 @@ const LandingPage: React.FC = () => {
                     <ArrowRight className="w-5 h-5 ml-2" />
                   </Link>
                   <Link 
-                    to="/free-wheel"
+                    to="/free-assessment"
                     className="px-8 py-4 bg-white text-slate-700 rounded-lg hover:bg-slate-50 transition-colors font-medium border border-slate-200 flex items-center justify-center"
                   >
                     Try Free Assessment
                   </Link>
                   <Link 
-                    to="/companies"
-                    className="px-8 py-4 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors font-medium flex items-center justify-center"
+                    to="/beta-signup"
+                    className="px-8 py-4 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg hover:from-orange-600 hover:to-red-600 transition-all font-semibold text-lg shadow-lg flex items-center justify-center"
                   >
-                    For Companies
+                    Join Beta
                   </Link>
                 </div>
 
@@ -151,10 +151,10 @@ const LandingPage: React.FC = () => {
             
             <div className="mt-8">
               <Link 
-                to="/companies"
-                className="inline-flex items-center space-x-2 px-6 py-3 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors font-medium"
+                to="/beta-signup"
+                className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg hover:from-orange-600 hover:to-red-600 transition-all font-medium shadow-lg"
               >
-                <span>Explore Team Solutions</span>
+                <span>Join Beta Program</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
