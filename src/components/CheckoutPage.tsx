@@ -95,8 +95,8 @@ const CheckoutPage: React.FC = () => {
           'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
-          price_id: 'price_1OvXXXXXXXXXXXXXXXXXXXX', // Replace with your actual price ID
-          success_url: `${window.location.origin}/success`,
+          price_id: import.meta.env.VITE_STRIPE_PRICE_ID || 'price_1OvXXXXXXXXXXXXXXXXXXXX',
+          success_url: `${window.location.origin}/checkout-success`,
           cancel_url: `${window.location.origin}/checkout`,
           mode: 'payment',
           ...(formData.couponCode && couponApplied ? { coupon_code: formData.couponCode.toUpperCase() } : {})
