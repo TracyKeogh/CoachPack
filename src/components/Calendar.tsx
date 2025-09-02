@@ -19,8 +19,6 @@ import {
 import { useCalendarData, Event, ActionPoolItem } from '../hooks/useCalendarData';
 import { useGoalSettingData } from '../hooks/useGoalSettingData';
 import NotesPanel from './NotesPanel';
-import Header from './Header';
-import Navigation from './Navigation';
 
 const Calendar: React.FC = () => {
   // Your existing hooks
@@ -49,7 +47,6 @@ const Calendar: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showNotes, setShowNotes] = useState(false);
   const [showActionPool, setShowActionPool] = useState(true);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   
   // ADD THESE NEW STATE VARIABLES for drag & drop:
   const [draggedAction, setDraggedAction] = useState<ActionPoolItem | null>(null);
@@ -284,63 +281,7 @@ const Calendar: React.FC = () => {
   const daysOfWeek = getDaysOfWeek(firstDayOfWeek);
 
   return (
-    <>
-      <Header />
-      <Navigation 
-        currentView="calendar" 
-        onNavigate={(view) => window.location.href = `/${view}`}
-        isCollapsed={sidebarCollapsed}
-        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-      />
-      <div className={`transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-80'} p-6`}>
-        <div className="space-y-8">
-          {/* Header */}
-          <div>
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h1 className="text-3xl font-bold text-slate-900">Action Calendar</h1>
-                <p className="text-slate-600 mt-2">
-                  Schedule time for what matters most and track your progress
-                </p>
-              </div>
-              
-              {/* View Mode Switcher */}
-              <div className="flex items-center space-x-1 bg-slate-100 p-1 rounded-lg">
-                <button
-                  onClick={() => setViewMode('week')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    viewMode === 'week' 
-                      ? 'bg-white text-slate-900 shadow-sm' 
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  Week
-                </button>
-                <button
-                  onClick={() => setViewMode('90day')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    viewMode === '90day' 
-                      ? 'bg-white text-slate-900 shadow-sm' 
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  90 Days
-                </button>
-                <button
-                  onClick={() => setViewMode('year')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    viewMode === 'year' 
-                      ? 'bg-white text-slate-900 shadow-sm' 
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  Year
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto p-6">
       {/* YOUR EXISTING CALENDAR HEADER AND NAVIGATION */}
       
       {/* Action Pool with Enhanced Drag & Drop */}
@@ -609,7 +550,6 @@ const Calendar: React.FC = () => {
         </div>
       </div>
     </div>
-        </div>
       </div>
     </>
   );
