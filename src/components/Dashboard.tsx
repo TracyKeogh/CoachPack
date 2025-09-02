@@ -570,6 +570,9 @@ const Dashboard = () => {
         {/* Progress Momentum Indicator */}
         <div className="mt-12 text-center">
           <div className="inline-flex items-center space-x-4 bg-gradient-to-r from-purple-600/20 to-green-600/20 border border-purple-500/30 rounded-2xl px-8 py-6">
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
