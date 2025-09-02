@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Heart, Target, Calendar, Sparkles, ChevronRight, Clock, BarChart3, Eye, CheckSquare, TrendingUp, User, Menu, Home, ExternalLink, Edit3, Check, X, CircleDot, PieChart } from 'lucide-react';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { useGoalSettingData } from '../hooks/useGoalSettingData';
 
@@ -115,7 +114,7 @@ const Dashboard = () => {
         <div className="relative max-w-6xl mx-auto px-8 py-16">
           <div className="text-center mb-12">
             <div className="inline-flex items-center space-x-2 bg-purple-500/20 px-4 py-2 rounded-full mb-6">
-              <Sparkles className="w-5 h-5 text-purple-400" />
+              <span className="w-5 h-5 text-purple-400 flex items-center justify-center">✨</span>
               <span className="text-purple-300 font-medium">Day {dashboardData.daysIntoJourney} of Your Journey</span>
             </div>
             <h1 className="text-5xl font-bold text-white mb-6 leading-tight">
@@ -135,14 +134,14 @@ const Dashboard = () => {
                       className="w-8 h-8 bg-green-500/80 text-white rounded-full hover:bg-green-500 transition-colors flex items-center justify-center"
                       title="Save changes"
                     >
-                      <Check className="w-4 h-4" />
+                      <span className="w-4 h-4 flex items-center justify-center">✓</span>
                     </button>
                     <button
                       onClick={cancelVisionEdit}
                       className="w-8 h-8 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors flex items-center justify-center"
                       title="Cancel editing"
                     >
-                      <X className="w-4 h-4" />
+                      <span className="w-4 h-4 flex items-center justify-center">✖️</span>
                     </button>
                   </div>
                 </div>
@@ -153,7 +152,7 @@ const Dashboard = () => {
                       {hasVisionContent ? goalsData.annualSnapshot.snapshot : 'a one line summary of the vision'}
                     </span>
                     {!hasVisionContent && (
-                      <Edit3 className="w-6 h-6 text-white/60 group-hover:text-white/80 transition-colors" />
+                      <span className="w-6 h-6 text-white/60 group-hover:text-white/80 transition-colors flex items-center justify-center">✏️</span>
                     )}
                   </div>
                   {!hasVisionContent && (
@@ -178,14 +177,14 @@ const Dashboard = () => {
                     className="w-6 h-6 bg-green-500/80 text-white rounded-full hover:bg-green-500 transition-colors flex items-center justify-center"
                     title="Save changes"
                   >
-                    <Check className="w-3 h-3" />
+                    <span className="w-3 h-3 flex items-center justify-center">✓</span>
                   </button>
                   <button
                     onClick={cancelWhyEdit}
                     className="w-6 h-6 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors flex items-center justify-center"
                     title="Cancel editing"
                   >
-                    <X className="w-3 h-3" />
+                    <span className="w-3 h-3 flex items-center justify-center">✖️</span>
                   </button>
                 </div>
               </div>
@@ -196,7 +195,7 @@ const Dashboard = () => {
                     {hasWhyContent ? goalsData.annualSnapshot.mantra : 'my big why'}
    \               </p>
                   {!hasWhyContent && (
-                    <Edit3 className="w-5 h-5 text-white/60 group-hover:text-white/80 transition-colors" />
+                    <span className="w-5 h-5 text-white/60 group-hover:text-white/80 transition-colors flex items-center justify-center">✏️</span>
                   )}
                 </div>
                 {!hasWhyContent && (
@@ -211,7 +210,7 @@ const Dashboard = () => {
             {dashboardData.coreValues.map((value, i) => (
               <div key={i} className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-6 py-4">
                 <div className="flex items-center space-x-3">
-                  <Heart className="w-5 h-5 text-purple-400" />
+                  <span className="w-5 h-5 text-purple-400 flex items-center justify-center">❤️</span>
                   <span className="text-white font-semibold">{value}</span>
                 </div>
               </div>
@@ -342,7 +341,7 @@ const Dashboard = () => {
 
             {/* Arrow */}
             <div className="flex flex-col items-center">
-              <ChevronRight className="w-12 h-12 text-purple-400 mb-2" />
+              <span className="w-12 h-12 text-purple-400 mb-2 flex items-center justify-center">→</span>
               <div className="text-sm text-purple-400 font-medium">12 Weeks</div>
             </div>
 
@@ -414,7 +413,7 @@ const Dashboard = () => {
         <div className="bg-slate-800/30 backdrop-blur-sm border border-slate-700/30 rounded-3xl p-8">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-3">
-              <Target className="w-8 h-8 text-purple-400" />
+              <span className="w-8 h-8 text-purple-400 flex items-center justify-center">🎯</span>
               <h3 className="text-2xl font-bold text-white">Your Next Milestones</h3>
             </div>
             <div className="text-right">
@@ -469,7 +468,7 @@ const Dashboard = () => {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-purple-500/20 rounded-full flex items-center justify-center">
-                <Target className="w-6 h-6 text-purple-400" />
+                <span className="w-6 h-6 text-purple-400 flex items-center justify-center">🎯</span>
               </div>
               <h3 className="text-2xl font-bold text-white">Your 90-Day Journey</h3>
             </div>
