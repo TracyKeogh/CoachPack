@@ -192,7 +192,7 @@ const Dashboard = () => {
                 <div className="flex items-center justify-center space-x-3">
                   <p className="text-xl text-slate-300">
                     {hasWhyContent ? goalsData.annualSnapshot.mantra : 'my big why'}
-   \               </p>
+                  </p>
                   {!hasWhyContent && (
                     <span className="w-5 h-5 text-white/60 group-hover:text-white/80 transition-colors flex items-center justify-center">✏️</span>
                   )}
@@ -204,7 +204,7 @@ const Dashboard = () => {
             )}
           </div>
 
-          {/* \Core Values */}
+          {/* Core Values */}
           <div className="flex justify-center space-x-6 mb-12">
             {dashboardData.coreValues.map((value, i) => (
               <div key={i} className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-6 py-4">
@@ -573,6 +573,7 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 };
