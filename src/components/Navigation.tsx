@@ -1,8 +1,16 @@
-import React from 'react';
-import { useValuesData } from '../hooks/useValuesData';
-import { useWheelData } from '../hooks/useWheelData';
-import { useVisionBoardData } from '../hooks/useVisionBoardData';
-import { useGoalSettingData } from '../hooks/useGoalSettingData';
+import React, { useState, useEffect } from 'react';
+import { 
+  BarChart3, 
+  Heart, 
+  Eye,
+  CheckSquare,
+  Calendar as CalendarIcon,
+  Home,
+  Download,
+  Menu,
+  X,
+  ArrowLeft
+} from 'lucide-react';
 
 export type ViewType = 'dashboard' | 'wheel-of-life' | 'values' | 'vision' | 'goals' | 'calendar' | 'templates';
 
@@ -19,32 +27,71 @@ const Navigation: React.FC<NavigationProps> = ({
   isCollapsed, 
   onToggleCollapse 
 }) => {
-  // Use proper data hooks instead of managing state directly
-  const { data: valuesData } = useValuesData();
-  const { data: wheelData } = useWheelData();
-  const { data: visionData } = useVisionBoardData();
-  const { data: goalsData } = useGoalSettingData();
+  // Load user progress data
+  const [valuesData, setValuesData] = useState({ rankedCoreValues: [] });
+  const [wheelData, setWheelData] = useState([]);
+  const [reflectionData, setReflectionData] = useState({});
+  const [visionItems, setVisionItems] = useState([]);
+  const [goalsData, setGoalsData] = useState({ categoryGoals: {}, annualSnapshot: {} });
+
+  useEffect(() => {
+    try {
+      const storedValues = localStorage.getItem('coach-pack-values-clarity');
+      if (storedValues) {
+        setValuesData(JSON.parse(storedValues));
+      }
+    } catch (error) {
+      console.error('Failed to load values data:', error);
+    }
+
+    try {
+      const storedWheel = localStorage.getItem('coach-pack-wheel-of-life');
+      if (storedWheel) {
+        const wheelDataParsed = JSON.parse(storedWheel);
+        setWheelData(wheelDataParsed.lifeAreas || []);
+        setReflectionData(wheelDataParsed.reflections || {});
+      }
+    } catch (error) {
+      console.error('Failed to load wheel data:', error);
+    }
+
+    try {
+      const storedVision = localStorage.getItem('coach-pack-vision-board');
+      if (storedVision) {
+        const visionDataParsed = JSON.parse(storedVision);
+        setVisionItems(visionDataParsed.visionItems || []);
+      }
+    } catch (error) {
+      console.error('Failed to load vision data:', error);
+    }
+
+    try {
+      const storedGoals = localStorage.getItem('coach-pack-goal-setting');
+      if (storedGoals) {
+        setGoalsData(JSON.parse(storedGoals));
+      }
+    } catch (error) {
+      console.error('Failed to load goals data:', error);
+    }
+  }, []);
 
   const getCompletionStats = () => {
-    const lifeAreas = wheelData?.lifeAreas || [];
-    const reflections = wheelData?.reflections || {};
-    
-    const completedReflections = Object.values(reflections).filter(
+    const completedReflections = Object.values(reflectionData).filter(
       (reflection: any) => 
         reflection?.goingWell?.length > 0 || 
         reflection?.needsImprovement?.length > 0 || 
         reflection?.idealVision?.trim() !== ''
     ).length;
 
-    const averageScore = lifeAreas.length > 0 ? 
-      lifeAreas.reduce((sum, item: any) => sum + (item?.score || 0), 0) / lifeAreas.length : 0;
+    const averageScore = wheelData.length > 0 ? 
+      wheelData.reduce((sum, item: any) => sum + (item?.score || 0), 0) / wheelData.length : 0;
     
     return {
       averageScore,
       completedReflections,
-      totalAreas: lifeAreas.length,
-      wheelCompleted: lifeAreas.every((area: any) => (area?.score || 0) > 0),
-      allReflectionsCompleted: completedReflections === lifeAreas.length
+      totalAreas: wheelData.length,
+      wheelCompleted: wheelData.every((area: any) => (area?.score || 0) > 0),
+      allReflectionsCompleted: completedReflections === wheelData.length
     };
   };
 
@@ -66,36 +113,40 @@ const Navigation: React.FC<NavigationProps> = ({
 
   const wheelStats = getCompletionStats();
   const goalsProgress = getGoalsProgress();
-  const visionItems = visionData?.visionItems || [];
 
-  // Journey sections with real progress data
+  // Journey sections with real progress data - using correct icons
   const sections = [
     { 
       id: 'wheel-of-life' as ViewType, 
-      title: 'Wheel of Life', 
+      icon: BarChart3, 
+      title: 'Baseline', 
       progress: wheelStats.wheelCompleted ? (wheelStats.allReflectionsCompleted ? 100 : 75) : (wheelStats.averageScore > 0 ? 50 : 0),
       active: currentView === 'wheel-of-life'
     },
     { 
       id: 'values' as ViewType, 
+      icon: Heart, 
       title: 'Values', 
-      progress: valuesData?.rankedCoreValues ? Math.min(100, (valuesData.rankedCoreValues.length / 6) * 100) : 0,
+      progress: valuesData.rankedCoreValues ? Math.min(100, (valuesData.rankedCoreValues.length / 6) * 100) : 0,
       active: currentView === 'values'
     },
     { 
       id: 'vision' as ViewType, 
+      icon: Eye, 
       title: 'Vision', 
       progress: visionItems.length > 0 ? Math.min(100, (visionItems.length / 4) * 100) : 0,
       active: currentView === 'vision'
     },
     { 
-      id: 'goals' as ViewType,
-      title: 'Goals',
+      id: 'goals' as ViewType, 
+      icon: CheckSquare, 
+      title: 'Plan', 
       progress: goalsProgress.percentage,
       active: currentView === 'goals'
     },
     { 
       id: 'calendar' as ViewType, 
+      icon: CalendarIcon, 
       title: 'Calendar', 
       progress: 0,
       active: currentView === 'calendar'
@@ -104,8 +155,8 @@ const Navigation: React.FC<NavigationProps> = ({
 
   // Additional nav items
   const additionalNavItems = [
-    { id: 'dashboard', label: 'Dashboard' },
-    { id: 'templates', label: 'Templates' },
+    { id: 'dashboard', label: 'Dashboard', icon: Home, color: 'text-slate-600' },
+    { id: 'templates', label: 'Templates', icon: Download, color: 'text-purple-500' },
   ];
 
   const JourneySection = ({ section }: { section: typeof sections[0] }) => (
@@ -115,11 +166,9 @@ const Navigation: React.FC<NavigationProps> = ({
       } ${isCollapsed ? 'justify-center' : ''}`}
       onClick={() => onNavigate && onNavigate(section.id)}
     >
-      <div className={`w-5 h-5 flex items-center justify-center text-xs font-bold ${
+      <section.icon className={`w-5 h-5 ${
         section.active ? 'text-purple-600' : section.progress > 0 ? 'text-slate-600' : 'text-slate-400'
-      }`}>
-        {section.title.charAt(0)}
-      </div>
+      }`} />
       {!isCollapsed && (
         <>
           <div className="flex-1">
@@ -172,7 +221,8 @@ const Navigation: React.FC<NavigationProps> = ({
                   onClick={() => onNavigate('dashboard')}
                   className="flex items-center space-x-2 text-slate-600 hover:text-slate-900 transition-colors"
                 >
-                  <span className="text-sm">← Back</span>
+                  <ArrowLeft className="w-4 h-4" />
+                  <span className="text-xs font-semibold uppercase tracking-wider">Dashboard</span>
                 </button>
               </div>
             )}
@@ -183,9 +233,11 @@ const Navigation: React.FC<NavigationProps> = ({
               }`}
               title={isCollapsed ? "Open navigation" : "Collapse navigation"}
             >
-              <span className="text-slate-600 text-sm font-bold">
-                {isCollapsed ? '☰' : '✕'}
-              </span>
+              {isCollapsed ? (
+                <Menu className="w-4 h-4 text-slate-600" />
+              ) : (
+                <X className="w-4 h-4 text-slate-600" />
+              )}
             </button>
           </div>
 
@@ -213,6 +265,7 @@ const Navigation: React.FC<NavigationProps> = ({
               </h3>
               <ul className="space-y-2">
                 {additionalNavItems.map((item) => {
+                  const Icon = item.icon;
                   const isActive = currentView === item.id;
                   
                   return (
@@ -226,11 +279,7 @@ const Navigation: React.FC<NavigationProps> = ({
                         }`}
                       >
                         <div className="flex items-center space-x-3">
-                          <div className={`w-5 h-5 flex items-center justify-center text-xs font-bold ${
-                            isActive ? 'text-purple-600' : 'text-slate-600'
-                          }`}>
-                            {item.label.charAt(0)}
-                          </div>
+                          <Icon className={`w-5 h-5 ${isActive ? 'text-purple-600' : item.color}`} />
                           <span className="font-medium">{item.label}</span>
                         </div>
                       </button>
@@ -243,6 +292,7 @@ const Navigation: React.FC<NavigationProps> = ({
             <div className="border-t border-slate-200 pt-6">
               <ul className="space-y-2">
                 {additionalNavItems.map((item) => {
+                  const Icon = item.icon;
                   const isActive = currentView === item.id;
                   
                   return (
@@ -256,11 +306,7 @@ const Navigation: React.FC<NavigationProps> = ({
                         }`}
                         title={item.label}
                       >
-                        <div className={`w-5 h-5 flex items-center justify-center text-xs font-bold ${
-                          isActive ? 'text-purple-600' : 'text-slate-600'
-                        }`}>
-                          {item.label.charAt(0)}
-                        </div>
+                        <Icon className={`w-5 h-5 ${isActive ? 'text-purple-600' : item.color}`} />
                         
                         {/* Tooltip for collapsed state */}
                         <div className="absolute left-full ml-2 px-2 py-1 bg-slate-900 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
