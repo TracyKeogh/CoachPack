@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, Target, Repeat, MapPin, Sparkles, TrendingUp, Dumbbell, Scale, CheckCircle, Calendar } from 'lucide-react';
+import { ArrowRight, Target, Repeat, MapPin, Sparkles, TrendingUp, Dumbbell, Scale, CheckCircle, Calendar, Edit3, Check, X } from 'lucide-react';
 import { useGoalSettingData } from '../hooks/useGoalSettingData';
 import { GOAL_CATEGORIES } from '../types/goals';
+import Header from './Header';
+import Navigation from './Navigation';
 
 const GoalSetting = () => {
   const {
@@ -17,6 +19,7 @@ const GoalSetting = () => {
 
   const [currentFlow, setCurrentFlow] = useState('annual');
   const [selectedCategory, setSelectedCategory] = useState('business');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   
   const getOneYearFromNow = () => {
     const date = new Date();
