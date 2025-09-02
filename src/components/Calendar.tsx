@@ -1,1149 +1,1440 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
+  Calendar as CalendarIcon, 
   ChevronLeft, 
   ChevronRight, 
-  Calendar as CalendarIcon,
-  Plus,
+  Plus, 
   Clock, 
-  ArrowLeft,
-  X,
-  Filter,
-  MoreHorizontal,
-  Trash2,
-  Edit,
-  Flag,
+  Check, 
+  X, 
+  Edit3, 
+  Trash2, 
+  Eye, 
+  Grid, 
+  List, 
+  BarChart3,
   Target,
-  CheckCircle2,
-  CalendarDays
+  Heart,
+  Sparkles,
+  ArrowRight,
+  ArrowLeft,
+  Save,
+  Filter,
+  Search,
+  Info,
+  Zap,
+  Layers
 } from 'lucide-react';
-import { useCalendarData, Event, ActionPoolItem } from '../hooks/useCalendarData';
 import { useGoalSettingData } from '../hooks/useGoalSettingData';
-import { useNotes } from '../hooks/useNotes';
-import NotesPanel from './NotesPanel';
+import { useValuesData } from '../hooks/useValuesData';
+import { useVisionBoardData } from '../hooks/useVisionBoardData';
+
+type CalendarView = 'daily' | 'weekly' | '90-day' | 'yearly';
+
+interface CalendarEvent {
+  id: string;
+  title: string;
+  start: Date;
+  end: Date;
+  category: 'business' | 'body' | 'balance' | 'personal';
+  completed: boolean;
+  isMilestone: boolean;
+  goalId?: string;
+}
+
+interface ActionItem {
+  id: string;
+  title: string;
+  duration: number; // in minutes
+  category: 'business' | 'body' | 'balance' | 'personal';
+  frequency: 'daily' | 'weekly' | '3x-week';
+  completed: boolean;
+}
 
 const Calendar: React.FC = () => {
-  // State variables
-  const [viewMode, setViewMode] = useState<'week' | '90day' | 'year'>('week');
+  const [currentView, setCurrentView] = useState<CalendarView>('weekly');
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [showDayView, setShowDayView] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const [showEventModal, setShowEventModal] = useState(false);
-  const [editingEvent, setEditingEvent] = useState<Partial<Event>>({});
-  const [editingAction, setEditingAction] = useState<Partial<ActionPoolItem>>({});
-  const [showActionModal, setShowActionModal] = useState(false);
-  const [showCategoryFilter, setShowCategoryFilter] = useState(false);
-  const [showActionPool, setShowActionPool] = useState(false);
-  const [showNotes, setShowNotes] = useState(false);
-  const [filterCategory, setFilterCategory] = useState<string | null>(null);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [actionPool, setActionPool] = useState<ActionItem[]>([]);
+  const [showVisionOverlay, setShowVisionOverlay] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
+  const [newEvent, setNewEvent] = useState<Partial<CalendarEvent>>({});
+  const [filter, setFilter] = useState<string>('all');
+  
+  const { data: goalsData } = useGoalSettingData();
+  const { data: valuesData } = useValuesData();
+  const { visionItems } = useVisionBoardData();
 
-  // Get data from hooks
-  const { data, addEvent, updateEvent, removeEvent, addActionToPool, updateActionInPool, removeActionFromPool, scheduleActionFromPool } = useCalendarData();
-  const { goals } = useGoalSettingData();
-  const { notes, createNote, updateNote, deleteNote } = useNotes('calendar');
-
-  // Helper functions
-  const getMilestoneDates = () => {
-    // Get all milestones from goals
-    const milestones: { date: Date; title: string; category: string }[] = [];
-    
-    // Add some sample milestones for demonstration
-    const today = new Date();
-    
-    milestones.push({
-      date: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 14),
-      title: 'Complete Project Proposal',
-      category: 'business'
-    });
-    
-    milestones.push({
-      date: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 30),
-      title: 'Fitness Milestone: 10k Run',
-      category: 'body'
-    });
-    
-    milestones.push({
-      date: new Date(today.getFullYear(), today.getMonth() + 1, 15),
-      title: 'Family Vacation',
-      category: 'balance'
-    });
-    
-    return milestones;
-  };
-
-  const getMonthGroups = (startDate: Date, numDays: number = 90) => {
-    const result = [];
-    const currentDate = new Date(startDate);
-    
-    while (currentDate < new Date(startDate.getTime() + numDays * 24 * 60 * 60 * 1000)) {
-      const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-      const monthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-      
-      const monthGroup = {
-        monthName: monthStart.toLocaleDateString('en-US', { month: 'long' }),
-        year: monthStart.getFullYear(),
-        days: []
-      };
-      
-      // Add empty days for the start of the month
-      const firstDayOfWeek = monthStart.getDay();
-      for (let i = 0; i < firstDayOfWeek; i++) {
-        monthGroup.days.push({ date: null });
+  // Initialize with sample data
+  useEffect(() => {
+    // Sample events
+    const sampleEvents: CalendarEvent[] = [
+      {
+        id: '1',
+        title: 'Team Meeting',
+        start: new Date(new Date().setHours(9, 0, 0, 0)),
+        end: new Date(new Date().setHours(10, 30, 0, 0)),
+        category: 'business',
+        completed: false,
+        isMilestone: false
+      },
+      {
+        id: '2',
+        title: 'Gym Workout',
+        start: new Date(new Date().setHours(17, 0, 0, 0)),
+        end: new Date(new Date().setHours(18, 0, 0, 0)),
+        category: 'body',
+        completed: false,
+        isMilestone: false
+      },
+      {
+        id: '3',
+        title: 'Family Dinner',
+        start: new Date(new Date().setHours(19, 0, 0, 0)),
+        end: new Date(new Date().setHours(20, 30, 0, 0)),
+        category: 'balance',
+        completed: false,
+        isMilestone: false
+      },
+      {
+        id: '4',
+        title: 'Launch New Product',
+        start: new Date(new Date().setDate(new Date().getDate() + 14)),
+        end: new Date(new Date().setDate(new Date().getDate() + 14)),
+        category: 'business',
+        completed: false,
+        isMilestone: true,
+        goalId: '1'
       }
-      
-      // Add all days of the month
-      for (let day = 1; day <= monthEnd.getDate(); day++) {
-        const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-        monthGroup.days.push({ date });
+    ];
+
+    // Sample action pool
+    const sampleActionPool: ActionItem[] = [
+      {
+        id: 'a1',
+        title: 'Morning Workout',
+        duration: 60, // 60 minutes
+        category: 'body',
+        frequency: 'daily',
+        completed: false
+      },
+      {
+        id: 'a2',
+        title: 'Team Meeting',
+        duration: 90, // 90 minutes
+        category: 'business',
+        frequency: 'weekly',
+        completed: false
+      },
+      {
+        id: 'a3',
+        title: 'Meal Prep',
+        duration: 120, // 120 minutes
+        category: 'body',
+        frequency: 'weekly',
+        completed: false
+      },
+      {
+        id: 'a4',
+        title: 'Reading Time',
+        duration: 45, // 45 minutes
+        category: 'personal',
+        frequency: '3x-week',
+        completed: false
+      },
+      {
+        id: 'a5',
+        title: 'Family Dinner',
+        duration: 90, // 90 minutes
+        category: 'balance',
+        frequency: 'daily',
+        completed: false
+      },
+      {
+        id: 'a6',
+        title: 'Project Work',
+        duration: 180, // 180 minutes
+        category: 'business',
+        frequency: '3x-week',
+        completed: false
+      },
+      {
+        id: 'a7',
+        title: 'Meditation',
+        duration: 20, // 20 minutes
+        category: 'personal',
+        frequency: 'daily',
+        completed: false
       }
-      
-      result.push(monthGroup);
-      currentDate.setMonth(currentDate.getMonth() + 1);
+    ];
+
+    setEvents(sampleEvents);
+    setActionPool(sampleActionPool);
+  }, []);
+
+  // Get category color
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'business':
+        return {
+          bg: 'bg-purple-100',
+          text: 'text-purple-800',
+          border: 'border-purple-300',
+          light: 'bg-purple-50',
+          dark: 'bg-purple-600'
+        };
+      case 'body':
+        return {
+          bg: 'bg-green-100',
+          text: 'text-green-800',
+          border: 'border-green-300',
+          light: 'bg-green-50',
+          dark: 'bg-green-600'
+        };
+      case 'balance':
+        return {
+          bg: 'bg-blue-100',
+          text: 'text-blue-800',
+          border: 'border-blue-300',
+          light: 'bg-blue-50',
+          dark: 'bg-blue-600'
+        };
+      case 'personal':
+        return {
+          bg: 'bg-amber-100',
+          text: 'text-amber-800',
+          border: 'border-amber-300',
+          light: 'bg-amber-50',
+          dark: 'bg-amber-600'
+        };
+      default:
+        return {
+          bg: 'bg-slate-100',
+          text: 'text-slate-800',
+          border: 'border-slate-300',
+          light: 'bg-slate-50',
+          dark: 'bg-slate-600'
+        };
     }
-    
-    return result;
   };
 
-  const milestones = getMilestoneDates();
-
-  // Generate 90-day view data
-  const generate90DayView = () => {
-    const today = new Date();
-    const endDate = new Date(today);
-    endDate.setDate(today.getDate() + 90);
-    
-    const monthGroups = getMonthGroups(today);
-    
-    return { monthGroups, milestones };
+  // Format time (e.g., "9:00 AM")
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
   };
 
-  // Get data for 90-day view
-  const { monthGroups } = generate90DayView();
-
-  // Get week dates for the weekly view
-  const getWeekDates = (date: Date) => {
-    const result = [];
-    const day = date.getDay();
-    const diff = date.getDate() - day;
-    
-    for (let i = 0; i < 7; i++) {
-      const weekDate = new Date(date);
-      weekDate.setDate(diff + i);
-      result.push(weekDate);
+  // Format date (e.g., "Jul 15, 2025")
+  const formatDate = (date: Date) => {
+    if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+      return 'Invalid Date';
     }
-    
-    return result;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  // Get current week dates based on the selected date
-  const weekDates = getWeekDates(currentDate);
+  // Get day of week (e.g., "Monday")
+  const getDayOfWeek = (date: Date) => {
+    return date.toLocaleDateString('en-US', { weekday: 'long' });
+  };
 
-  // Navigation functions
-  const goToPreviousWeek = () => {
+  // Get short day of week (e.g., "Mon")
+  const getShortDayOfWeek = (date: Date) => {
+    return date.toLocaleDateString('en-US', { weekday: 'short' });
+  };
+
+  // Get month name (e.g., "July")
+  const getMonthName = (date: Date) => {
+    return date.toLocaleDateString('en-US', { month: 'long' });
+  };
+
+  // Get days in month
+  const getDaysInMonth = (year: number, month: number) => {
+    return new Date(year, month + 1, 0).getDate();
+  };
+
+  // Get first day of month (0 = Sunday, 1 = Monday, etc.)
+  const getFirstDayOfMonth = (year: number, month: number) => {
+    return new Date(year, month, 1).getDay();
+  };
+
+  // Get events for a specific day
+  const getEventsForDay = (date: Date) => {
+    return events.filter(event => 
+      event.start.getDate() === date.getDate() &&
+      event.start.getMonth() === date.getMonth() &&
+      event.start.getFullYear() === date.getFullYear()
+    );
+  };
+
+  // Get events for a specific hour
+  const getEventsForHour = (date: Date, hour: number) => {
+    return events.filter(event => 
+      event.start.getDate() === date.getDate() &&
+      event.start.getMonth() === date.getMonth() &&
+      event.start.getFullYear() === date.getFullYear() &&
+      event.start.getHours() === hour
+    );
+  };
+
+  // Navigate to previous period
+  const goToPrevious = () => {
     const newDate = new Date(currentDate);
-    newDate.setDate(currentDate.getDate() - 7);
+    
+    switch (currentView) {
+      case 'daily':
+        newDate.setDate(newDate.getDate() - 1);
+        break;
+      case 'weekly':
+        newDate.setDate(newDate.getDate() - 7);
+        break;
+      case '90-day':
+        newDate.setDate(newDate.getDate() - 90);
+        break;
+      case 'yearly':
+        newDate.setFullYear(newDate.getFullYear() - 1);
+        break;
+    }
+    
     setCurrentDate(newDate);
   };
 
-  const goToNextWeek = () => {
+  // Navigate to next period
+  const goToNext = () => {
     const newDate = new Date(currentDate);
-    newDate.setDate(currentDate.getDate() + 7);
+    
+    switch (currentView) {
+      case 'daily':
+        newDate.setDate(newDate.getDate() + 1);
+        break;
+      case 'weekly':
+        newDate.setDate(newDate.getDate() + 7);
+        break;
+      case '90-day':
+        newDate.setDate(newDate.getDate() + 90);
+        break;
+      case 'yearly':
+        newDate.setFullYear(newDate.getFullYear() + 1);
+        break;
+    }
+    
     setCurrentDate(newDate);
   };
 
+  // Go to today
   const goToToday = () => {
     setCurrentDate(new Date());
   };
-  
-  // Year view navigation
-  const goToPreviousYear = () => {
-    const newDate = new Date(currentDate);
-    newDate.setFullYear(currentDate.getFullYear() - 1);
-    setCurrentDate(newDate);
+
+  // Add new event
+  const addEvent = (event: Partial<CalendarEvent>) => {
+    if (event.title && event.start && event.end && event.category) {
+      const newEvent: CalendarEvent = {
+        id: Date.now().toString(),
+        title: event.title,
+        start: event.start,
+        end: event.end,
+        category: event.category as 'business' | 'body' | 'balance' | 'personal',
+        completed: false,
+        isMilestone: event.isMilestone || false,
+        goalId: event.goalId
+      };
+      
+      setEvents(prev => [...prev, newEvent]);
+      setNewEvent({});
+    }
   };
 
-  const goToNextYear = () => {
-    const newDate = new Date(currentDate);
-    newDate.setFullYear(currentDate.getFullYear() + 1);
-    setCurrentDate(newDate);
+  // Update existing event
+  const updateEvent = (eventId: string, updates: Partial<CalendarEvent>) => {
+    setEvents(prev => 
+      prev.map(event => 
+        event.id === eventId ? { ...event, ...updates } : event
+      )
+    );
   };
 
-  // Generate year view data
-  const generateYearView = () => {
-    const year = currentDate.getFullYear();
-    const months = [];
+  // Delete event
+  const deleteEvent = (eventId: string) => {
+    setEvents(prev => prev.filter(event => event.id !== eventId));
+  };
+
+  // Toggle event completion
+  const toggleEventCompletion = (eventId: string) => {
+    setEvents(prev => 
+      prev.map(event => 
+        event.id === eventId ? { ...event, completed: !event.completed } : event
+      )
+    );
+  };
+
+  // Get dates for current week
+  const getWeekDates = () => {
+    const dates = [];
+    const startOfWeek = new Date(currentDate);
+    const day = startOfWeek.getDay();
+    const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); // Adjust for Sunday
+    startOfWeek.setDate(diff);
     
-    for (let month = 0; month < 12; month++) {
-      const firstDay = new Date(year, month, 1);
-      const lastDay = new Date(year, month + 1, 0);
-      const daysInMonth = lastDay.getDate();
-      const firstDayOfWeek = firstDay.getDay();
-      
-      const days = [];
-      
-      // Add empty days for the start of the month
-      for (let i = 0; i < firstDayOfWeek; i++) {
-        days.push({ date: null });
-      }
-      
-      // Add all days of the month
-      for (let day = 1; day <= daysInMonth; day++) {
-        const date = new Date(year, month, day);
-        days.push({ date });
-      }
-      
-      months.push({
-        name: new Date(year, month, 1).toLocaleDateString('en-US', { month: 'long' }),
-        year,
-        days
-      });
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(startOfWeek);
+      date.setDate(date.getDate() + i);
+      dates.push(date);
     }
     
-    return months;
+    return dates;
   };
-  
-  const yearMonths = generateYearView();
 
-  return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-slate-900">Action Calendar</h1>
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={() => setShowNotes(!showNotes)}
-            className="flex items-center space-x-2 px-3 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
-          >
-            <CalendarDays className="w-4 h-4" />
-            <span>Notes</span>
-          </button>
-          
-          {/* View Mode Toggle */}
-          <div className="flex items-center space-x-2">
-            <div className="flex items-center bg-slate-100 rounded-lg p-1">
+  // Get dates for 90-day view
+  const get90DayDates = () => {
+    const dates = [];
+    const startDate = new Date(currentDate);
+    
+    for (let i = 0; i < 90; i++) {
+      const date = new Date(startDate);
+      date.setDate(date.getDate() + i);
+      dates.push(date);
+    }
+    
+    return dates;
+  };
+
+  // Get weeks for 90-day view
+  const get90DayWeeks = () => {
+    const weeks = [];
+    const dates = get90DayDates();
+    
+    for (let i = 0; i < dates.length; i += 7) {
+      weeks.push(dates.slice(i, i + 7));
+    }
+    
+    return weeks;
+  };
+
+  // Render Daily View
+  const renderDailyView = () => {
+    const hours = Array.from({ length: 16 }, (_, i) => i + 6); // 6 AM to 10 PM
+    
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900">Daily Focus</h2>
+              <p className="text-slate-600">{formatDate(currentDate)}</p>
+            </div>
+            
+            <div className="flex items-center space-x-4">
               <button
-                onClick={() => setViewMode('week')} 
-                className={`px-3 py-1 rounded-lg text-sm font-medium ${
-                  viewMode === 'week' 
-                    ? 'bg-white text-purple-600 shadow-sm' 
-                    : 'text-slate-600 hover:text-slate-900'
+                onClick={() => setShowVisionOverlay(!showVisionOverlay)}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+                  showVisionOverlay 
+                    ? 'bg-purple-100 text-purple-700 border border-purple-300' 
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
-                Week
+                <Eye className="w-4 h-4" />
+                <span>{showVisionOverlay ? 'Hide Vision' : 'Show Vision'}</span>
               </button>
+              
               <button
-                onClick={() => setViewMode('90day')}
-                className={`px-3 py-1 rounded-lg text-sm font-medium ${
-                  viewMode === '90day' 
-                    ? 'bg-white text-purple-600 shadow-sm' 
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-                >
-                  90-Day
-                </button>
-              <button
-                onClick={() => setViewMode('year')}
-                className={`px-3 py-1 rounded-lg text-sm font-medium ${
-                  viewMode === 'year' 
-                    ? 'bg-white text-purple-600 shadow-sm' 
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-                >
-                  Year
-                </button>
+                onClick={() => setNewEvent({ 
+                  start: new Date(currentDate.setHours(9, 0, 0, 0)),
+                  end: new Date(currentDate.setHours(10, 0, 0, 0)),
+                  category: 'business'
+                })}
+                className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Task</span>
+              </button>
+            </div>
+          </div>
+          
+          {/* Vision Overlay */}
+          {showVisionOverlay && (
+            <div className="mb-6 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-6 border border-purple-200">
+              <div className="flex items-start space-x-6">
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-purple-900 mb-2">Your Vision</h3>
+                  <p className="text-purple-800 italic mb-4">
+                    {goalsData.annualSnapshot?.snapshot || "I feel energized and healthy. My career is thriving with new opportunities and growth. My relationships are deep and fulfilling, and I'm living with purpose and joy every day."}
+                  </p>
+                  
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {valuesData.rankedCoreValues.slice(0, 3).map(value => (
+                      <span key={value.id} className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
+                        {value.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-purple-900 mb-2">Today's Focus</h3>
+                  <div className="space-y-2">
+                    {Object.entries(goalsData.categoryGoals).map(([category, goal]) => {
+                      if (!goal.goal) return null;
+                      const colors = getCategoryColor(category);
+                      return (
+                        <div key={category} className={`p-2 ${colors.light} ${colors.border} border rounded-lg`}>
+                          <p className={`text-sm font-medium ${colors.text}`}>{goal.goal}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-4 grid grid-cols-4 gap-2">
+                {visionItems.slice(0, 4).map(item => (
+                  <div key={item.id} className="relative h-16 rounded-lg overflow-hidden">
+                    <img 
+                      src={item.imageUrl} 
+                      alt={item.title}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
+                      <p className="text-white text-xs font-medium px-2 text-center">
+                        {item.title}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Time Blocks */}
+          <div className="space-y-2">
+            {hours.map(hour => {
+              const hourEvents = getEventsForHour(currentDate, hour);
+              const timeLabel = `${hour % 12 || 12}:00 ${hour < 12 ? 'AM' : 'PM'}`;
+              
+              return (
+                <div key={hour} className="flex items-start">
+                  <div className="w-20 text-right pr-4 pt-2 text-sm text-slate-500 font-medium">
+                    {timeLabel}
+                  </div>
+                  
+                  <div className="flex-1 min-h-16 border-l-2 border-slate-200 pl-4">
+                    {hourEvents.length > 0 ? (
+                      <div className="space-y-2 py-2">
+                        {hourEvents.map(event => {
+                          const colors = getCategoryColor(event.category);
+                          
+                          return (
+                            <div 
+                              key={event.id} 
+                              className={`${colors.bg} ${colors.border} border rounded-lg p-3 flex items-center justify-between group`}
+                            >
+                              <div className="flex items-center space-x-3">
+                                <button
+                                  onClick={() => toggleEventCompletion(event.id)}
+                                  className={`w-5 h-5 rounded-full border flex items-center justify-center ${
+                                    event.completed 
+                                      ? `${colors.dark} text-white` 
+                                      : 'border-slate-300 bg-white'
+                                  }`}
+                                >
+                                  {event.completed && <Check className="w-3 h-3" />}
+                                </button>
+                                
+                                <div>
+                                  <h4 className={`font-medium ${event.completed ? 'line-through text-slate-500' : colors.text}`}>
+                                    {event.title}
+                                  </h4>
+                                  <p className="text-xs text-slate-500">
+                                    {formatTime(event.start)} - {formatTime(event.end)}
+                                  </p>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                  onClick={() => setEditingEvent(event)}
+                                  className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                >
+                                  <Edit3 className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => deleteEvent(event.id)}
+                                  className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="h-16 flex items-center justify-center border border-dashed border-slate-200 rounded-lg hover:border-slate-300 transition-colors">
+                        <p className="text-sm text-slate-400">Drop tasks here</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          
+          {/* Daily Reflection */}
+          <div className="mt-8 p-4 bg-slate-50 rounded-lg border border-slate-200">
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">Daily Reflection</h3>
+            <textarea
+              placeholder="What went well today? What could be improved? What did you learn?"
+              className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+              rows={3}
+            />
+            <div className="flex justify-end mt-2">
+              <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm">
+                Save Reflection
+              </button>
             </div>
           </div>
         </div>
       </div>
+    );
+  };
 
-      {/* Notes Panel */}
-      {showNotes && (
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-          <NotesPanel feature="calendar" compact={true} />
-        </div>
-      )}
-
-      {/* Week View */}
-      {viewMode === 'week' && (
+  // Render Weekly View
+  const renderWeeklyView = () => {
+    const weekDates = getWeekDates();
+    const weekStart = weekDates[0];
+    const weekEnd = weekDates[6];
+    
+    return (
+      <div className="space-y-6">
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
           <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={goToPreviousWeek}
-                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <button
-                onClick={goToNextWeek}
-                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
-              <h2 className="text-lg font-semibold text-slate-900">
-                {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-              </h2>
-              <button
-                onClick={goToToday}
-                className="px-3 py-1 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors text-sm"
-              >
-                Today
-              </button>
-              <button
-                onClick={() => setViewMode('90day')} 
-                className="flex items-center space-x-1 px-3 py-1 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors text-sm"
-              >
-                <Flag className="w-4 h-4" />
-                <span>Milestones</span>
-              </button>
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900">Weekly Planning</h2>
+              <p className="text-slate-600">
+                {formatDate(weekStart)} - {formatDate(weekEnd)}
+              </p>
             </div>
             
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-4">
               <button
-                onClick={() => setShowActionPool(!showActionPool)}
-                className="flex items-center space-x-1 px-3 py-1 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors text-sm"
+                onClick={() => setShowVisionOverlay(!showVisionOverlay)}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+                  showVisionOverlay 
+                    ? 'bg-purple-100 text-purple-700 border border-purple-300' 
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                <Eye className="w-4 h-4" />
+                <span>{showVisionOverlay ? 'Hide Vision' : 'Show Vision'}</span>
+              </button>
+              
+              <button
+                onClick={() => setNewEvent({ 
+                  start: new Date(weekStart),
+                  end: new Date(weekStart),
+                  category: 'business'
+                })}
+                className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
               >
                 <Plus className="w-4 h-4" />
-                <span>Add Action</span>
+                <span>Add Event</span>
               </button>
-              <div className="relative ml-2">
-                <button
-                  onClick={() => setShowCategoryFilter(!showCategoryFilter)}
-                  className="flex items-center space-x-1 px-3 py-1 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors text-sm"
-                >
-                  <Filter className="w-4 h-4" />
-                  <span>Filter</span>
-                  {filterCategory && (
-                    <span className="ml-1 w-2 h-2 rounded-full bg-blue-500" />
-                  )}
-                </button>
-                
-                {showCategoryFilter && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 z-10 py-2">
-                    <div className="px-3 py-2 text-xs font-semibold text-slate-500 uppercase">Categories</div>
-                    <button
-                      onClick={() => setFilterCategory(null)} 
-                      className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 ${
-                        filterCategory === null ? 'text-purple-600 font-medium' : 'text-slate-700'
-                      }`}
-                    >
-                      All Categories
-                    </button>
-                    <button
-                      onClick={() => setFilterCategory('business')} 
-                      className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 ${
-                        filterCategory === 'business' ? 'text-purple-600 font-medium' : 'text-slate-700'
-                      }`}
-                    >
-                      Business
-                    </button>
-                    <button
-                      onClick={() => setFilterCategory('body')} 
-                      className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 ${
-                        filterCategory === 'body' ? 'text-green-600 font-medium' : 'text-slate-700'
-                      }`}
-                    >
-                      Body
-                    </button>
-                    <button
-                      onClick={() => setFilterCategory('balance')} 
-                      className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-100 ${
-                        filterCategory === 'balance' ? 'text-blue-600 font-medium' : 'text-slate-700'
-                      }`}
-                    >
-                      Balance
-                    </button>
-                  </div>
-                )}
-              </div>
             </div>
           </div>
-
-          {/* Weekly Calendar Grid */}
-          <div className="grid grid-cols-7 gap-4">
-            {weekDates.map((date, index) => {
-              const isToday = date.toDateString() === new Date().toDateString();
-              const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-              const dayEvents = data.events.filter(event => event.start.toDateString() === date.toDateString());
+          
+          {/* Vision Overlay */}
+          {showVisionOverlay && (
+            <div className="mb-6 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-4 border border-purple-200">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-lg font-semibold text-purple-900">Weekly Focus</h3>
+                <button
+                  onClick={() => setShowVisionOverlay(false)}
+                  className="text-slate-400 hover:text-slate-600"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
               
-              return (
-                <div key={index} className="space-y-2">
-                  <div className={`text-center p-2 rounded-lg ${isWeekend ? 'bg-blue-50' : ''}`}>
-                    <div className="text-xs text-slate-500 uppercase">
-                      {date.toLocaleDateString('en-US', { weekday: 'short' })}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {Object.entries(goalsData.categoryGoals).map(([category, goal]) => {
+                  if (!goal.goal) return null;
+                  const colors = getCategoryColor(category);
+                  return (
+                    <div key={category} className={`p-3 ${colors.light} ${colors.border} border rounded-lg`}>
+                      <h4 className={`font-medium ${colors.text} mb-2`}>{goal.goal}</h4>
+                      <div className="space-y-1">
+                        {goal.actions.slice(0, 2).map((action, index) => (
+                          <div key={index} className="flex items-center space-x-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                            <p className="text-xs text-slate-600">{action.text}</p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    <div 
-                      className={`text-lg font-semibold cursor-pointer hover:bg-slate-100 rounded-lg p-1 ${
-                        isToday 
-                        ? 'bg-purple-100 text-purple-700 font-bold'
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          
+          <div className="grid grid-cols-1 lg:grid-cols-8 gap-6">
+            {/* Action Pool */}
+            <div className="lg:col-span-2">
+              <div className="bg-white rounded-xl p-4 border border-slate-200">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-slate-900">Action Pool</h3>
+                  <button
+                    className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+                
+                <div className="space-y-3">
+                  {actionPool.map(action => {
+                    const colors = getCategoryColor(action.category);
+                    
+                    return (
+                      <div 
+                        key={action.id} 
+                        className={`${colors.bg} ${colors.border} border rounded-lg p-3 cursor-move hover:shadow-sm transition-shadow`}
+                        draggable
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <h4 className={`font-medium ${colors.text}`}>{action.title}</h4>
+                          <span className="text-xs px-2 py-1 bg-white rounded-full text-slate-600 border border-slate-200">
+                            {action.duration}m
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-slate-500">
+                            {action.frequency === 'daily' ? 'Daily' : 
+                             action.frequency === 'weekly' ? 'Weekly' : 
+                             '3x per Week'}
+                          </span>
+                          <div className="flex items-center space-x-1">
+                            <div className="w-2 h-2 rounded-full" style={{ 
+                              backgroundColor: action.category === 'business' ? '#8B5CF6' : 
+                                              action.category === 'body' ? '#10B981' : 
+                                              action.category === 'balance' ? '#3B82F6' : 
+                                              '#F59E0B'
+                            }} />
+                            <span className="text-xs text-slate-500 capitalize">{action.category}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+            
+            {/* Weekly Calendar */}
+            <div className="lg:col-span-6">
+              <div className="grid grid-cols-7 gap-2 mb-4">
+                {weekDates.map((date, index) => (
+                  <div key={index} className="text-center">
+                    <div className={`font-semibold ${
+                      date.toDateString() === new Date().toDateString() 
+                        ? 'text-purple-600' 
                         : 'text-slate-700'
-                      }`}
-                      onClick={() => { 
-                        setSelectedDate(date);
-                        setShowDayView(true);
-                      }}
-                    >
+                    }`}>
+                      {getShortDayOfWeek(date)}
+                    </div>
+                    <div className={`text-sm ${
+                      date.toDateString() === new Date().toDateString()
+                        ? 'bg-purple-600 text-white rounded-full w-7 h-7 flex items-center justify-center mx-auto'
+                        : 'text-slate-500'
+                    }`}>
                       {date.getDate()}
                     </div>
                   </div>
-                  <div className="space-y-1 min-h-32">
-                    {/* Events for this day */}
-                    {data.events
-                      .filter(event => {
-                        const eventDate = event.start.toDateString() === date.toDateString();
-                        const categoryMatch = !filterCategory || event.category === filterCategory;
-                        return eventDate && categoryMatch;
-                      })
-                      .sort((a, b) => a.start.getTime() - b.start.getTime())
-                      .map(event => (
-                        <div 
-                          key={event.id}
-                          onClick={() => { 
-                            setSelectedEvent(event);
-                            setShowEventModal(true);
-                          }}
-                          className={`p-2 rounded-lg border text-xs ${
-                            event.category === 'business' ? 'bg-purple-100 text-purple-800 border-purple-200' :
-                            event.category === 'body' ? 'bg-green-100 text-green-800 border-green-200' :
-                            'bg-blue-100 text-blue-800 border-blue-200'
-                          } cursor-pointer`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="text-xs font-medium">{event.title}</div>
-                            <button className="text-slate-400 hover:text-slate-600">
-                              <MoreHorizontal className="w-3 h-3" />
-                            </button>
+                ))}
+              </div>
+              
+              {/* Time Blocks */}
+              <div className="space-y-6">
+                {/* Morning Block */}
+                <div>
+                  <h3 className="text-sm font-medium text-slate-500 mb-2">Morning</h3>
+                  <div className="grid grid-cols-7 gap-2">
+                    {weekDates.map((date, dateIndex) => (
+                      <div 
+                        key={dateIndex} 
+                        className="min-h-32 bg-slate-50 rounded-lg border border-slate-200 p-2"
+                      >
+                        {getEventsForDay(date)
+                          .filter(event => event.start.getHours() < 12)
+                          .map(event => {
+                            const colors = getCategoryColor(event.category);
+                            
+                            return (
+                              <div 
+                                key={event.id} 
+                                className={`${colors.bg} ${colors.border} border rounded-lg p-2 mb-1 text-xs`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className={`font-medium ${colors.text}`}>{event.title}</span>
+                                  <button
+                                    onClick={() => toggleEventCompletion(event.id)}
+                                    className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                                      event.completed 
+                                        ? `${colors.dark} text-white` 
+                                        : 'border-slate-300 bg-white'
+                                    }`}
+                                  >
+                                    {event.completed && <Check className="w-2 h-2" />}
+                                  </button>
+                                </div>
+                                <div className="text-slate-500 mt-1">
+                                  {formatTime(event.start)}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        
+                        {getEventsForDay(date).filter(event => event.start.getHours() < 12).length === 0 && (
+                          <div className="h-full flex items-center justify-center text-xs text-slate-400">
+                            Drop actions here
                           </div>
-                          <div className="text-xs opacity-75 flex items-center space-x-1 mt-1">
-                            <Clock className="w-3 h-3" />
-                            <span>
-                              {event.start.toLocaleTimeString('en-US', { 
-                                hour: 'numeric', 
-                                minute: '2-digit',
-                                hour12: true 
-                              })}
-                            </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Afternoon Block */}
+                <div>
+                  <h3 className="text-sm font-medium text-slate-500 mb-2">Afternoon</h3>
+                  <div className="grid grid-cols-7 gap-2">
+                    {weekDates.map((date, dateIndex) => (
+                      <div 
+                        key={dateIndex} 
+                        className="min-h-32 bg-slate-50 rounded-lg border border-slate-200 p-2"
+                      >
+                        {getEventsForDay(date)
+                          .filter(event => event.start.getHours() >= 12 && event.start.getHours() < 17)
+                          .map(event => {
+                            const colors = getCategoryColor(event.category);
+                            
+                            return (
+                              <div 
+                                key={event.id} 
+                                className={`${colors.bg} ${colors.border} border rounded-lg p-2 mb-1 text-xs`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className={`font-medium ${colors.text}`}>{event.title}</span>
+                                  <button
+                                    onClick={() => toggleEventCompletion(event.id)}
+                                    className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                                      event.completed 
+                                        ? `${colors.dark} text-white` 
+                                        : 'border-slate-300 bg-white'
+                                    }`}
+                                  >
+                                    {event.completed && <Check className="w-2 h-2" />}
+                                  </button>
+                                </div>
+                                <div className="text-slate-500 mt-1">
+                                  {formatTime(event.start)}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        
+                        {getEventsForDay(date).filter(event => event.start.getHours() >= 12 && event.start.getHours() < 17).length === 0 && (
+                          <div className="h-full flex items-center justify-center text-xs text-slate-400">
+                            Drop actions here
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Evening Block */}
+                <div>
+                  <h3 className="text-sm font-medium text-slate-500 mb-2">Evening</h3>
+                  <div className="grid grid-cols-7 gap-2">
+                    {weekDates.map((date, dateIndex) => (
+                      <div 
+                        key={dateIndex} 
+                        className="min-h-32 bg-slate-50 rounded-lg border border-slate-200 p-2"
+                      >
+                        {getEventsForDay(date)
+                          .filter(event => event.start.getHours() >= 17)
+                          .map(event => {
+                            const colors = getCategoryColor(event.category);
+                            
+                            return (
+                              <div 
+                                key={event.id} 
+                                className={`${colors.bg} ${colors.border} border rounded-lg p-2 mb-1 text-xs`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className={`font-medium ${colors.text}`}>{event.title}</span>
+                                  <button
+                                    onClick={() => toggleEventCompletion(event.id)}
+                                    className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                                      event.completed 
+                                        ? `${colors.dark} text-white` 
+                                        : 'border-slate-300 bg-white'
+                                    }`}
+                                  >
+                                    {event.completed && <Check className="w-2 h-2" />}
+                                  </button>
+                                </div>
+                                <div className="text-slate-500 mt-1">
+                                  {formatTime(event.start)}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        
+                        {getEventsForDay(date).filter(event => event.start.getHours() >= 17).length === 0 && (
+                          <div className="h-full flex items-center justify-center text-xs text-slate-400">
+                            Drop actions here
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Render 90-Day View
+  const render90DayView = () => {
+    const weeks = get90DayWeeks();
+    
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900">90-Day Planning</h2>
+              <p className="text-slate-600">
+                {formatDate(weeks[0][0])} - {formatDate(weeks[weeks.length - 1][6])}
+              </p>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setShowVisionOverlay(!showVisionOverlay)}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+                  showVisionOverlay 
+                    ? 'bg-purple-100 text-purple-700 border border-purple-300' 
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                <Eye className="w-4 h-4" />
+                <span>{showVisionOverlay ? 'Hide Vision' : 'Show Vision'}</span>
+              </button>
+              
+              <button
+                onClick={() => setNewEvent({ 
+                  start: new Date(weeks[0][0]),
+                  end: new Date(weeks[0][0]),
+                  category: 'business',
+                  isMilestone: true
+                })}
+                className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Milestone</span>
+              </button>
+            </div>
+          </div>
+          
+          {/* Vision Overlay */}
+          {showVisionOverlay && (
+            <div className="mb-6 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-4 border border-purple-200">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-lg font-semibold text-purple-900">Quarterly Focus</h3>
+                <button
+                  onClick={() => setShowVisionOverlay(false)}
+                  className="text-slate-400 hover:text-slate-600"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {Object.entries(goalsData.categoryGoals).map(([category, goal]) => {
+                  if (!goal.goal) return null;
+                  const colors = getCategoryColor(category);
+                  return (
+                    <div key={category} className={`p-3 ${colors.light} ${colors.border} border rounded-lg`}>
+                      <h4 className={`font-medium ${colors.text} mb-2`}>{goal.goal}</h4>
+                      <div className="space-y-1">
+                        {goal.milestones.slice(0, 2).map((milestone, index) => (
+                          <div key={index} className="flex items-center space-x-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                            <p className="text-xs text-slate-600">{milestone.title}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          
+          {/* Timeline */}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">Milestones & Key Dates</h3>
+            <div className="relative">
+              <div className="absolute left-0 right-0 h-1 bg-slate-200 top-4"></div>
+              <div className="flex justify-between relative">
+                {[0, 1, 2].map(month => {
+                  const date = new Date(currentDate);
+                  date.setMonth(date.getMonth() + month);
+                  
+                  return (
+                    <div key={month} className="text-center z-10">
+                      <div className="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center mx-auto mb-2">
+                        {month + 1}
+                      </div>
+                      <div className="text-sm font-medium text-slate-700">
+                        {getMonthName(date)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              <div className="mt-8 space-y-3">
+                {events
+                  .filter(event => event.isMilestone)
+                  .map(event => {
+                    const colors = getCategoryColor(event.category);
+                    const daysPassed = Math.floor((event.start.getTime() - weeks[0][0].getTime()) / (1000 * 60 * 60 * 24));
+                    const position = Math.min(100, Math.max(0, (daysPassed / 90) * 100));
+                    
+                    return (
+                      <div 
+                        key={event.id} 
+                        className="relative"
+                        style={{ marginLeft: `${position}%` }}
+                      >
+                        <div className={`absolute left-0 w-px h-3 ${colors.dark} top-0 transform -translate-y-full`}></div>
+                        <div className={`${colors.bg} ${colors.border} border rounded-lg p-3 max-w-xs`}>
+                          <div className="flex items-center justify-between">
+                            <h4 className={`font-medium ${colors.text}`}>{event.title}</h4>
+                            <span className="text-xs text-slate-500">{formatDate(event.start)}</span>
                           </div>
                         </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          </div>
+          
+          {/* Weekly Planning */}
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">Weekly Planning</h3>
+            <div className="space-y-6">
+              {weeks.slice(0, 4).map((week, weekIndex) => (
+                <div key={weekIndex} className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                  <h4 className="font-medium text-slate-900 mb-3">
+                    Week {weekIndex + 1}: {formatDate(week[0])} - {formatDate(week[6])}
+                  </h4>
+                  
+                  <div className="grid grid-cols-7 gap-2">
+                    {week.map((date, dateIndex) => (
+                      <div 
+                        key={dateIndex} 
+                        className="min-h-20 bg-white rounded-lg border border-slate-200 p-2 text-center"
+                      >
+                        <div className="text-xs font-medium text-slate-700 mb-1">
+                          {date.getDate()}
+                        </div>
+                        
+                        {getEventsForDay(date).length > 0 ? (
+                          <div className="space-y-1">
+                            {getEventsForDay(date).slice(0, 2).map(event => {
+                              const colors = getCategoryColor(event.category);
+                              
+                              return (
+                                <div 
+                                  key={event.id} 
+                                  className={`${colors.bg} text-xs p-1 rounded ${colors.text}`}
+                                >
+                                  {event.title}
+                                </div>
+                              );
+                            })}
+                            
+                            {getEventsForDay(date).length > 2 && (
+                              <div className="text-xs text-slate-500">
+                                +{getEventsForDay(date).length - 2} more
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="h-8 flex items-center justify-center text-xs text-slate-400">
+                            -
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Render Yearly View
+  const renderYearlyView = () => {
+    const year = currentDate.getFullYear();
+    const months = Array.from({ length: 12 }, (_, i) => i);
+    
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-3xl font-bold text-blue-600 text-center w-full">THE BIG A## CALENDAR {year}</h2>
+            </div>
+          </div>
+          
+          {/* Yearly Calendar Grid */}
+          <div className="border-2 border-blue-600 rounded-lg overflow-hidden">
+            <div className="grid grid-cols-31 border-b border-blue-600">
+              {/* Month headers */}
+              {Array.from({ length: 31 }, (_, i) => (
+                <div key={i} className="h-8 flex items-center justify-center text-xs font-semibold text-blue-600 border-r border-blue-200">
+                  {i + 1}
+                </div>
+              ))}
+            </div>
+            
+            {months.map(month => {
+              const daysInMonth = getDaysInMonth(year, month);
+              const firstDay = getFirstDayOfMonth(year, month);
+              
+              return (
+                <div key={month} className="grid grid-cols-31 border-b border-blue-600">
+                  {/* Month label */}
+                  <div className="col-span-1 border-r border-blue-600 bg-blue-50 flex items-center">
+                    <div className="w-12 text-blue-600 font-bold text-xl pl-2">
+                      {new Date(year, month).toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}
+                    </div>
+                  </div>
+                  
+                  {/* Days */}
+                  <div className="col-span-30 grid grid-cols-30">
+                    {Array.from({ length: 31 }, (_, i) => {
+                      const day = i + 1;
+                      const isValidDay = day <= daysInMonth;
+                      const date = new Date(year, month, day);
+                      const hasEvents = isValidDay && getEventsForDay(date).length > 0;
+                      const hasMilestone = isValidDay && getEventsForDay(date).some(e => e.isMilestone);
+                      
+                      return (
+                        <div 
+                          key={i} 
+                          className={`h-8 border-r border-blue-200 flex items-center justify-center ${
+                            isValidDay ? 'bg-blue-50' : 'bg-slate-100'
+                          }`}
+                        >
+                          {isValidDay && (
+                            <div className={`w-full h-full flex items-center justify-center ${
+                              hasMilestone ? 'bg-yellow-100' : 
+                              hasEvents ? 'bg-green-100' : ''
+                            }`}>
+                              {day}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          
+          {/* Legend */}
+          <div className="mt-4 flex items-center justify-end space-x-4 text-sm">
+            <div className="flex items-center space-x-2">
+              <div className="w-4 h-4 bg-yellow-100 border border-blue-200"></div>
+              <span className="text-slate-700">Milestone</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-4 h-4 bg-green-100 border border-blue-200"></div>
+              <span className="text-slate-700">Event</span>
+            </div>
+          </div>
+          
+          {/* Annual Goals Summary */}
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+            {Object.entries(goalsData.categoryGoals).map(([category, goal]) => {
+              if (!goal.goal) return null;
+              const colors = getCategoryColor(category);
+              
+              return (
+                <div key={category} className={`p-4 ${colors.light} ${colors.border} border rounded-lg`}>
+                  <h3 className={`text-lg font-semibold ${colors.text} mb-3 capitalize`}>{category} Goal</h3>
+                  <p className="text-slate-700 mb-3">{goal.goal}</p>
+                  
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-slate-700 text-sm">Key Milestones:</h4>
+                    <div className="space-y-1">
+                      {goal.milestones.map((milestone, index) => (
+                        <div key={index} className="flex items-center space-x-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                          <p className="text-sm text-slate-600">{milestone.title}</p>
+                        </div>
                       ))}
+                    </div>
                   </div>
                 </div>
               );
             })}
           </div>
         </div>
-      )}
+      </div>
+    );
+  };
 
-      {/* 90-Day View */}
-      {viewMode === '90day' && (
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={() => setViewMode('week')}
-                className="flex items-center space-x-2 px-3 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Back to Week</span>
-              </button>
-              <h2 className="text-lg font-semibold text-slate-900">
-                90-Day Outlook
-              </h2>
-            </div>
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">Calendar</h1>
+          <p className="text-slate-600 mt-2">
+            Schedule your time based on your vision, values, and goals
+          </p>
+        </div>
+        
+        <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-1 bg-white rounded-lg shadow-sm border border-slate-200">
+            <button
+              onClick={() => setCurrentView('daily')}
+              className={`px-4 py-2 text-sm font-medium rounded-l-lg ${
+                currentView === 'daily' 
+                  ? 'bg-purple-600 text-white' 
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              Daily
+            </button>
+            <button
+              onClick={() => setCurrentView('weekly')}
+              className={`px-4 py-2 text-sm font-medium ${
+                currentView === 'weekly' 
+                  ? 'bg-purple-600 text-white' 
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              Weekly
+            </button>
+            <button
+              onClick={() => setCurrentView('90-day')}
+              className={`px-4 py-2 text-sm font-medium ${
+                currentView === '90-day' 
+                  ? 'bg-purple-600 text-white' 
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              90-Day
+            </button>
+            <button
+              onClick={() => setCurrentView('yearly')}
+              className={`px-4 py-2 text-sm font-medium rounded-r-lg ${
+                currentView === 'yearly' 
+                  ? 'bg-purple-600 text-white' 
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              Yearly
+            </button>
           </div>
           
-          {/* 90-Day Calendar Grid */}
-          <div className="space-y-8">
-            {monthGroups && monthGroups.map((month, monthIndex) => (
-              <div key={monthIndex} className="space-y-2">
-                <h3 className="font-semibold text-slate-900">
-                  {month.monthName} {month.year}
-                </h3>
-                <div className="grid grid-cols-7 gap-1">
-                  {/* Day headers */}
-                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                    <div key={day} className="text-center text-xs font-medium text-slate-500 p-1 uppercase">
-                      {day}
-                    </div>
-                  ))}
-                  
-                  {/* Calendar days */}
-                  {month.days.map((day, dayIndex) => {
-                    const isToday = day.date && day.date.toDateString() === new Date().toDateString();
-                    const isWeekend = day.date && [0, 6].includes(day.date.getDay());
-                    
-                    // Check if there are events or milestones for this day
-                    const hasEvents = day.date && data.events.some(event => 
-                        event.start.getFullYear() === day.date.getFullYear() && 
-                        event.start.getMonth() === day.date.getMonth() && 
-                        event.start.getDate() === day.date.getDate()
-                    );
-                    const hasMilestones = day.date && milestones && milestones.some(milestone => 
-                      milestone.date.getFullYear() === day.date.getFullYear() && 
-                      milestone.date.getMonth() === day.date.getMonth() && 
-                      milestone.date.getDate() === day.date.getDate()
-                    );
-                    
-                    return (
-                      <div 
-                        key={dayIndex}
-                        className={`p-1 min-h-8 text-center border border-slate-100 ${
-                          !day.date ? 'bg-slate-50/50' : 
-                          isToday ? 'bg-purple-100 font-bold' : 
-                          isWeekend ? 'bg-slate-50' : 'bg-white'
-                        } ${
-                          day.date ? 'hover:bg-slate-100 cursor-pointer' : ''
-                        }`}
-                        onClick={() => { 
-                          if (day.date) {
-                            setCurrentDate(day.date);
-                            setSelectedDate(day.date);
-                            setViewMode('week');
-                          }
-                        }}
-                      >
-                        <div className={`text-xs ${isToday ? 'text-purple-700' : 'text-slate-700'} font-medium`}>
-                          {day.date ? day.date.getDate() : ''}
-                        </div>
-                        
-                        {/* Event and milestone indicators */}
-                        {(hasEvents || hasMilestones) && (
-                          <div className="flex items-center justify-center space-x-1 mt-1">
-                            {hasEvents && (
-                              <div className="w-1.5 h-1.5 rounded-full bg-blue-500" title="Has events" />
-                            )}
-                            {hasMilestones && (
-                              <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+          <div className="flex items-center space-x-1 bg-white rounded-lg shadow-sm border border-slate-200">
+            <button
+              onClick={goToPrevious}
+              className="p-2 text-slate-600 hover:bg-slate-100 rounded-l-lg"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={goToToday}
+              className="px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
+            >
+              Today
+            </button>
+            <button
+              onClick={goToNext}
+              className="p-2 text-slate-600 hover:bg-slate-100 rounded-r-lg"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
-          
-          {/* Milestones Section */}
-          <div className="mt-6 pt-6 border-t border-slate-200">
-            <h3 className="font-semibold text-slate-900 mb-4 flex items-center">
-              <Flag className="w-5 h-5 mr-2 text-orange-500" />
-              Upcoming Milestones
+        </div>
+      </div>
+
+      {/* Calendar Views */}
+      {currentView === 'daily' && renderDailyView()}
+      {currentView === 'weekly' && renderWeeklyView()}
+      {currentView === '90-day' && render90DayView()}
+      {currentView === 'yearly' && renderYearlyView()}
+      
+      {/* Event Editing Modal */}
+      {(editingEvent || Object.keys(newEvent).length > 0) && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+            <h3 className="text-xl font-semibold text-slate-900 mb-4">
+              {editingEvent ? 'Edit Event' : 'Add New Event'}
             </h3>
             
-            <div className="space-y-3">
-              {milestones.length === 0 ? (
-                <div className="text-center py-4 text-slate-500">
-                  <p>No milestones in the next 90 days</p>
-                </div>
-              ) : (
-                milestones
-                  .sort((a, b) => a.date.getTime() - b.date.getTime())
-                  .map((milestone, index) => (
-                    <div key={index} className="flex items-center space-x-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
-                      <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 flex-shrink-0">
-                        <Flag className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <div className="font-medium text-slate-900">{milestone.title}</div>
-                        <div className="text-sm text-slate-600">
-                          {milestone.date.toLocaleDateString('en-US', { 
-                            month: 'long', 
-                            day: 'numeric', 
-                            year: 'numeric' 
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  ))
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Removed Year View */}
-
-      {/* Action Pool Sidebar */}
-      {showActionPool && (
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-slate-900">Action Pool</h3>
-              <button
-                onClick={() => setShowActionPool(false)} 
-                className="text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
-              {data.actionPool.length === 0 ? (
-                <div className="text-center py-4 text-slate-500">
-                  <p>No actions in your pool</p>
-                  <button
-                    onClick={() => {
-                      addActionToPool({
-                        title: 'New Action',
-                        duration: 60,
-                        category: 'business',
-                        frequency: 'weekly' 
-                      });
-                    }}
-                    className="mt-2 text-purple-600 hover:text-purple-700 font-medium"
-                  >
-                    Add your first action
-                  </button>
-                </div>
-              ) : (
-                data.actionPool.map(action => (
-                  <div 
-                    key={action.id}
-                    className={`p-3 rounded-lg border group ${
-                      action.category === 'business' ? 'bg-purple-50 border-purple-200' :
-                      action.category === 'body' ? 'bg-green-50 border-green-200' :
-                      'bg-blue-50 border-blue-200'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="font-medium text-slate-900">{action.title}</div>
-                      <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => {
-                            // Open edit modal for this action
-                          }}
-                          className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                          title="Edit action"
-                        >
-                          <Edit className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={() => removeActionFromPool(action.id)}
-                          className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                          title="Delete action"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between text-sm mt-1">
-                      <div className="flex items-center space-x-2">
-                        <Clock className="w-4 h-4 text-slate-400" />
-                        <span className="text-slate-600">{action.duration} min</span>
-                      </div>
-                      <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        action.category === 'business' ? 'bg-purple-100 text-purple-700' :
-                        action.category === 'body' ? 'bg-green-100 text-green-700' :
-                        'bg-blue-100 text-blue-700'
-                      }`}>
-                        {action.category}
-                      </div>
-                    </div>
-                    
-                    <div className="text-xs text-slate-500 mt-1">
-                      {action.frequency}
-                    </div>
-                    
-                    {selectedDate && (
-                      <div className="mt-2 pt-2 border-t border-slate-200">
-                        <button
-                          onClick={() => {
-                            // Schedule this action for the selected date
-                            // Default to 9 AM
-                            const newDate = new Date(selectedDate);
-                            newDate.setHours(9, 0, 0, 0); // Default to 9 AM
-                            scheduleActionFromPool(action.id, newDate);
-                            setShowActionPool(false); 
-                          }}
-                          className="w-full py-1 text-sm text-center bg-white text-slate-700 hover:bg-slate-100 rounded border border-slate-200 transition-colors"
-                        >
-                          Schedule for {selectedDate.toLocaleDateString()}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Year View */}
-      {viewMode === 'year' && (
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={goToPreviousYear}
-                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <button
-                onClick={goToNextYear}
-                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
-              <h2 className="text-2xl font-bold text-blue-700">
-                THE BIG CALENDAR {currentDate.getFullYear()}
-              </h2>
-              <button
-                onClick={goToToday}
-                className="px-3 py-1 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors text-sm"
-              >
-                Today
-              </button>
-            </div>
-            
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={() => setViewMode('week')}
-                className="flex items-center space-x-2 px-3 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Back to Week</span>
-              </button>
-            </div>
-          </div>
-          
-          {/* Year Calendar Grid */}
-          <div className="grid grid-cols-3 md:grid-cols-4 gap-6">
-            {yearMonths.map((month, monthIndex) => (
-              <div key={monthIndex} className="space-y-2">
-                <h3 className="font-semibold text-slate-900 text-center">
-                  {month.name}
-                </h3>
-                <div className="grid grid-cols-7 gap-1">
-                  {/* Day headers */}
-                  {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
-                    <div key={day} className="text-center text-xs font-medium text-slate-500 p-1">
-                      {day}
-                    </div>
-                  ))}
-                  
-                  {/* Calendar days */}
-                  {month.days.map((day, dayIndex) => {
-                    const isToday = day.date && day.date.toDateString() === new Date().toDateString();
-                    const isWeekend = day.date && [0, 6].includes(day.date.getDay());
-                    
-                    // Check if there are events or milestones for this day
-                    const hasEvents = day.date && data.events.some(event => 
-                        event.start.getFullYear() === day.date.getFullYear() && 
-                        event.start.getMonth() === day.date.getMonth() && 
-                        event.start.getDate() === day.date.getDate()
-                    );
-                    
-                    const hasMilestones = day.date && milestones && milestones.some(milestone => 
-                      milestone.date.getFullYear() === day.date.getFullYear() && 
-                      milestone.date.getMonth() === day.date.getMonth() && 
-                      milestone.date.getDate() === day.date.getDate()
-                    );
-                    
-                    return (
-                      <div 
-                        key={dayIndex}
-                        className={`p-1 min-h-6 text-center border border-slate-100 ${
-                          !day.date ? 'bg-slate-50/50' : 
-                          isToday ? 'bg-purple-100 font-bold' : 
-                          isWeekend ? 'bg-blue-50' : 'bg-white'
-                        } ${
-                          day.date ? 'hover:bg-slate-100 cursor-pointer' : ''
-                        }`}
-                        onClick={() => { 
-                          if (day.date) {
-                            setCurrentDate(day.date);
-                            setSelectedDate(day.date);
-                            setViewMode('week');
-                          }
-                        }}
-                      >
-                        <div className={`text-xs ${isToday ? 'text-purple-700' : 'text-slate-700'}`}>
-                          {day.date ? day.date.getDate() : ''}
-                        </div>
-                        
-                        {/* Event and milestone indicators */}
-                        {(hasEvents || hasMilestones) && (
-                          <div className="flex items-center justify-center space-x-1 mt-0.5">
-                            {hasEvents && (
-                              <div className="w-1 h-1 rounded-full bg-blue-500" title="Has events" />
-                            )}
-                            {hasMilestones && (
-                              <div className="w-1 h-1 rounded-full bg-orange-500" />
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Day View Modal */}
-      {showDayView && selectedDate && ( 
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-xl font-semibold text-slate-900">
-                    {selectedDate.toLocaleDateString('en-US', { 
-                      weekday: 'long',
-                      month: 'long', 
-                      day: 'numeric', 
-                      year: 'numeric' 
-                    })}
-                  </h3>
-                </div>
-                <button
-                  onClick={() => setShowDayView(false)} 
-                  className="text-slate-400 hover:text-slate-600"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Title
+                </label>
+                <input
+                  type="text"
+                  value={editingEvent?.title || newEvent.title || ''}
+                  onChange={(e) => editingEvent 
+                    ? setEditingEvent({ ...editingEvent, title: e.target.value })
+                    : setNewEvent({ ...newEvent, title: e.target.value })
+                  }
+                  className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="Enter event title"
+                />
               </div>
               
-              {/* Events for this day */}
-              <div className="mt-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-semibold text-slate-900">Events</h4>
-                  <button
-                    onClick={() => {
-                      // Create a new event at 9 AM on the selected date
-                      const newDate = new Date(selectedDate);
-                      newDate.setHours(9, 0, 0, 0);
-                      const endDate = new Date(newDate); 
-                      endDate.setHours(10, 0, 0, 0);
-                      
-                      addEvent({
-                        id: Date.now().toString(),
-                        start: newDate,
-                        end: endDate,
-                        category: 'business',
-                        title: 'New Event' 
-                      });
-                    }}
-                    className="flex items-center space-x-1 px-3 py-1 text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors text-sm font-medium"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Add Event</span>
-                  </button>
-                </div>
-                
-                <div className="space-y-3">
-                  {data.events 
-                    .filter(event => 
-                      event.start.toDateString() === selectedDate.toDateString() &&
-                      (!filterCategory || event.category === filterCategory)
-                    )
-                    .sort((a, b) => a.start.getTime() - b.start.getTime())
-                    .map(event => (
-                      <div 
-                        key={event.id} 
-                        className={`p-3 rounded-lg border ${
-                          event.category === 'business' ? 'bg-purple-50 border-purple-200' :
-                          event.category === 'body' ? 'bg-green-50 border-green-200' :
-                          'bg-blue-50 border-blue-200'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="font-medium text-slate-900">{event.title || 'Untitled Event'}</div>
-                          <div className="flex items-center space-x-1">
-                            <button
-                              onClick={() => {
-                                setSelectedEvent(event);
-                                setShowEventModal(true);
-                              }}
-                              className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                              title="Edit event"
-                            >
-                              <Edit className="w-3 h-3" />
-                            </button>
-                            <button
-                              onClick={() => removeEvent(event.id)}
-                              className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                              title="Delete event"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center justify-between text-sm mt-1">
-                          <div className="flex items-center space-x-2">
-                            <Clock className="w-4 h-4 text-slate-400" />
-                            <span className="text-slate-600">
-                              {event.start.toLocaleTimeString('en-US', { 
-                                hour: 'numeric', 
-                                minute: '2-digit',
-                                hour12: true 
-                              })} - {event.end.toLocaleTimeString('en-US', { 
-                                hour: 'numeric', 
-                                minute: '2-digit',
-                                hour12: true 
-                              })}
-                            </span>
-                          </div>
-                          <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            event.category === 'business' ? 'bg-purple-100 text-purple-700' :
-                            event.category === 'body' ? 'bg-green-100 text-green-700' :
-                            'bg-blue-100 text-blue-700'
-                          }`}>
-                            {event.category}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  
-                  {data.events.filter(event => event.start.toDateString() === selectedDate.toDateString()).length === 0 && (
-                    <div className="text-center py-4 text-slate-500">
-                      <p>No events scheduled for this day</p>
-                      <p className="text-sm mt-1">Click "Add Event" to schedule something</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              {/* Action buttons */}
-              <div className="mt-4 pt-4 border-t border-slate-200 flex justify-end">
-                <button
-                  onClick={() => setShowActionPool(true)}
-                  className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Add from Pool</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Event Edit Modal */}
-      {showEventModal && selectedEvent && ( 
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-semibold text-slate-900">Edit Event</h3>
-                <button
-                  onClick={() => setShowEventModal(false)}
-                  className="text-slate-400 hover:text-slate-600" 
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              
-              <div className="mt-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Title
-                  </label>
-                  <input
-                    type="text"
-                    value={editingEvent.title || ''}
-                    onChange={(e) => setEditingEvent({ ...editingEvent, title: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Category
-                  </label>
-                  <select
-                    value={editingEvent.category || 'business'}
-                    onChange={(e) => setEditingEvent({ ...editingEvent, category: e.target.value as 'business' | 'body' | 'balance' })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  >
-                    <option value="business">Business</option>
-                    <option value="body">Body</option>
-                    <option value="balance">Balance</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
                     Start Time
                   </label>
                   <input
-                    type="time"
-                    value={editingEvent.start ? editingEvent.start.toTimeString().slice(0, 5) : ''}
+                    type="datetime-local"
+                    value={editingEvent?.start.toISOString().slice(0, 16) || newEvent.start?.toISOString().slice(0, 16) || ''}
                     onChange={(e) => {
-                      const [hours, minutes] = e.target.value.split(':');
-                      const newStart = new Date(editingEvent.start || new Date());
-                      newStart.setHours(parseInt(hours), parseInt(minutes));
-                      setEditingEvent({ ...editingEvent, start: newStart });
+                      const date = new Date(e.target.value);
+                      editingEvent 
+                        ? setEditingEvent({ ...editingEvent, start: date })
+                        : setNewEvent({ ...newEvent, start: date });
                     }}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
                     End Time
                   </label>
                   <input
-                    type="time"
-                    value={editingEvent.end ? editingEvent.end.toTimeString().slice(0, 5) : ''}
+                    type="datetime-local"
+                    value={editingEvent?.end.toISOString().slice(0, 16) || newEvent.end?.toISOString().slice(0, 16) || ''}
                     onChange={(e) => {
-                      const [hours, minutes] = e.target.value.split(':');
-                      const newEnd = new Date(editingEvent.end || new Date());
-                      newEnd.setHours(parseInt(hours), parseInt(minutes));
-                      setEditingEvent({ ...editingEvent, end: newEnd });
+                      const date = new Date(e.target.value);
+                      editingEvent 
+                        ? setEditingEvent({ ...editingEvent, end: date })
+                        : setNewEvent({ ...newEvent, end: date });
                     }}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
               </div>
               
-              <div className="mt-4 pt-4 border-t border-slate-200 flex justify-end space-x-3">
-                <button
-                  onClick={() => setShowEventModal(false)}
-                  className="px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => { 
-                    if (selectedEvent) {
-                      updateEvent(selectedEvent.id, {
-                        title: editingEvent.title,
-                        category: editingEvent.category,
-                        start: editingEvent.start,
-                        end: editingEvent.end
-                      });
-                      setShowEventModal(false);
-                    }
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Category
+                </label>
+                <select
+                  value={editingEvent?.category || newEvent.category || 'business'}
+                  onChange={(e) => {
+                    const category = e.target.value as 'business' | 'body' | 'balance' | 'personal';
+                    editingEvent 
+                      ? setEditingEvent({ ...editingEvent, category })
+                      : setNewEvent({ ...newEvent, category });
                   }}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
-                  Save Changes
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Action Edit Modal */}
-      {showActionModal && ( 
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-semibold text-slate-900">Edit Action</h3>
-                <button
-                  onClick={() => setShowActionModal(false)}
-                  className="text-slate-400 hover:text-slate-600" 
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                  <option value="business">Business</option>
+                  <option value="body">Body</option>
+                  <option value="balance">Balance</option>
+                  <option value="personal">Personal</option>
+                </select>
               </div>
               
-              <div className="mt-6 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Title
-                  </label>
-                  <input
-                    type="text"
-                    value={editingAction.title || ''}
-                    onChange={(e) => setEditingAction({ ...editingAction, title: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Category
-                  </label>
-                  <select
-                    value={editingAction.category || 'business'}
-                    onChange={(e) => setEditingAction({ ...editingAction, category: e.target.value as 'business' | 'body' | 'balance' })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  >
-                    <option value="business">Business</option>
-                    <option value="body">Body</option>
-                    <option value="balance">Balance</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Duration (minutes)
-                  </label>
-                  <input
-                    type="number"
-                    value={editingAction.duration || 60}
-                    onChange={(e) => setEditingAction({ ...editingAction, duration: parseInt(e.target.value) })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Frequency
-                  </label>
-                  <select
-                    value={editingAction.frequency || 'weekly'}
-                    onChange={(e) => setEditingAction({ ...editingAction, frequency: e.target.value as 'daily' | 'weekly' | 'monthly' })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  >
-                    <option value="daily">Daily</option>
-                    <option value="weekly">Weekly</option>
-                    <option value="monthly">Monthly</option>
-                  </select>
-                </div>
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="isMilestone"
+                  checked={editingEvent?.isMilestone || newEvent.isMilestone || false}
+                  onChange={(e) => {
+                    const isMilestone = e.target.checked;
+                    editingEvent 
+                      ? setEditingEvent({ ...editingEvent, isMilestone })
+                      : setNewEvent({ ...newEvent, isMilestone });
+                  }}
+                  className="w-4 h-4 text-purple-600 border-slate-300 rounded focus:ring-purple-500"
+                />
+                <label htmlFor="isMilestone" className="ml-2 text-sm text-slate-700">
+                  This is a milestone
+                </label>
               </div>
               
-              <div className="mt-4 pt-4 border-t border-slate-200 flex justify-end space-x-3">
+              <div className="flex items-center justify-end space-x-3 pt-4 border-t border-slate-200">
                 <button
-                  onClick={() => setShowActionModal(false)}
+                  onClick={() => {
+                    setEditingEvent(null);
+                    setNewEvent({});
+                  }}
                   className="px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
-                <button
-                  onClick={() => { 
-                    if (editingAction.id) {
-                      // Update existing action
-                      updateActionInPool(editingAction.id, {
-                        title: editingAction.title,
-                        category: editingAction.category,
-                        duration: editingAction.duration,
-                        frequency: editingAction.frequency
-                      });
-                    } else {
-                      // Create new action
-                      addActionToPool({
-                        title: editingAction.title || 'New Action',
-                        category: editingAction.category || 'business',
-                        duration: editingAction.duration || 60,
-                        frequency: editingAction.frequency || 'weekly'
-                      });
-                    }
-                    setShowActionModal(false);
-                  }} 
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                >
-                  Save
-                </button>
+                
+                {editingEvent ? (
+                  <button
+                    onClick={() => {
+                      if (editingEvent.title && editingEvent.start && editingEvent.end) {
+                        updateEvent(editingEvent.id, editingEvent);
+                        setEditingEvent(null);
+                      }
+                    }}
+                    className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    Update
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      if (newEvent.title && newEvent.start && newEvent.end && newEvent.category) {
+                        addEvent(newEvent);
+                        setNewEvent({});
+                      }
+                    }}
+                    className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    Add
+                  </button>
+                )}
               </div>
             </div>
           </div>
         </div>
       )}
     </div>
-  ); 
+  );
 };
 
 export default Calendar;
