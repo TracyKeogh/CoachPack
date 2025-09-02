@@ -19,6 +19,7 @@ import CancelPage from './components/CancelPage';
 import PricingPage from './components/PricingPage';
 import CompanyLandingPage from './components/CompanyLandingPage';
 import CommunityTemplates from './components/CommunityTemplates';
+import FreeWheelAssessment from './components/FreeWheelAssessment';
 
 export type ViewType = 'dashboard' | 'wheel-of-life' | 'values' | 'vision' | 'goals' | 'calendar' | 'templates';
 
@@ -35,6 +36,7 @@ function App() {
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/companies" element={<CompanyLandingPage />} />
         <Route path="/community" element={<CommunityTemplates />} />
+        <Route path="/free-assessment" element={<FreeWheelAssessment onComplete={() => {}} onBackToLanding={() => window.location.href = '/'} />} />
         
         {/* Protected routes - temporarily without authentication */}
         <Route path="/dashboard" element={<Dashboard />} />

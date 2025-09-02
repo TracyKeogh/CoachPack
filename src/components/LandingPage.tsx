@@ -61,16 +61,13 @@ const LandingPage: React.FC = () => {
           <div className="max-w-6xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
               <div>
-                <div className="inline-flex items-center space-x-2 bg-purple-100 text-purple-700 px-4 py-2 rounded-full text-sm font-medium mb-6">
-                  <Crown className="w-4 h-4" />
-                  <span>Individual Plans Available</span>
-                </div>
+
                 
                 <h1 className="text-5xl font-bold text-slate-900 mb-6">
                   Bring Clarity to Chaos
                 </h1>
                 <p className="text-xl text-slate-600 mb-8">
-                  Coach Pack helps you build a vision for your life that connects your daily actions to your deepest values. Transform abstract goals into concrete action plans.
+                  Coach Pack helps you build a vision for your life that connects your daily actions to your deepest values.
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-4 mb-8">
@@ -365,32 +362,11 @@ const LandingPage: React.FC = () => {
             <div>
               <h3 className="text-white font-semibold mb-4">Tools</h3>
               <ul className="space-y-2 text-sm">
-                <li><a href="#" className="hover:text-white transition-colors">Wheel of Life</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Values Clarity</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Vision Board</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Goal Setting</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Action Calendar</a></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="text-white font-semibold mb-4">Resources</h3>
-              <ul className="space-y-2 text-sm">
-                <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Guides</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Support</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">FAQ</a></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="text-white font-semibold mb-4">Company</h3>
-              <ul className="space-y-2 text-sm">
-                <li><a href="#" className="hover:text-white transition-colors">About Us</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Careers</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
+                <li><Link to="/wheel-of-life" className="hover:text-white transition-colors">Wheel of Life</Link></li>
+                <li><Link to="/values" className="hover:text-white transition-colors">Values Clarity</Link></li>
+                <li><Link to="/vision-board" className="hover:text-white transition-colors">Vision Board</Link></li>
+                <li><Link to="/goal-setting" className="hover:text-white transition-colors">Goal Setting</Link></li>
+                <li><Link to="/calendar" className="hover:text-white transition-colors">Action Calendar</Link></li>
               </ul>
             </div>
           </div>
