@@ -1,8 +1,7 @@
 import React from 'react';
 import { MdDashboard, MdCalendarToday } from 'react-icons/md';
-import { FaHeart } from 'react-icons/fa';
+import { FaHeart, FaTarget } from 'react-icons/fa';
 import { IoEye } from 'react-icons/io5';
-import { FaTarget } from 'react-icons/fa';
 import { HiMenu, HiX, HiHome, HiDownload, HiArrowLeft } from 'react-icons/hi';
 import { useValuesData } from '../hooks/useValuesData';
 import { useWheelData } from '../hooks/useWheelData';
