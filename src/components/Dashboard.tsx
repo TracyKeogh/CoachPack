@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useGoalSettingData } from '../hooks/useGoalSettingData';
+import { useDashboardData } from '../hooks/useDashboardData';
+import Navigation from './Navigation';
+
+type ViewType = 'dashboard' | 'wheel-of-life' | 'values' | 'vision' | 'goals' | 'calendar' | 'templates';
 
 const Dashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
