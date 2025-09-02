@@ -1,5 +1,4 @@
 import React from 'react';
-import { BarChart3, Heart, Eye, Target, Calendar, Menu, X, Home, Download, ArrowLeft } from 'lucide-react';
 import { useValuesData } from '../hooks/useValuesData';
 import { useWheelData } from '../hooks/useWheelData';
 import { useVisionBoardData } from '../hooks/useVisionBoardData';
@@ -73,35 +72,30 @@ const Navigation: React.FC<NavigationProps> = ({
   const sections = [
     { 
       id: 'wheel-of-life' as ViewType, 
-      icon: BarChart3, 
-      title: 'Baseline', 
+      title: 'Wheel of Life', 
       progress: wheelStats.wheelCompleted ? (wheelStats.allReflectionsCompleted ? 100 : 75) : (wheelStats.averageScore > 0 ? 50 : 0),
       active: currentView === 'wheel-of-life'
     },
     { 
       id: 'values' as ViewType, 
-      icon: Heart, 
       title: 'Values', 
       progress: valuesData?.rankedCoreValues ? Math.min(100, (valuesData.rankedCoreValues.length / 6) * 100) : 0,
       active: currentView === 'values'
     },
     { 
       id: 'vision' as ViewType, 
-      icon: Eye, 
       title: 'Vision', 
       progress: visionItems.length > 0 ? Math.min(100, (visionItems.length / 4) * 100) : 0,
       active: currentView === 'vision'
     },
     { 
       id: 'goals' as ViewType,
-      icon: Target,
-      title: 'Plan',
+      title: 'Goals',
       progress: goalsProgress.percentage,
       active: currentView === 'goals'
     },
     { 
       id: 'calendar' as ViewType, 
-      icon: Calendar, 
       title: 'Calendar', 
       progress: 0,
       active: currentView === 'calendar'
@@ -110,8 +104,8 @@ const Navigation: React.FC<NavigationProps> = ({
 
   // Additional nav items
   const additionalNavItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home, color: 'text-slate-600' },
-    { id: 'templates', label: 'Templates', icon: Download, color: 'text-purple-500' },
+    { id: 'dashboard', label: 'Dashboard' },
+    { id: 'templates', label: 'Templates' },
   ];
 
   const JourneySection = ({ section }: { section: typeof sections[0] }) => (
@@ -121,9 +115,11 @@ const Navigation: React.FC<NavigationProps> = ({
       } ${isCollapsed ? 'justify-center' : ''}`}
       onClick={() => onNavigate && onNavigate(section.id)}
     >
-      <section.icon className={`w-5 h-5 ${
+      <div className={`w-5 h-5 flex items-center justify-center text-xs font-bold ${
         section.active ? 'text-purple-600' : section.progress > 0 ? 'text-slate-600' : 'text-slate-400'
-      }`} />
+      }`}>
+        {section.title.charAt(0)}
+      </div>
       {!isCollapsed && (
         <>
           <div className="flex-1">
@@ -176,7 +172,7 @@ const Navigation: React.FC<NavigationProps> = ({
                   onClick={() => onNavigate('dashboard')}
                   className="flex items-center space-x-2 text-slate-600 hover:text-slate-900 transition-colors"
                 >
-                  <ArrowLeft className="w-4 h-4" />
+                  <span className="text-sm">← Back</span>
                 </button>
               </div>
             )}
@@ -187,11 +183,9 @@ const Navigation: React.FC<NavigationProps> = ({
               }`}
               title={isCollapsed ? "Open navigation" : "Collapse navigation"}
             >
-              {isCollapsed ? (
-                <Menu className="w-4 h-4 text-slate-600" />
-              ) : (
-                <X className="w-4 h-4 text-slate-600" />
-              )}
+              <span className="text-slate-600 text-sm font-bold">
+                {isCollapsed ? '☰' : '✕'}
+              </span>
             </button>
           </div>
 
@@ -219,7 +213,6 @@ const Navigation: React.FC<NavigationProps> = ({
               </h3>
               <ul className="space-y-2">
                 {additionalNavItems.map((item) => {
-                  const Icon = item.icon;
                   const isActive = currentView === item.id;
                   
                   return (
@@ -233,7 +226,11 @@ const Navigation: React.FC<NavigationProps> = ({
                         }`}
                       >
                         <div className="flex items-center space-x-3">
-                          <Icon className={`w-5 h-5 ${isActive ? 'text-purple-600' : item.color}`} />
+                          <div className={`w-5 h-5 flex items-center justify-center text-xs font-bold ${
+                            isActive ? 'text-purple-600' : 'text-slate-600'
+                          }`}>
+                            {item.label.charAt(0)}
+                          </div>
                           <span className="font-medium">{item.label}</span>
                         </div>
                       </button>
@@ -246,7 +243,6 @@ const Navigation: React.FC<NavigationProps> = ({
             <div className="border-t border-slate-200 pt-6">
               <ul className="space-y-2">
                 {additionalNavItems.map((item) => {
-                  const Icon = item.icon;
                   const isActive = currentView === item.id;
                   
                   return (
@@ -260,7 +256,11 @@ const Navigation: React.FC<NavigationProps> = ({
                         }`}
                         title={item.label}
                       >
-                        <Icon className={`w-5 h-5 ${isActive ? 'text-purple-600' : item.color}`} />
+                        <div className={`w-5 h-5 flex items-center justify-center text-xs font-bold ${
+                          isActive ? 'text-purple-600' : 'text-slate-600'
+                        }`}>
+                          {item.label.charAt(0)}
+                        </div>
                         
                         {/* Tooltip for collapsed state */}
                         <div className="absolute left-full ml-2 px-2 py-1 bg-slate-900 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
