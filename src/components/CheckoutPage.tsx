@@ -8,7 +8,7 @@ const CheckoutPage: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    couponCode: ''
+    couponCode: 'HELP'
   });
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
