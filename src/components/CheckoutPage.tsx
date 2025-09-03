@@ -8,7 +8,7 @@ const CheckoutPage: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    couponCode: '99'
+    couponCode: 'CENTS'
   });
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -131,6 +131,7 @@ const CheckoutPage: React.FC = () => {
           ...(formData.couponCode && couponApplied ? { 
             coupon_code: formData.couponCode === '99' ? 'promo_1S3MFDGR1TepVbUMJMSQn5m0' :
                         formData.couponCode.toLowerCase() === 'oneleft' ? 'promo_1S3MVnGR1TepVbUMuztwk0o3' :
+                        formData.couponCode.toUpperCase() === 'CENTS' ? 'promo_1S3MePGR1TepVbUM276dpJso' :
                         formData.couponCode.toUpperCase() 
           } : {})
         }),
