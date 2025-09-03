@@ -8,7 +8,7 @@ const CheckoutPage: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    couponCode: 'CENTS'
+    couponCode: ''
   });
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -129,10 +129,10 @@ const CheckoutPage: React.FC = () => {
           cancel_url: `${window.location.origin}/checkout`,
           mode: 'payment',
           ...(formData.couponCode && couponApplied ? { 
-            coupon_code: formData.couponCode === '99' ? 'promo_1S3MFDGR1TepVbUMJMSQn5m0' :
+            coupon_code: formData.couponCode.toUpperCase() === 'CENTS' ? 'promo_1S3MePGR1TepVbUM276dpJso' :
+                        formData.couponCode === '99' ? 'promo_1S3MFDGR1TepVbUMJMSQn5m0' :
                         formData.couponCode.toLowerCase() === 'oneleft' ? 'promo_1S3MVnGR1TepVbUMuztwk0o3' :
-                        formData.couponCode.toUpperCase() === 'CENTS' ? 'promo_1S3MePGR1TepVbUM276dpJso' :
-                        formData.couponCode.toUpperCase() 
+                        formData.couponCode 
           } : {})
         }),
       });
