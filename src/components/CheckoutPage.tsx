@@ -34,6 +34,7 @@ const CheckoutPage: React.FC = () => {
     try {
       // Validate known codes locally like ALLFREEBUZZY
       const code = formData.couponCode.trim().toUpperCase();
+      console.log('Checking coupon code:', code, 'Length:', code.length);
       if (code === 'ALLFREEBUZZY' || 
           code === 'CENTS' ||
           code === '99' ||
