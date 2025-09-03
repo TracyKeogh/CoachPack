@@ -8,7 +8,7 @@ const CheckoutPage: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    couponCode: 'promo_1S3MFDGR1TepVbUMJMSQn5m0'
+    couponCode: '99'
   });
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,41 +37,6 @@ const CheckoutPage: React.FC = () => {
         setCouponApplied(true);
         setFinalPrice(0);
         setError(null);
-      } else if (formData.couponCode === '99') {
-        // Map simple code "99" to your Stripe promo code
-        const actualPromoCode = 'promo_1S3MFDGR1TepVbUMJMSQn5m0';
-        // Validate the actual Stripe promo code
-        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-          },
-          body: JSON.stringify({
-            price_id: import.meta.env.VITE_STRIPE_PRICE_ID || 'price_1OvXXXXXXXXXXXXXXXXXXXX',
-            coupon_code: actualPromoCode,
-            validate_only: true
-          }),
-        });
-
-        const data = await response.json();
-        
-        if (response.ok && data.valid) {
-          setCouponApplied(true);
-          const discount = data.promotion?.coupon?.percent_off || data.promotion?.coupon?.amount_off;
-          if (data.promotion?.coupon?.percent_off) {
-            setFinalPrice(originalPrice * (1 - discount / 100));
-          } else if (data.promotion?.coupon?.amount_off) {
-            setFinalPrice(Math.max(0, originalPrice - (discount / 100)));
-          } else {
-            setFinalPrice(0);
-          }
-          setError(null);
-        } else {
-          setError('Invalid coupon code');
-          setCouponApplied(false);
-          setFinalPrice(originalPrice);
-        }
       } else {
         // For real Stripe promo codes, validate through backend
         const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`, {
