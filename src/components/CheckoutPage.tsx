@@ -48,8 +48,8 @@ const CheckoutPage: React.FC = () => {
         setCouponApplied(true);
         setFinalPrice(0);
         setError(null);
-      } else if (code === 'CENTS') {
-        console.log('CENTS VALIDATION PASSED');
+      } else if (code === '0CQALL7O') {
+        console.log('0CQALL7O VALIDATION PASSED');
         setCouponApplied(true);
         setFinalPrice(0);
         setError(null);
