@@ -23,11 +23,16 @@ const CheckoutPage: React.FC = () => {
   };
 
   const applyCoupon = async () => {
+    console.log('applyCoupon function called!'); // First thing - should ALWAYS show
+    console.log('formData.couponCode:', formData.couponCode);
+    
     if (!formData.couponCode.trim()) {
+      console.log('Empty coupon code detected');
       setError('Please enter a coupon code');
       return;
     }
 
+    console.log('About to start processing...');
     setIsProcessing(true);
     setError(null);
 
