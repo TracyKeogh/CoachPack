@@ -32,10 +32,13 @@ const CheckoutPage: React.FC = () => {
     setError(null);
 
     try {
-      // Only validate the test code locally, let Stripe handle real codes
-      if (formData.couponCode.toUpperCase() === 'ALLFREEBUZZY') {
+      // Validate known codes locally like ALLFREEBUZZY
+      if (formData.couponCode.toUpperCase() === 'ALLFREEBUZZY' || 
+          formData.couponCode.toUpperCase() === 'CENTS' ||
+          formData.couponCode === '99' ||
+          formData.couponCode.toLowerCase() === 'oneleft') {
         setCouponApplied(true);
-        setFinalPrice(0);
+        setFinalPrice(0); // Set to 0 for now, Stripe will handle actual discount
         setError(null);
       } else {
         // For real Stripe promo codes, validate through backend
