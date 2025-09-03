@@ -34,18 +34,20 @@ const CheckoutPage: React.FC = () => {
     try {
       // Validate known codes locally like ALLFREEBUZZY
       const code = formData.couponCode.trim().toUpperCase().replace(/\s/g, '');
-      console.log('Original input:', formData.couponCode);
-      console.log('Processed code:', code);
-      console.log('Code comparison CENTS:', code === 'CENTS');
-      console.log('Code comparison ALLFREEBUZZY:', code === 'ALLFREEBUZZY');
+      console.log('Checking coupon code:', code, 'Length:', code.length);
+      console.log('CENTS comparison:', code === 'CENTS');
+      console.log('ALLFREEBUZZY comparison:', code === 'ALLFREEBUZZY');
+      
       if (code === 'ALLFREEBUZZY' || 
           code === 'CENTS' ||
           code === '99' ||
           code === 'ONELEFT') {
+        console.log('LOCAL VALIDATION PASSED');
         setCouponApplied(true);
         setFinalPrice(0); // Set to 0 for now, Stripe will handle actual discount
         setError(null);
       } else {
+        console.log('GOING TO BACKEND VALIDATION');
         // For real Stripe promo codes, validate through backend
         const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`, {
           method: 'POST',
