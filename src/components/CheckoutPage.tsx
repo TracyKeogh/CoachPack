@@ -151,10 +151,7 @@ const CheckoutPage: React.FC = () => {
           cancel_url: `${window.location.origin}/checkout`,
           mode: 'payment',
           ...(formData.couponCode && couponApplied ? { 
-            coupon_code: formData.couponCode.toUpperCase() === 'CENTS' ? 'promo_1S3MePGR1TepVbUM276dpJso' :
-                        formData.couponCode.toUpperCase() === '99' ? 'promo_1S3MFDGR1TepVbUMJMSQn5m0' :
-                        formData.couponCode.toUpperCase() === 'ONELEFT' ? 'promo_1S3MVnGR1TepVbUMuztwk0o3' :
-                        formData.couponCode.toUpperCase() 
+            coupon_code: formData.couponCode.toUpperCase()
           } : {})
         }),
       });
