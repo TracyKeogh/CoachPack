@@ -36,13 +36,18 @@ function corsResponse(body: string | object | null, status = 200) {
 // Helper function to validate promotion codes
 async function validatePromotionCode(code: string): Promise<{ valid: boolean; promotion?: Stripe.PromotionCode; error?: string }> {
   try {
+    console.log('Validating promotion code:', code);
     const promotionCodes = await stripe.promotionCodes.list({
       code: code,
       active: true,
       limit: 1,
     });
 
+    console.log('Stripe promotion codes found:', promotionCodes.data.length);
+    console.log('Promotion codes data:', promotionCodes.data);
+
     if (promotionCodes.data.length === 0) {
+      console.log('No promotion codes found for:', code);
       return { valid: false, error: 'Invalid or expired coupon code' };
     }
 
