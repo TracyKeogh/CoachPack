@@ -43,10 +43,17 @@ const CheckoutPage: React.FC = () => {
       console.log('CENTS comparison:', code === 'CENTS');
       console.log('ALLFREEBUZZY comparison:', code === 'ALLFREEBUZZY');
       
-      if (code === 'ALLFREEBUZZY' || 
-          code === 'CENTS' ||
-          code === '99' ||
-          code === 'ONELEFT') {
+      if (code === 'ALLFREEBUZZY') {
+        console.log('LOCAL VALIDATION PASSED');
+        setCouponApplied(true);
+        setFinalPrice(0);
+        setError(null);
+      } else if (code === 'CENTS') {
+        console.log('CENTS VALIDATION PASSED');
+        setCouponApplied(true);
+        setFinalPrice(0);
+        setError(null);
+      } else if (code === '99' || code === 'ONELEFT') {
         console.log('LOCAL VALIDATION PASSED');
         setCouponApplied(true);
         setFinalPrice(0); // Set to 0 for now, Stripe will handle actual discount
