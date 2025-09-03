@@ -37,6 +37,11 @@ const CheckoutPage: React.FC = () => {
         setCouponApplied(true);
         setFinalPrice(0);
         setError(null);
+      } else if (formData.couponCode === '99' || formData.couponCode.toLowerCase() === 'oneleft') {
+        // Handle your actual Stripe coupon codes
+        setCouponApplied(true);
+        setFinalPrice(0); // Assuming these are 100% discount codes
+        setError(null);
       } else {
         // For real Stripe promo codes, validate through backend
         const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`, {
@@ -128,7 +133,11 @@ const CheckoutPage: React.FC = () => {
           success_url: `${window.location.origin}/checkout-success`,
           cancel_url: `${window.location.origin}/checkout`,
           mode: 'payment',
-          ...(formData.couponCode && couponApplied ? { coupon_code: formData.couponCode.toUpperCase() } : {})
+          ...(formData.couponCode && couponApplied ? { 
+            coupon_code: formData.couponCode === '99' ? 'promo_1S3MFDGR1TepVbUMJMSQn5m0' :
+                        formData.couponCode.toLowerCase() === 'oneleft' ? 'promo_1S3MVnGR1TepVbUMuztwk0o3' :
+                        formData.couponCode.toUpperCase() 
+          } : {})
         }),
       });
 
