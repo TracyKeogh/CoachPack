@@ -33,8 +33,11 @@ const CheckoutPage: React.FC = () => {
 
     try {
       // Validate known codes locally like ALLFREEBUZZY
-      const code = formData.couponCode.trim().toUpperCase();
-      console.log('Checking coupon code:', code, 'Length:', code.length);
+      const code = formData.couponCode.trim().toUpperCase().replace(/\s/g, '');
+      console.log('Original input:', formData.couponCode);
+      console.log('Processed code:', code);
+      console.log('Code comparison CENTS:', code === 'CENTS');
+      console.log('Code comparison ALLFREEBUZZY:', code === 'ALLFREEBUZZY');
       if (code === 'ALLFREEBUZZY' || 
           code === 'CENTS' ||
           code === '99' ||
@@ -135,9 +138,9 @@ const CheckoutPage: React.FC = () => {
           mode: 'payment',
           ...(formData.couponCode && couponApplied ? { 
             coupon_code: formData.couponCode.toUpperCase() === 'CENTS' ? 'promo_1S3MePGR1TepVbUM276dpJso' :
-                        formData.couponCode === '99' ? 'promo_1S3MFDGR1TepVbUMJMSQn5m0' :
-                        formData.couponCode.toLowerCase() === 'oneleft' ? 'promo_1S3MVnGR1TepVbUMuztwk0o3' :
-                        formData.couponCode 
+                        formData.couponCode.toUpperCase() === '99' ? 'promo_1S3MFDGR1TepVbUMJMSQn5m0' :
+                        formData.couponCode.toUpperCase() === 'ONELEFT' ? 'promo_1S3MVnGR1TepVbUMuztwk0o3' :
+                        formData.couponCode.toUpperCase() 
           } : {})
         }),
       });
