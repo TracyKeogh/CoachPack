@@ -23,76 +23,47 @@ const CheckoutPage: React.FC = () => {
   };
 
   const applyCoupon = async () => {
-    console.log('applyCoupon function called!'); // First thing - should ALWAYS show
-    console.log('formData.couponCode:', formData.couponCode);
-    
     if (!formData.couponCode.trim()) {
-      console.log('Empty coupon code detected');
       setError('Please enter a coupon code');
       return;
     }
 
-    console.log('About to start processing...');
     setIsProcessing(true);
     setError(null);
 
     try {
-      // Validate known codes locally like ALLFREEBUZZY
-      const code = formData.couponCode.trim().toUpperCase().replace(/\s/g, '');
-      console.log('Checking coupon code:', code, 'Length:', code.length);
-      console.log('CENTS comparison:', code === 'CENTS');
-      console.log('ALLFREEBUZZY comparison:', code === 'ALLFREEBUZZY');
+      // Always validate through Stripe backend - no local validation
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+        },
+        body: JSON.stringify({
+          price_id: import.meta.env.VITE_STRIPE_PRICE_ID || 'price_1OvXXXXXXXXXXXXXXXXXXXX',
+          coupon_code: formData.couponCode.trim().toUpperCase(),
+          validate_only: true
+        }),
+      });
+
+      const data = await response.json();
       
-      if (code === 'ALLFREEBUZZY') {
-        console.log('LOCAL VALIDATION PASSED');
+      if (response.ok && data.valid) {
         setCouponApplied(true);
-        setFinalPrice(0);
-        setError(null);
-      } else if (code === '0CQALL7O') {
-        console.log('0CQALL7O VALIDATION PASSED');
-        setCouponApplied(true);
-        setFinalPrice(0);
-        setError(null);
-      } else if (code === '99' || code === 'ONELEFT') {
-        console.log('LOCAL VALIDATION PASSED');
-        setCouponApplied(true);
-        setFinalPrice(0); // Set to 0 for now, Stripe will handle actual discount
+        // Calculate discounted price based on promotion
+        const discount = data.promotion?.coupon?.percent_off || data.promotion?.coupon?.amount_off;
+        if (data.promotion?.coupon?.percent_off) {
+          setFinalPrice(originalPrice * (1 - discount / 100));
+        } else if (data.promotion?.coupon?.amount_off) {
+          setFinalPrice(Math.max(0, originalPrice - (discount / 100))); // amount_off is in cents
+        } else {
+          setFinalPrice(0); // 100% discount
+        }
         setError(null);
       } else {
-        console.log('GOING TO BACKEND VALIDATION');
-        // For real Stripe promo codes, validate through backend
-        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-          },
-          body: JSON.stringify({
-            price_id: import.meta.env.VITE_STRIPE_PRICE_ID || 'price_1OvXXXXXXXXXXXXXXXXXXXX',
-            coupon_code: formData.couponCode,
-            validate_only: true
-          }),
-        });
-
-        const data = await response.json();
-        
-        if (response.ok && data.valid) {
-          setCouponApplied(true);
-          // Calculate discounted price based on promotion
-          const discount = data.promotion?.coupon?.percent_off || data.promotion?.coupon?.amount_off;
-          if (data.promotion?.coupon?.percent_off) {
-            setFinalPrice(originalPrice * (1 - discount / 100));
-          } else if (data.promotion?.coupon?.amount_off) {
-            setFinalPrice(Math.max(0, originalPrice - (discount / 100))); // amount_off is in cents
-          } else {
-            setFinalPrice(0); // 100% discount
-          }
-          setError(null);
-        } else {
-          setError(data.error || 'Invalid coupon code');
-          setCouponApplied(false);
-          setFinalPrice(originalPrice);
-        }
+        setError(data.error || 'Invalid coupon code');
+        setCouponApplied(false);
+        setFinalPrice(originalPrice);
       }
     } catch (err) {
       console.error('Error applying coupon:', err);
@@ -151,7 +122,7 @@ const CheckoutPage: React.FC = () => {
           cancel_url: `${window.location.origin}/checkout`,
           mode: 'payment',
           ...(formData.couponCode && couponApplied ? { 
-            coupon_code: formData.couponCode.toUpperCase()
+            coupon_code: formData.couponCode.trim().toUpperCase()
           } : {})
         }),
       });
