@@ -274,11 +274,13 @@ const CheckoutPage: React.FC = () => {
 
               {/* Coupon Code */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <label htmlFor="couponCode" className="block text-sm font-medium text-slate-700 mb-2">
                   Coupon Code (Optional)
                 </label>
                 <div className="flex space-x-2">
                   <input
+                    id="couponCode"
+                    name="couponCode"
                     type="text"
                     value={formData.couponCode}
                     onChange={(e) => handleInputChange('couponCode', e.target.value.toUpperCase())}
