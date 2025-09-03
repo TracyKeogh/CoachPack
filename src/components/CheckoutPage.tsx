@@ -245,10 +245,12 @@ const CheckoutPage: React.FC = () => {
               </h3>
               
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <label htmlFor="fullName" className="block text-sm font-medium text-slate-700 mb-2">
                   Full Name
                 </label>
                 <input
+                  id="fullName"
+                  name="fullName"
                   type="text"
                   value={formData.name}
                   onChange={(e) => handleInputChange('name', e.target.value)}
@@ -259,10 +261,12 @@ const CheckoutPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2">
                   Email Address
                 </label>
                 <input
+                  id="email"
+                  name="email"
                   type="email"
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
